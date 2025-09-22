@@ -476,6 +476,278 @@ def get_psp_summary_stats():
             'message': str(e)
         }), 500
 
+@transactions_api.route("/psp_monthly_stats")
+@login_required
+def get_psp_monthly_stats():
+    """Get PSP monthly statistics with date filtering"""
+    try:
+        logger.info("Starting PSP monthly stats query...")
+        
+        # Get query parameters
+        year = request.args.get('year', datetime.now().year, type=int)
+        month = request.args.get('month', datetime.now().month, type=int)
+        
+        logger.info(f"Fetching monthly stats for {year}-{month:02d}")
+        
+        # Calculate date range for the month
+        start_date = datetime(year, month, 1).date()
+        if month == 12:
+            end_date = datetime(year + 1, 1, 1).date() - timedelta(days=1)
+        else:
+            end_date = datetime(year, month + 1, 1).date() - timedelta(days=1)
+        
+        logger.info(f"Date range: {start_date} to {end_date}")
+        
+        # Get PSP statistics for the specific month using TRY amounts
+        psp_stats = db.session.query(
+            Transaction.psp,
+            func.count(Transaction.id).label('transaction_count'),
+            func.sum(func.coalesce(Transaction.amount_try, Transaction.amount)).label('total_amount_try'),
+            func.avg(func.coalesce(Transaction.amount_try, Transaction.amount)).label('average_amount_try')
+        ).filter(
+            Transaction.psp.isnot(None),
+            Transaction.psp != '',
+            Transaction.date >= start_date,
+            Transaction.date <= end_date
+        ).group_by(Transaction.psp).all()
+        
+        # Get deposits for the month
+        psp_deposits = db.session.query(
+            Transaction.psp,
+            func.sum(func.coalesce(Transaction.amount_try, Transaction.amount)).label('total_deposits_try')
+        ).filter(
+            Transaction.psp.isnot(None),
+            Transaction.psp != '',
+            func.upper(Transaction.category).in_(['DEP', 'DEPOSIT', 'INVESTMENT']),
+            Transaction.date >= start_date,
+            Transaction.date <= end_date
+        ).group_by(Transaction.psp).all()
+        
+        # Get withdrawals for the month
+        psp_withdrawals = db.session.query(
+            Transaction.psp,
+            func.sum(func.coalesce(Transaction.amount_try, Transaction.amount)).label('total_withdrawals_try')
+        ).filter(
+            Transaction.psp.isnot(None),
+            Transaction.psp != '',
+            func.upper(Transaction.category).in_(['WD', 'WITHDRAW', 'WITHDRAWAL']),
+            Transaction.date >= start_date,
+            Transaction.date <= end_date
+        ).group_by(Transaction.psp).all()
+        
+        # Get allocations for the month from PSPAllocation table
+        from app.models.financial import PSPAllocation
+        psp_allocations = db.session.query(
+            PSPAllocation.psp_name,
+            func.sum(PSPAllocation.allocation_amount).label('total_allocations')
+        ).filter(
+            PSPAllocation.date >= start_date,
+            PSPAllocation.date <= end_date
+        ).group_by(PSPAllocation.psp_name).all()
+        
+        # Create lookup dictionaries
+        deposits_dict = {psp.psp: float(psp.total_deposits_try) if psp.total_deposits_try else 0.0 for psp in psp_deposits}
+        withdrawals_dict = {psp.psp: float(psp.total_withdrawals_try) if psp.total_withdrawals_try else 0.0 for psp in psp_withdrawals}
+        allocations_dict = {psp.psp_name: float(psp.total_allocations) if psp.total_allocations else 0.0 for psp in psp_allocations}
+        
+        logger.info(f"Monthly PSP stats query completed, found {len(psp_stats)} PSPs")
+        
+        # Get daily breakdown for each PSP
+        daily_breakdown = {}
+        for psp in psp_stats:
+            # Get daily transactions for this PSP - deposits
+            daily_deposits = db.session.query(
+                Transaction.date,
+                func.sum(func.coalesce(Transaction.amount_try, Transaction.amount)).label('daily_deposits'),
+                func.count(Transaction.id).label('deposit_count')
+            ).filter(
+                Transaction.psp == psp.psp,
+                func.upper(Transaction.category).in_(['DEP', 'DEPOSIT', 'INVESTMENT']),
+                Transaction.date >= start_date,
+                Transaction.date <= end_date
+            ).group_by(Transaction.date).all()
+            
+            # Get daily transactions for this PSP - withdrawals
+            daily_withdrawals = db.session.query(
+                Transaction.date,
+                func.sum(func.coalesce(Transaction.amount_try, Transaction.amount)).label('daily_withdrawals'),
+                func.count(Transaction.id).label('withdrawal_count')
+            ).filter(
+                Transaction.psp == psp.psp,
+                func.upper(Transaction.category).in_(['WD', 'WITHDRAW', 'WITHDRAWAL']),
+                Transaction.date >= start_date,
+                Transaction.date <= end_date
+            ).group_by(Transaction.date).all()
+            
+            # Get daily transactions for this PSP - total
+            daily_totals = db.session.query(
+                Transaction.date,
+                func.sum(func.coalesce(Transaction.amount_try, Transaction.amount)).label('daily_total'),
+                func.count(Transaction.id).label('transaction_count')
+            ).filter(
+                Transaction.psp == psp.psp,
+                Transaction.date >= start_date,
+                Transaction.date <= end_date
+            ).group_by(Transaction.date).all()
+            
+            # Get daily allocations for this PSP
+            daily_allocations = db.session.query(
+                PSPAllocation.date,
+                func.sum(PSPAllocation.allocation_amount).label('daily_allocations')
+            ).filter(
+                PSPAllocation.psp_name == psp.psp,
+                PSPAllocation.date >= start_date,
+                PSPAllocation.date <= end_date
+            ).group_by(PSPAllocation.date).all()
+            
+            allocations_by_date = {alloc.date: float(alloc.daily_allocations) if alloc.daily_allocations else 0.0 for alloc in daily_allocations}
+            
+            # Create lookup dictionaries for deposits and withdrawals
+            deposits_by_date = {dep.date: float(dep.daily_deposits) if dep.daily_deposits else 0.0 for dep in daily_deposits}
+            withdrawals_by_date = {wd.date: float(wd.daily_withdrawals) if wd.daily_withdrawals else 0.0 for wd in daily_withdrawals}
+            totals_by_date = {tot.date: (float(tot.daily_total) if tot.daily_total else 0.0, tot.transaction_count) for tot in daily_totals}
+            
+            # Build daily breakdown
+            daily_data = []
+            # Get all unique dates from all queries (transactions AND allocations)
+            all_dates = set()
+            for dep in daily_deposits:
+                all_dates.add(dep.date)
+            for wd in daily_withdrawals:
+                all_dates.add(wd.date)
+            for tot in daily_totals:
+                all_dates.add(tot.date)
+            # Include dates that have allocations even if no transactions
+            for alloc in daily_allocations:
+                all_dates.add(alloc.date)
+            
+            for date in sorted(all_dates):
+                daily_deposits_amount = deposits_by_date.get(date, 0.0)
+                daily_withdrawals_amount = withdrawals_by_date.get(date, 0.0)
+                daily_total_amount, transaction_count = totals_by_date.get(date, (0.0, 0))
+                daily_total = daily_deposits_amount - daily_withdrawals_amount
+                daily_allocations = allocations_by_date.get(date, 0.0)
+                
+                # Log allocation-only dates for debugging
+                if daily_allocations > 0 and transaction_count == 0:
+                    logger.info(f"Allocation-only date for {psp.psp} on {date}: {daily_allocations} TRY")
+                
+                # Get commission rate for this PSP
+                commission_rate = None
+                try:
+                    from app.models.config import Option
+                    psp_option = Option.query.filter_by(
+                        field_name='psp',
+                        value=psp.psp,
+                        is_active=True
+                    ).first()
+                    
+                    if psp_option and psp_option.commission_rate is not None:
+                        commission_rate = float(psp_option.commission_rate) * 100
+                except Exception:
+                    pass
+                
+                if commission_rate is not None:
+                    daily_commission = daily_total * (commission_rate / 100)
+                    daily_net = daily_total - daily_commission
+                else:
+                    daily_commission = 0.0
+                    daily_net = daily_total
+                
+                daily_rollover = daily_net - daily_allocations
+                
+                daily_data.append({
+                    'date': date.isoformat(),
+                    'yatimim': daily_deposits_amount,
+                    'cekme': daily_withdrawals_amount,
+                    'toplam': daily_total,
+                    'komisyon': daily_commission,
+                    'net': daily_net,
+                    'tahs_tutari': daily_allocations,
+                    'kasa_top': daily_net,
+                    'devir': daily_rollover,
+                    'transaction_count': transaction_count
+                })
+            
+            daily_breakdown[psp.psp] = daily_data
+        
+        psp_data = []
+        for psp in psp_stats:
+            # Calculate net total: deposits - withdrawals using lookup dictionaries
+            total_deposits = deposits_dict.get(psp.psp, 0.0)
+            total_withdrawals = withdrawals_dict.get(psp.psp, 0.0)
+            total_amount = total_deposits - total_withdrawals  # Net total (deposits - withdrawals)
+            
+            # Get total allocations for this PSP in the month
+            total_allocations = allocations_dict.get(psp.psp, 0.0)
+            
+            # Get the actual commission rate for this PSP from options (no defaults)
+            commission_rate = None
+            try:
+                from app.models.config import Option
+                psp_option = Option.query.filter_by(
+                    field_name='psp',
+                    value=psp.psp,
+                    is_active=True
+                ).first()
+                
+                if psp_option and psp_option.commission_rate is not None:
+                    commission_rate = float(psp_option.commission_rate) * 100  # Convert to percentage
+            except Exception:
+                pass  # Skip if error occurs
+            
+            # Calculate commission only if rate is available
+            if commission_rate is not None:
+                total_commission = total_amount * (commission_rate / 100)
+                total_net = total_amount - total_commission
+            else:
+                total_commission = 0.0
+                total_net = total_amount
+            
+            # Calculate rollover (KASA TOP - TAHS TUTARI)
+            rollover = total_net - total_allocations
+            
+            psp_data.append({
+                'psp': psp.psp,
+                'yatimim': total_deposits,  # YATIRIM (deposits)
+                'cekme': total_withdrawals,  # ÇEKME (withdrawals)
+                'toplam': total_amount,  # TOPLAM (deposits - withdrawals)
+                'komisyon': total_commission,  # KOMİSYON (commission)
+                'net': total_net,  # NET (toplam - komisyon)
+                'tahs_tutari': total_allocations,  # TAHS TUTARI (allocation amount)
+                'kasa_top': total_net,  # KASA TOP (revenue = NET + rollover, simplified as NET for monthly)
+                'devir': rollover,  # DEVİR (rollover = kasa_top - tahs_tutari)
+                'transaction_count': psp.transaction_count,
+                'commission_rate': commission_rate,
+                'month': month,
+                'year': year,
+                'daily_breakdown': daily_breakdown.get(psp.psp, [])
+            })
+        
+        # Sort by total amount descending
+        psp_data.sort(key=lambda x: x['toplam'], reverse=True)
+        
+        logger.info(f"Monthly PSP stats completed successfully, returning {len(psp_data)} PSPs")
+        
+        return jsonify({
+            'data': psp_data,
+            'month': month,
+            'year': year,
+            'start_date': start_date.isoformat(),
+            'end_date': end_date.isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in PSP monthly stats: {str(e)}")
+        logger.error(f"Error type: {type(e).__name__}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        
+        return jsonify({
+            'error': 'Failed to retrieve PSP monthly statistics',
+            'message': str(e)
+        }), 500
+
 @transactions_api.route("/")
 @login_required
 def get_transactions():

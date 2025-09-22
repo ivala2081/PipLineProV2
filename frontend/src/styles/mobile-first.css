@@ -534,17 +534,5 @@ body {
   filter: contrast(1.2);
 }
 
-/* === DARK MODE SUPPORT (if needed in future) === */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --mobile-surface: #1f2937;
-    --mobile-surface-elevated: #111827;
-    --mobile-border: #374151;
-    --mobile-border-focus: #60a5fa;
-  }
-  
-  body {
-    background: #111827;
-    color: #f9fafb;
-  }
-}
+/* === LIGHT THEME ONLY === */
+/* Dark mode support removed to maintain consistent business appearance */

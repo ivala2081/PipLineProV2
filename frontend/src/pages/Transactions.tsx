@@ -1270,6 +1270,271 @@ export default function Transactions() {
           </div>
         </div>
 
+        {/* Modern Filter Panel */}
+        {showFilters && (
+          <Card className="mb-6 border-slate-200/60 shadow-sm">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                    <Filter className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg font-semibold text-slate-800">Transaction Filters</CardTitle>
+                    <CardDescription className="text-sm text-slate-600">
+                      Filter transactions by various criteria to find exactly what you need
+                    </CardDescription>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {getActiveFilterCount() > 0 && (
+                    <Badge className="bg-blue-100 text-blue-800 font-medium">
+                      {getActiveFilterCount()} active
+                    </Badge>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowFilters(false)}
+                    className="text-slate-500 hover:text-slate-700"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {/* Debug info for dropdown options */}
+              <div className="mb-4 p-3 bg-gray-100 rounded-lg text-xs">
+                <div className="font-semibold text-gray-700 mb-1">Dropdown Options Status:</div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-gray-600">
+                  <div>PSPs: {dropdownOptions.psps?.length || 0}</div>
+                  <div>Categories: {dropdownOptions.categories?.length || 0}</div>
+                  <div>Methods: {dropdownOptions.payment_methods?.length || 0}</div>
+                  <div>Companies: {dropdownOptions.companies?.length || 0}</div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* Search Filter */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-slate-700">Search</label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input
+                      type="text"
+                      placeholder="Search transactions..."
+                      value={filters.search}
+                      onChange={(e) => handleFilterChange('search', e.target.value)}
+                      className="pl-10 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Date Range Filters */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-slate-700">Start Date</label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input
+                      type="date"
+                      value={filters.date_from}
+                      onChange={(e) => handleFilterChange('date_from', e.target.value)}
+                      className="pl-10 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-slate-700">End Date</label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input
+                      type="date"
+                      value={filters.date_to}
+                      onChange={(e) => handleFilterChange('date_to', e.target.value)}
+                      className="pl-10 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                {/* PSP Filter */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-slate-700">PSP</label>
+                  <select
+                    value={filters.psp}
+                    onChange={(e) => handleFilterChange('psp', e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-slate-700"
+                  >
+                    <option value="">All PSPs</option>
+                    {dropdownOptions.psps && dropdownOptions.psps.length > 0 ? (
+                      dropdownOptions.psps.map((psp) => (
+                        <option key={psp} value={psp}>{psp}</option>
+                      ))
+                    ) : (
+                      <option value="" disabled>Loading PSPs...</option>
+                    )}
+                  </select>
+                  {/* Debug info */}
+                  <div className="text-xs text-gray-500">
+                    PSPs loaded: {dropdownOptions.psps?.length || 0}
+                  </div>
+                </div>
+
+                {/* Category Filter */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-slate-700">Category</label>
+                  <select
+                    value={filters.category}
+                    onChange={(e) => handleFilterChange('category', e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-slate-700"
+                  >
+                    <option value="">All Categories</option>
+                    {dropdownOptions.categories && dropdownOptions.categories.length > 0 ? (
+                      dropdownOptions.categories.map((category) => (
+                        <option key={category} value={category}>{category}</option>
+                      ))
+                    ) : (
+                      <option value="" disabled>Loading Categories...</option>
+                    )}
+                  </select>
+                  {/* Debug info */}
+                  <div className="text-xs text-gray-500">
+                    Categories loaded: {dropdownOptions.categories?.length || 0}
+                  </div>
+                </div>
+
+                {/* Payment Method Filter */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-slate-700">Payment Method</label>
+                  <select
+                    value={filters.payment_method}
+                    onChange={(e) => handleFilterChange('payment_method', e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-slate-700"
+                  >
+                    <option value="">All Methods</option>
+                    {dropdownOptions.payment_methods && dropdownOptions.payment_methods.length > 0 ? (
+                      dropdownOptions.payment_methods.map((method) => (
+                        <option key={method} value={method}>{method}</option>
+                      ))
+                    ) : (
+                      <option value="" disabled>Loading Methods...</option>
+                    )}
+                  </select>
+                  {/* Debug info */}
+                  <div className="text-xs text-gray-500">
+                    Methods loaded: {dropdownOptions.payment_methods?.length || 0}
+                  </div>
+                </div>
+
+                {/* Company Filter */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-slate-700">Company</label>
+                  <select
+                    value={filters.company}
+                    onChange={(e) => handleFilterChange('company', e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-slate-700"
+                  >
+                    <option value="">All Companies</option>
+                    {dropdownOptions.companies && dropdownOptions.companies.length > 0 ? (
+                      dropdownOptions.companies.map((company) => (
+                        <option key={company} value={company}>{company}</option>
+                      ))
+                    ) : (
+                      <option value="" disabled>Loading Companies...</option>
+                    )}
+                  </select>
+                  {/* Debug info */}
+                  <div className="text-xs text-gray-500">
+                    Companies loaded: {dropdownOptions.companies?.length || 0}
+                  </div>
+                </div>
+
+                {/* Amount Range Filters */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-slate-700">Min Amount</label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input
+                      type="number"
+                      placeholder="0.00"
+                      value={filters.amount_min}
+                      onChange={(e) => handleFilterChange('amount_min', e.target.value)}
+                      className="pl-10 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-slate-700">Max Amount</label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input
+                      type="number"
+                      placeholder="1000000.00"
+                      value={filters.amount_max}
+                      onChange={(e) => handleFilterChange('amount_max', e.target.value)}
+                      className="pl-10 border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Status Filter */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-slate-700">Status</label>
+                  <select
+                    value={filters.status}
+                    onChange={(e) => handleFilterChange('status', e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-slate-700"
+                  >
+                    <option value="">All Statuses</option>
+                    <option value="completed">Completed</option>
+                    <option value="pending">Pending</option>
+                    <option value="failed">Failed</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Filter Actions */}
+              <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-200">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={clearAllFilters}
+                    className="text-slate-600 hover:text-slate-800"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Clear All
+                  </Button>
+                  {getActiveFilterCount() > 0 && (
+                    <span className="text-sm text-slate-500">
+                      {getActiveFilterCount()} filter{getActiveFilterCount() !== 1 ? 's' : ''} applied
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowFilters(false)}
+                    className="text-slate-600 hover:text-slate-800"
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => setShowFilters(false)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Apply Filters
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Loading State */}
         {(loading || isLoadingData) && (
           <div className="flex items-center justify-center py-12">

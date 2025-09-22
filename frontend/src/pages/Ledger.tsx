@@ -7,6 +7,7 @@ import {
   Eye,
   DollarSign,
   TrendingUp,
+  TrendingDown,
   Calendar,
   CreditCard,
   Activity,
@@ -25,6 +26,8 @@ import {
   Shield,
   X,
   Target,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -136,10 +139,17 @@ export default function Ledger() {
   const [pspFilter, setPspFilter] = useState('all');
   const [refreshing, setRefreshing] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'ledger' | 'analytics' | 'history'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'ledger' | 'monthly' | 'analytics' | 'history'>('overview');
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedPsp, setSelectedPsp] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  
+  // Monthly tab state
+  const [monthlyData, setMonthlyData] = useState<any[]>([]);
+  const [monthlyLoading, setMonthlyLoading] = useState(false);
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+  const [expandedPSPs, setExpandedPSPs] = useState<Set<string>>(new Set());
   
   // Enhanced date filtering state
   const [dateRange, setDateRange] = useState<'custom' | '7' | '30' | '90' | '365'>('30');
@@ -195,6 +205,13 @@ export default function Ledger() {
       fetchHistoryData(historyFilters.page);
     }
   }, [activeTab, isAuthenticated, authLoading, historyFilters.startDate, historyFilters.endDate, historyFilters.psp]);
+
+  // Fetch monthly data when Monthly tab is active
+  useEffect(() => {
+    if (activeTab === 'monthly' && isAuthenticated && !authLoading) {
+      fetchMonthlyData(selectedYear, selectedMonth);
+    }
+  }, [activeTab, isAuthenticated, authLoading, selectedYear, selectedMonth]);
 
   // Listen for transaction updates to automatically refresh ledger data
   useEffect(() => {
@@ -308,11 +325,18 @@ export default function Ledger() {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      // Force refresh both PSP and ledger data
-      await Promise.all([
+      // Force refresh PSP, ledger, and monthly data
+      const refreshPromises = [
         fetchPSPData(true),
         fetchLedgerData(true)
-      ]);
+      ];
+      
+      // Only refresh monthly data if we're on the monthly tab
+      if (activeTab === 'monthly') {
+        refreshPromises.push(fetchMonthlyData(selectedYear, selectedMonth, true));
+      }
+      
+      await Promise.all(refreshPromises);
     } finally {
       setRefreshing(false);
     }
@@ -511,8 +535,59 @@ export default function Ledger() {
 
   // Advanced Risk Analysis Functions
 
+  // Toggle PSP expansion
+  const togglePSPExpansion = (pspName: string) => {
+    setExpandedPSPs(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(pspName)) {
+        newSet.delete(pspName);
+      } else {
+        newSet.add(pspName);
+      }
+      return newSet;
+    });
+  };
 
+  const fetchMonthlyData = async (year: number, month: number, forceRefresh = false) => {
+    try {
+      console.log('🔄 Ledger: Starting monthly data fetch...', { year, month, forceRefresh });
+      setMonthlyLoading(true);
+      setError(null);
 
+      const response = await api.get(`/api/v1/transactions/psp_monthly_stats?year=${year}&month=${month}`, undefined, !forceRefresh);
+      console.log('🔄 Ledger: Monthly API response received:', {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText
+      });
+
+      if (response.status === 401) {
+        console.log('🔄 Ledger: Unauthorized, redirect will be handled by AuthContext');
+        return;
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await api.parseResponse(response);
+      console.log('🔄 Ledger: Monthly data parsed successfully:', {
+        dataLength: data.data?.length || 0,
+        month: data.month,
+        year: data.year
+      });
+
+      setMonthlyData(data.data || []);
+      console.log('✅ Ledger: Monthly data fetch completed successfully');
+      
+    } catch (error) {
+      console.error('❌ Ledger: Monthly data fetch error:', error);
+      setError(error instanceof Error ? error.message : 'Failed to fetch monthly data');
+    } finally {
+      setMonthlyLoading(false);
+    }
+  };
 
   const fetchLedgerData = async (forceRefresh = false) => {
     setLedgerLoading(true);
@@ -1189,7 +1264,7 @@ export default function Ledger() {
 
       {/* Modern Tab Navigation */}
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 bg-gray-50/80 border border-gray-200/60 shadow-sm">
+        <TabsList className="grid w-full grid-cols-5 bg-gray-50/80 border border-gray-200/60 shadow-sm">
           <TabsTrigger value="overview" className="group flex items-center gap-2 transition-all duration-300 ease-in-out hover:bg-white/90 hover:shadow-md hover:scale-[1.02] data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:border data-[state=active]:border-gray-200">
             <LayoutGrid className="h-4 w-4 transition-all duration-300 ease-in-out group-hover:scale-110 group-hover:text-blue-600" />
             <span className="transition-all duration-300 ease-in-out group-hover:font-semibold">Overview</span>
@@ -1197,6 +1272,10 @@ export default function Ledger() {
           <TabsTrigger value="ledger" className="group flex items-center gap-2 transition-all duration-300 ease-in-out hover:bg-white/90 hover:shadow-md hover:scale-[1.02] data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:border data-[state=active]:border-gray-200">
             <Table className="h-4 w-4 transition-all duration-300 ease-in-out group-hover:scale-110 group-hover:text-blue-600" />
             <span className="transition-all duration-300 ease-in-out group-hover:font-semibold">Ledger</span>
+          </TabsTrigger>
+          <TabsTrigger value="monthly" className="group flex items-center gap-2 transition-all duration-300 ease-in-out hover:bg-white/90 hover:shadow-md hover:scale-[1.02] data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:border data-[state=active]:border-gray-200">
+            <Calendar className="h-4 w-4 transition-all duration-300 ease-in-out group-hover:scale-110 group-hover:text-blue-600" />
+            <span className="transition-all duration-300 ease-in-out group-hover:font-semibold">Monthly</span>
           </TabsTrigger>
           <TabsTrigger value="analytics" className="group flex items-center gap-2 transition-all duration-300 ease-in-out hover:bg-white/90 hover:shadow-md hover:scale-[1.02] data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:border data-[state=active]:border-gray-200">
             <BarChart3 className="h-4 w-4 transition-all duration-300 ease-in-out group-hover:scale-110 group-hover:text-blue-600" />
@@ -2026,8 +2105,467 @@ export default function Ledger() {
           </div>
         </TabsContent>
 
-
-
+        {/* Monthly Tab Content */}
+        <TabsContent value="monthly" className="mt-8 space-y-8">
+          {/* Monthly Header with Month Selection */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white rounded-lg shadow-sm">
+                    <Calendar className="h-5 w-5 text-gray-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Monthly PSP Report</h3>
+                    <p className="text-sm text-gray-600">Monthly financial overview for all PSPs</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  {/* Year Selection */}
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700">Year:</label>
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                    >
+                      {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                        <option key={year} value={year}>{year}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {/* Month Selection */}
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700">Month:</label>
+                    <select
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                      className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                    >
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
+                        <option key={month} value={month}>
+                          {new Date(2024, month - 1).toLocaleString('default', { month: 'long' })}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {/* Refresh Button */}
+                  <Button
+                    onClick={() => fetchMonthlyData(selectedYear, selectedMonth, true)}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                    disabled={monthlyLoading}
+                  >
+                    <RefreshCw className={`h-4 w-4 ${monthlyLoading ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                </div>
+              </div>
+            </div>
+            
+            {/* Monthly Data Table */}
+            <div className="p-6">
+              {monthlyLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="flex items-center gap-3">
+                    <RefreshCw className="h-5 w-5 animate-spin text-blue-600" />
+                    <span className="text-gray-600">Loading monthly data...</span>
+                  </div>
+                </div>
+              ) : monthlyData.length === 0 ? (
+                <div className="text-center py-12">
+                  <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Data Available</h3>
+                  <p className="text-gray-600">No PSP data found for the selected month.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-xl border border-gray-200/60 shadow-sm bg-white">
+                  <table className="w-full">
+                    <thead className="bg-gradient-to-r from-slate-50 via-gray-50 to-slate-50 border-b border-gray-200/80">
+                      <tr>
+                        <th className="text-left py-4 px-6 font-semibold text-slate-700 text-xs uppercase tracking-wider w-12"></th>
+                        <th className="text-left py-4 px-6 font-semibold text-slate-700 text-xs uppercase tracking-wider min-w-[180px]">
+                          <div className="flex items-center gap-2">
+                            <Building className="h-4 w-4 text-slate-500" />
+                            Payment Service Provider
+                          </div>
+                        </th>
+                        <th className="text-right py-4 px-6 font-semibold text-slate-700 text-xs uppercase tracking-wider min-w-[120px]">
+                          <div className="flex items-center justify-end gap-2">
+                            <TrendingUp className="h-4 w-4 text-emerald-500" />
+                            YATIRIM
+                          </div>
+                        </th>
+                        <th className="text-right py-4 px-6 font-semibold text-slate-700 text-xs uppercase tracking-wider min-w-[120px]">
+                          <div className="flex items-center justify-end gap-2">
+                            <TrendingDown className="h-4 w-4 text-red-500" />
+                            ÇEKME
+                          </div>
+                        </th>
+                        <th className="text-right py-4 px-6 font-semibold text-slate-700 text-xs uppercase tracking-wider min-w-[120px]">
+                          <div className="flex items-center justify-end gap-2">
+                            <DollarSign className="h-4 w-4 text-slate-500" />
+                            TOPLAM
+                          </div>
+                        </th>
+                        <th className="text-right py-4 px-6 font-semibold text-slate-700 text-xs uppercase tracking-wider min-w-[120px]">
+                          <div className="flex items-center justify-end gap-2">
+                            <Activity className="h-4 w-4 text-amber-500" />
+                            KOMİSYON
+                          </div>
+                        </th>
+                        <th className="text-right py-4 px-6 font-semibold text-slate-700 text-xs uppercase tracking-wider min-w-[120px]">
+                          <div className="flex items-center justify-end gap-2">
+                            <Target className="h-4 w-4 text-blue-500" />
+                            NET
+                          </div>
+                        </th>
+                        <th className="text-right py-4 px-6 font-semibold text-slate-700 text-xs uppercase tracking-wider min-w-[140px]">
+                          <div className="flex items-center justify-end gap-2">
+                            <CreditCard className="h-4 w-4 text-purple-500" />
+                            TAHS TUTARI
+                          </div>
+                        </th>
+                        <th className="text-right py-4 px-6 font-semibold text-slate-700 text-xs uppercase tracking-wider min-w-[120px]">
+                          <div className="flex items-center justify-end gap-2">
+                            <BarChart3 className="h-4 w-4 text-indigo-500" />
+                            KASA TOP
+                          </div>
+                        </th>
+                        <th className="text-right py-4 px-6 font-semibold text-slate-700 text-xs uppercase tracking-wider min-w-[120px]">
+                          <div className="flex items-center justify-end gap-2">
+                            <RefreshCw className="h-4 w-4 text-cyan-500" />
+                            DEVİR
+                          </div>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100/80">
+                      {monthlyData.map((psp, index) => (
+                        <>
+                          <tr key={psp.psp} className={`group hover:bg-slate-50/80 transition-all duration-200 ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}>
+                            <td className="py-5 px-6">
+                              <button
+                                onClick={() => togglePSPExpansion(psp.psp)}
+                                className="p-2 hover:bg-slate-200/60 rounded-lg transition-all duration-200 group-hover:bg-slate-200/80"
+                                title={expandedPSPs.has(psp.psp) ? "Collapse daily details" : "Expand daily details"}
+                              >
+                                {expandedPSPs.has(psp.psp) ? (
+                                  <ChevronDown className="h-4 w-4 text-slate-600" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4 text-slate-600" />
+                                )}
+                              </button>
+                            </td>
+                            <td className="py-5 px-6">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg flex items-center justify-center shadow-sm">
+                                  <Building className="h-5 w-5 text-blue-600" />
+                                </div>
+                                <div>
+                                  <div className="font-semibold text-slate-900 text-sm">{psp.psp}</div>
+                                  <div className="text-xs text-slate-500">{psp.transaction_count || 0} transactions</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-5 px-6 text-right">
+                              <div className="flex flex-col items-end">
+                                <span className="font-mono text-sm font-semibold text-emerald-700">
+                                  {formatCurrency(psp.yatimim || 0)}
+                                </span>
+                                <span className="text-xs text-emerald-600/70">Deposits</span>
+                              </div>
+                            </td>
+                            <td className="py-5 px-6 text-right">
+                              <div className="flex flex-col items-end">
+                                <span className="font-mono text-sm font-semibold text-red-700">
+                                  {formatCurrency(psp.cekme || 0)}
+                                </span>
+                                <span className="text-xs text-red-600/70">Withdrawals</span>
+                              </div>
+                            </td>
+                            <td className="py-5 px-6 text-right">
+                              <div className="flex flex-col items-end">
+                                <span className="font-mono text-sm font-bold text-slate-900">
+                                  {formatCurrency(psp.toplam || 0)}
+                                </span>
+                                <span className="text-xs text-slate-600/70">Net Total</span>
+                              </div>
+                            </td>
+                            <td className="py-5 px-6 text-right">
+                              <div className="flex flex-col items-end">
+                                <span className="font-mono text-sm font-semibold text-amber-700">
+                                  {formatCurrency(psp.komisyon || 0)}
+                                </span>
+                                <span className="text-xs text-amber-600/70">Commission</span>
+                              </div>
+                            </td>
+                            <td className="py-5 px-6 text-right">
+                              <div className="flex flex-col items-end">
+                                <span className="font-mono text-sm font-semibold text-blue-700">
+                                  {formatCurrency(psp.net || 0)}
+                                </span>
+                                <span className="text-xs text-blue-600/70">Net Amount</span>
+                              </div>
+                            </td>
+                            <td className="py-5 px-6 text-right">
+                              <div className="flex flex-col items-end">
+                                <span className="font-mono text-sm font-semibold text-purple-700">
+                                  {formatCurrency(psp.tahs_tutari || 0)}
+                                </span>
+                                <span className="text-xs text-purple-600/70">Allocation</span>
+                              </div>
+                            </td>
+                            <td className="py-5 px-6 text-right">
+                              <div className="flex flex-col items-end">
+                                <span className="font-mono text-sm font-semibold text-indigo-700">
+                                  {formatCurrency(psp.kasa_top || 0)}
+                                </span>
+                                <span className="text-xs text-indigo-600/70">Revenue</span>
+                              </div>
+                            </td>
+                            <td className="py-5 px-6 text-right">
+                              <div className="flex flex-col items-end">
+                                <span className={`font-mono text-sm font-semibold ${(psp.devir || 0) >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                                  {formatCurrency(psp.devir || 0)}
+                                </span>
+                                <span className={`text-xs ${(psp.devir || 0) >= 0 ? 'text-emerald-600/70' : 'text-red-600/70'}`}>
+                                  Rollover
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                          
+                          {/* Daily Breakdown Row */}
+                          {expandedPSPs.has(psp.psp) && psp.daily_breakdown && psp.daily_breakdown.length > 0 && (
+                            <tr key={`${psp.psp}-daily`} className="bg-gradient-to-r from-slate-50/50 to-blue-50/30">
+                              <td colSpan={10} className="py-6 px-6">
+                                <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200/60 shadow-lg shadow-slate-200/20">
+                                  <div className="px-6 py-4 border-b border-slate-200/60 bg-gradient-to-r from-slate-50/80 to-blue-50/40 rounded-t-xl">
+                                    <h4 className="text-sm font-bold text-slate-800 flex items-center gap-3">
+                                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                                        <Calendar className="h-4 w-4 text-white" />
+                                      </div>
+                                      Daily Transaction Breakdown - {psp.psp}
+                                      <span className="ml-auto text-xs font-medium text-slate-600 bg-slate-200/60 px-3 py-1 rounded-full">
+                                        {psp.daily_breakdown.length} days
+                                      </span>
+                                    </h4>
+                                  </div>
+                                  <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                      <thead className="bg-gradient-to-r from-slate-50 to-slate-100/50">
+                                        <tr>
+                                          <th className="text-left py-3 px-4 font-semibold text-slate-700 text-xs uppercase tracking-wider">Date</th>
+                                          <th className="text-right py-3 px-4 font-semibold text-slate-700 text-xs uppercase tracking-wider">YATIRIM</th>
+                                          <th className="text-right py-3 px-4 font-semibold text-slate-700 text-xs uppercase tracking-wider">ÇEKME</th>
+                                          <th className="text-right py-3 px-4 font-semibold text-slate-700 text-xs uppercase tracking-wider">TOPLAM</th>
+                                          <th className="text-right py-3 px-4 font-semibold text-slate-700 text-xs uppercase tracking-wider">KOMİSYON</th>
+                                          <th className="text-right py-3 px-4 font-semibold text-slate-700 text-xs uppercase tracking-wider">NET</th>
+                                          <th className="text-right py-3 px-4 font-semibold text-slate-700 text-xs uppercase tracking-wider">TAHS TUTARI</th>
+                                          <th className="text-right py-3 px-4 font-semibold text-slate-700 text-xs uppercase tracking-wider">KASA TOP</th>
+                                          <th className="text-right py-3 px-4 font-semibold text-slate-700 text-xs uppercase tracking-wider">DEVİR</th>
+                                          <th className="text-center py-3 px-4 font-semibold text-slate-700 text-xs uppercase tracking-wider">Tx Count</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-slate-100/60">
+                                        {psp.daily_breakdown.map((daily: any, dailyIndex: number) => (
+                                          <tr key={daily.date} className={`hover:bg-slate-50/50 transition-colors duration-150 ${dailyIndex % 2 === 0 ? 'bg-white/50' : 'bg-slate-50/30'}`}>
+                                            <td className="py-3 px-4">
+                                              <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                                                <span className="font-medium text-slate-800 text-sm">
+                                                  {new Date(daily.date).toLocaleDateString('tr-TR')}
+                                                </span>
+                                              </div>
+                                            </td>
+                                            <td className="py-3 px-4 text-right">
+                                              <span className="font-mono text-sm font-semibold text-emerald-700">
+                                                {formatCurrency(daily.yatimim || 0)}
+                                              </span>
+                                            </td>
+                                            <td className="py-3 px-4 text-right">
+                                              <span className="font-mono text-sm font-semibold text-red-700">
+                                                {formatCurrency(daily.cekme || 0)}
+                                              </span>
+                                            </td>
+                                            <td className="py-3 px-4 text-right">
+                                              <span className="font-mono text-sm font-bold text-slate-800">
+                                                {formatCurrency(daily.toplam || 0)}
+                                              </span>
+                                            </td>
+                                            <td className="py-3 px-4 text-right">
+                                              <span className="font-mono text-sm font-semibold text-amber-700">
+                                                {formatCurrency(daily.komisyon || 0)}
+                                              </span>
+                                            </td>
+                                            <td className="py-3 px-4 text-right">
+                                              <span className="font-mono text-sm font-semibold text-blue-700">
+                                                {formatCurrency(daily.net || 0)}
+                                              </span>
+                                            </td>
+                                            <td className="py-3 px-4 text-right">
+                                              <span className="font-mono text-sm font-semibold text-purple-700">
+                                                {formatCurrency(daily.tahs_tutari || 0)}
+                                              </span>
+                                            </td>
+                                            <td className="py-3 px-4 text-right">
+                                              <span className="font-mono text-sm font-semibold text-indigo-700">
+                                                {formatCurrency(daily.kasa_top || 0)}
+                                              </span>
+                                            </td>
+                                            <td className="py-3 px-4 text-right">
+                                              <span className={`font-mono text-sm font-semibold ${(daily.devir || 0) >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                                                {formatCurrency(daily.devir || 0)}
+                                              </span>
+                                            </td>
+                                            <td className="py-3 px-4 text-center">
+                                              <span className="inline-flex items-center justify-center w-6 h-6 bg-slate-100 rounded-full text-xs font-medium text-slate-700">
+                                                {daily.transaction_count || 0}
+                                              </span>
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                      <tfoot className="bg-gradient-to-r from-slate-100 to-slate-200/60 border-t border-slate-200">
+                                        <tr className="font-bold">
+                                          <td className="py-4 px-4 text-slate-800">
+                                            <div className="flex items-center gap-2">
+                                              <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
+                                              Daily Totals
+                                            </div>
+                                          </td>
+                                          <td className="py-4 px-4 text-right font-mono text-emerald-800 text-sm">
+                                            {formatCurrency(psp.daily_breakdown.reduce((sum: number, daily: any) => sum + (daily.yatimim || 0), 0))}
+                                          </td>
+                                          <td className="py-4 px-4 text-right font-mono text-red-800 text-sm">
+                                            {formatCurrency(psp.daily_breakdown.reduce((sum: number, daily: any) => sum + (daily.cekme || 0), 0))}
+                                          </td>
+                                          <td className="py-4 px-4 text-right font-mono text-slate-800 text-sm">
+                                            {formatCurrency(psp.daily_breakdown.reduce((sum: number, daily: any) => sum + (daily.toplam || 0), 0))}
+                                          </td>
+                                          <td className="py-4 px-4 text-right font-mono text-amber-800 text-sm">
+                                            {formatCurrency(psp.daily_breakdown.reduce((sum: number, daily: any) => sum + (daily.komisyon || 0), 0))}
+                                          </td>
+                                          <td className="py-4 px-4 text-right font-mono text-blue-800 text-sm">
+                                            {formatCurrency(psp.daily_breakdown.reduce((sum: number, daily: any) => sum + (daily.net || 0), 0))}
+                                          </td>
+                                          <td className="py-4 px-4 text-right font-mono text-purple-800 text-sm">
+                                            {formatCurrency(psp.daily_breakdown.reduce((sum: number, daily: any) => sum + (daily.tahs_tutari || 0), 0))}
+                                          </td>
+                                          <td className="py-4 px-4 text-right font-mono text-indigo-800 text-sm">
+                                            {formatCurrency(psp.daily_breakdown.reduce((sum: number, daily: any) => sum + (daily.kasa_top || 0), 0))}
+                                          </td>
+                                          <td className={`py-4 px-4 text-right font-mono text-sm ${psp.daily_breakdown.reduce((sum: number, daily: any) => sum + (daily.devir || 0), 0) >= 0 ? 'text-emerald-800' : 'text-red-800'}`}>
+                                            {formatCurrency(psp.daily_breakdown.reduce((sum: number, daily: any) => sum + (daily.devir || 0), 0))}
+                                          </td>
+                                          <td className="py-4 px-4 text-center">
+                                            <span className="inline-flex items-center justify-center w-8 h-8 bg-slate-300 rounded-full text-xs font-bold text-slate-800">
+                                              {psp.daily_breakdown.reduce((sum: number, daily: any) => sum + (daily.transaction_count || 0), 0)}
+                                            </span>
+                                          </td>
+                                        </tr>
+                                      </tfoot>
+                                    </table>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </>
+                      ))}
+                    </tbody>
+                    <tfoot className="bg-gradient-to-r from-slate-100 via-slate-200/80 to-slate-100 border-t-2 border-slate-300">
+                      <tr className="font-bold">
+                        <td className="py-6 px-6"></td>
+                        <td className="py-6 px-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-slate-600 to-slate-700 rounded-lg flex items-center justify-center shadow-lg">
+                              <BarChart3 className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                              <div className="text-slate-900 text-sm font-bold">MONTHLY TOTALS</div>
+                              <div className="text-xs text-slate-600">{monthlyData.length} PSPs</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-6 px-6 text-right">
+                          <div className="flex flex-col items-end">
+                            <span className="font-mono text-base font-bold text-emerald-800">
+                              {formatCurrency(monthlyData.reduce((sum, psp) => sum + (psp.yatimim || 0), 0))}
+                            </span>
+                            <span className="text-xs text-emerald-700/70 font-medium">Total Deposits</span>
+                          </div>
+                        </td>
+                        <td className="py-6 px-6 text-right">
+                          <div className="flex flex-col items-end">
+                            <span className="font-mono text-base font-bold text-red-800">
+                              {formatCurrency(monthlyData.reduce((sum, psp) => sum + (psp.cekme || 0), 0))}
+                            </span>
+                            <span className="text-xs text-red-700/70 font-medium">Total Withdrawals</span>
+                          </div>
+                        </td>
+                        <td className="py-6 px-6 text-right">
+                          <div className="flex flex-col items-end">
+                            <span className="font-mono text-base font-bold text-slate-900">
+                              {formatCurrency(monthlyData.reduce((sum, psp) => sum + (psp.toplam || 0), 0))}
+                            </span>
+                            <span className="text-xs text-slate-700/70 font-medium">Net Total</span>
+                          </div>
+                        </td>
+                        <td className="py-6 px-6 text-right">
+                          <div className="flex flex-col items-end">
+                            <span className="font-mono text-base font-bold text-amber-800">
+                              {formatCurrency(monthlyData.reduce((sum, psp) => sum + (psp.komisyon || 0), 0))}
+                            </span>
+                            <span className="text-xs text-amber-700/70 font-medium">Total Commission</span>
+                          </div>
+                        </td>
+                        <td className="py-6 px-6 text-right">
+                          <div className="flex flex-col items-end">
+                            <span className="font-mono text-base font-bold text-blue-800">
+                              {formatCurrency(monthlyData.reduce((sum, psp) => sum + (psp.net || 0), 0))}
+                            </span>
+                            <span className="text-xs text-blue-700/70 font-medium">Net Amount</span>
+                          </div>
+                        </td>
+                        <td className="py-6 px-6 text-right">
+                          <div className="flex flex-col items-end">
+                            <span className="font-mono text-base font-bold text-purple-800">
+                              {formatCurrency(monthlyData.reduce((sum, psp) => sum + (psp.tahs_tutari || 0), 0))}
+                            </span>
+                            <span className="text-xs text-purple-700/70 font-medium">Total Allocation</span>
+                          </div>
+                        </td>
+                        <td className="py-6 px-6 text-right">
+                          <div className="flex flex-col items-end">
+                            <span className="font-mono text-base font-bold text-indigo-800">
+                              {formatCurrency(monthlyData.reduce((sum, psp) => sum + (psp.kasa_top || 0), 0))}
+                            </span>
+                            <span className="text-xs text-indigo-700/70 font-medium">Total Revenue</span>
+                          </div>
+                        </td>
+                        <td className="py-6 px-6 text-right">
+                          <div className="flex flex-col items-end">
+                            <span className={`font-mono text-base font-bold ${monthlyData.reduce((sum, psp) => sum + (psp.devir || 0), 0) >= 0 ? 'text-emerald-800' : 'text-red-800'}`}>
+                              {formatCurrency(monthlyData.reduce((sum, psp) => sum + (psp.devir || 0), 0))}
+                            </span>
+                            <span className={`text-xs font-medium ${monthlyData.reduce((sum, psp) => sum + (psp.devir || 0), 0) >= 0 ? 'text-emerald-700/70' : 'text-red-700/70'}`}>
+                              Total Rollover
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </TabsContent>
 
         {/* Analytics Tab Content */}
         <TabsContent value="analytics" className="mt-8 space-y-8">

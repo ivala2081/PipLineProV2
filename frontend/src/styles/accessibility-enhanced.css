@@ -566,27 +566,8 @@ textarea:focus-visible,
   }
 }
 
-/* === DARK MODE ACCESSIBILITY (if needed in future) === */
-@media (prefers-color-scheme: dark) {
-  .contrast-enhanced {
-    color: #f9fafb;
-    background: #111827;
-  }
-  
-  .contrast-enhanced button {
-    background: #f9fafb;
-    color: #111827;
-    border-color: #e5e7eb;
-  }
-  
-  .contrast-enhanced input,
-  .contrast-enhanced select,
-  .contrast-enhanced textarea {
-    border-color: #e5e7eb;
-    background: #111827;
-    color: #f9fafb;
-  }
-}
+/* === LIGHT THEME ONLY === */
+/* Dark mode support removed to maintain consistent business appearance */
 
 /* === PROFESSIONAL ACCESSIBILITY UTILITIES === */
 .no-js .js-only {
