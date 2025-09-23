@@ -1,5 +1,6 @@
 import * as React from "react"
 import * as SelectPrimitive from "@radix-ui/react-select"
+import { cva, type VariantProps } from "class-variance-authority"
 import { Check, ChevronDown, ChevronUp } from "lucide-react"
 import { cn } from "../../lib/utils"
 
@@ -9,16 +10,46 @@ const SelectGroup = SelectPrimitive.Group
 
 const SelectValue = SelectPrimitive.Value
 
+const selectTriggerVariants = cva(
+  "flex w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 transition-all duration-200",
+  {
+    variants: {
+      variant: {
+        default: "border-input hover:border-input/80 focus:ring-ring",
+        success: "border-green-300 bg-green-50 hover:border-green-400 focus:ring-green-500",
+        error: "border-red-300 bg-red-50 hover:border-red-400 focus:ring-red-500",
+        warning: "border-yellow-300 bg-yellow-50 hover:border-yellow-400 focus:ring-yellow-500",
+        info: "border-blue-300 bg-blue-50 hover:border-blue-400 focus:ring-blue-500",
+        ghost: "border-transparent bg-transparent hover:bg-gray-50 focus:ring-gray-500",
+        filled: "border-gray-200 bg-gray-50 hover:bg-gray-100 focus:ring-gray-500",
+        gradient: "border-transparent bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 focus:ring-blue-500",
+      },
+      size: {
+        default: "h-10",
+        sm: "h-8 px-2 text-xs",
+        lg: "h-12 px-4 text-base",
+        xl: "h-14 px-6 text-lg",
+        compact: "h-8 px-2 text-sm",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
+)
+
+export interface SelectTriggerProps
+  extends React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>,
+    VariantProps<typeof selectTriggerVariants> {}
+
 const SelectTrigger = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>
->(({ className, children, ...props }, ref) => (
+  SelectTriggerProps
+>(({ className, variant, size, children, ...props }, ref) => (
   <SelectPrimitive.Trigger
     ref={ref}
-    className={cn(
-      "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
-      className
-    )}
+    className={cn(selectTriggerVariants({ variant, size, className }))}
     {...props}
   >
     {children}

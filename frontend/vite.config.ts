@@ -1,10 +1,19 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    visualizer({
+      filename: 'dist/bundle-analysis.html',
+      open: true,
+      gzipSize: true,
+      brotliSize: true,
+    }),
+  ],
 
   resolve: {
     alias: {
@@ -37,9 +46,23 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false, // Disable sourcemaps in production for better performance
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true, // Remove console.log in production
+        drop_debugger: true,
+      },
+    },
     rollupOptions: {
       output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+          ui: ['@headlessui/react', '@heroicons/react'],
+          charts: ['recharts', 'chart.js'],
+          utils: ['date-fns', 'clsx'],
+        },
         chunkFileNames: 'js/[name]-[hash].js',
         assetFileNames: (assetInfo) => {
           const info = assetInfo.name.split('.');
@@ -54,7 +77,8 @@ export default defineConfig({
         },
       },
     },
-    chunkSizeWarningLimit: 1000, // Increase warning limit for better chunking
+    chunkSizeWarningLimit: 1000,
+    target: 'esnext', // Target modern browsers for better performance
   },
   optimizeDeps: {
     include: ['react', 'react-dom', 'react-router-dom'],

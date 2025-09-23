@@ -86,6 +86,18 @@ def main():
         
         print("✅ Application created successfully")
         
+        # Initialize database optimization
+        with app.app_context():
+            try:
+                from app.services.database_optimization_service import DatabaseOptimizationService
+                result = DatabaseOptimizationService.create_performance_indexes()
+                if isinstance(result, int):
+                    app.logger.info(f"Database optimization completed: {result} indexes created")
+                else:
+                    app.logger.info("Database optimization completed")
+            except Exception as e:
+                app.logger.error(f"Failed to initialize database optimization: {e}")
+        
         # Database initialization - controlled by environment variable
         # Set INIT_DB=true to enable database initialization (development only)
         if os.environ.get('INIT_DB', 'false').lower() == 'true' and os.environ.get('FLASK_ENV') != 'production':

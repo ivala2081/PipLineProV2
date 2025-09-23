@@ -3,8 +3,8 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "../../lib/utils"
 
-const inputVariants = cva(
-  "flex w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200",
+const textareaVariants = cva(
+  "flex w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200",
   {
     variants: {
       variant: {
@@ -18,11 +18,11 @@ const inputVariants = cva(
         gradient: "border-transparent bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 focus-visible:ring-blue-500",
       },
       size: {
-        default: "h-10",
-        sm: "h-8 px-2 text-xs",
-        lg: "h-12 px-4 text-base",
-        xl: "h-14 px-6 text-lg",
-        compact: "h-8 px-2 text-sm",
+        default: "min-h-[80px]",
+        sm: "min-h-[60px] px-2 py-1 text-xs",
+        lg: "min-h-[120px] px-4 py-3 text-base",
+        xl: "min-h-[160px] px-6 py-4 text-lg",
+        compact: "min-h-[60px] px-2 py-1 text-sm",
       },
     },
     defaultVariants: {
@@ -32,22 +32,21 @@ const inputVariants = cva(
   }
 )
 
-export interface InputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'>,
-    VariantProps<typeof inputVariants> {}
+export interface TextareaProps
+  extends React.TextareaHTMLAttributes<HTMLTextAreaElement>,
+    VariantProps<typeof textareaVariants> {}
 
-const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, variant, size, type, ...props }, ref) => {
+const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+  ({ className, variant, size, ...props }, ref) => {
     return (
-      <input
-        type={type}
-        className={cn(inputVariants({ variant, size, className }))}
+      <textarea
+        className={cn(textareaVariants({ variant, size, className }))}
         ref={ref}
         {...props}
       />
     )
   }
 )
-Input.displayName = "Input"
+Textarea.displayName = "Textarea"
 
-export { Input }
+export { Textarea }

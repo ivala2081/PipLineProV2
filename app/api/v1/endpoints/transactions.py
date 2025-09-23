@@ -10,8 +10,13 @@ from app.models.financial import PspTrack
 from app import db
 from decimal import Decimal, InvalidOperation
 import logging
+from app.services.advanced_cache_service import get_cache_service, cached
+from app.services.query_optimization_service import monitor_query_performance
+from app.utils.structured_logger import get_structured_logger
 
 logger = logging.getLogger(__name__)
+api_logger = get_structured_logger('app.api.transactions')
+cache_service = get_cache_service()
 
 transactions_api = Blueprint('transactions_api', __name__)
 
@@ -354,9 +359,17 @@ def get_clients():
 @transactions_api.route("/psp_summary_stats")
 @login_required
 def get_psp_summary_stats():
-    """Get PSP summary statistics including allocations"""
+    """Get PSP summary statistics including allocations with caching"""
     try:
+        api_logger.log_api_request("/psp_summary_stats", "GET", current_user.id)
         logger.info("Starting PSP summary stats query...")
+        
+        # Check cache first
+        cache_key = f"psp_summary:{current_user.id}"
+        cached_result = cache_service.get(cache_key)
+        if cached_result is not None:
+            api_logger.log_cache_operation("get", cache_key, hit=True)
+            return jsonify(cached_result), 200
         
         # Get PSP statistics from actual transactions using TRY amounts
         # Calculate deposits and withdrawals separately, then compute net total
@@ -455,6 +468,10 @@ def get_psp_summary_stats():
         
         logger.info(f"PSP summary stats completed successfully, returning {len(psp_data)} PSPs")
         
+        # Cache the result
+        cache_service.set(cache_key, psp_data, ttl=300)
+        api_logger.log_cache_operation("set", cache_key, hit=False)
+        
         # Invalidate cache to ensure fresh data
         try:
             from app.services.query_service import QueryService
@@ -479,22 +496,33 @@ def get_psp_summary_stats():
 @transactions_api.route("/psp_monthly_stats")
 @login_required
 def get_psp_monthly_stats():
-    """Get PSP monthly statistics with date filtering"""
+    """Get PSP monthly statistics with date filtering and caching"""
     try:
+        api_logger.log_api_request("/psp_monthly_stats", "GET", current_user.id)
         logger.info("Starting PSP monthly stats query...")
         
-        # Get query parameters
+        # Get query parameters with validation
         year = request.args.get('year', datetime.now().year, type=int)
         month = request.args.get('month', datetime.now().month, type=int)
+        
+        # Validate year and month
+        if not (1 <= month <= 12):
+            return jsonify({'error': 'Invalid month. Must be between 1 and 12.'}), 400
+        if year < 2020 or year > 2030:
+            return jsonify({'error': 'Invalid year. Must be between 2020 and 2030.'}), 400
         
         logger.info(f"Fetching monthly stats for {year}-{month:02d}")
         
         # Calculate date range for the month
-        start_date = datetime(year, month, 1).date()
-        if month == 12:
-            end_date = datetime(year + 1, 1, 1).date() - timedelta(days=1)
-        else:
-            end_date = datetime(year, month + 1, 1).date() - timedelta(days=1)
+        try:
+            start_date = datetime(year, month, 1).date()
+            if month == 12:
+                end_date = datetime(year + 1, 1, 1).date() - timedelta(days=1)
+            else:
+                end_date = datetime(year, month + 1, 1).date() - timedelta(days=1)
+        except ValueError as e:
+            logger.error(f"Invalid date range: {e}")
+            return jsonify({'error': 'Invalid date range'}), 400
         
         logger.info(f"Date range: {start_date} to {end_date}")
         
@@ -536,14 +564,21 @@ def get_psp_monthly_stats():
         ).group_by(Transaction.psp).all()
         
         # Get allocations for the month from PSPAllocation table
-        from app.models.financial import PSPAllocation
-        psp_allocations = db.session.query(
-            PSPAllocation.psp_name,
-            func.sum(PSPAllocation.allocation_amount).label('total_allocations')
-        ).filter(
-            PSPAllocation.date >= start_date,
-            PSPAllocation.date <= end_date
-        ).group_by(PSPAllocation.psp_name).all()
+        try:
+            from app.models.financial import PSPAllocation
+            psp_allocations = db.session.query(
+                PSPAllocation.psp_name,
+                func.sum(PSPAllocation.allocation_amount).label('total_allocations')
+            ).filter(
+                PSPAllocation.date >= start_date,
+                PSPAllocation.date <= end_date
+            ).group_by(PSPAllocation.psp_name).all()
+        except ImportError as e:
+            logger.warning(f"PSPAllocation import failed: {e}. Using empty allocations.")
+            psp_allocations = []
+        except Exception as e:
+            logger.warning(f"Error querying PSPAllocation: {e}. Using empty allocations.")
+            psp_allocations = []
         
         # Create lookup dictionaries
         deposits_dict = {psp.psp: float(psp.total_deposits_try) if psp.total_deposits_try else 0.0 for psp in psp_deposits}

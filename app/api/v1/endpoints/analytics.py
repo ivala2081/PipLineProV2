@@ -1924,19 +1924,34 @@ def get_dashboard_stats_optimized(start_date, end_date):
             ).first()
         
         # Calculate revenue analytics (daily, weekly, monthly, annual)
-        from app.models.financial import PSPAllocation
+        try:
+            from app.models.financial import PSPAllocation
+        except ImportError as e:
+            logger.warning(f"PSPAllocation import failed: {e}. Skipping allocation calculations.")
+            PSPAllocation = None
         
         # Get current date
         today = datetime.now().date()
         
-        # Calculate daily revenue (today's allocations)
-        today_start = datetime.combine(today, datetime.min.time()).replace(tzinfo=timezone.utc)
-        today_end = datetime.combine(today, datetime.max.time()).replace(tzinfo=timezone.utc)
-        daily_allocations = PSPAllocation.query.filter(
-            PSPAllocation.date >= today_start.date(),
-            PSPAllocation.date <= today_end.date()
-        ).all()
-        daily_revenue = sum(float(allocation.allocation_amount) for allocation in daily_allocations)
+        # Initialize revenue variables
+        daily_revenue = 0.0
+        weekly_revenue = 0.0
+        monthly_revenue = 0.0
+        annual_revenue = 0.0
+        daily_revenue_trend = 0.0
+        weekly_revenue_trend = 0.0
+        monthly_revenue_trend = 0.0
+        
+        # Calculate revenue analytics based on PSPAllocation availability
+        if PSPAllocation:
+            # Calculate daily revenue (today's allocations)
+            today_start = datetime.combine(today, datetime.min.time()).replace(tzinfo=timezone.utc)
+            today_end = datetime.combine(today, datetime.max.time()).replace(tzinfo=timezone.utc)
+            daily_allocations = PSPAllocation.query.filter(
+                PSPAllocation.date >= today_start.date(),
+                PSPAllocation.date <= today_end.date()
+            ).all()
+            daily_revenue = sum(float(allocation.allocation_amount) for allocation in daily_allocations)
         
         # Calculate weekly revenue (this week's allocations)
         week_start = today - timedelta(days=today.weekday())

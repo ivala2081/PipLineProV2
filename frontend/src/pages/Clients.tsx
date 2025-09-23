@@ -85,6 +85,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Textarea } from '../components/ui/textarea';
+import { Label } from '../components/ui/label';
+import { FormField } from '../components/ui/form-field';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import StandardMetricsCard from '../components/StandardMetricsCard';
 import MetricCard from '../components/MetricCard';
@@ -2537,14 +2541,16 @@ export default function Clients() {
             
             {/* Enhanced Action Buttons */}
             <div className='flex items-center gap-3'>
-              <button
+              <Button
                 onClick={() => fetchDailySummary(dateGroup.date)}
                 disabled={dailySummaryLoading}
-                className='group/btn inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg hover:scale-105 transition-all duration-200 ease-out disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100'
+                variant="gradient"
+                size="sm"
+                className="group/btn inline-flex items-center gap-2"
               >
                 <BarChart className='h-4 w-4 group-hover/btn:scale-110 transition-transform duration-200 ease-out' />
                 {dailySummaryLoading && selectedDate === dateGroup.date ? 'Loading...' : 'Summary'}
-              </button>
+              </Button>
               
               {/* Enhanced Transaction Counter */}
               <div className='bg-white/80 backdrop-blur-sm px-4 py-2 rounded-lg border border-gray-200/60 shadow-sm group-hover:shadow-md group-hover:bg-white transition-all duration-200 ease-out'>
@@ -2640,27 +2646,33 @@ export default function Clients() {
                   </td>
                   <td className='px-6 py-4 whitespace-nowrap text-center border-b border-gray-100'>
                     <div className='flex items-center justify-center gap-1'>
-                      <button
+                      <Button
                         onClick={() => handleViewTransaction(transaction)}
-                        className='text-gray-600 hover:text-gray-900 p-1 hover:bg-gray-50 rounded transition-colors duration-200'
+                        variant="ghost"
+                        size="icon-sm"
+                        className='text-gray-600 hover:text-gray-900'
                         title='View Details'
                       >
                         <Eye className='h-3 w-3' />
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => handleEditTransaction(transaction)}
-                        className='text-green-600 hover:text-green-900 p-1 hover:bg-green-50 rounded transition-colors duration-200'
+                        variant="ghost"
+                        size="icon-sm"
+                        className='text-green-600 hover:text-green-900'
                         title='Edit Transaction'
                       >
                         <Edit className='h-3 w-3' />
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => handleDeleteTransaction(transaction)}
-                        className='text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded transition-colors duration-200'
+                        variant="ghost"
+                        size="icon-sm"
+                        className='text-red-600 hover:text-red-900'
                         title='Delete Transaction'
                       >
                         <Trash2 className='h-3 w-3' />
-                      </button>
+                      </Button>
                     </div>
                   </td>
                 </tr>
@@ -3272,39 +3284,46 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
                         
                         {expandedFilterSections.basic && (
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pl-4">
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium text-gray-700">Search</label>
+                            <FormField label="Search">
                               <Input
                                 placeholder="Search transactions..."
+                                variant="default"
+                                size="default"
                                 value={filters.search}
                                 onChange={(e) => handleFilterChange('search', e.target.value)}
                               />
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium text-gray-700">Category</label>
-                <select
+                            </FormField>
+                            <FormField label="Category">
+                              <Select
                   value={filters.category}
-                                onChange={e => handleFilterChange('category', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-                >
-                  <option value="">All Categories</option>
-                                <option value="DEP">Deposit (DEP)</option>
-                                <option value="WD">Withdrawal (WD)</option>
-                </select>
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium text-gray-700">Status</label>
-                              <select
-                                value={filters.status}
-                                onChange={e => handleFilterChange('status', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                                onValueChange={value => handleFilterChange('category', value)}
                               >
-                                <option value="">All Status</option>
-                                <option value="completed">Completed</option>
-                                <option value="pending">Pending</option>
-                                <option value="failed">Failed</option>
-                              </select>
-                            </div>
+                                <SelectTrigger variant="default" size="default">
+                                  <SelectValue placeholder="All Categories" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="">All Categories</SelectItem>
+                                  <SelectItem value="DEP">Deposit (DEP)</SelectItem>
+                                  <SelectItem value="WD">Withdrawal (WD)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </FormField>
+                            <FormField label="Status">
+                              <Select
+                                value={filters.status}
+                                onValueChange={value => handleFilterChange('status', value)}
+                              >
+                                <SelectTrigger variant="default" size="default">
+                                  <SelectValue placeholder="All Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="">All Status</SelectItem>
+                                  <SelectItem value="completed">Completed</SelectItem>
+                                  <SelectItem value="pending">Pending</SelectItem>
+                                  <SelectItem value="failed">Failed</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </FormField>
                           </div>
                         )}
                       </div>
@@ -3333,58 +3352,70 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
                         
                         {expandedFilterSections.advanced && (
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pl-4">
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium text-gray-700">PSP</label>
-                              <select
+                            <FormField label="PSP">
+                              <Select
                                 value={filters.psp}
-                                onChange={e => handleFilterChange('psp', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                                onValueChange={value => handleFilterChange('psp', value)}
                               >
-                                <option value="">All PSPs</option>
+                                <SelectTrigger variant="default" size="default">
+                                  <SelectValue placeholder="All PSPs" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="">All PSPs</SelectItem>
                                 {dropdownOptions.psps.map((psp: string) => (
-                                  <option key={psp} value={psp}>{psp}</option>
-                                ))}
-                              </select>
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium text-gray-700">Company</label>
-                              <select
+                                    <SelectItem key={psp} value={psp}>{psp}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </FormField>
+                            <FormField label="Company">
+                              <Select
                                 value={filters.company}
-                                onChange={e => handleFilterChange('company', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                                onValueChange={value => handleFilterChange('company', value)}
                               >
-                                <option value="">All Companies</option>
+                                <SelectTrigger variant="default" size="default">
+                                  <SelectValue placeholder="All Companies" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="">All Companies</SelectItem>
                                 {dropdownOptions.companies.map((company: string) => (
-                                  <option key={company} value={company}>{company}</option>
-                                ))}
-                              </select>
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium text-gray-700">Payment Method</label>
-                              <select
+                                    <SelectItem key={company} value={company}>{company}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </FormField>
+                            <FormField label="Payment Method">
+                              <Select
                                 value={filters.payment_method}
-                                onChange={e => handleFilterChange('payment_method', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                                onValueChange={value => handleFilterChange('payment_method', value)}
                               >
-                                <option value="">All Methods</option>
+                                <SelectTrigger variant="default" size="default">
+                                  <SelectValue placeholder="All Methods" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="">All Methods</SelectItem>
                                 {dropdownOptions.payment_methods.map((method: string) => (
-                                  <option key={method} value={method}>{method}</option>
-                                ))}
-                              </select>
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium text-gray-700">Currency</label>
-                              <select
+                                    <SelectItem key={method} value={method}>{method}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </FormField>
+                            <FormField label="Currency">
+                              <Select
                                 value={filters.currency}
-                                onChange={e => handleFilterChange('currency', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                                onValueChange={value => handleFilterChange('currency', value)}
                               >
-                                <option value="">All Currencies</option>
+                                <SelectTrigger variant="default" size="default">
+                                  <SelectValue placeholder="All Currencies" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="">All Currencies</SelectItem>
                                 {dropdownOptions.currencies.map((currency: string) => (
-                                  <option key={currency} value={currency}>{currency}</option>
+                                    <SelectItem key={currency} value={currency}>{currency}</SelectItem>
                                 ))}
-                              </select>
-                            </div>
+                                </SelectContent>
+                              </Select>
+                            </FormField>
                           </div>
                         )}
                       </div>
@@ -3477,47 +3508,55 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
                         
                         {expandedFilterSections.dates && (
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pl-4">
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium text-gray-700">From Date</label>
+                            <FormField label="From Date">
                               <Input
                                 type="date"
+                                variant="default"
+                                size="default"
                                 value={filters.date_from}
                                 onChange={(e) => handleFilterChange('date_from', e.target.value)}
                               />
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium text-gray-700">To Date</label>
+                            </FormField>
+                            <FormField label="To Date">
                               <Input
                                 type="date"
+                                variant="default"
+                                size="default"
                                 value={filters.date_to}
                                 onChange={(e) => handleFilterChange('date_to', e.target.value)}
                               />
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium text-gray-700">Sort By</label>
-                              <select
+                            </FormField>
+                            <FormField label="Sort By">
+                              <Select
                                 value={filters.sort_by}
-                                onChange={e => handleFilterChange('sort_by', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                                onValueChange={value => handleFilterChange('sort_by', value)}
                               >
-                                <option value="created_at">Date Created</option>
-                                <option value="amount">Amount</option>
-                                <option value="commission">Commission</option>
-                                <option value="client_name">Client Name</option>
-                                <option value="psp">PSP</option>
-                              </select>
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium text-gray-700">Sort Order</label>
-                              <select
+                                <SelectTrigger variant="default" size="default">
+                                  <SelectValue placeholder="Sort By" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="created_at">Date Created</SelectItem>
+                                  <SelectItem value="amount">Amount</SelectItem>
+                                  <SelectItem value="commission">Commission</SelectItem>
+                                  <SelectItem value="client_name">Client Name</SelectItem>
+                                  <SelectItem value="psp">PSP</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </FormField>
+                            <FormField label="Sort Order">
+                              <Select
                                 value={filters.sort_order}
-                                onChange={e => handleFilterChange('sort_order', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                                onValueChange={value => handleFilterChange('sort_order', value)}
                               >
-                                <option value="desc">Descending</option>
-                                <option value="asc">Ascending</option>
-                              </select>
-                            </div>
+                                <SelectTrigger variant="default" size="default">
+                                  <SelectValue placeholder="Sort Order" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="desc">Descending</SelectItem>
+                                  <SelectItem value="asc">Ascending</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </FormField>
                           </div>
                         )}
                       </div>
@@ -4254,9 +4293,9 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
                     <p className="text-sm text-gray-500">Monthly revenue breakdown</p>
                   </div>
                 </div>
-                <button className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors">
+                <Button className="w-full" variant="success">
                   Generate Report
-                </button>
+                </Button>
               </div>
 
               {/* Commission Report */}
@@ -4270,9 +4309,9 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
                     <p className="text-sm text-gray-500">Commission analysis by client</p>
                   </div>
                 </div>
-                <button className="w-full bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors">
+                <Button className="w-full" variant="secondary">
                   Generate Report
-                </button>
+                </Button>
               </div>
 
               {/* Profit & Loss */}
@@ -4286,9 +4325,9 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
                     <p className="text-sm text-gray-500">P&L statement</p>
                   </div>
                 </div>
-                <button className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors">
+                <Button className="w-full" variant="default">
                   Generate Report
-                </button>
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -4365,12 +4404,14 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
                 <h3 className='text-xl font-semibold text-gray-900'>
                   Client Details
                 </h3>
-                <button
+                <Button
                   onClick={closeModal}
-                  className='p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors duration-200'
+                  variant="ghost"
+                  size="icon-sm"
+                  className='text-gray-400 hover:text-gray-600'
                 >
                   <X className='h-5 w-5' />
-                </button>
+                </Button>
               </div>
             </div>
             <div className='p-6 space-y-6'>
@@ -4520,12 +4561,13 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
               </div>
             </div>
             <div className='p-6 border-t border-gray-100'>
-              <button
+              <Button
                 onClick={closeModal}
-                className='w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200'
+                variant="outline"
+                className='w-full'
               >
                 Close
-              </button>
+              </Button>
             </div>
           </div>
         </div>

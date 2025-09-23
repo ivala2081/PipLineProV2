@@ -1,0 +1,579 @@
+{
+  "project_overview": {
+    "name": "PipLinePro - Advanced Treasury Management System",
+    "description": "A sophisticated, enterprise-grade treasury management system built with Flask backend and React frontend, featuring real-time exchange rates, multi-currency support, advanced analytics, and comprehensive business intelligence capabilities.",
+    "version": "1.0.0",
+    "architecture": "Full-stack web application with microservices architecture",
+    "deployment": "Docker containerized with production-ready configuration",
+    "target_audience": "Financial institutions, treasury departments, payment service providers, and businesses requiring advanced financial transaction management"
+  },
+  
+  "technical_stack": {
+    "backend": {
+      "framework": "Flask 3.0.0",
+      "language": "Python 3.11",
+      "database": {
+        "primary": "PostgreSQL 15 (production)",
+        "development": "SQLite",
+        "orm": "SQLAlchemy 2.0.36",
+        "migrations": "Flask-Migrate with Alembic"
+      },
+      "authentication": "Flask-Login with role-based access control",
+      "security": {
+        "csrf_protection": "Flask-WTF",
+        "rate_limiting": "Flask-Limiter",
+        "password_hashing": "Werkzeug security",
+        "session_management": "Secure session handling with Redis"
+      },
+      "caching": "Redis with advanced cache management",
+      "background_tasks": "Celery with Redis broker",
+      "real_time": "Flask-SocketIO",
+      "monitoring": "Prometheus integration",
+      "logging": "Structured logging with multiple levels"
+    },
+    "frontend": {
+      "framework": "React 18.2.0 with TypeScript",
+      "build_tool": "Vite 5.0.0",
+      "styling": "Tailwind CSS 3.4.0 with custom design system",
+      "ui_components": "Radix UI primitives with custom components",
+      "state_management": "Redux Toolkit with RTK Query",
+      "data_fetching": "SWR and TanStack Query",
+      "routing": "React Router DOM 6.8.1",
+      "charts": "Recharts 2.15.4",
+      "forms": "React Hook Form with Zod validation",
+      "accessibility": "WCAG 2.1 AA compliant",
+      "responsive": "Mobile-first design approach"
+    },
+    "infrastructure": {
+      "containerization": "Docker with multi-stage builds",
+      "orchestration": "Docker Compose for production",
+      "reverse_proxy": "Nginx with load balancing",
+      "database": "PostgreSQL with connection pooling",
+      "caching": "Redis with persistence",
+      "monitoring": "Prometheus + Grafana",
+      "logging": "Structured JSON logging",
+      "backup": "Automated database backup system"
+    }
+  },
+
+  "core_features": {
+    "transaction_management": {
+      "description": "Comprehensive transaction processing with multi-currency support",
+      "features": [
+        "Real-time transaction creation and editing",
+        "Multi-currency support (TL, USD, EUR)",
+        "Automatic exchange rate calculation",
+        "Commission calculation based on PSP rates",
+        "Bulk transaction operations",
+        "Transaction categorization (WD/DEP)",
+        "Advanced filtering and search",
+        "Export capabilities (CSV, Excel)",
+        "Transaction validation and error handling"
+      ],
+      "business_logic": {
+        "commission_calculation": "Dynamic commission rates based on PSP and category",
+        "exchange_rate_handling": "Real-time rate fetching with fallback mechanisms",
+        "net_amount_calculation": "Automatic calculation with commission deduction",
+        "currency_conversion": "TL equivalent calculations for reporting"
+      }
+    },
+    "exchange_rate_system": {
+      "description": "Advanced real-time exchange rate management",
+      "features": [
+        "Real-time rate fetching from Yahoo Finance",
+        "Automatic updates every 15 minutes",
+        "Historical rate storage",
+        "Fallback mechanisms for API failures",
+        "Manual rate override capabilities",
+        "Rate change notifications",
+        "Multi-currency support (USD/TRY, EUR/TRY)"
+      ],
+      "technical_implementation": {
+        "data_source": "Yahoo Finance API via yfinance",
+        "update_frequency": "15 minutes",
+        "storage": "PostgreSQL with indexed tables",
+        "caching": "Redis for performance optimization",
+        "error_handling": "Graceful degradation with fallback rates"
+      }
+    },
+    "analytics_and_reporting": {
+      "description": "Comprehensive business intelligence and analytics",
+      "features": [
+        "Real-time dashboard with key metrics",
+        "PSP performance analysis",
+        "Revenue analytics and trends",
+        "Transaction volume analysis",
+        "Commission tracking and optimization",
+        "Custom date range reporting",
+        "Interactive charts and visualizations",
+        "Export capabilities for reports",
+        "Scheduled report generation"
+      ],
+      "chart_types": [
+        "Bar charts for PSP comparisons",
+        "Line charts for trend analysis",
+        "Pie charts for category distribution",
+        "Area charts for cumulative data",
+        "Scatter plots for correlation analysis"
+      ]
+    },
+    "user_management": {
+      "description": "Advanced user management with hierarchical permissions",
+      "features": [
+        "Role-based access control (RBAC)",
+        "Multi-level admin hierarchy",
+        "User session management",
+        "Password security policies",
+        "Account lockout protection",
+        "Audit logging",
+        "Profile management",
+        "Permission granularity"
+      ],
+      "admin_levels": {
+        "hard_admin": "Level 0 - Invisible system administrator",
+        "main_admin": "Level 1 - Primary administrator",
+        "secondary_admin": "Level 2 - Secondary administrator", 
+        "sub_admin": "Level 3 - Sub administrator",
+        "user": "Level 4 - Regular user"
+      }
+    },
+    "psp_management": {
+      "description": "Payment Service Provider tracking and management",
+      "features": [
+        "PSP performance tracking",
+        "Commission rate management",
+        "Allocation tracking",
+        "Daily balance reconciliation",
+        "PSP-specific analytics",
+        "Custom PSP configurations",
+        "Performance benchmarking"
+      ]
+    }
+  },
+
+  "database_schema": {
+    "core_tables": {
+      "transaction": {
+        "description": "Main transaction table with comprehensive indexing",
+        "fields": {
+          "id": "Primary key",
+          "client_name": "Client identifier",
+          "company": "Company name",
+          "payment_method": "Payment method used",
+          "date": "Transaction date",
+          "category": "WD (withdrawal) or DEP (deposit)",
+          "amount": "Transaction amount",
+          "commission": "Commission amount",
+          "net_amount": "Net amount after commission",
+          "currency": "Transaction currency (TL/USD/EUR)",
+          "psp": "Payment Service Provider",
+          "notes": "Additional notes",
+          "amount_try": "TL equivalent amount",
+          "commission_try": "TL equivalent commission",
+          "net_amount_try": "TL equivalent net amount",
+          "exchange_rate": "Exchange rate used",
+          "created_at": "Creation timestamp",
+          "updated_at": "Last update timestamp",
+          "created_by": "User who created the transaction"
+        },
+        "indexes": [
+          "Single column indexes for frequently queried fields",
+          "Composite indexes for common query patterns",
+          "Multi-column indexes for complex queries"
+        ]
+      },
+      "user": {
+        "description": "User management with hierarchical permissions",
+        "fields": {
+          "id": "Primary key",
+          "username": "Unique username",
+          "password": "Hashed password",
+          "role": "User role (admin/user/viewer)",
+          "admin_level": "Admin hierarchy level (0-3)",
+          "admin_permissions": "JSON permissions",
+          "created_by": "Admin who created this user",
+          "is_active": "Account status",
+          "last_login": "Last login timestamp",
+          "failed_login_attempts": "Security tracking",
+          "account_locked_until": "Account lockout",
+          "password_changed_at": "Password change tracking",
+          "email": "User email"
+        }
+      },
+      "exchange_rate": {
+        "description": "Daily exchange rates storage",
+        "fields": {
+          "id": "Primary key",
+          "date": "Rate date",
+          "usd_to_tl": "USD to TL rate",
+          "eur_to_tl": "EUR to TL rate",
+          "created_at": "Creation timestamp",
+          "updated_at": "Last update timestamp"
+        }
+      },
+      "psp_track": {
+        "description": "PSP performance tracking",
+        "fields": {
+          "id": "Primary key",
+          "psp_name": "PSP identifier",
+          "date": "Tracking date",
+          "amount": "Total amount",
+          "commission_rate": "Commission rate",
+          "commission_amount": "Commission amount",
+          "difference": "Calculation difference",
+          "withdraw": "Withdrawal amount",
+          "allocation": "Allocation amount"
+        }
+      },
+      "daily_balance": {
+        "description": "Daily balance reconciliation",
+        "fields": {
+          "id": "Primary key",
+          "date": "Balance date",
+          "psp": "PSP identifier",
+          "opening_balance": "Starting balance",
+          "total_inflow": "Total incoming",
+          "total_outflow": "Total outgoing",
+          "total_commission": "Total commission",
+          "net_amount": "Net amount",
+          "closing_balance": "Ending balance",
+          "allocation": "Allocation amount"
+        }
+      }
+    },
+    "configuration_tables": {
+      "option": "Configurable dropdown options",
+      "user_settings": "User preferences and settings",
+      "admin_section_permission": "Admin section access control"
+    }
+  },
+
+  "api_architecture": {
+    "versioning": "RESTful API with v1 and v2 versions",
+    "authentication": "Session-based with CSRF protection",
+    "endpoints": {
+      "transactions": {
+        "base_url": "/api/v1/transactions",
+        "methods": ["GET", "POST", "PUT", "DELETE"],
+        "features": [
+          "CRUD operations",
+          "Bulk operations",
+          "Advanced filtering",
+          "Pagination",
+          "Export functionality",
+          "Real-time updates"
+        ]
+      },
+      "analytics": {
+        "base_url": "/api/v1/analytics",
+        "methods": ["GET"],
+        "features": [
+          "Dashboard metrics",
+          "PSP analytics",
+          "Revenue analysis",
+          "Custom date ranges",
+          "Chart data endpoints"
+        ]
+      },
+      "exchange_rates": {
+        "base_url": "/api/v1/exchange-rates",
+        "methods": ["GET", "POST"],
+        "features": [
+          "Current rates",
+          "Historical rates",
+          "Rate updates",
+          "Manual overrides"
+        ]
+      },
+      "users": {
+        "base_url": "/api/v1/users",
+        "methods": ["GET", "POST", "PUT", "DELETE"],
+        "features": [
+          "User management",
+          "Permission management",
+          "Admin hierarchy",
+          "Profile management"
+        ]
+      }
+    },
+    "error_handling": {
+      "standardized_responses": "Consistent JSON error format",
+      "http_status_codes": "Proper status code usage",
+      "validation_errors": "Detailed field validation",
+      "authentication_errors": "Security-focused error messages"
+    }
+  },
+
+  "frontend_architecture": {
+    "component_structure": {
+      "pages": [
+        "Dashboard - Main analytics overview",
+        "Transactions - Transaction management",
+        "Ledger - PSP ledger and reconciliation",
+        "Analytics - Advanced reporting",
+        "Settings - System configuration",
+        "Admin - User and permission management"
+      ],
+      "components": {
+        "ui_components": "Reusable UI primitives",
+        "business_components": "Domain-specific components",
+        "layout_components": "Page layout and navigation",
+        "chart_components": "Data visualization components",
+        "form_components": "Form handling and validation"
+      }
+    },
+    "state_management": {
+      "global_state": "Redux Toolkit for application state",
+      "server_state": "SWR and TanStack Query for API data",
+      "local_state": "React hooks for component state",
+      "caching": "Intelligent caching strategies"
+    },
+    "routing": {
+      "protected_routes": "Authentication-required routes",
+      "admin_routes": "Role-based route protection",
+      "lazy_loading": "Code splitting for performance",
+      "breadcrumbs": "Navigation context"
+    },
+    "styling_system": {
+      "design_tokens": "Consistent design system",
+      "color_palette": "Professional business colors",
+      "typography": "Hierarchical text system",
+      "spacing": "8px grid system",
+      "responsive": "Mobile-first approach",
+      "accessibility": "WCAG 2.1 AA compliance"
+    }
+  },
+
+  "advanced_features": {
+    "real_time_capabilities": {
+      "websocket_integration": "Flask-SocketIO for real-time updates",
+      "live_dashboard": "Real-time metrics updates",
+      "transaction_updates": "Live transaction notifications",
+      "rate_updates": "Exchange rate change notifications"
+    },
+    "performance_optimization": {
+      "database_optimization": "Advanced indexing and query optimization",
+      "caching_strategy": "Multi-layer caching system",
+      "lazy_loading": "Component and route lazy loading",
+      "code_splitting": "Bundle optimization",
+      "image_optimization": "Lazy loading and compression"
+    },
+    "security_features": {
+      "authentication": "Multi-factor authentication support",
+      "authorization": "Granular permission system",
+      "csrf_protection": "Cross-site request forgery prevention",
+      "rate_limiting": "API rate limiting",
+      "input_validation": "Comprehensive input sanitization",
+      "audit_logging": "Complete audit trail",
+      "session_security": "Secure session management"
+    },
+    "monitoring_and_observability": {
+      "application_monitoring": "Performance metrics tracking",
+      "error_tracking": "Comprehensive error logging",
+      "database_monitoring": "Query performance tracking",
+      "system_monitoring": "Resource usage monitoring",
+      "business_metrics": "Custom business KPIs"
+    },
+    "internationalization": {
+      "multi_language": "English and Turkish support",
+      "localization": "Currency and date formatting",
+      "translation_system": "Dynamic translation management",
+      "rtl_support": "Right-to-left language support"
+    }
+  },
+
+  "deployment_architecture": {
+    "containerization": {
+      "multi_stage_build": "Optimized Docker images",
+      "frontend_build": "Node.js build stage",
+      "backend_build": "Python dependencies stage",
+      "production_stage": "Minimal production image"
+    },
+    "orchestration": {
+      "docker_compose": "Multi-service orchestration",
+      "service_dependencies": "Health check dependencies",
+      "resource_limits": "CPU and memory constraints",
+      "restart_policies": "Automatic service recovery"
+    },
+    "infrastructure_services": {
+      "database": "PostgreSQL with connection pooling",
+      "caching": "Redis with persistence",
+      "reverse_proxy": "Nginx with load balancing",
+      "monitoring": "Prometheus metrics collection",
+      "logging": "Centralized log aggregation"
+    },
+    "production_configuration": {
+      "environment_variables": "Secure configuration management",
+      "ssl_termination": "HTTPS with SSL certificates",
+      "health_checks": "Comprehensive health monitoring",
+      "backup_strategy": "Automated database backups",
+      "scaling": "Horizontal scaling capabilities"
+    }
+  },
+
+  "development_workflow": {
+    "code_organization": {
+      "backend_structure": "Modular Flask application structure",
+      "frontend_structure": "Feature-based React organization",
+      "shared_utilities": "Common utilities and helpers",
+      "configuration": "Environment-specific configurations"
+    },
+    "testing_strategy": {
+      "unit_tests": "Component and function testing",
+      "integration_tests": "API endpoint testing",
+      "e2e_tests": "End-to-end user flow testing",
+      "performance_tests": "Load and stress testing"
+    },
+    "code_quality": {
+      "linting": "ESLint and Prettier for frontend",
+      "type_checking": "TypeScript strict mode",
+      "formatting": "Consistent code formatting",
+      "documentation": "Comprehensive code documentation"
+    },
+    "deployment_pipeline": {
+      "development": "Local development environment",
+      "staging": "Pre-production testing",
+      "production": "Live production deployment",
+      "monitoring": "Continuous monitoring and alerting"
+    }
+  },
+
+  "business_intelligence": {
+    "dashboard_metrics": {
+      "revenue_metrics": "Total revenue, growth rates, trends",
+      "transaction_metrics": "Volume, frequency, average values",
+      "psp_metrics": "Performance comparison, commission analysis",
+      "currency_metrics": "Exchange rate impact, conversion analysis"
+    },
+    "reporting_capabilities": {
+      "real_time_reports": "Live dashboard updates",
+      "scheduled_reports": "Automated report generation",
+      "custom_reports": "User-defined report creation",
+      "export_formats": "CSV, Excel, PDF export options"
+    },
+    "analytics_features": {
+      "trend_analysis": "Historical data analysis",
+      "forecasting": "Predictive analytics",
+      "comparative_analysis": "Period-over-period comparisons",
+      "drill_down": "Detailed data exploration"
+    }
+  },
+
+  "security_considerations": {
+    "data_protection": {
+      "encryption": "Data encryption at rest and in transit",
+      "access_control": "Role-based access control",
+      "audit_trail": "Comprehensive activity logging",
+      "data_retention": "Configurable data retention policies"
+    },
+    "api_security": {
+      "authentication": "Secure session management",
+      "authorization": "Granular permission checks",
+      "input_validation": "Comprehensive input sanitization",
+      "rate_limiting": "API abuse prevention"
+    },
+    "infrastructure_security": {
+      "container_security": "Secure container configurations",
+      "network_security": "Network isolation and encryption",
+      "secrets_management": "Secure credential handling",
+      "vulnerability_scanning": "Regular security assessments"
+    }
+  },
+
+  "scalability_features": {
+    "horizontal_scaling": {
+      "stateless_architecture": "Stateless application design",
+      "load_balancing": "Nginx load balancer configuration",
+      "database_scaling": "Read replicas and connection pooling",
+      "caching_layer": "Redis distributed caching"
+    },
+    "performance_optimization": {
+      "database_optimization": "Advanced indexing strategies",
+      "query_optimization": "Efficient database queries",
+      "caching_strategies": "Multi-level caching implementation",
+      "asset_optimization": "Frontend asset optimization"
+    },
+    "monitoring_and_alerting": {
+      "application_metrics": "Performance monitoring",
+      "business_metrics": "KPI tracking and alerting",
+      "infrastructure_metrics": "System resource monitoring",
+      "error_tracking": "Comprehensive error monitoring"
+    }
+  },
+
+  "implementation_guidelines": {
+    "setup_instructions": {
+      "prerequisites": [
+        "Python 3.11+",
+        "Node.js 18+",
+        "PostgreSQL 15+",
+        "Redis 7+",
+        "Docker and Docker Compose"
+      ],
+      "installation_steps": [
+        "Clone repository and setup environment",
+        "Install Python dependencies",
+        "Install Node.js dependencies",
+        "Configure database and Redis",
+        "Run database migrations",
+        "Start development servers"
+      ]
+    },
+    "development_environment": {
+      "backend_setup": "Flask development server with hot reload",
+      "frontend_setup": "Vite development server with HMR",
+      "database_setup": "SQLite for development, PostgreSQL for production",
+      "testing_setup": "Comprehensive test suite configuration"
+    },
+    "production_deployment": {
+      "docker_deployment": "Multi-container production setup",
+      "environment_configuration": "Production environment variables",
+      "ssl_configuration": "HTTPS setup with SSL certificates",
+      "monitoring_setup": "Prometheus and logging configuration"
+    }
+  },
+
+  "unique_selling_points": {
+    "technical_excellence": [
+      "Modern, scalable architecture with microservices",
+      "Real-time capabilities with WebSocket integration",
+      "Advanced caching and performance optimization",
+      "Comprehensive security implementation",
+      "Professional UI/UX with accessibility compliance"
+    ],
+    "business_value": [
+      "Multi-currency support with real-time exchange rates",
+      "Advanced analytics and business intelligence",
+      "Comprehensive audit trail and compliance features",
+      "Scalable architecture for growing businesses",
+      "Professional-grade security and data protection"
+    ],
+    "user_experience": [
+      "Intuitive, responsive user interface",
+      "Real-time updates and notifications",
+      "Comprehensive filtering and search capabilities",
+      "Mobile-first responsive design",
+      "Accessibility compliance for all users"
+    ]
+  },
+
+  "future_enhancements": {
+    "planned_features": [
+      "Advanced machine learning analytics",
+      "Mobile application development",
+      "API rate limiting and throttling",
+      "Advanced reporting with custom templates",
+      "Multi-tenant architecture support",
+      "Blockchain integration for transaction verification",
+      "Advanced fraud detection algorithms",
+      "Integration with external banking APIs"
+    ],
+    "scalability_improvements": [
+      "Kubernetes orchestration",
+      "Microservices decomposition",
+      "Event-driven architecture",
+      "Advanced caching strategies",
+      "Database sharding and partitioning"
+    ]
+  }
+}

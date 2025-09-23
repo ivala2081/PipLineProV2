@@ -18,7 +18,8 @@ import {
   ChevronDown,
   Bell,
   HelpCircle,
-  Activity
+  Activity,
+  Sparkles
 } from 'lucide-react';
 
 interface ModernSidebarProps {
@@ -78,6 +79,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
     { name: 'Accounting', href: '/accounting', icon: Calculator, current: location.pathname === '/accounting' },
     { name: 'Ledger', href: '/ledger', icon: ClipboardList, current: location.pathname === '/ledger' },
     { name: 'Analytics', href: '/analytics', icon: BarChart3, current: location.pathname === '/analytics' },
+    { name: 'Future', href: '/future', icon: Sparkles, current: location.pathname === '/future', badge: 'AI' },
     { name: 'Settings', href: '/settings', icon: Settings, current: location.pathname === '/settings' },
   ];
 
@@ -133,6 +135,20 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
             }`}>
               {item.name}
             </span>
+            
+            {/* Badge for special items */}
+            {item.badge && (
+              <Badge 
+                variant="secondary" 
+                className={`relative z-10 text-xs px-2 py-0.5 ${
+                  item.current 
+                    ? 'bg-white/20 text-white' 
+                    : 'bg-blue-100 text-blue-700'
+                }`}
+              >
+                {item.badge}
+              </Badge>
+            )}
             
             {/* Minimal hover indicator */}
             <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-0 rounded-r-full transition-all duration-200 ease-out ${

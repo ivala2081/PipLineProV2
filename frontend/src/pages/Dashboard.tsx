@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
-import { ModernDashboard } from '../components/modern/ModernDashboard';
+import ModernDashboard from '../components/modern/ModernDashboard';
+import { Button } from '../components/ui/button';
 import {
   DollarSign,
   TrendingUp,
