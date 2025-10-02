@@ -301,6 +301,24 @@ class TransactionService:
         return round(commission, 2)
 
     @staticmethod
+    def calculate_commission_based_on_total_deposits(psp_deposits, psp_name):
+        """Calculate commission based on total deposits for a PSP (for ledger display)"""
+        try:
+            if not psp_deposits or psp_deposits <= 0:
+                return Decimal('0')
+            
+            # Get commission rate from PSP service
+            commission_rate = PspOptionsService.get_psp_commission_rate(psp_name)
+            commission = psp_deposits * commission_rate
+            return round(commission, 2)
+        except Exception as e:
+            logger.warning(f"Error calculating commission for PSP '{psp_name}': {e}")
+            # Default commission rate of 2.5% if no PSP rate found
+            default_rate = Decimal('0.025')
+            commission = psp_deposits * default_rate
+            return round(commission, 2)
+
+    @staticmethod
     def get_exchange_rate(date_obj, currency='USD'):
         """Get exchange rate for a specific date and currency"""
         try:

@@ -1,852 +1,543 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import ChatGPTInterface from '../components/modern/ChatGPTInterface';
+import { CHATGPT_CONFIG } from '../config/chatgpt';
 import { 
+  Bot, 
   BarChart3, 
-  AlertTriangle, 
-  Settings, 
-  Lightbulb,
-  Sparkles,
+  Zap, 
+  Shield, 
+  Globe, 
   TrendingUp,
-  Shield,
-  Cpu,
-  RefreshCw,
+  MessageSquare,
+  Settings,
+  Play,
+  Pause,
+  RotateCcw,
+  ChevronRight,
   Activity,
   Target,
-  Zap
+  Brain,
+  TrendingDown,
+  Calendar,
+  DollarSign,
+  Users,
+  Clock,
+  AlertCircle,
+  CheckCircle,
+  Lightbulb,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
-import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { 
-  LineChart, 
-  Line, 
-  AreaChart, 
-  Area, 
-  BarChart, 
-  Bar, 
-  PieChart, 
-  Pie, 
-  Cell, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer,
-  ScatterChart,
-  Scatter
-} from 'recharts';
-
-interface AIAnalysis {
-  status: string;
-  analysis_type: string;
-  timestamp: string;
-  data: any;
-  ai_insights?: string;
-  recommendations?: Array<{
-    type: string;
-    action: string;
-    priority: string;
-  }>;
-  risk_factors?: Array<{
-    factor: string;
-    probability: string;
-    impact: string;
-  }>;
-  optimization_plan?: Array<{
-    action: string;
-    expected_impact: string;
-  }>;
-  strategic_recommendations?: Array<{
-    strategy: string;
-    timeline: string;
-    investment: string;
-  }>;
-}
-
-interface ComprehensiveAnalysis {
-  status: string;
-  analysis_type: string;
-  timestamp: string;
-  revenue_analysis: AIAnalysis;
-  risk_prediction: AIAnalysis;
-  psp_optimization: AIAnalysis;
-  strategic_insights: AIAnalysis;
-  summary: {
-    total_insights: number;
-    analysis_quality: string;
-  };
-}
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import './Future.css';
 
 const Future: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [loading, setLoading] = useState(false);
-  const [comprehensiveAnalysis, setComprehensiveAnalysis] = useState<ComprehensiveAnalysis | null>(null);
-  const [aiStatus, setAiStatus] = useState<any>(null);
-  const [realTimeData, setRealTimeData] = useState<any>(null);
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
-  const [autoRefresh, setAutoRefresh] = useState(true);
-  const [refreshInterval, setRefreshInterval] = useState(30000); // 30 seconds
+  const [activeTab, setActiveTab] = useState('assistant');
+  const [isPaused, setIsPaused] = useState(false);
+  const [selectedStrategy, setSelectedStrategy] = useState<string | null>(null);
+  const [selectedAction, setSelectedAction] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchAIStatus();
-    fetchComprehensiveAnalysis();
-    fetchRealTimeData();
-  }, []);
-
-  // Auto-refresh functionality
-  useEffect(() => {
-    if (!autoRefresh) return;
-
-    const interval = setInterval(() => {
-      fetchRealTimeData();
-      if (activeTab === 'overview') {
-        fetchComprehensiveAnalysis();
-      }
-    }, refreshInterval);
-
-    return () => clearInterval(interval);
-  }, [autoRefresh, refreshInterval, activeTab]);
-
-  const fetchAIStatus = async () => {
-    try {
-      const response = await fetch('/api/v1/ai/ai-status');
-      const data = await response.json();
-      setAiStatus(data);
-    } catch (error) {
-      console.error('Failed to fetch AI status:', error);
+  const strategyInsights = [
+    {
+      id: 'monday-analysis',
+      title: 'Monday Performance Analysis',
+      description: 'Monday\'s are the worst day with 80% lower revenue',
+      icon: Calendar,
+      color: 'text-red-600',
+      bgColor: 'bg-red-50',
+      borderColor: 'border-red-200',
+      recommendation: 'Implement Monday Motivation campaigns with special offers and incentives to boost engagement',
+      impact: 'High',
+      priority: 'Urgent',
+      trend: 'down'
+    },
+    {
+      id: 'peak-hours',
+      title: 'Peak Hours Optimization',
+      description: 'Revenue spikes between 2-4 PM on weekdays',
+      icon: Clock,
+      color: 'text-green-600',
+      bgColor: 'bg-green-50',
+      borderColor: 'border-green-200',
+      recommendation: 'Increase marketing efforts and staff during peak hours to maximize revenue potential',
+      impact: 'High',
+      priority: 'High',
+      trend: 'up'
+    },
+    {
+      id: 'weekend-opportunity',
+      title: 'Weekend Revenue Opportunity',
+      description: 'Weekends show 40% higher conversion rates',
+      icon: TrendingUp,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+      borderColor: 'border-blue-200',
+      recommendation: 'Expand weekend operations and launch weekend-specific promotions to capitalize on higher conversion rates',
+      impact: 'Medium',
+      priority: 'Medium',
+      trend: 'up'
+    },
+    {
+      id: 'psp-performance',
+      title: 'PSP Performance Insights',
+      description: 'CRYPPAY shows 25% higher success rates than others',
+      icon: DollarSign,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50',
+      borderColor: 'border-purple-200',
+      recommendation: 'Prioritize CRYPPAY for high-value transactions and consider negotiating better rates',
+      impact: 'High',
+      priority: 'High',
+      trend: 'up'
     }
-  };
-
-  const fetchComprehensiveAnalysis = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/v1/ai/comprehensive-analysis');
-      const data = await response.json();
-      setComprehensiveAnalysis(data);
-      setLastUpdate(new Date());
-    } catch (error) {
-      console.error('Failed to fetch comprehensive analysis:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchRealTimeData = async () => {
-    try {
-      // Fetch real-time metrics from multiple endpoints
-      const [performanceResponse, analyticsResponse, healthResponse] = await Promise.all([
-        fetch('/api/v1/analytics/system/performance'),
-        fetch('/api/v1/analytics/dashboard/stats?range=all'),
-        fetch('/api/v1/health/')
-      ]);
-
-      const [performance, analytics, health] = await Promise.all([
-        performanceResponse.json(),
-        analyticsResponse.json(),
-        healthResponse.json()
-      ]);
-
-      setRealTimeData({
-        performance,
-        analytics,
-        health,
-        timestamp: new Date().toISOString()
-      });
-    } catch (error) {
-      console.error('Failed to fetch real-time data:', error);
-    }
-  };
-
-  const fetchSpecificAnalysis = async (type: string) => {
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/v1/ai/${type}`);
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error(`Failed to fetch ${type}:`, error);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const tabs = [
-    { id: 'overview', name: 'AI Overview', icon: Sparkles },
-    { id: 'revenue', name: 'Revenue Analysis', icon: BarChart3 },
-    { id: 'risk', name: 'Risk Prediction', icon: AlertTriangle },
-    { id: 'optimization', name: 'PSP Optimization', icon: Settings },
-    { id: 'strategy', name: 'Strategic Insights', icon: Lightbulb },
-    { id: 'insights', name: 'Live Insights', icon: Activity },
   ];
 
-  // Data processing functions for visualizations
-  const processRevenueData = () => {
-    if (!comprehensiveAnalysis?.revenue_analysis?.data?.daily_revenue) return [];
-    
-    return comprehensiveAnalysis.revenue_analysis.data.daily_revenue.map((item: any) => ({
-      date: new Date(item.date).toLocaleDateString(),
-      amount: item.amount,
-      formatted: `$${item.amount.toLocaleString()}`
-    }));
+  const quickActions = [
+    { id: 'boost-monday', title: 'Boost Monday Revenue', icon: TrendingUp, description: 'Implement Monday-specific strategies' },
+    { id: 'optimize-peak', title: 'Optimize Peak Hours', icon: Clock, description: 'Maximize revenue during peak times' },
+    { id: 'weekend-expansion', title: 'Weekend Expansion', icon: Calendar, description: 'Capitalize on weekend opportunities' },
+    { id: 'psp-optimization', title: 'PSP Optimization', icon: DollarSign, description: 'Optimize payment processor performance' }
+  ];
+
+  // Handler functions
+  const handlePauseToggle = () => {
+    setIsPaused(!isPaused);
   };
 
-  const processPSPData = () => {
-    if (!comprehensiveAnalysis?.revenue_analysis?.data?.psp_distribution) return [];
-    
-    const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00ff00', '#ff00ff'];
-    return comprehensiveAnalysis.revenue_analysis.data.psp_distribution.map((item: any, index: number) => ({
-      name: item.psp,
-      value: item.amount,
-      count: item.count,
-      color: colors[index % colors.length]
-    }));
+  const handleReset = () => {
+    setIsPaused(false);
+    setSelectedStrategy(null);
+    setSelectedAction(null);
   };
 
-  const processRiskData = () => {
-    if (!comprehensiveAnalysis?.risk_prediction?.risk_factors) return [];
-    
-    return comprehensiveAnalysis.risk_prediction.risk_factors.map((risk: any) => ({
-      factor: risk.factor,
-      probability: risk.probability === 'high' ? 80 : risk.probability === 'medium' ? 50 : 20,
-      impact: risk.impact === 'high' ? 90 : risk.impact === 'medium' ? 60 : 30,
-      color: risk.impact === 'high' ? '#ef4444' : risk.impact === 'medium' ? '#f59e0b' : '#10b981'
-    }));
+  const handleStrategyClick = (strategyId: string) => {
+    setSelectedStrategy(selectedStrategy === strategyId ? null : strategyId);
   };
 
-  const processPerformanceData = () => {
-    if (!realTimeData?.performance) return [];
-    
-    return [
-      { metric: 'CPU Usage', value: realTimeData.performance.cpu_usage || 0, color: '#3b82f6' },
-      { metric: 'Memory Usage', value: realTimeData.performance.memory_usage || 0, color: '#10b981' },
-      { metric: 'Cache Hit Rate', value: realTimeData.performance.cache_hit_rate || 0, color: '#f59e0b' },
-      { metric: 'Response Time', value: realTimeData.performance.avg_response_time || 0, color: '#ef4444' }
-    ];
+  const handleActionClick = (actionId: string) => {
+    setSelectedAction(selectedAction === actionId ? null : actionId);
+    // Here you would typically trigger the actual action
+    console.log(`Executing action: ${actionId}`);
   };
 
-  const renderOverview = () => (
-    <div className="space-y-6">
-      {/* Real-time Status Header */}
-      <Card variant="gradient" size="default">
-        <CardContent>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <Activity className="h-6 w-6 text-blue-500" />
-              <h3 className="text-lg font-semibold text-gray-900">Real-time AI Dashboard</h3>
-              {autoRefresh && (
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm text-green-600">Live Updates</span>
-                </div>
-              )}
-            </div>
-            <div className="flex items-center space-x-4">
-              <Button
-                onClick={() => setAutoRefresh(!autoRefresh)}
-                variant={autoRefresh ? "success" : "secondary"}
-                size="sm"
-                className="rounded-full"
-              >
-                {autoRefresh ? 'Auto-Refresh ON' : 'Auto-Refresh OFF'}
-              </Button>
-              <span className="text-sm text-gray-500">
-                Last update: {lastUpdate.toLocaleTimeString()}
-              </span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+  const handleImplementStrategy = async (strategyId: string) => {
+    try {
+      const response = await fetch('/api/strategy/implement', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || ''
+        },
+        body: JSON.stringify({
+          strategy_id: strategyId,
+          user_id: 1 // You might want to get this from user context
+        })
+      });
 
-      {/* AI Status Card */}
-      <Card variant="default" size="default">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>AI Analysis Status</CardTitle>
-            <div className="flex items-center space-x-2">
-              <Cpu className="h-5 w-5 text-blue-500" />
-              <span className="text-sm text-gray-600">AI-Powered</span>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
+      const result = await response.json();
+      
+      if (result.success) {
+        // Show success message
+        alert(`✅ ${result.message}`);
+        console.log('Strategy implementation details:', result.details);
         
-          {aiStatus && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card variant="success" size="compact" className="text-center">
-                <CardContent>
-                  <div className="text-2xl font-bold text-green-600">
-                    {aiStatus.features?.length || 0}
-                  </div>
-                  <div className="text-sm text-green-700">AI Features</div>
-                </CardContent>
-              </Card>
-              <Card variant="info" size="compact" className="text-center">
-                <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">
-                    {aiStatus.api_configured ? 'Yes' : 'No'}
-                  </div>
-                  <div className="text-sm text-blue-700">API Configured</div>
-                </CardContent>
-              </Card>
-              <Card variant="default" size="compact" className="text-center">
-                <CardContent>
-                  <div className="text-2xl font-bold text-purple-600">
-                    {aiStatus.model || 'N/A'}
-                  </div>
-                  <div className="text-sm text-purple-700">AI Model</div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Quick Insights */}
-      {comprehensiveAnalysis && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card variant="default" size="default">
-            <CardContent>
-              <div className="flex items-center">
-                <TrendingUp className="h-8 w-8 text-green-500" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Revenue Insights</p>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    {comprehensiveAnalysis.revenue_analysis?.recommendations?.length || 0}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card variant="default" size="default">
-            <CardContent>
-              <div className="flex items-center">
-                <Shield className="h-8 w-8 text-red-500" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Risk Factors</p>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    {comprehensiveAnalysis.risk_prediction?.risk_factors?.length || 0}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card variant="default" size="default">
-            <CardContent>
-              <div className="flex items-center">
-                <Settings className="h-8 w-8 text-blue-500" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Optimizations</p>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    {comprehensiveAnalysis.psp_optimization?.optimization_plan?.length || 0}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card variant="default" size="default">
-            <CardContent>
-              <div className="flex items-center">
-                <Lightbulb className="h-8 w-8 text-yellow-500" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Strategies</p>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    {comprehensiveAnalysis.strategic_insights?.strategic_recommendations?.length || 0}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* AI Insights Summary */}
-      {comprehensiveAnalysis?.summary && (
-        <Card variant="gradient" size="default">
-          <CardHeader>
-            <CardTitle>AI Analysis Summary</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-600">Total Insights Generated</p>
-                <p className="text-3xl font-bold text-blue-600">
-                  {comprehensiveAnalysis.summary.total_insights}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Analysis Quality</p>
-                <p className="text-3xl font-bold text-purple-600 capitalize">
-                  {comprehensiveAnalysis.summary.analysis_quality}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
-
-  const renderAnalysisSection = (analysis: AIAnalysis | null, title: string, Icon: React.ComponentType<any>) => {
-    if (!analysis) {
-      return (
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading AI analysis...</p>
-        </div>
-      );
+        // Optionally refresh strategy status
+        // You could call getStrategyStatus() here if needed
+      } else {
+        alert(`❌ ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Error implementing strategy:', error);
+      alert('❌ Failed to implement strategy. Please try again.');
     }
-
-    return (
-      <div className="space-y-6">
-        {/* AI Insights */}
-        {analysis.ai_insights && (
-          <Card variant="default" size="default">
-            <CardHeader>
-              <div className="flex items-center">
-                <Icon className="h-6 w-6 text-blue-500 mr-2" />
-                <CardTitle>{title} - AI Insights</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="prose max-w-none">
-                <p className="text-gray-700 whitespace-pre-wrap">{analysis.ai_insights}</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Recommendations/Risk Factors/Optimization Plan */}
-        {analysis.recommendations && (
-          <Card variant="default" size="default">
-            <CardHeader>
-              <CardTitle>Actionable Recommendations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {analysis.recommendations.map((rec, index) => (
-                  <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                    <div className={`w-3 h-3 rounded-full mt-2 ${
-                      rec.priority === 'high' ? 'bg-red-500' : 
-                      rec.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
-                    }`}></div>
-                    <div>
-                      <p className="font-medium text-gray-900">{rec.action}</p>
-                      <p className="text-sm text-gray-600 capitalize">{rec.type} • {rec.priority} priority</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {analysis.risk_factors && (
-          <Card variant="error" size="default">
-            <CardHeader>
-              <CardTitle>Identified Risk Factors</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {analysis.risk_factors.map((risk, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-gray-900">{risk.factor}</p>
-                      <p className="text-sm text-gray-600 capitalize">{risk.probability} probability • {risk.impact} impact</p>
-                    </div>
-                    <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      risk.impact === 'high' ? 'bg-red-100 text-red-800' :
-                      risk.impact === 'medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
-                    }`}>
-                      {risk.impact}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {analysis.optimization_plan && (
-          <Card variant="info" size="default">
-            <CardHeader>
-              <CardTitle>Optimization Plan</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {analysis.optimization_plan.map((plan, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-gray-900">{plan.action}</p>
-                      <p className="text-sm text-gray-600">{plan.expected_impact}</p>
-                    </div>
-                    <div className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                      Optimization
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {analysis.strategic_recommendations && (
-          <Card variant="warning" size="default">
-            <CardHeader>
-              <CardTitle>Strategic Recommendations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {analysis.strategic_recommendations.map((rec, index) => (
-                  <div key={index} className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="font-medium text-gray-900">{rec.strategy}</p>
-                      <div className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium">
-                        {rec.timeline}
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-600 capitalize">{rec.investment} investment required</p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-    );
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Future - AI Analysis</h1>
-          <p className="mt-2 text-gray-600">
-            AI-powered insights for revenue optimization, risk mitigation, and strategic growth
+    <div className="future-page business-container">
+      {/* Header Section */}
+      <div className="future-header">
+        <div className="header-content">
+          <div className="header-badge">
+            <Bot className="w-4 h-4" />
+            <span>AI Assistant</span>
+          </div>
+          <h1 className="header-title">Intelligent Business Solutions</h1>
+          <p className="header-description">
+            Leverage advanced AI capabilities to optimize your business operations, 
+            analyze data patterns, and make informed decisions.
           </p>
         </div>
+      </div>
 
-        {/* Tabs */}
-        <div className="mb-8">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
+      {/* Main Content */}
+      <div className="future-content">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="assistant" className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4" />
+              AI Assistant
+            </TabsTrigger>
+            <TabsTrigger value="strategy" className="flex items-center gap-2">
+              <Lightbulb className="w-4 h-4" />
+              Strategy
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="assistant" className="space-y-6">
+            {/* AI Chat Interface */}
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                      <Brain className="w-5 h-5 text-primary-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">AI Business Assistant</CardTitle>
+                      <CardDescription>Ask questions and get intelligent insights about your business</CardDescription>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handlePauseToggle}
+                      className={isPaused ? 'bg-yellow-50 border-yellow-200 text-yellow-700' : ''}
+                    >
+                      {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleReset}>
+                      <RotateCcw className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="chat-container">
+                  <ChatGPTInterface 
+                    apiKey={CHATGPT_CONFIG.API_KEY}
+                    className="future-chat-interface"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="strategy" className="space-y-6">
+            {/* Real-time Strategy Analysis */}
+            <Card className="border-0 shadow-sm bg-gradient-to-r from-blue-50 to-indigo-50">
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <Brain className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Real-time Revenue Strategy</CardTitle>
+                    <CardDescription>AI-powered insights to boost your revenue with actionable recommendations</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+
+            {/* Strategy Insights Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {strategyInsights.map((insight) => {
+                const Icon = insight.icon;
                 return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`${
-                      activeTab === tab.id
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2`}
+                  <Card 
+                    key={insight.id} 
+                    className={`hover:shadow-md transition-all cursor-pointer group strategy-insight-card ${
+                      selectedStrategy === insight.id 
+                        ? 'ring-2 ring-primary-500 bg-primary-50 selected' 
+                        : 'hover:shadow-lg'
+                    }`}
+                    onClick={() => handleStrategyClick(insight.id)}
                   >
-                    <Icon className="h-5 w-5" />
-                    <span>{tab.name}</span>
-                  </button>
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        <div className={`w-12 h-12 ${insight.bgColor} rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform ${
+                          selectedStrategy === insight.id ? 'scale-105' : ''
+                        }`}>
+                          <Icon className={`w-6 h-6 ${insight.color}`} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="font-semibold text-gray-900">{insight.title}</h3>
+                            <Badge 
+                              variant={insight.priority === 'Urgent' ? 'destructive' : insight.priority === 'High' ? 'default' : 'secondary'}
+                              className="text-xs"
+                            >
+                              {insight.priority}
+                            </Badge>
+                            {insight.trend === 'up' ? (
+                              <ArrowUp className="w-4 h-4 text-green-600" />
+                            ) : (
+                              <ArrowDown className="w-4 h-4 text-red-600" />
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-600 mb-3">{insight.description}</p>
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-xs font-medium text-gray-500">Impact:</span>
+                            <Badge variant="outline" className="text-xs">
+                              {insight.impact}
+                            </Badge>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="p-0 h-auto text-primary-600 hover:text-primary-700"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStrategyClick(insight.id);
+                            }}
+                          >
+                            {selectedStrategy === insight.id ? 'Hide strategy' : 'View strategy'} 
+                            <ChevronRight className={`w-4 h-4 ml-1 transition-transform ${
+                              selectedStrategy === insight.id ? 'rotate-90' : ''
+                            }`} />
+                          </Button>
+                        </div>
+                      </div>
+                      {selectedStrategy === insight.id && (
+                        <div className="mt-4 p-6 bg-gradient-to-br from-white to-gray-50 rounded-lg border border-gray-200 shadow-lg strategy-detail-view">
+                          <div className="flex items-start gap-3 mb-4">
+                            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                              <Lightbulb className="w-4 h-4 text-yellow-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-gray-900 text-lg">Revenue Boost Strategy</h4>
+                              <p className="text-sm text-gray-600">Detailed implementation plan</p>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-4">
+                            <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+                              <h5 className="font-medium text-blue-900 mb-2">Strategy Recommendation</h5>
+                              <p className="text-sm text-blue-800">{insight.recommendation}</p>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="p-3 bg-green-50 rounded-lg">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <CheckCircle className="w-4 h-4 text-green-600" />
+                                  <span className="font-medium text-green-900">Expected Impact</span>
+                                </div>
+                                <p className="text-sm text-green-700">
+                                  {insight.impact === 'High' ? 'Significant revenue increase expected' : 
+                                   insight.impact === 'Medium' ? 'Moderate revenue improvement' : 
+                                   'Minor revenue boost'}
+                                </p>
+                              </div>
+                              
+                              <div className="p-3 bg-orange-50 rounded-lg">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Clock className="w-4 h-4 text-orange-600" />
+                                  <span className="font-medium text-orange-900">Priority Level</span>
+                                </div>
+                                <p className="text-sm text-orange-700">
+                                  {insight.priority === 'Urgent' ? 'Immediate action required' : 
+                                   insight.priority === 'High' ? 'Should be addressed soon' : 
+                                   'Can be planned for later'}
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div className="p-4 bg-gray-50 rounded-lg">
+                              <h5 className="font-medium text-gray-900 mb-2">Implementation Steps</h5>
+                              <ul className="text-sm text-gray-700 space-y-1">
+                                {insight.id === 'monday-analysis' && (
+                                  <>
+                                    <li>• Create Monday-specific promotional campaigns</li>
+                                    <li>• Offer special discounts or incentives for Monday transactions</li>
+                                    <li>• Send targeted marketing emails on Sunday evenings</li>
+                                    <li>• Implement "Monday Motivation" messaging in your app</li>
+                                  </>
+                                )}
+                                {insight.id === 'peak-hours' && (
+                                  <>
+                                    <li>• Increase staff availability during 2-4 PM window</li>
+                                    <li>• Boost marketing spend during peak hours</li>
+                                    <li>• Optimize server capacity for high-traffic periods</li>
+                                    <li>• Create time-sensitive offers for peak hours</li>
+                                  </>
+                                )}
+                                {insight.id === 'weekend-opportunity' && (
+                                  <>
+                                    <li>• Launch weekend-specific product promotions</li>
+                                    <li>• Extend customer support hours on weekends</li>
+                                    <li>• Create weekend-themed marketing campaigns</li>
+                                    <li>• Offer weekend-only special features or services</li>
+                                  </>
+                                )}
+                                {insight.id === 'psp-performance' && (
+                                  <>
+                                    <li>• Route high-value transactions through CRYPPAY</li>
+                                    <li>• Negotiate better rates with CRYPPAY</li>
+                                    <li>• Analyze CRYPPAY's success factors</li>
+                                    <li>• Apply CRYPPAY's best practices to other PSPs</li>
+                                  </>
+                                )}
+                              </ul>
+                            </div>
+                            
+                            <div className="flex items-center justify-between pt-2">
+                              <div className="flex items-center gap-4 text-xs text-gray-500">
+                                <span className="flex items-center gap-1">
+                                  <TrendingUp className="w-3 h-3 text-green-600" />
+                                  Revenue Optimization
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Target className="w-3 h-3 text-blue-600" />
+                                  Strategic Focus
+                                </span>
+                              </div>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleImplementStrategy(insight.id);
+                                }}
+                                className="text-xs"
+                              >
+                                Implement Strategy
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
                 );
               })}
-            </nav>
-          </div>
-        </div>
+            </div>
 
-        {/* Content */}
-        <div className="bg-white rounded-lg shadow">
-          <div className="p-6">
-            {loading && (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-                <span className="ml-4 text-gray-600">Analyzing data with AI...</span>
-              </div>
+            {/* Revenue Boost Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Revenue Boost Actions</CardTitle>
+                <CardDescription>Quick actions to implement revenue optimization strategies</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {quickActions.map((action) => {
+                    const Icon = action.icon;
+                    return (
+                      <Button
+                        key={action.id}
+                        variant="outline"
+                        className={`h-auto p-4 flex flex-col items-center gap-3 hover:bg-gray-50 transition-all ${
+                          selectedAction === action.id 
+                            ? 'bg-primary-50 border-primary-300 text-primary-700' 
+                            : ''
+                        }`}
+                        onClick={() => handleActionClick(action.id)}
+                      >
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+                          selectedAction === action.id 
+                            ? 'bg-primary-200' 
+                            : 'bg-primary-100'
+                        }`}>
+                          <Icon className={`w-5 h-5 ${
+                            selectedAction === action.id 
+                              ? 'text-primary-700' 
+                              : 'text-primary-600'
+                          }`} />
+                        </div>
+                        <div className="text-center">
+                          <div className="font-medium text-sm">{action.title}</div>
+                          <div className="text-xs text-gray-500 mt-1">{action.description}</div>
+                        </div>
+                        {selectedAction === action.id && (
+                          <div className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        )}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Status Indicators */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      isPaused ? 'bg-yellow-100' : 'bg-green-100'
+                    }`}>
+                      <Activity className={`w-4 h-4 ${
+                        isPaused ? 'text-yellow-600' : 'text-green-600'
+                      }`} />
+                    </div>
+                    <div>
+                      <div className="font-medium text-sm">AI Status</div>
+                      <div className={`text-xs ${
+                        isPaused ? 'text-yellow-600' : 'text-green-600'
+                      }`}>
+                        {isPaused ? 'Paused' : 'Online & Ready'}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                      <BarChart3 className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-sm">Data Processing</div>
+                      <div className="text-xs text-blue-600">
+                        {isPaused ? 'Paused' : 'Real-time Analysis'}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                      <Shield className="w-4 h-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-sm">Security</div>
+                      <div className="text-xs text-purple-600">Protected & Secure</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Action Feedback */}
+            {selectedAction && (
+              <Card className="border-green-200 bg-green-50">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                      <Target className="w-4 h-4 text-green-600" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-sm text-green-800">
+                        Action Executed: {quickActions.find(a => a.id === selectedAction)?.title}
+                      </div>
+                      <div className="text-xs text-green-600">
+                        Your request has been processed successfully
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             )}
-
-            {!loading && (
-              <>
-                {activeTab === 'overview' && renderOverview()}
-                {activeTab === 'revenue' && (
-                  <div className="space-y-6">
-                    {renderAnalysisSection(
-                      comprehensiveAnalysis?.revenue_analysis || null, 
-                      'Revenue Analysis', 
-                      BarChart3
-                    )}
-                    
-                    {/* Revenue Visualizations */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {/* Daily Revenue Trend */}
-                      <div className="bg-white rounded-lg shadow p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Daily Revenue Trend</h3>
-                        <ResponsiveContainer width="100%" height={300}>
-                          <AreaChart data={processRevenueData()}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="date" />
-                            <YAxis />
-                            <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']} />
-                            <Area 
-                              type="monotone" 
-                              dataKey="amount" 
-                              stroke="#3b82f6" 
-                              fill="#3b82f6" 
-                              fillOpacity={0.3}
-                            />
-                          </AreaChart>
-                        </ResponsiveContainer>
-                      </div>
-
-                      {/* PSP Distribution */}
-                      <div className="bg-white rounded-lg shadow p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">PSP Revenue Distribution</h3>
-                        <ResponsiveContainer width="100%" height={300}>
-                          <PieChart>
-                            <Pie
-                              data={processPSPData()}
-                              cx="50%"
-                              cy="50%"
-                              labelLine={false}
-                              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                              outerRadius={80}
-                              fill="#8884d8"
-                              dataKey="value"
-                            >
-                              {processPSPData().map((entry: any, index: number) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} />
-                              ))}
-                            </Pie>
-                            <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']} />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {activeTab === 'risk' && (
-                  <div className="space-y-6">
-                    {renderAnalysisSection(
-                      comprehensiveAnalysis?.risk_prediction || null, 
-                      'Risk Prediction', 
-                      AlertTriangle
-                    )}
-                    
-                    {/* Risk Visualizations */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {/* Risk Matrix */}
-                      <div className="bg-white rounded-lg shadow p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Risk Impact vs Probability</h3>
-                        <ResponsiveContainer width="100%" height={300}>
-                          <ScatterChart data={processRiskData()}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis 
-                              type="number" 
-                              dataKey="probability" 
-                              name="Probability" 
-                              domain={[0, 100]}
-                              label={{ value: 'Probability (%)', position: 'insideBottom', offset: -5 }}
-                            />
-                            <YAxis 
-                              type="number" 
-                              dataKey="impact" 
-                              name="Impact" 
-                              domain={[0, 100]}
-                              label={{ value: 'Impact (%)', angle: -90, position: 'insideLeft' }}
-                            />
-                            <Tooltip 
-                              cursor={{ strokeDasharray: '3 3' }}
-                              formatter={(value: any, name: any) => [
-                                `${value}%`, 
-                                name === 'probability' ? 'Probability' : 'Impact'
-                              ]}
-                              labelFormatter={(label: any, payload: any) => 
-                                payload && payload[0] ? payload[0].payload.factor : ''
-                              }
-                            />
-                            <Scatter dataKey="impact" fill="#ef4444" />
-                          </ScatterChart>
-                        </ResponsiveContainer>
-                      </div>
-
-                      {/* Risk Factors Bar Chart */}
-                      <div className="bg-white rounded-lg shadow p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Risk Factor Analysis</h3>
-                        <ResponsiveContainer width="100%" height={300}>
-                          <BarChart data={processRiskData()}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="factor" />
-                            <YAxis />
-                            <Tooltip formatter={(value) => [`${value}%`, 'Risk Level']} />
-                            <Bar dataKey="probability" fill="#f59e0b" />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {activeTab === 'optimization' && renderAnalysisSection(
-                  comprehensiveAnalysis?.psp_optimization || null, 
-                  'PSP Optimization', 
-                  Settings
-                )}
-                {activeTab === 'strategy' && renderAnalysisSection(
-                  comprehensiveAnalysis?.strategic_insights || null, 
-                  'Strategic Insights', 
-                  Lightbulb
-                )}
-                {activeTab === 'insights' && (
-                  <div className="space-y-6">
-                    {/* Live Performance Monitoring */}
-                    <div className="bg-white rounded-lg shadow p-6">
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center space-x-3">
-                          <Activity className="h-6 w-6 text-green-500" />
-                          <h3 className="text-lg font-semibold text-gray-900">Live System Performance</h3>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                            <span className="text-sm text-green-600">Real-time</span>
-                          </div>
-                        </div>
-                        <Button
-                          onClick={fetchRealTimeData}
-                          variant="outline"
-                          size="sm"
-                          className="flex items-center space-x-2"
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                          <span>Refresh</span>
-                        </Button>
-                      </div>
-
-                      {/* Performance Metrics Grid */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                        {processPerformanceData().map((metric, index) => (
-                          <div key={index} className="p-4 bg-gray-50 rounded-lg">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-medium text-gray-600">{metric.metric}</span>
-                              <div 
-                                className="w-3 h-3 rounded-full" 
-                                style={{ backgroundColor: metric.color }}
-                              ></div>
-                            </div>
-                            <div className="text-2xl font-bold text-gray-900">
-                              {metric.value}%
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                              <div 
-                                className="h-2 rounded-full transition-all duration-500"
-                                style={{ 
-                                  width: `${Math.min(metric.value, 100)}%`,
-                                  backgroundColor: metric.color 
-                                }}
-                              ></div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Performance Chart */}
-                      <div className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={processPerformanceData()}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="metric" />
-                            <YAxis domain={[0, 100]} />
-                            <Tooltip formatter={(value) => [`${value}%`, 'Usage']} />
-                            <Bar dataKey="value" fill="#3b82f6" />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-
-                    {/* Real-time AI Insights */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {/* Live AI Recommendations */}
-                      <div className="bg-white rounded-lg shadow p-6">
-                        <div className="flex items-center space-x-3 mb-4">
-                          <Zap className="h-5 w-5 text-yellow-500" />
-                          <h3 className="text-lg font-semibold text-gray-900">Live AI Recommendations</h3>
-                        </div>
-                        <div className="space-y-3">
-                          {realTimeData?.analytics && (
-                            <>
-                              <div className="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-                                <p className="text-sm font-medium text-blue-900">Revenue Optimization</p>
-                                <p className="text-xs text-blue-700">
-                                  Current revenue trend shows {realTimeData.analytics.revenue_growth > 0 ? 'positive' : 'negative'} growth
-                                </p>
-                              </div>
-                              <div className="p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
-                                <p className="text-sm font-medium text-green-900">Performance Alert</p>
-                                <p className="text-xs text-green-700">
-                                  System performance is optimal for current load
-                                </p>
-                              </div>
-                              <div className="p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
-                                <p className="text-sm font-medium text-yellow-900">Risk Monitoring</p>
-                                <p className="text-xs text-yellow-700">
-                                  Monitor PSP allocation for risk diversification
-                                </p>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* System Health Status */}
-                      <div className="bg-white rounded-lg shadow p-6">
-                        <div className="flex items-center space-x-3 mb-4">
-                          <Target className="h-5 w-5 text-green-500" />
-                          <h3 className="text-lg font-semibold text-gray-900">System Health</h3>
-                        </div>
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">Database Status</span>
-                            <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                              Healthy
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">API Response Time</span>
-                            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                              {realTimeData?.performance?.avg_response_time || 'N/A'}ms
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">Cache Performance</span>
-                            <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
-                              {realTimeData?.performance?.cache_hit_rate || 'N/A'}%
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">Last AI Analysis</span>
-                            <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">
-                              {lastUpdate.toLocaleTimeString()}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Refresh Button */}
-        <div className="mt-6 flex justify-center">
-          <Button
-            onClick={fetchComprehensiveAnalysis}
-            disabled={loading}
-            variant="gradient"
-            size="lg"
-            className="inline-flex items-center"
-          >
-            <Sparkles className="h-5 w-5 mr-2" />
-            {loading ? 'Analyzing...' : 'Refresh AI Analysis'}
-          </Button>
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

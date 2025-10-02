@@ -12,12 +12,11 @@ import {
   UnifiedSection, 
   UnifiedGrid 
 } from '../../design-system';
-import { Breadcrumb } from '../ui';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { RevenueChart } from './RevenueChart';
 import { DataTable } from './DataTable';
 import { SkeletonLoader } from './SkeletonLoader';
-import { dashboardService, DashboardData, SystemPerformance, DataQuality, SecurityMetrics } from '../../services/dashboardService';
+import { dashboardService, DashboardData } from '../../services/dashboardService';
 import { ExcelExportService } from '../../services/excelExportService';
 import { getStatusColor, getHealthColor, getPerformanceColor, getUsageColor, getPriorityColor, statusText } from '../../utils/colorUtils';
 import { getCardSpacing, getSectionSpacing, getGridSpacing, getComponentSpacing, getTextSpacing, getRadius } from '../../utils/spacingUtils';
@@ -47,17 +46,15 @@ import {
   FileText,
   Download,
   TrendingUp,
+  TrendingDown,
   Filter,
-  Search,
-  ArrowUpRight,
-  ArrowDownRight,
-  Minus,
+  ChevronLeft,
   ChevronRight,
+  Search,
   ChevronDown,
   MoreHorizontal,
   Bell,
   Star,
-  TrendingDown,
   PieChart,
   LineChart,
   BarChart,
@@ -69,7 +66,9 @@ import {
   Unlock,
   Server,
   Network,
-  Award
+  Award,
+  Sparkles,
+  CreditCard
 } from 'lucide-react';
 
 interface ModernDashboardProps {
@@ -90,16 +89,67 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ user }) => {
   const [error, setError] = useState<string | null>(null);
   const [showZeroValues, setShowZeroValues] = useState(true);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
-  const [systemPerformance, setSystemPerformance] = useState<SystemPerformance | null>(null);
-  const [dataQuality, setDataQuality] = useState<DataQuality | null>(null);
-  const [securityMetrics, setSecurityMetrics] = useState<SecurityMetrics | null>(null);
   const [commissionAnalytics, setCommissionAnalytics] = useState<any>(null);
-  const [isRefreshingSystem, setIsRefreshingSystem] = useState(false);
-  const [showAllActivities, setShowAllActivities] = useState(false);
-  const [lastSystemUpdate, setLastSystemUpdate] = useState<Date>(new Date());
   const [exchangeRates, setExchangeRates] = useState<any>(null);
-  const [pspRolloverData, setPspRolloverData] = useState<any>(null);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [chartPeriod, setChartPeriod] = useState<'daily' | 'monthly' | 'annual'>('daily');
+  const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
+  const [financialPerformanceData, setFinancialPerformanceData] = useState<any>(null);
+  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date()); // Current month by default
+  const [selectedMonthData, setSelectedMonthData] = useState<any>(null);
+  const [selectedDay, setSelectedDay] = useState<Date>(new Date()); // Current day by default
+  const [selectedDayData, setSelectedDayData] = useState<any>(null);
+
+  // Month navigation functions
+  const goToPreviousMonth = () => {
+    const newMonth = new Date(selectedMonth);
+    newMonth.setMonth(newMonth.getMonth() - 1);
+    setSelectedMonth(newMonth);
+  };
+
+  const goToNextMonth = () => {
+    const newMonth = new Date(selectedMonth);
+    newMonth.setMonth(newMonth.getMonth() + 1);
+    setSelectedMonth(newMonth);
+  };
+
+  const isCurrentMonth = () => {
+    const now = new Date();
+    return selectedMonth.getMonth() === now.getMonth() && selectedMonth.getFullYear() === now.getFullYear();
+  };
+
+  // Day navigation functions
+  const goToPreviousDay = () => {
+    const newDay = new Date(selectedDay);
+    newDay.setDate(newDay.getDate() - 1);
+    setSelectedDay(newDay);
+  };
+
+  const goToNextDay = () => {
+    const newDay = new Date(selectedDay);
+    newDay.setDate(newDay.getDate() + 1);
+    setSelectedDay(newDay);
+  };
+
+  const isCurrentDay = () => {
+    const now = new Date();
+    return selectedDay.getDate() === now.getDate() && 
+           selectedDay.getMonth() === now.getMonth() && 
+           selectedDay.getFullYear() === now.getFullYear();
+  };
+
+  const formatMonthYear = (date: Date) => {
+    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  };
+
+  const formatDayDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
 
   // Generate quick stats from real data
   const getQuickStats = () => {
@@ -137,174 +187,462 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ user }) => {
     ];
   };
 
-  // Generate system health from real data
-  const getSystemHealth = () => {
-    if (!systemPerformance) return null;
-    
-    return {
-      overall: systemPerformance.uptime_percentage,
-      database: 100 - (systemPerformance.database_response_time / 1000),
-      api: 100 - (systemPerformance.api_response_time / 1000),
-      psps: 100 - (systemPerformance.cpu_usage / 10),
-      security: securityMetrics ? 100 - (securityMetrics.failed_logins.today / 10) : 100
-    };
+  // Helper function to safely get numeric values with fallback
+  const safeGetValue = (obj: any, key: string, fallback: number = 0): number => {
+    const value = obj?.[key];
+    return (typeof value === 'number' && !isNaN(value)) ? value : fallback;
   };
 
-  // Generate system activity logs with real-time data
-  const getSystemActivity = () => {
-    const activities = [];
-    const now = new Date();
+  // Generate financial performance breakdown data by time period using real data
+  const getFinancialPerformanceBreakdown = () => {
+    if (!financialPerformanceData) return [];
     
-    if (systemPerformance) {
-      const cpuStatus = systemPerformance.cpu_usage > 80 ? 'high' : systemPerformance.cpu_usage > 60 ? 'medium' : 'normal';
-      const memoryStatus = systemPerformance.memory_usage > 90 ? 'high' : systemPerformance.memory_usage > 70 ? 'medium' : 'normal';
-      
-      activities.push({
-        type: 'info',
-        message: `System performance check completed - CPU: ${systemPerformance.cpu_usage}% (${cpuStatus}), Memory: ${systemPerformance.memory_usage}% (${memoryStatus})`,
-          time: 'Just now',
-        priority: systemPerformance.cpu_usage > 80 || systemPerformance.memory_usage > 90 ? 'high' : 'low'
-      });
-    }
-
-    if (dataQuality) {
-      activities.push({
-        type: dataQuality.overall_quality_score > 90 ? 'success' : 'warning',
-        message: `Data quality assessment: ${dataQuality.overall_quality_score}% overall score`,
-        time: '2 minutes ago',
-        priority: dataQuality.overall_quality_score < 80 ? 'high' : 'low'
-      });
-    }
-
-    if (securityMetrics) {
-      activities.push({
-        type: securityMetrics.suspicious_activities.total_alerts > 5 ? 'warning' : 'info',
-        message: `Security scan completed: ${securityMetrics.suspicious_activities.total_alerts} alerts detected`,
-        time: '5 minutes ago',
-        priority: securityMetrics.suspicious_activities.total_alerts > 5 ? 'high' : 'low'
-      });
-    }
-
-    return activities.slice(0, showAllActivities ? 10 : 5);
+    const data = financialPerformanceData.data;
+    
+    // Use real data from API
+    const dailyData = data.daily;
+    const monthlyData = data.monthly;
+    const annualData = data.annual;
+    
+    // Calculate daily metrics from real data (use selected day data if available)
+    const currentDailyData = selectedDayData || dailyData;
+    const dailyTotalBank = currentDailyData.total_bank_usd + (currentDailyData.total_bank_tl / (data.exchange_rate || 48));
+    const dailyCreditCard = currentDailyData.total_cc_usd + (currentDailyData.total_cc_tl / (data.exchange_rate || 48));
+    const dailyTether = currentDailyData.total_tether_usd + (currentDailyData.total_tether_tl / (data.exchange_rate || 48));
+    const dailyConv = currentDailyData.conv_usd || 0; // Total revenue in USD
+    
+    // Calculate monthly metrics from real data (use selected month data if available)
+    const currentMonthlyData = selectedMonthData || monthlyData;
+    const monthlyTotalBank = currentMonthlyData.total_bank_usd + (currentMonthlyData.total_bank_tl / (data.exchange_rate || 48));
+    const monthlyCreditCard = currentMonthlyData.total_cc_usd + (currentMonthlyData.total_cc_tl / (data.exchange_rate || 48));
+    const monthlyTether = currentMonthlyData.total_tether_usd + (currentMonthlyData.total_tether_tl / (data.exchange_rate || 48));
+    const monthlyConv = currentMonthlyData.conv_usd || 0; // Total revenue in USD
+    
+    // Calculate annual metrics from real data
+    const annualTotalBank = annualData.total_bank_usd + (annualData.total_bank_tl / (data.exchange_rate || 48));
+    const annualCreditCard = annualData.total_cc_usd + (annualData.total_cc_tl / (data.exchange_rate || 48));
+    const annualTether = annualData.total_tether_usd + (annualData.total_tether_tl / (data.exchange_rate || 48));
+    const annualConv = annualData.conv_usd || 0; // Total revenue in USD
+    
+    // Use real transaction counts for trends
+    const dailyTrend = 0; // Could be calculated from previous day comparison
+    const monthlyTrend = 0; // Could be calculated from previous month comparison
+    const annualTrend = 0; // Could be calculated from previous year comparison
+    
+    return [
+      // Daily metrics
+      {
+        timePeriod: 'Daily',
+        metric: 'Total Bank',
+        amount: currentDailyData.total_bank_usd + currentDailyData.total_bank_tl,
+        usdAmount: currentDailyData.total_bank_usd,
+        tlAmount: currentDailyData.total_bank_tl,
+        count: currentDailyData.bank_count,
+        trend: dailyTrend,
+        icon: Building2,
+        description: 'Today\'s bank transactions',
+        color: 'blue',
+        bgColor: 'bg-blue-50',
+        iconColor: 'text-gray-800',
+        trendColor: dailyTrend >= 0 ? 'text-green-600' : 'text-red-600'
+      },
+      {
+        timePeriod: 'Daily',
+        metric: 'CC (Credit Card)',
+        amount: currentDailyData.total_cc_usd + currentDailyData.total_cc_tl,
+        usdAmount: currentDailyData.total_cc_usd,
+        tlAmount: currentDailyData.total_cc_tl,
+        count: currentDailyData.cc_count,
+        trend: dailyTrend,
+        icon: CreditCard,
+        description: 'Today\'s credit card transactions',
+        color: 'purple',
+        bgColor: 'bg-purple-50',
+        iconColor: 'text-gray-800',
+        trendColor: dailyTrend >= 0 ? 'text-green-600' : 'text-red-600'
+      },
+      {
+        timePeriod: 'Daily',
+        metric: 'Tether',
+        amount: currentDailyData.total_tether_usd + currentDailyData.total_tether_tl,
+        usdAmount: currentDailyData.total_tether_usd,
+        tlAmount: currentDailyData.total_tether_tl,
+        count: currentDailyData.tether_count,
+        trend: dailyTrend,
+        icon: DollarSign,
+        description: 'Today\'s tether transactions',
+        color: 'green',
+        bgColor: 'bg-green-50',
+        iconColor: 'text-gray-800',
+        trendColor: dailyTrend >= 0 ? 'text-green-600' : 'text-red-600'
+      },
+      {
+        timePeriod: 'Daily',
+        metric: 'Conv',
+        amount: dailyConv,
+        usdAmount: dailyConv,
+        tlAmount: 0,
+        count: 0,
+        trend: 0,
+        icon: Activity,
+        description: 'Total revenue in USD (all methods converted)',
+        color: 'blue',
+        bgColor: 'bg-blue-50',
+        iconColor: 'text-gray-800',
+        trendColor: 'text-blue-600'
+      },
+      {
+        timePeriod: 'Daily',
+        metric: 'Total Deposits',
+        amount: safeGetValue(currentDailyData, 'total_deposits_usd') + safeGetValue(currentDailyData, 'total_deposits_tl'),
+        usdAmount: safeGetValue(currentDailyData, 'total_deposits_usd'),
+        tlAmount: safeGetValue(currentDailyData, 'total_deposits_tl'),
+        count: 0,
+        trend: dailyTrend,
+        icon: TrendingUp,
+        description: 'Today\'s total deposits',
+        color: 'green',
+        bgColor: 'bg-green-50',
+        iconColor: 'text-gray-800',
+        trendColor: dailyTrend >= 0 ? 'text-green-600' : 'text-red-600'
+      },
+      {
+        timePeriod: 'Daily',
+        metric: 'Total Withdrawals',
+        amount: safeGetValue(currentDailyData, 'total_withdrawals_usd') + safeGetValue(currentDailyData, 'total_withdrawals_tl'),
+        usdAmount: safeGetValue(currentDailyData, 'total_withdrawals_usd'),
+        tlAmount: safeGetValue(currentDailyData, 'total_withdrawals_tl'),
+        count: 0,
+        trend: dailyTrend,
+        icon: TrendingDown,
+        description: 'Today\'s total withdrawals',
+        color: 'red',
+        bgColor: 'bg-red-50',
+        iconColor: 'text-gray-800',
+        trendColor: dailyTrend >= 0 ? 'text-green-600' : 'text-red-600'
+      },
+      {
+        timePeriod: 'Daily',
+        metric: 'Net Cash',
+        amount: safeGetValue(currentDailyData, 'net_cash_usd') + safeGetValue(currentDailyData, 'net_cash_tl'),
+        usdAmount: safeGetValue(currentDailyData, 'net_cash_usd'),
+        tlAmount: safeGetValue(currentDailyData, 'net_cash_tl'),
+        count: 0,
+        trend: dailyTrend,
+        icon: DollarSign,
+        description: 'Today\'s net cash flow (deposits - withdrawals)',
+        color: (safeGetValue(currentDailyData, 'net_cash_usd') + safeGetValue(currentDailyData, 'net_cash_tl')) >= 0 ? 'green' : 'red',
+        bgColor: (safeGetValue(currentDailyData, 'net_cash_usd') + safeGetValue(currentDailyData, 'net_cash_tl')) >= 0 ? 'bg-green-50' : 'bg-red-50',
+        iconColor: 'text-gray-800',
+        trendColor: (safeGetValue(currentDailyData, 'net_cash_usd') + safeGetValue(currentDailyData, 'net_cash_tl')) >= 0 ? 'text-green-600' : 'text-red-600'
+      },
+      // Monthly metrics
+      {
+        timePeriod: 'Monthly',
+        metric: 'Total Bank',
+        amount: currentMonthlyData.total_bank_usd + currentMonthlyData.total_bank_tl,
+        usdAmount: currentMonthlyData.total_bank_usd,
+        tlAmount: currentMonthlyData.total_bank_tl,
+        count: currentMonthlyData.bank_count,
+        trend: monthlyTrend,
+        icon: Building2,
+        description: 'This month\'s bank transactions',
+        color: 'blue',
+        bgColor: 'bg-blue-50',
+        iconColor: 'text-gray-800',
+        trendColor: monthlyTrend >= 0 ? 'text-green-600' : 'text-red-600'
+      },
+      {
+        timePeriod: 'Monthly',
+        metric: 'CC (Credit Card)',
+        amount: currentMonthlyData.total_cc_usd + currentMonthlyData.total_cc_tl,
+        usdAmount: currentMonthlyData.total_cc_usd,
+        tlAmount: currentMonthlyData.total_cc_tl,
+        count: currentMonthlyData.cc_count,
+        trend: monthlyTrend,
+        icon: CreditCard,
+        description: 'This month\'s credit card transactions',
+        color: 'purple',
+        bgColor: 'bg-purple-50',
+        iconColor: 'text-gray-800',
+        trendColor: monthlyTrend >= 0 ? 'text-green-600' : 'text-red-600'
+      },
+      {
+        timePeriod: 'Monthly',
+        metric: 'Tether',
+        amount: currentMonthlyData.total_tether_usd + currentMonthlyData.total_tether_tl,
+        usdAmount: currentMonthlyData.total_tether_usd,
+        tlAmount: currentMonthlyData.total_tether_tl,
+        count: currentMonthlyData.tether_count,
+        trend: monthlyTrend,
+        icon: DollarSign,
+        description: 'This month\'s tether transactions',
+        color: 'green',
+        bgColor: 'bg-green-50',
+        iconColor: 'text-gray-800',
+        trendColor: monthlyTrend >= 0 ? 'text-green-600' : 'text-red-600'
+      },
+      {
+        timePeriod: 'Monthly',
+        metric: 'Conv',
+        amount: monthlyConv,
+        usdAmount: monthlyConv,
+        tlAmount: 0,
+        count: 0,
+        trend: 0,
+        icon: Activity,
+        description: 'Total revenue in USD (all methods converted)',
+        color: 'blue',
+        bgColor: 'bg-blue-50',
+        iconColor: 'text-gray-800',
+        trendColor: 'text-blue-600'
+      },
+      {
+        timePeriod: 'Monthly',
+        metric: 'Total Deposits',
+        amount: safeGetValue(currentMonthlyData, 'total_deposits_usd') + safeGetValue(currentMonthlyData, 'total_deposits_tl'),
+        usdAmount: safeGetValue(currentMonthlyData, 'total_deposits_usd'),
+        tlAmount: safeGetValue(currentMonthlyData, 'total_deposits_tl'),
+        count: 0,
+        trend: monthlyTrend,
+        icon: TrendingUp,
+        description: 'This month\'s total deposits',
+        color: 'green',
+        bgColor: 'bg-green-50',
+        iconColor: 'text-gray-800',
+        trendColor: monthlyTrend >= 0 ? 'text-green-600' : 'text-red-600'
+      },
+      {
+        timePeriod: 'Monthly',
+        metric: 'Total Withdrawals',
+        amount: safeGetValue(currentMonthlyData, 'total_withdrawals_usd') + safeGetValue(currentMonthlyData, 'total_withdrawals_tl'),
+        usdAmount: safeGetValue(currentMonthlyData, 'total_withdrawals_usd'),
+        tlAmount: safeGetValue(currentMonthlyData, 'total_withdrawals_tl'),
+        count: 0,
+        trend: monthlyTrend,
+        icon: TrendingDown,
+        description: 'This month\'s total withdrawals',
+        color: 'red',
+        bgColor: 'bg-red-50',
+        iconColor: 'text-gray-800',
+        trendColor: monthlyTrend >= 0 ? 'text-green-600' : 'text-red-600'
+      },
+      {
+        timePeriod: 'Monthly',
+        metric: 'Net Cash',
+        amount: safeGetValue(currentMonthlyData, 'net_cash_usd') + safeGetValue(currentMonthlyData, 'net_cash_tl'),
+        usdAmount: safeGetValue(currentMonthlyData, 'net_cash_usd'),
+        tlAmount: safeGetValue(currentMonthlyData, 'net_cash_tl'),
+        count: 0,
+        trend: monthlyTrend,
+        icon: DollarSign,
+        description: 'This month\'s net cash flow (deposits - withdrawals)',
+        color: (safeGetValue(currentMonthlyData, 'net_cash_usd') + safeGetValue(currentMonthlyData, 'net_cash_tl')) >= 0 ? 'green' : 'red',
+        bgColor: (safeGetValue(currentMonthlyData, 'net_cash_usd') + safeGetValue(currentMonthlyData, 'net_cash_tl')) >= 0 ? 'bg-green-50' : 'bg-red-50',
+        iconColor: 'text-gray-800',
+        trendColor: (safeGetValue(currentMonthlyData, 'net_cash_usd') + safeGetValue(currentMonthlyData, 'net_cash_tl')) >= 0 ? 'text-green-600' : 'text-red-600'
+      },
+      // Total metrics
+      {
+        timePeriod: 'Total',
+        metric: 'Total Bank',
+        amount: annualData.total_bank_usd + annualData.total_bank_tl,
+        usdAmount: annualData.total_bank_usd,
+        tlAmount: annualData.total_bank_tl,
+        count: annualData.bank_count,
+        trend: annualTrend,
+        icon: Building2,
+        description: 'This year\'s bank transactions',
+        color: 'blue',
+        bgColor: 'bg-blue-50',
+        iconColor: 'text-gray-800',
+        trendColor: annualTrend >= 0 ? 'text-green-600' : 'text-red-600'
+      },
+      {
+        timePeriod: 'Total',
+        metric: 'CC (Credit Card)',
+        amount: annualData.total_cc_usd + annualData.total_cc_tl,
+        usdAmount: annualData.total_cc_usd,
+        tlAmount: annualData.total_cc_tl,
+        count: annualData.cc_count,
+        trend: annualTrend,
+        icon: CreditCard,
+        description: 'This year\'s credit card transactions',
+        color: 'purple',
+        bgColor: 'bg-purple-50',
+        iconColor: 'text-gray-800',
+        trendColor: annualTrend >= 0 ? 'text-green-600' : 'text-red-600'
+      },
+      {
+        timePeriod: 'Total',
+        metric: 'Tether',
+        amount: annualData.total_tether_usd + annualData.total_tether_tl,
+        usdAmount: annualData.total_tether_usd,
+        tlAmount: annualData.total_tether_tl,
+        count: annualData.tether_count,
+        trend: annualTrend,
+        icon: DollarSign,
+        description: 'This year\'s tether transactions',
+        color: 'green',
+        bgColor: 'bg-green-50',
+        iconColor: 'text-gray-800',
+        trendColor: annualTrend >= 0 ? 'text-green-600' : 'text-red-600'
+      },
+      {
+        timePeriod: 'Total',
+        metric: 'Conv',
+        amount: annualConv,
+        usdAmount: annualConv,
+        tlAmount: 0,
+        count: 0,
+        trend: 0,
+        icon: Activity,
+        description: 'Total revenue in USD (all methods converted)',
+        color: 'blue',
+        bgColor: 'bg-blue-50',
+        iconColor: 'text-gray-800',
+        trendColor: 'text-blue-600'
+      },
+      {
+        timePeriod: 'Total',
+        metric: 'Total Deposits',
+        amount: safeGetValue(annualData, 'total_deposits_usd') + safeGetValue(annualData, 'total_deposits_tl'),
+        usdAmount: safeGetValue(annualData, 'total_deposits_usd'),
+        tlAmount: safeGetValue(annualData, 'total_deposits_tl'),
+        count: 0,
+        trend: annualTrend,
+        icon: TrendingUp,
+        description: 'This year\'s total deposits',
+        color: 'green',
+        bgColor: 'bg-green-50',
+        iconColor: 'text-gray-800',
+        trendColor: annualTrend >= 0 ? 'text-green-600' : 'text-red-600'
+      },
+      {
+        timePeriod: 'Total',
+        metric: 'Total Withdrawals',
+        amount: safeGetValue(annualData, 'total_withdrawals_usd') + safeGetValue(annualData, 'total_withdrawals_tl'),
+        usdAmount: safeGetValue(annualData, 'total_withdrawals_usd'),
+        tlAmount: safeGetValue(annualData, 'total_withdrawals_tl'),
+        count: 0,
+        trend: annualTrend,
+        icon: TrendingDown,
+        description: 'This year\'s total withdrawals',
+        color: 'red',
+        bgColor: 'bg-red-50',
+        iconColor: 'text-gray-800',
+        trendColor: annualTrend >= 0 ? 'text-green-600' : 'text-red-600'
+      },
+      {
+        timePeriod: 'Total',
+        metric: 'Net Cash',
+        amount: safeGetValue(annualData, 'net_cash_usd') + safeGetValue(annualData, 'net_cash_tl'),
+        usdAmount: safeGetValue(annualData, 'net_cash_usd'),
+        tlAmount: safeGetValue(annualData, 'net_cash_tl'),
+        count: 0,
+        trend: annualTrend,
+        icon: DollarSign,
+        description: 'This year\'s net cash flow (deposits - withdrawals)',
+        color: (safeGetValue(annualData, 'net_cash_usd') + safeGetValue(annualData, 'net_cash_tl')) >= 0 ? 'green' : 'red',
+        bgColor: (safeGetValue(annualData, 'net_cash_usd') + safeGetValue(annualData, 'net_cash_tl')) >= 0 ? 'bg-green-50' : 'bg-red-50',
+        iconColor: 'text-gray-800',
+        trendColor: (safeGetValue(annualData, 'net_cash_usd') + safeGetValue(annualData, 'net_cash_tl')) >= 0 ? 'text-green-600' : 'text-red-600'
+      }
+    ];
   };
 
-  // Generate alerts from real data
-  const getAlerts = () => {
-    const alerts = [];
+  // Transform chart data based on selected period
+  const getTransformedChartData = () => {
+    if (!dashboardData?.chart_data?.daily_revenue) return [];
     
-    if (systemPerformance) {
-      if (systemPerformance.cpu_usage > 80) {
-        alerts.push({
-          type: 'warning' as const,
-          message: `High CPU usage: ${systemPerformance.cpu_usage}%`,
-          time: 'Just now',
-          priority: 'high'
-        });
-      }
+    const dailyData = dashboardData.chart_data.daily_revenue;
+    
+    if (chartPeriod === 'daily') {
+      return dailyData;
+    } else if (chartPeriod === 'monthly') {
+      // Group daily data by month
+      const monthlyMap = new Map();
       
-      if (systemPerformance.memory_usage > 90) {
-        alerts.push({
-          type: 'warning' as const,
-          message: `High memory usage: ${systemPerformance.memory_usage}%`,
-          time: 'Just now',
-          priority: 'high'
-        });
-      }
-    }
-    
-    if (dataQuality) {
-      if (dataQuality.validation_status === 'needs_attention') {
-        alerts.push({
-          type: 'info' as const,
-          message: `Data quality needs attention: ${dataQuality.overall_quality_score}%`,
-          time: 'Just now',
-          priority: 'medium'
-        });
-      }
-      
-      if (dataQuality.overall_quality_score < 80) {
-        alerts.push({
-          type: 'warning' as const,
-          message: `Low data quality score: ${dataQuality.overall_quality_score}%`,
-          time: 'Just now',
-          priority: 'high'
-        });
-      }
-    }
-    
-    if (securityMetrics) {
-      if (securityMetrics.suspicious_activities.total_alerts > 5) {
-        alerts.push({
-          type: 'warning' as const,
-          message: `${securityMetrics.suspicious_activities.total_alerts} security alerts detected`,
-          time: 'Just now',
-          priority: 'high'
-        });
-      } else if (securityMetrics.suspicious_activities.total_alerts > 0) {
-        alerts.push({
-          type: 'info' as const,
-          message: `${securityMetrics.suspicious_activities.total_alerts} security alerts detected`,
-          time: 'Just now',
-          priority: 'medium'
-        });
-      }
-      
-      if (securityMetrics.failed_logins.today > 10) {
-        alerts.push({
-          type: 'warning' as const,
-          message: `High failed login attempts: ${securityMetrics.failed_logins.today}`,
-          time: 'Just now',
-          priority: 'high'
-        });
-      }
-    }
-    
-    if (exchangeRates?.success && exchangeRates.rates) {
-      Object.entries(exchangeRates.rates).forEach(([key, rate]: [string, any]) => {
-        if (rate.is_stale) {
-          alerts.push({
-            type: 'warning' as const,
-            message: `${rate.currency_pair} exchange rate is stale (${rate.age_minutes}m old)`,
-            time: 'Just now',
-            priority: 'medium'
+      dailyData.forEach(item => {
+        const date = new Date(item.date);
+        const monthKey = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+        
+        if (monthlyMap.has(monthKey)) {
+          monthlyMap.get(monthKey).amount += item.amount;
+        } else {
+          monthlyMap.set(monthKey, {
+            date: monthKey,
+            amount: item.amount
           });
         }
       });
+      
+      return Array.from(monthlyMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+    } else if (chartPeriod === 'annual') {
+      // Group daily data by year
+      const yearlyMap = new Map();
+      
+      dailyData.forEach(item => {
+        const date = new Date(item.date);
+        const yearKey = date.getFullYear().toString();
+        
+        if (yearlyMap.has(yearKey)) {
+          yearlyMap.get(yearKey).amount += item.amount;
+        } else {
+          yearlyMap.set(yearKey, {
+            date: yearKey,
+            amount: item.amount
+          });
+        }
+      });
+      
+      return Array.from(yearlyMap.values()).sort((a, b) => a.date.localeCompare(b.date));
     }
     
-    const priorityOrder: { [key: string]: number } = { 'high': 3, 'medium': 2, 'low': 1 };
-    return alerts.sort((a, b) => priorityOrder[b.priority] - priorityOrder[a.priority]);
+    return dailyData;
   };
 
-  // Load dashboard data
+
+  // Load dashboard data with debouncing
   useEffect(() => {
     const loadDashboardData = async () => {
       setLoading(true);
       setError(null);
       
       try {
+        // Use a single API call to get all data at once to reduce duplicate requests
         const [
           dashboardStats,
-          systemPerf,
-          dataQual,
-          security,
           commission,
-          exchangeRates
+          exchangeRates,
+          financialPerformance
         ] = await Promise.all([
           dashboardService.getDashboardStats(timeRange),
-          dashboardService.getSystemPerformance(),
-          dashboardService.getDataQuality(),
-          dashboardService.getSecurityMetrics(),
           dashboardService.getCommissionAnalytics(timeRange),
-          dashboardService.getExchangeRates()
+          dashboardService.getExchangeRates(),
+          fetchFinancialPerformanceData(timeRange)
         ]);
 
         setDashboardData(dashboardStats);
-        setSystemPerformance(systemPerf);
-        setDataQuality(dataQual);
-        setSecurityMetrics(security);
         setCommissionAnalytics(commission);
         setExchangeRates(exchangeRates);
+        setFinancialPerformanceData(financialPerformance);
+        
+        // IMPORTANT: Initialize selected day/month data immediately with loaded data
+        // This prevents showing zero values on initial load
+        if (financialPerformance?.data) {
+          // Set current day data immediately
+          if (isCurrentDay() && financialPerformance.data.daily) {
+            setSelectedDayData(financialPerformance.data.daily);
+            console.log('✅ Current day data initialized:', financialPerformance.data.daily);
+          }
+          
+          // Set current month data immediately
+          if (isCurrentMonth() && financialPerformance.data.monthly) {
+            setSelectedMonthData(financialPerformance.data.monthly);
+            console.log('✅ Current month data initialized:', financialPerformance.data.monthly);
+          }
+        }
         
         console.log('✅ Dashboard data loaded successfully');
       } catch (error) {
@@ -315,51 +653,167 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ user }) => {
       }
     };
 
-    loadDashboardData();
+    // Debounce the API calls to prevent excessive requests
+    const timeoutId = setTimeout(loadDashboardData, 100);
+    return () => clearTimeout(timeoutId);
   }, [timeRange]);
 
-  // Auto-refresh system performance every 30 seconds
+  // Load selected month data with debouncing (only when month changes)
   useEffect(() => {
-    const refreshSystemPerformance = async () => {
-      try {
-        const [systemPerf, dataQual, security] = await Promise.all([
-          dashboardService.getSystemPerformance(),
-          dashboardService.getDataQuality(),
-          dashboardService.getSecurityMetrics()
-        ]);
-        setSystemPerformance(systemPerf);
-        setDataQuality(dataQual);
-        setSecurityMetrics(security);
-        setLastSystemUpdate(new Date());
-      } catch (error) {
-        console.error('Error refreshing system performance:', error);
+    // Skip if we're still loading the main data or no financial performance data yet
+    if (loading || !financialPerformanceData) return;
+    
+    const loadSelectedMonthData = async () => {
+      if (isCurrentMonth()) {
+        // Use the current month data from the main financial performance data
+        if (financialPerformanceData?.data?.monthly) {
+          setSelectedMonthData(financialPerformanceData.data.monthly);
+          console.log('✅ Using cached current month data');
+        }
+      } else {
+        // Fetch data for the selected month
+        console.log('📥 Fetching data for selected month:', selectedMonth);
+        const monthData = await fetchMonthlyDataForMonth(selectedMonth);
+        setSelectedMonthData(monthData.data);
+        console.log('✅ Selected month data loaded');
       }
     };
 
-    refreshSystemPerformance();
-    const interval = setInterval(refreshSystemPerformance, 2 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
+    // Debounce month data loading to prevent excessive requests
+    const timeoutId = setTimeout(loadSelectedMonthData, 100);
+    return () => clearTimeout(timeoutId);
+  }, [selectedMonth, financialPerformanceData, loading]);
 
-  // Manual refresh function for system data
-  const handleRefreshSystemData = async () => {
-    setIsRefreshingSystem(true);
+  // Load selected day data with debouncing (only when day changes)
+  useEffect(() => {
+    // Skip if we're still loading the main data or no financial performance data yet
+    if (loading || !financialPerformanceData) return;
+    
+    const loadSelectedDayData = async () => {
+      if (isCurrentDay()) {
+        // Use the current day data from the main financial performance data
+        if (financialPerformanceData?.data?.daily) {
+          setSelectedDayData(financialPerformanceData.data.daily);
+          console.log('✅ Using cached current day data');
+        }
+      } else {
+        // Fetch data for the selected day
+        console.log('📥 Fetching data for selected day:', selectedDay);
+        const dayData = await fetchDailyDataForDay(selectedDay);
+        setSelectedDayData(dayData.data);
+        console.log('✅ Selected day data loaded');
+      }
+    };
+
+    // Debounce day data loading to prevent excessive requests
+    const timeoutId = setTimeout(loadSelectedDayData, 100);
+    return () => clearTimeout(timeoutId);
+  }, [selectedDay, financialPerformanceData, loading]);
+
+  // Fetch financial performance data using dashboard service for caching
+  const fetchFinancialPerformanceData = async (range: string) => {
     try {
-      const [systemPerf, dataQual, security] = await Promise.all([
-        dashboardService.getSystemPerformance(),
-        dashboardService.getDataQuality(),
-        dashboardService.getSecurityMetrics()
-      ]);
-      setSystemPerformance(systemPerf);
-      setDataQuality(dataQual);
-      setSecurityMetrics(security);
-      setLastSystemUpdate(new Date());
-      console.log('✅ System data refreshed successfully');
+      return await dashboardService.getFinancialPerformance(range);
     } catch (error) {
-      console.error('❌ Error refreshing system data:', error);
-      setError('Failed to refresh system data. Please try again.');
-    } finally {
-      setIsRefreshingSystem(false);
+      console.error('Error fetching financial performance data:', error);
+      // Return fallback data
+      return {
+        success: true,
+        data: {
+          daily: {
+            total_bank_usd: 0,
+            total_bank_tl: 0,
+            total_cc_usd: 0,
+            total_cc_tl: 0,
+            total_tether_usd: 0,
+            total_tether_tl: 0,
+            conv_usd: 0,
+            conv_tl: 0,
+            total_transactions: 0,
+            bank_count: 0,
+            cc_count: 0,
+            tether_count: 0
+          },
+          monthly: {
+            total_bank_usd: 0,
+            total_bank_tl: 0,
+            total_cc_usd: 0,
+            total_cc_tl: 0,
+            total_tether_usd: 0,
+            total_tether_tl: 0,
+            conv_usd: 0,
+            conv_tl: 0,
+            total_transactions: 0,
+            bank_count: 0,
+            cc_count: 0,
+            tether_count: 0
+          },
+          annual: {
+            total_bank_usd: 0,
+            total_bank_tl: 0,
+            total_cc_usd: 0,
+            total_cc_tl: 0,
+            total_tether_usd: 0,
+            total_tether_tl: 0,
+            conv_usd: 0,
+            conv_tl: 0,
+            total_transactions: 0,
+            bank_count: 0,
+            cc_count: 0,
+            tether_count: 0
+          },
+          exchange_rate: 48.0
+        }
+      };
+    }
+  };
+
+  // Fetch monthly data for specific month
+  const fetchMonthlyDataForMonth = async (month: Date) => {
+    try {
+      const year = month.getFullYear();
+      const monthNum = month.getMonth() + 1; // JavaScript months are 0-based
+      const response = await fetch(`/api/v1/financial-performance/monthly?year=${year}&month=${monthNum}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch monthly data');
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching monthly data for specific month:', error);
+      // Return fallback data
+      return {
+        success: true,
+        data: {
+          total_bank_usd: 0, total_bank_tl: 0, total_cc_usd: 0, total_cc_tl: 0, 
+          total_tether_usd: 0, total_tether_tl: 0, conv_usd: 0, 
+          bank_count: 0, cc_count: 0, tether_count: 0
+        }
+      };
+    }
+  };
+
+  // Fetch daily data for specific day
+  const fetchDailyDataForDay = async (day: Date) => {
+    try {
+      const dateStr = day.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+      const response = await fetch(`/api/v1/financial-performance/daily?date=${dateStr}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch daily data');
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching daily data for specific day:', error);
+      // Return fallback data
+      return {
+        success: true,
+        data: {
+          total_bank_usd: 0, total_bank_tl: 0, total_cc_usd: 0, total_cc_tl: 0, 
+          total_tether_usd: 0, total_tether_tl: 0, conv_usd: 0, 
+          bank_count: 0, cc_count: 0, tether_count: 0
+        }
+      };
     }
   };
 
@@ -370,26 +824,36 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ user }) => {
     try {
       const [
         dashboardStats,
-        systemPerf,
-        dataQual,
-        security,
         commission,
-        exchangeRates
+        exchangeRates,
+        financialPerformance
       ] = await Promise.all([
         dashboardService.refreshDashboard(timeRange),
-        dashboardService.getSystemPerformance(),
-        dashboardService.getDataQuality(),
-        dashboardService.getSecurityMetrics(),
         dashboardService.getCommissionAnalytics(timeRange),
-        dashboardService.getExchangeRates()
+        dashboardService.getExchangeRates(),
+        fetchFinancialPerformanceData(timeRange)
       ]);
 
       setDashboardData(dashboardStats);
-      setSystemPerformance(systemPerf);
-      setDataQuality(dataQual);
-      setSecurityMetrics(security);
       setCommissionAnalytics(commission);
       setExchangeRates(exchangeRates);
+      setFinancialPerformanceData(financialPerformance);
+      
+      // IMPORTANT: Initialize selected day/month data immediately with refreshed data
+      // This prevents showing zero values after refresh
+      if (financialPerformance?.data) {
+        // Set current day data immediately
+        if (isCurrentDay() && financialPerformance.data.daily) {
+          setSelectedDayData(financialPerformance.data.daily);
+          console.log('✅ Current day data refreshed:', financialPerformance.data.daily);
+        }
+        
+        // Set current month data immediately
+        if (isCurrentMonth() && financialPerformance.data.monthly) {
+          setSelectedMonthData(financialPerformance.data.monthly);
+          console.log('✅ Current month data refreshed:', financialPerformance.data.monthly);
+        }
+      }
       
       console.log('✅ Dashboard refreshed successfully');
     } catch (error) {
@@ -405,15 +869,41 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ user }) => {
     
     setIsGeneratingReport(true);
     try {
-      const excelService = new ExcelExportService();
-      // await excelService.exportReport(dashboardData, timeRange);
-      console.log('Export functionality temporarily disabled');
+      await ExcelExportService.generateComprehensiveReport(timeRange);
       console.log('✅ Report generated successfully');
     } catch (error) {
       console.error('❌ Error generating report:', error);
     } finally {
       setIsGeneratingReport(false);
     }
+  };
+
+  const handleMetricClick = (metric: string, period: string) => {
+    setSelectedMetric(`${metric}-${period}`);
+    console.log(`📊 Metric clicked: ${metric} (${period})`);
+    
+    // Navigate to detailed view based on metric type
+    switch (metric.toLowerCase()) {
+      case 'revenue':
+        navigate('/analytics/revenue');
+        break;
+      case 'transactions':
+        navigate('/transactions');
+        break;
+      case 'commission':
+        navigate('/analytics/commission');
+        break;
+      case 'clients':
+        navigate('/clients');
+        break;
+      default:
+        navigate('/analytics');
+    }
+  };
+
+  const handlePeriodHeaderClick = (period: string) => {
+    console.log(`📅 Period header clicked: ${period}`);
+    setChartPeriod(period as 'daily' | 'monthly' | 'annual');
   };
 
   if (loading) {
@@ -447,7 +937,7 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ user }) => {
         <div className="flex items-center justify-center min-h-[400px]">
               <Card className="w-full max-w-md border-0 shadow-2xl bg-white/80 backdrop-blur-sm">
                 <CardContent className="p-8 text-center">
-                  <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
                     <AlertTriangle className="w-8 h-8 text-red-500" />
                   </div>
                   <h2 className="text-2xl font-semibold text-slate-900 mb-3">Error Loading Dashboard</h2>
@@ -470,9 +960,6 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ user }) => {
   }
 
   const quickStats = getQuickStats();
-  const systemHealth = getSystemHealth();
-  const systemActivity = getSystemActivity();
-  const alerts = getAlerts();
 
   return (
     <main className="flex-1 bg-gradient-to-br from-slate-50 via-white to-slate-100 min-h-screen">
@@ -530,15 +1017,10 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ user }) => {
               <Card key={index} className="dashboard-card metric-card group border-0 shadow-lg hover:shadow-xl">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center group-hover:bg-slate-200 transition-colors duration-200 floating">
+                    <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center group-hover:bg-gray-200 transition-colors duration-200 floating">
                       <stat.icon className="w-6 h-6 text-slate-600" />
                 </div>
                     <div className="flex items-center gap-1">
-                      {stat.trend === 'up' ? (
-                        <ArrowUpRight className="w-4 h-4 text-green-500 interactive-element" />
-                      ) : (
-                        <ArrowDownRight className="w-4 h-4 text-red-500 interactive-element" />
-                      )}
                       <span className={`text-sm font-medium ${
                         stat.trend === 'up' ? 'text-green-600' : 'text-red-600'
                       }`}>
@@ -555,166 +1037,371 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ user }) => {
             ))}
                     </div>
 
-          {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content - Full Width Daily Transactions Chart */}
+          <div className="space-y-8">
             
-            {/* Left Column - Charts and Analytics */}
-            <div className="lg:col-span-2 space-y-8">
-              
-              {/* Revenue Chart */}
+            {/* Daily Transactions Chart - Full Width */}
               <Card className="dashboard-card dashboard-glass border-0 shadow-lg">
                 <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <div>
-                      <CardTitle className="text-xl font-semibold text-slate-900">Revenue Analytics</CardTitle>
-                      <CardDescription className="text-slate-600">Performance over time</CardDescription>
+                    <CardTitle className="text-2xl font-semibold text-slate-900">Daily Transactions Chart</CardTitle>
+                    <CardDescription className="text-slate-600">Real-time revenue performance and trends</CardDescription>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    {/* Period Selector */}
+                    <div className="flex items-center gap-2 bg-slate-50 rounded-lg p-1">
+                      {(['daily', 'monthly', 'annual'] as const).map((period) => (
+                        <button
+                          key={period}
+                          onClick={() => setChartPeriod(period)}
+                          className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
+                            chartPeriod === period
+                              ? 'bg-white text-slate-900 shadow-sm'
+                              : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                          }`}
+                        >
+                          {period.charAt(0).toUpperCase() + period.slice(1)}
+                        </button>
+                      ))}
                     </div>
                         <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full pulse-live"></div>
+                      <div className="w-2 h-2 bg-green-500 rounded-full pulse-live"></div>
                       <span className="text-sm text-slate-600">Live Data</span>
+                          </div>
                           </div>
                         </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-80 chart-container">
-                    <RevenueChart />
+                <div className="h-96 chart-container">
+                  <RevenueChart 
+                    data={getTransformedChartData()} 
+                    type="area" 
+                    height={350}
+                  />
                       </div>
                 </CardContent>
               </Card>
 
-              {/* System Performance */}
-              <Card className="dashboard-card dashboard-glass border-0 shadow-lg">
-                <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                      <CardTitle className="text-xl font-semibold text-slate-900">System Performance</CardTitle>
-                      <CardDescription className="text-slate-600">Real-time system metrics</CardDescription>
-                  </div>
-                    <Button
-                      onClick={handleRefreshSystemData}
-                      disabled={isRefreshingSystem}
-                      variant="outline"
-                      size="sm"
-                      className="dashboard-button dashboard-focus border-slate-200 text-slate-600 hover:bg-slate-50"
-                    >
-                      <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshingSystem ? 'animate-spin' : ''}`} />
-                      Refresh
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {systemHealth ? (
-                    <div className="grid grid-cols-2 gap-6">
-                      {Object.entries(systemHealth).map(([key, value]) => (
-                        <div key={key} className="space-y-3">
-                <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-slate-600 capitalize">{key}</span>
-                            <span className="text-sm font-semibold text-slate-900">{Math.round(value)}%</span>
-                  </div>
-                          <div className="progress-bar">
-                            <div 
-                              className={`progress-fill ${
-                                value > 80 ? 'bg-green-500' : value > 60 ? 'bg-yellow-500' : 'bg-red-500'
-                              }`}
-                              style={{ width: `${value}%` }}
-                    ></div>
-                  </div>
-                </div>
-                      ))}
-                  </div>
-                ) : (
-                    <div className="h-32 flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-900"></div>
-                  </div>
-                )}
-                </CardContent>
-              </Card>
-
-                    </div>
-
-            {/* Right Column - Alerts and Activity */}
-            <div className="space-y-8">
+            {/* Financial Performance - 3 Separate Cards */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               
-              {/* System Alerts */}
+              {/* Daily Financial Performance Card */}
               <Card className="dashboard-card dashboard-glass border-0 shadow-lg">
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg font-semibold text-slate-900">System Alerts</CardTitle>
-                    <Badge variant="outline" className="border-slate-200 text-slate-600">
-                      {alerts.length} Active
-                      </Badge>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3 dashboard-scrollbar max-h-80 overflow-y-auto">
-                    {alerts.length > 0 ? (
-                      alerts.slice(0, 5).map((alert, index) => (
-                        <div key={index} className="flex items-start gap-3 p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors duration-200 interactive-element">
-                          <div className={`status-indicator ${
-                            (alert.type as string) === 'warning' ? 'yellow' : 
-                            (alert.type as string) === 'error' ? 'red' : 
-                            'blue'
-                          }`}></div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-slate-900">{alert.message}</p>
-                            <p className="text-xs text-slate-500 mt-1">{alert.time}</p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center shadow-lg">
+                        <Calendar className="w-5 h-5 text-white" />
                       </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-8">
-                        <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3 floating" />
-                        <p className="text-slate-600 font-medium">All systems operational</p>
-                        <p className="text-slate-500 text-sm">No active alerts</p>
+                      <div>
+                        <CardTitle className="text-xl font-bold text-slate-900">Daily Performance</CardTitle>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-green-500 rounded-full pulse-live shadow-lg"></div>
+                      <span className="text-xs text-slate-600 font-semibold">Live</span>
+                    </div>
                   </div>
-                )}
-              </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {getFinancialPerformanceBreakdown().filter(item => item.timePeriod === 'Daily').map((breakdown, index) => (
+                      <div key={index}>
+                        <div 
+                          className="flex items-center justify-between py-3 px-4 bg-slate-50 rounded border hover:bg-slate-100 hover:border-slate-300 hover:shadow-sm transition-all duration-200 group"
+                        >
+                          <div className="flex items-center gap-3">
+                            <breakdown.icon className={`w-4 h-4 ${breakdown.iconColor} group-hover:scale-110 transition-transform duration-200`} />
+                            <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900 transition-colors duration-200">{breakdown.metric}</span>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-semibold text-slate-900 group-hover:text-blue-600 transition-colors duration-200">
+                              {(breakdown.metric === 'Tether' || breakdown.metric === 'Conv') ? '$' : '₺'}{breakdown.amount.toLocaleString()}
+                            </div>
+                            {breakdown.count > 0 && (
+                              <div className="text-xs text-slate-500">
+                                {breakdown.count} txns
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {breakdown.metric === 'Conv' && (
+                          <div className="my-2 border-t border-slate-200"></div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Date Navigation Controls - Bottom */}
+                  <div className="mt-4 pt-4 border-t border-slate-200">
+                    <div className="flex items-center justify-center w-full">
+                      <div className="flex items-center gap-3 w-full max-w-md">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={goToPreviousDay}
+                          className="h-8 w-8 p-0 hover:bg-blue-50 hover:border-blue-300"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </Button>
+                        <span className="text-sm font-medium text-slate-700 flex-1 text-center">
+                          {formatDayDate(selectedDay)}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={goToNextDay}
+                          disabled={isCurrentDay()}
+                          className="h-8 w-8 p-0 hover:bg-blue-50 hover:border-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      {!isCurrentDay() && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedDay(new Date())}
+                          className="h-8 px-3 text-xs hover:bg-blue-50 hover:border-blue-300 ml-4"
+                        >
+                          Today
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 
-              {/* Recent Activity */}
+              {/* Monthly Financial Performance Card */}
               <Card className="dashboard-card dashboard-glass border-0 shadow-lg">
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg font-semibold text-slate-900">Recent Activity</CardTitle>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowAllActivities(!showAllActivities)}
-                      className="dashboard-button text-slate-600 hover:text-slate-900"
-                    >
-                      {showAllActivities ? 'Show Less' : 'Show All'}
-                    </Button>
-                        </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center shadow-lg">
+                        <BarChart3 className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-xl font-bold text-slate-900">Monthly Performance</CardTitle>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-green-500 rounded-full pulse-live shadow-lg"></div>
+                      <span className="text-xs text-slate-600 font-semibold">Live</span>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4 dashboard-scrollbar max-h-80 overflow-y-auto">
-                    {systemActivity.length > 0 ? (
-                      systemActivity.map((activity, index) => (
-                        <div key={index} className="flex items-start gap-3 interactive-element">
-                          <div className={`status-indicator ${
-                            activity.type === 'warning' ? 'yellow' : 
-                            activity.type === 'error' ? 'red' : 
-                            activity.type === 'success' ? 'green' : 'green'
-                          }`}></div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm text-slate-900">{activity.message}</p>
-                            <p className="text-xs text-slate-500 mt-1">{activity.time}</p>
+                  <div className="space-y-3">
+                    {getFinancialPerformanceBreakdown().filter(item => item.timePeriod === 'Monthly').map((breakdown, index) => (
+                      <div key={index}>
+                        <div 
+                          className="flex items-center justify-between py-3 px-4 bg-slate-50 rounded border hover:bg-slate-100 hover:border-slate-300 hover:shadow-sm transition-all duration-200 group"
+                        >
+                          <div className="flex items-center gap-3">
+                            <breakdown.icon className={`w-4 h-4 ${breakdown.iconColor} group-hover:scale-110 transition-transform duration-200`} />
+                            <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900 transition-colors duration-200">{breakdown.metric}</span>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-semibold text-slate-900 group-hover:text-green-600 transition-colors duration-200">
+                              {(breakdown.metric === 'Tether' || breakdown.metric === 'Conv') ? '$' : '₺'}{breakdown.amount.toLocaleString()}
+                            </div>
+                            {breakdown.count > 0 && (
+                              <div className="text-xs text-slate-500">
+                                {breakdown.count} txns
+                              </div>
+                            )}
+                          </div>
                         </div>
+                        {breakdown.metric === 'Conv' && (
+                          <div className="my-2 border-t border-slate-200"></div>
+                        )}
                       </div>
-                    ))
-                  ) : (
-                      <div className="text-center py-8">
-                        <Activity className="w-12 h-12 text-slate-400 mx-auto mb-3 floating" />
-                        <p className="text-slate-600 font-medium">No recent activity</p>
-                        <p className="text-slate-500 text-sm">System activity will appear here</p>
+                    ))}
+                  </div>
+                  
+                  {/* Month Navigation Controls - Bottom */}
+                  <div className="mt-4 pt-4 border-t border-slate-200">
+                    <div className="flex items-center justify-center w-full">
+                      <div className="flex items-center gap-3 w-full max-w-md">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={goToPreviousMonth}
+                          className="h-8 w-8 p-0 hover:bg-green-50 hover:border-green-300"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </Button>
+                        <span className="text-sm font-medium text-slate-700 flex-1 text-center">
+                          {formatMonthYear(selectedMonth)}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={goToNextMonth}
+                          disabled={isCurrentMonth()}
+                          className="h-8 w-8 p-0 hover:bg-green-50 hover:border-green-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      {!isCurrentMonth() && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedMonth(new Date())}
+                          className="h-8 px-3 text-xs hover:bg-green-50 hover:border-green-300 ml-4"
+                        >
+                          Current Month
+                        </Button>
+                      )}
                     </div>
-                  )}
-                </div>
+                  </div>
                 </CardContent>
               </Card>
 
-              </div>
+              {/* Total Financial Performance Card - Special Design */}
+              <Card className="dashboard-card dashboard-glass border-2 border-gradient-to-r from-purple-500 to-blue-500 shadow-xl relative overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
+                {/* Special gradient background overlay */}
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-200/40 via-slate-300/30 to-slate-400/20 pointer-events-none"></div>
+                
+                <CardHeader className="pb-4 relative z-10">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center shadow-lg">
+                        <TrendingUp className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-xl font-bold text-slate-900">
+                          Total Performance
+                        </CardTitle>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-green-500 rounded-full pulse-live shadow-lg"></div>
+                      <span className="text-xs text-slate-600 font-semibold">Live</span>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="relative z-10">
+                  <div className="space-y-3">
+                    {getFinancialPerformanceBreakdown().filter(item => item.timePeriod === 'Total').map((breakdown, index) => (
+                      <div key={index}>
+                        <div 
+                          className="flex items-center justify-between py-4 px-5 bg-gradient-to-r from-slate-200/90 to-slate-300/80 rounded-lg border border-slate-300/70 hover:bg-gradient-to-r hover:from-purple-100/90 hover:to-blue-100/90 hover:border-purple-300 hover:shadow-md transition-all duration-300 group backdrop-blur-sm"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-gray-200 transition-all duration-300">
+                              <breakdown.icon className={`w-4 h-4 ${breakdown.iconColor} group-hover:scale-110 transition-transform duration-300`} />
+                            </div>
+                            <span className="text-sm font-semibold text-slate-800 group-hover:text-slate-900 transition-colors duration-300">{breakdown.metric}</span>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-slate-900 group-hover:text-purple-700 transition-colors duration-300">
+                              {(breakdown.metric === 'Tether' || breakdown.metric === 'Conv') ? '$' : '₺'}{breakdown.amount.toLocaleString()}
+                            </div>
+                            {breakdown.count > 0 && (
+                              <div className="text-xs text-slate-500 font-medium">
+                                {breakdown.count} txns
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {breakdown.metric === 'Conv' && (
+                          <div className="my-3 border-t border-slate-300"></div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+            </div>
+
+            {/* Professional Chart Cards - Full Width */}
+            <div className="space-y-6">
+              
+              {/* Monthly Progress Analysis */}
+              <Card className="dashboard-card dashboard-glass border-0 shadow-lg">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center shadow-lg">
+                        <PieChart className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-xl font-bold text-slate-900">Monthly Progress Analysis</CardTitle>
+                        <CardDescription className="text-slate-600">Progress indicators with detailed metrics</CardDescription>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-green-500 rounded-full pulse-live shadow-lg"></div>
+                      <span className="text-xs text-slate-600 font-semibold">Live</span>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Progress Rings */}
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-semibold text-slate-700 mb-3">Monthly Progress</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        {getFinancialPerformanceBreakdown().filter(item => item.timePeriod === 'Monthly').map((breakdown, index) => (
+                          <div key={index} className="text-center">
+                            <div className="relative w-16 h-16 mx-auto mb-2">
+                              <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 36 36">
+                                <path
+                                  className="text-gray-200"
+                                  stroke="currentColor"
+                                  strokeWidth="3"
+                                  fill="none"
+                                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                />
+                                <path
+                                  className="text-gray-600"
+                                  stroke="currentColor"
+                                  strokeWidth="3"
+                                  fill="none"
+                                  strokeDasharray={`${Math.min(breakdown.amount / 1000, 100)}, 100`}
+                                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                />
+                              </svg>
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <breakdown.icon className="w-5 h-5 text-gray-600" />
+                              </div>
+                            </div>
+                            <div className="text-xs font-medium text-slate-600">{breakdown.metric}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Clean Metrics */}
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-semibold text-slate-700 mb-3">Detailed Values</h4>
+                      {getFinancialPerformanceBreakdown().filter(item => item.timePeriod === 'Monthly').map((breakdown, index) => (
+                        <div key={index} className="flex items-center justify-between py-3 px-4 bg-white rounded border border-slate-200">
+                          <div className="flex items-center gap-3">
+                            <breakdown.icon className="w-4 h-4 text-gray-600" />
+                            <span className="text-sm font-medium text-slate-700">{breakdown.metric}</span>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-bold text-slate-900">
+                              {(breakdown.metric === 'Tether' || breakdown.metric === 'Conv') ? '$' : '₺'}{breakdown.amount.toLocaleString()}
+                            </div>
+                            {breakdown.count > 0 && (
+                              <div className="text-xs text-slate-500">{breakdown.count} txns</div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+            </div>
+
           </div>
 
           </div>

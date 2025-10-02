@@ -18,6 +18,9 @@ import time
 import logging
 from functools import wraps
 import hashlib
+
+# Set up logger
+logger = logging.getLogger(__name__)
 import json
 
 analytics_api = Blueprint('analytics_api', __name__)
@@ -92,9 +95,9 @@ def generate_chart_data(time_range='7d'):
             logging.info(f"Chart date range: {start_date.date()} to {end_date.date()}")
         
         # Enhanced debug logging for all time ranges
-        logging.info(f"Chart data generation - Time range: {time_range}")
-        logging.info(f"Date range: {start_date.date()} to {end_date.date()}")
-        logging.info(f"Found {len(transactions)} transactions in range")
+        logging.debug(f"Chart data generation - Time range: {time_range}")
+        logging.debug(f"Date range: {start_date.date()} to {end_date.date()}")
+        logging.debug(f"Found {len(transactions)} transactions in range")
         # Data validation
         if len(transactions) == 0:
             logging.warning(f"No transactions found for time range {time_range}")
@@ -211,9 +214,9 @@ def generate_chart_data(time_range='7d'):
         
         # Log the actual data being returned
         if daily_revenue:
-            logging.info(f"Returning {len(daily_revenue)} daily revenue entries")
-            logging.info(f"First entry: {daily_revenue[0]}")
-            logging.info(f"Last entry: {daily_revenue[-1]}")
+            logging.debug(f"Returning {len(daily_revenue)} daily revenue entries")
+            logging.debug(f"First entry: {daily_revenue[0]}")
+            logging.debug(f"Last entry: {daily_revenue[-1]}")
         
         return {
             'daily_revenue': daily_revenue
@@ -661,8 +664,9 @@ def get_ledger_data():
                 else:
                     daily_data[date_key]['psps'][psp]['withdraw'] += abs(amount)
                     daily_data[date_key]['psps'][psp]['toplam'] -= abs(amount)  # Subtract withdrawals from total
-            daily_data[date_key]['psps'][psp]['komisyon'] += commission
-            # NET will be calculated as TOTAL - COMMISSION after all transactions are processed
+            
+            # NOTE: Commission will be calculated based on total deposits after all transactions are processed
+            # We don't add individual transaction commissions here anymore
             
             # Update totals - use the same logic as PSP totals
             if transaction.category == 'DEP':
@@ -675,14 +679,30 @@ def get_ledger_data():
                     daily_data[date_key]['totals']['toplam'] += amount  # Add deposits to total
                 else:
                     daily_data[date_key]['totals']['toplam'] -= abs(amount)  # Subtract withdrawals from total
-            daily_data[date_key]['totals']['komisyon'] += commission
-            # NET will be calculated as TOTAL - COMMISSION after all transactions are processed
+            
+            # NOTE: Commission will be calculated based on total deposits after all transactions are processed
         
-        # Calculate NET as TOTAL - COMMISSION for all PSPs and daily totals
+        # Calculate commission based on total deposits for each PSP and daily totals
+        from app.services.transaction_service import TransactionService
+        from decimal import Decimal
+        
         for date_key, data in daily_data.items():
+            total_daily_commission = Decimal('0')
+            
             for psp, psp_data in data['psps'].items():
+                # Calculate commission based on total deposits for this PSP
+                total_deposits = Decimal(str(psp_data['deposit']))
+                psp_commission = TransactionService.calculate_commission_based_on_total_deposits(total_deposits, psp)
+                psp_data['komisyon'] = float(psp_commission)
+                
+                # Calculate NET as TOTAL - COMMISSION
                 psp_data['net'] = psp_data['toplam'] - psp_data['komisyon']
-            # Calculate daily totals NET
+                
+                # Add to daily total commission
+                total_daily_commission += psp_commission
+            
+            # Set daily totals commission and calculate NET
+            data['totals']['komisyon'] = float(total_daily_commission)
             data['totals']['net'] = data['totals']['toplam'] - data['totals']['komisyon']
         
         # Fetch saved allocations from database
@@ -1041,6 +1061,415 @@ def update_allocation():
             'error': 'Failed to update allocation',
             'message': str(e)
         }), 500
+
+@analytics_api.route("/update-devir", methods=['POST'])
+@login_required
+def update_devir():
+    """Update PSP Devir (Transfer/Carryover) for a specific date"""
+    try:
+        from app.models.financial import PSPDevir
+        from datetime import datetime
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        
+        # Log request details for debugging
+        logger.info(f"Devir update request received: {request.get_json()}")
+        
+        data = request.get_json()
+        date_str = data.get('date')
+        psp = data.get('psp')
+        devir_amount = float(data.get('devir_amount', 0))
+        
+        logger.info(f"Processing Devir: date={date_str}, psp={psp}, amount={devir_amount}")
+        
+        if not date_str or not psp:
+            logger.error("Missing required fields")
+            return jsonify({
+                'error': 'Missing required fields: date and psp'
+            }), 400
+        
+        # Parse date string to date object
+        try:
+            date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            logger.error(f"Invalid date format: {date_str}")
+            return jsonify({
+                'error': 'Invalid date format. Use YYYY-MM-DD'
+            }), 400
+        
+        # Check if Devir override already exists for this date and PSP
+        existing_devir = PSPDevir.query.filter_by(
+            date=date_obj,
+            psp_name=psp
+        ).first()
+        
+        if existing_devir:
+            # Update existing Devir override
+            logger.info(f"Updating existing Devir: {existing_devir.id}")
+            existing_devir.devir_amount = devir_amount
+            existing_devir.updated_at = datetime.now(timezone.utc)
+            db.session.commit()
+            logger.info("Existing Devir updated successfully")
+        else:
+            # Create new Devir override
+            logger.info("Creating new Devir override")
+            new_devir = PSPDevir(
+                date=date_obj,
+                psp_name=psp,
+                devir_amount=devir_amount
+            )
+            db.session.add(new_devir)
+            db.session.commit()
+            logger.info(f"New Devir override created with ID: {new_devir.id}")
+        
+        # IMPORTANT: Clear SQLAlchemy session cache to ensure fresh data on next query
+        db.session.expire_all()
+        logger.info("SQLAlchemy session cache cleared after Devir update")
+        
+        # Invalidate transaction-related caches to ensure fresh data
+        try:
+            from app.services.query_service import QueryService
+            QueryService.invalidate_transaction_cache()
+            logger.info("Transaction cache invalidated after Devir update")
+        except Exception as cache_error:
+            logger.warning(f"Failed to invalidate transaction cache: {cache_error}")
+        
+        logger.info("Devir update completed successfully")
+        return jsonify({
+            'success': True,
+            'message': f'Devir updated for {psp} on {date_str}',
+            'devir_amount': devir_amount
+        })
+        
+    except Exception as e:
+        logger.error(f"Error updating Devir: {str(e)}")
+        db.session.rollback()
+        return jsonify({
+            'error': 'Failed to update Devir',
+            'message': str(e)
+        }), 500
+
+# KASA TOP edit functionality removed - now calculated automatically using formula: DEVIR + TAHS TUTARI
+
+@analytics_api.route("/unified-history", methods=['GET'])
+@login_required
+def get_unified_history():
+    """Get unified history of all manual overrides (Allocation, Devir, KASA TOP) with filtering and pagination"""
+    try:
+        from app.models.financial import PSPAllocation, PSPDevir, PSPKasaTop
+        from datetime import datetime, timedelta
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        
+        # Get query parameters
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        psp = request.args.get('psp')
+        override_type = request.args.get('type')  # 'allocation', 'devir', 'kasa_top', or 'all'
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 50))
+        
+        logger.info(f"Unified history request: start_date={start_date}, end_date={end_date}, psp={psp}, type={override_type}")
+        
+        # Parse dates
+        start_date_obj = None
+        end_date_obj = None
+        
+        if start_date:
+            try:
+                start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
+            except ValueError:
+                return jsonify({'error': 'Invalid start_date format. Use YYYY-MM-DD'}), 400
+        
+        if end_date:
+            try:
+                end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
+            except ValueError:
+                return jsonify({'error': 'Invalid end_date format. Use YYYY-MM-DD'}), 400
+        
+        # Collect all history entries
+        unified_history = []
+        
+        # Get Allocation history
+        if not override_type or override_type == 'all' or override_type == 'allocation':
+            allocation_query = PSPAllocation.query
+            
+            if start_date_obj:
+                allocation_query = allocation_query.filter(PSPAllocation.date >= start_date_obj)
+            if end_date_obj:
+                allocation_query = allocation_query.filter(PSPAllocation.date <= end_date_obj)
+            if psp:
+                allocation_query = allocation_query.filter(PSPAllocation.psp_name == psp)
+            
+            allocations = allocation_query.order_by(PSPAllocation.date.desc(), PSPAllocation.created_at.desc()).all()
+            
+            for allocation in allocations:
+                unified_history.append({
+                    'id': f"allocation_{allocation.id}",
+                    'type': 'Allocation',
+                    'type_code': 'allocation',
+                    'date': allocation.date.isoformat(),
+                    'psp_name': allocation.psp_name,
+                    'amount': float(allocation.allocation_amount),
+                    'created_at': allocation.created_at.isoformat(),
+                    'updated_at': allocation.updated_at.isoformat()
+                })
+        
+        # Get Devir history
+        if not override_type or override_type == 'all' or override_type == 'devir':
+            devir_query = PSPDevir.query
+            
+            if start_date_obj:
+                devir_query = devir_query.filter(PSPDevir.date >= start_date_obj)
+            if end_date_obj:
+                devir_query = devir_query.filter(PSPDevir.date <= end_date_obj)
+            if psp:
+                devir_query = devir_query.filter(PSPDevir.psp_name == psp)
+            
+            devirs = devir_query.order_by(PSPDevir.date.desc(), PSPDevir.created_at.desc()).all()
+            
+            for devir in devirs:
+                unified_history.append({
+                    'id': f"devir_{devir.id}",
+                    'type': 'Devir',
+                    'type_code': 'devir',
+                    'date': devir.date.isoformat(),
+                    'psp_name': devir.psp_name,
+                    'amount': float(devir.devir_amount),
+                    'created_at': devir.created_at.isoformat(),
+                    'updated_at': devir.updated_at.isoformat()
+                })
+        
+        # Get KASA TOP history
+        if not override_type or override_type == 'all' or override_type == 'kasa_top':
+            kasa_top_query = PSPKasaTop.query
+            
+            if start_date_obj:
+                kasa_top_query = kasa_top_query.filter(PSPKasaTop.date >= start_date_obj)
+            if end_date_obj:
+                kasa_top_query = kasa_top_query.filter(PSPKasaTop.date <= end_date_obj)
+            if psp:
+                kasa_top_query = kasa_top_query.filter(PSPKasaTop.psp_name == psp)
+            
+            kasa_tops = kasa_top_query.order_by(PSPKasaTop.date.desc(), PSPKasaTop.created_at.desc()).all()
+            
+            for kasa_top in kasa_tops:
+                unified_history.append({
+                    'id': f"kasa_top_{kasa_top.id}",
+                    'type': 'KASA TOP',
+                    'type_code': 'kasa_top',
+                    'date': kasa_top.date.isoformat(),
+                    'psp_name': kasa_top.psp_name,
+                    'amount': float(kasa_top.kasa_top_amount),
+                    'created_at': kasa_top.created_at.isoformat(),
+                    'updated_at': kasa_top.updated_at.isoformat()
+                })
+        
+        # Sort unified history by date (most recent first)
+        unified_history.sort(key=lambda x: (x['date'], x['created_at']), reverse=True)
+        
+        # Apply pagination
+        total_count = len(unified_history)
+        start_index = (page - 1) * per_page
+        end_index = start_index + per_page
+        paginated_history = unified_history[start_index:end_index]
+        
+        # Calculate pagination info
+        total_pages = (total_count + per_page - 1) // per_page
+        has_next = page < total_pages
+        has_prev = page > 1
+        
+        logger.info(f"Retrieved {len(paginated_history)} unified history records (page {page}/{total_pages})")
+        
+        return jsonify({
+            'success': True,
+            'data': paginated_history,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': total_count,
+                'pages': total_pages,
+                'has_next': has_next,
+                'has_prev': has_prev
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error retrieving unified history: {e}")
+        return jsonify({'error': 'Failed to retrieve unified history'}), 500
+
+@analytics_api.route("/unified-history/export", methods=['GET'])
+@login_required
+def export_unified_history():
+    """Export unified history to CSV or JSON"""
+    try:
+        from app.models.financial import PSPAllocation, PSPDevir, PSPKasaTop
+        from datetime import datetime
+        import logging
+        import csv
+        import json
+        import io
+        
+        logger = logging.getLogger(__name__)
+        
+        # Get query parameters
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        psp = request.args.get('psp')
+        override_type = request.args.get('type')
+        format = request.args.get('format', 'csv').lower()
+        
+        if format not in ['csv', 'json']:
+            return jsonify({'error': 'Invalid format. Use csv or json'}), 400
+        
+        # Parse dates
+        start_date_obj = None
+        end_date_obj = None
+        
+        if start_date:
+            try:
+                start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
+            except ValueError:
+                return jsonify({'error': 'Invalid start_date format. Use YYYY-MM-DD'}), 400
+        
+        if end_date:
+            try:
+                end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
+            except ValueError:
+                return jsonify({'error': 'Invalid end_date format. Use YYYY-MM-DD'}), 400
+        
+        # Collect all history entries (same logic as get_unified_history)
+        unified_history = []
+        
+        # Get Allocation history
+        if not override_type or override_type == 'all' or override_type == 'allocation':
+            allocation_query = PSPAllocation.query
+            
+            if start_date_obj:
+                allocation_query = allocation_query.filter(PSPAllocation.date >= start_date_obj)
+            if end_date_obj:
+                allocation_query = allocation_query.filter(PSPAllocation.date <= end_date_obj)
+            if psp:
+                allocation_query = allocation_query.filter(PSPAllocation.psp_name == psp)
+            
+            allocations = allocation_query.order_by(PSPAllocation.date.desc(), PSPAllocation.created_at.desc()).all()
+            
+            for allocation in allocations:
+                unified_history.append({
+                    'id': f"allocation_{allocation.id}",
+                    'type': 'Allocation',
+                    'type_code': 'allocation',
+                    'date': allocation.date.isoformat(),
+                    'psp_name': allocation.psp_name,
+                    'amount': float(allocation.allocation_amount),
+                    'created_at': allocation.created_at.isoformat(),
+                    'updated_at': allocation.updated_at.isoformat()
+                })
+        
+        # Get Devir history
+        if not override_type or override_type == 'all' or override_type == 'devir':
+            devir_query = PSPDevir.query
+            
+            if start_date_obj:
+                devir_query = devir_query.filter(PSPDevir.date >= start_date_obj)
+            if end_date_obj:
+                devir_query = devir_query.filter(PSPDevir.date <= end_date_obj)
+            if psp:
+                devir_query = devir_query.filter(PSPDevir.psp_name == psp)
+            
+            devirs = devir_query.order_by(PSPDevir.date.desc(), PSPDevir.created_at.desc()).all()
+            
+            for devir in devirs:
+                unified_history.append({
+                    'id': f"devir_{devir.id}",
+                    'type': 'Devir',
+                    'type_code': 'devir',
+                    'date': devir.date.isoformat(),
+                    'psp_name': devir.psp_name,
+                    'amount': float(devir.devir_amount),
+                    'created_at': devir.created_at.isoformat(),
+                    'updated_at': devir.updated_at.isoformat()
+                })
+        
+        # Get KASA TOP history
+        if not override_type or override_type == 'all' or override_type == 'kasa_top':
+            kasa_top_query = PSPKasaTop.query
+            
+            if start_date_obj:
+                kasa_top_query = kasa_top_query.filter(PSPKasaTop.date >= start_date_obj)
+            if end_date_obj:
+                kasa_top_query = kasa_top_query.filter(PSPKasaTop.date <= end_date_obj)
+            if psp:
+                kasa_top_query = kasa_top_query.filter(PSPKasaTop.psp_name == psp)
+            
+            kasa_tops = kasa_top_query.order_by(PSPKasaTop.date.desc(), PSPKasaTop.created_at.desc()).all()
+            
+            for kasa_top in kasa_tops:
+                unified_history.append({
+                    'id': f"kasa_top_{kasa_top.id}",
+                    'type': 'KASA TOP',
+                    'type_code': 'kasa_top',
+                    'date': kasa_top.date.isoformat(),
+                    'psp_name': kasa_top.psp_name,
+                    'amount': float(kasa_top.kasa_top_amount),
+                    'created_at': kasa_top.created_at.isoformat(),
+                    'updated_at': kasa_top.updated_at.isoformat()
+                })
+        
+        # Sort unified history by date (most recent first)
+        unified_history.sort(key=lambda x: (x['date'], x['created_at']), reverse=True)
+        
+        if format == 'csv':
+            output = io.StringIO()
+            writer = csv.writer(output)
+            
+            # Write header
+            writer.writerow(['Type', 'Date', 'PSP', 'Amount', 'Created At', 'Updated At'])
+            
+            # Write data
+            for entry in unified_history:
+                writer.writerow([
+                    entry['type'],
+                    entry['date'],
+                    entry['psp_name'],
+                    entry['amount'],
+                    entry['created_at'],
+                    entry['updated_at']
+                ])
+            
+            output.seek(0)
+            response_data = output.getvalue()
+            output.close()
+            
+            # Generate filename with date range
+            filename = f"unified_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            
+            return Response(
+                response_data,
+                mimetype='text/csv',
+                headers={
+                    'Content-Disposition': f'attachment; filename={filename}',
+                    'Content-Type': 'text/csv; charset=utf-8'
+                }
+            )
+        
+        else:  # JSON format
+            filename = f"unified_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            
+            return Response(
+                json.dumps(unified_history, indent=2),
+                mimetype='application/json',
+                headers={
+                    'Content-Disposition': f'attachment; filename={filename}',
+                    'Content-Type': 'application/json; charset=utf-8'
+                }
+            )
+        
+    except Exception as e:
+        logger.error(f"Error exporting unified history: {e}")
+        return jsonify({'error': 'Failed to export unified history'}), 500
 
 @analytics_api.route("/test-csrf", methods=['POST'])
 @login_required

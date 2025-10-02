@@ -5,22 +5,24 @@
 
 /* === MOBILE FIRST BASE STYLES === */
 :root {
-  /* Mobile-optimized spacing */
-  --mobile-padding: 0.75rem;
-  --mobile-margin: 0.5rem;
-  --mobile-gap: 0.5rem;
+  /* Compact mobile-optimized spacing */
+  --mobile-padding: var(--spacing-lg);
+  --mobile-padding-sm: var(--spacing-xl);
+  --mobile-padding-lg: var(--spacing-2xl);
+  --mobile-margin: var(--spacing-sm);
+  --mobile-gap: var(--spacing-sm);
   
-  /* Touch-friendly sizing */
-  --touch-target: 44px;
-  --touch-padding: 0.75rem;
+  /* Compact touch-friendly sizing */
+  --touch-target: 36px;        /* reduced from 44px */
+  --touch-padding: 0.5rem;     /* reduced from 0.75rem */
   
-  /* Mobile typography scale */
-  --mobile-text-xs: 0.6875rem;   /* 11px */
-  --mobile-text-sm: 0.75rem;     /* 12px */
-  --mobile-text-base: 0.8125rem; /* 13px */
-  --mobile-text-lg: 0.875rem;    /* 14px */
-  --mobile-text-xl: 1rem;        /* 16px */
-  --mobile-text-2xl: 1.125rem;   /* 18px */
+  /* Compact mobile typography scale */
+  --mobile-text-xs: 0.625rem;    /* 10px - reduced from 11px */
+  --mobile-text-sm: 0.6875rem;   /* 11px - reduced from 12px */
+  --mobile-text-base: 0.75rem;   /* 12px - reduced from 13px */
+  --mobile-text-lg: 0.8125rem;   /* 13px - reduced from 14px */
+  --mobile-text-xl: 0.875rem;    /* 14px - reduced from 16px */
+  --mobile-text-2xl: 1rem;       /* 16px - reduced from 18px */
   
   /* Professional mobile colors */
   --mobile-surface: #fafafa;
@@ -50,7 +52,7 @@ body {
   background: var(--mobile-surface-elevated);
   border-top: 1px solid var(--mobile-border);
   padding: var(--mobile-padding);
-  z-index: 1000;
+  z-index: var(--z-fixed);
   display: flex;
   justify-content: space-around;
   align-items: center;
@@ -92,7 +94,7 @@ body {
   background: var(--mobile-surface-elevated);
   border-bottom: 1px solid var(--mobile-border);
   padding: var(--mobile-padding);
-  z-index: 100;
+  z-index: var(--z-sticky);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -323,7 +325,7 @@ body {
   border-radius: 0.75rem;
   padding: var(--mobile-padding);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  z-index: 1001;
+  z-index: var(--z-toast);
   transform: translateY(100%);
   transition: transform 0.3s ease;
 }
@@ -352,7 +354,7 @@ body {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 1002;
+  z-index: var(--z-modal-backdrop);
   display: flex;
   align-items: flex-end;
   padding: 0;

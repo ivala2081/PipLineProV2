@@ -34,9 +34,12 @@ import {
   ArrowDownRight,
   Target,
   AlertCircle,
+  Percent,
+  Save,
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { api } from '../utils/apiClient';
+import { useUniqueToast } from '../hooks/useUniqueToast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -85,6 +88,7 @@ export default function Settings() {
   const [activeTab, setActiveTab] = useState('general');
   const [showSystemMonitor, setShowSystemMonitor] = useState(false);
   const { t, currentLanguage, setLanguage, supportedLanguages } = useLanguage();
+  const { showUniqueSuccess, showUniqueError, showUniqueInfo } = useUniqueToast();
   
   // Fallback values in case language context is not available
   const safeCurrentLanguage = currentLanguage || 'en';
@@ -145,6 +149,18 @@ export default function Settings() {
   const [editingDepartment, setEditingDepartment] = useState<string>('');
   const [newDepartment, setNewDepartment] = useState('');
   const [isEditingDepartment, setIsEditingDepartment] = useState(false);
+
+  // Commission rates management state
+  const [commissionRates, setCommissionRates] = useState<any[]>([]);
+  const [loadingCommissionRates, setLoadingCommissionRates] = useState(false);
+  const [showCommissionRateModal, setShowCommissionRateModal] = useState(false);
+  const [editingCommissionRate, setEditingCommissionRate] = useState<any>(null);
+  const [commissionRateForm, setCommissionRateForm] = useState({
+    psp_name: '',
+    commission_rate: '',
+    effective_from: '',
+    effective_until: '',
+  });
 
   const fieldTypes = [
     // Static fields (cannot be modified)
@@ -313,6 +329,9 @@ export default function Settings() {
     if (activeTab === 'departments') {
       fetchDepartments();
     }
+    if (activeTab === 'commission-rates') {
+      fetchCommissionRates();
+    }
   }, [activeTab]);
 
   // Keyboard shortcuts
@@ -385,7 +404,7 @@ export default function Settings() {
   const handleAddOption = async () => {
     // Validate form data before sending
     if (!formData.field_name) {
-      alert('Please select a field type');
+      showUniqueError('dropdown-validation', 'Validation Error', 'Please select a field type');
       return;
     }
 
@@ -393,17 +412,17 @@ export default function Settings() {
     const fieldType = fieldTypes.find(f => f.value === formData.field_name);
     if (fieldType?.isProtected) {
       if (!securityCode.trim()) {
-        alert('Security code is required for adding protected options');
+        showUniqueError('security-code-required', 'Security Required', 'Security code is required for adding protected options');
         return;
       }
       if (securityCode.trim() !== '4561') {
-        alert('Invalid security code');
+        showUniqueError('invalid-security-code', 'Invalid Code', 'Invalid security code');
         return;
       }
     }
 
     if (!formData.value.trim()) {
-      alert('Option value is required');
+      showUniqueError('option-value-required', 'Validation Error', 'Option value is required');
       return;
     }
 
@@ -414,25 +433,25 @@ export default function Settings() {
     );
     
     if (duplicateOption) {
-      alert(`An option with the value "${formData.value.trim()}" already exists for ${fieldType?.label || formData.field_name} field`);
+      showUniqueError('duplicate-option', 'Duplicate Option', `An option with the value "${formData.value.trim()}" already exists for ${fieldType?.label || formData.field_name} field`);
       return;
     }
 
     // For PSP options, validate commission rate
     if (formData.field_name === 'psp') {
       if (!formData.commission_rate || formData.commission_rate.trim() === '') {
-        alert('Commission rate is required for PSP options');
+        showUniqueError('commission-required', 'Commission Required', 'Commission rate is required for PSP options');
         return;
       }
 
       const commissionRate = parseFloat(formData.commission_rate);
       if (isNaN(commissionRate)) {
-        alert('Commission rate must be a valid number');
+        showUniqueError('invalid-commission', 'Invalid Commission', 'Commission rate must be a valid number');
         return;
       }
 
       if (commissionRate < 0 || commissionRate > 1) {
-        alert('Commission rate must be between 0 and 1 (e.g., 0.05 for 5%)');
+        showUniqueError('commission-range', 'Invalid Range', 'Commission rate must be between 0 and 1 (e.g., 0.05 for 5%)');
         return;
       }
     }
@@ -453,7 +472,7 @@ export default function Settings() {
         setFormData({ field_name: '', value: '', commission_rate: '' });
         setSecurityCode('');
         await fetchDropdownOptions();
-        alert('Option added successfully!');
+        showUniqueSuccess('option-added', 'Success', 'Option added successfully!');
       } else {
         console.error('Add failed - response status:', response.status);
         
@@ -468,11 +487,11 @@ export default function Settings() {
         }
         
         console.error('Add failed - error message:', errorMessage);
-        alert(errorMessage);
+        showUniqueError('add-option-failed', 'Add Failed', errorMessage);
       }
     } catch (error) {
       console.error('Error adding option:', error);
-      alert('Failed to add option. Please try again.');
+      showUniqueError('add-option-error', 'Error', 'Failed to add option. Please try again.');
     }
   };
 
@@ -508,25 +527,25 @@ export default function Settings() {
 
     // Validate form data before sending
     if (!formData.value.trim()) {
-      alert('Option value is required');
+      showUniqueError('option-value-required', 'Validation Error', 'Option value is required');
       return;
     }
 
     // For PSP options, validate commission rate
     if (formData.field_name === 'psp') {
       if (!formData.commission_rate || formData.commission_rate.trim() === '') {
-        alert('Commission rate is required for PSP options');
+        showUniqueError('commission-required', 'Commission Required', 'Commission rate is required for PSP options');
         return;
       }
 
       const commissionRate = parseFloat(formData.commission_rate);
       if (isNaN(commissionRate)) {
-        alert('Commission rate must be a valid number');
+        showUniqueError('invalid-commission', 'Invalid Commission', 'Commission rate must be a valid number');
         return;
       }
 
       if (commissionRate < 0 || commissionRate > 1) {
-        alert('Commission rate must be between 0 and 1 (e.g., 0.05 for 5%)');
+        showUniqueError('commission-range', 'Invalid Range', 'Commission rate must be between 0 and 1 (e.g., 0.05 for 5%)');
         return;
       }
     }
@@ -546,7 +565,7 @@ export default function Settings() {
         setFormData({ field_name: '', value: '', commission_rate: '' });
         setSecurityCode('');
         await fetchDropdownOptions();
-        alert('Option updated successfully!');
+        showUniqueSuccess('option-updated', 'Success', 'Option updated successfully!');
       } else {
         console.error('Update failed - response status:', response.status);
         console.error('Update failed - response:', response);
@@ -562,7 +581,7 @@ export default function Settings() {
         }
         
         console.error('Update failed - error message:', errorMessage);
-        alert(errorMessage);
+        showUniqueError('update-option-failed', 'Update Failed', errorMessage);
       }
     } catch (error) {
       console.error('Error updating option:', error);
@@ -608,7 +627,7 @@ export default function Settings() {
       );
       if (response.ok) {
         await fetchDropdownOptions();
-        alert('Option deleted successfully!');
+        showUniqueSuccess('option-deleted', 'Success', 'Option deleted successfully!');
       } else {
         console.error('Delete failed - response status:', response.status);
         
@@ -622,11 +641,11 @@ export default function Settings() {
           console.error('Failed to parse error response:', parseError);
         }
         
-        alert(errorMessage);
+        showUniqueError('update-option-failed', 'Update Failed', errorMessage);
       }
     } catch (error) {
       console.error('Error deleting option:', error);
-      alert('Failed to delete option. Please try again.');
+      showUniqueError('delete-option-error', 'Error', 'Failed to delete option. Please try again.');
     }
   };
 
@@ -639,6 +658,130 @@ export default function Settings() {
     });
     setSecurityCode(''); // Clear security code when opening modal
     setShowEditModal(true);
+  };
+
+  // Commission rates management functions
+  const fetchCommissionRates = async () => {
+    setLoadingCommissionRates(true);
+    try {
+      const response = await api.get('/api/v1/commission-rates');
+      if (response.ok) {
+        const data = await api.parseResponse(response);
+        setCommissionRates(data.rates || []);
+      } else {
+        console.error('Failed to fetch commission rates');
+      }
+    } catch (error) {
+      console.error('Error fetching commission rates:', error);
+    } finally {
+      setLoadingCommissionRates(false);
+    }
+  };
+
+  const handleAddCommissionRate = async () => {
+    if (!commissionRateForm.psp_name || !commissionRateForm.commission_rate || !commissionRateForm.effective_from) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      const response = await api.post('/api/v1/commission-rates', {
+        psp_name: commissionRateForm.psp_name,
+        commission_rate: parseFloat(commissionRateForm.commission_rate) / 100, // Convert percentage to decimal
+        effective_from: commissionRateForm.effective_from,
+        effective_until: commissionRateForm.effective_until || null,
+      });
+
+      if (response.ok) {
+        await fetchCommissionRates();
+        setShowCommissionRateModal(false);
+        setCommissionRateForm({
+          psp_name: '',
+          commission_rate: '',
+          effective_from: '',
+          effective_until: '',
+        });
+        alert('Commission rate added successfully!');
+      } else {
+        const errorData = await api.parseResponse(response);
+        alert(`Failed to add commission rate: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error adding commission rate:', error);
+      alert('Failed to add commission rate. Please try again.');
+    }
+  };
+
+  const handleEditCommissionRate = async () => {
+    if (!editingCommissionRate) return;
+
+    try {
+      const response = await api.put(`/api/v1/commission-rates/${editingCommissionRate.id}`, {
+        commission_rate: parseFloat(commissionRateForm.commission_rate) / 100,
+        effective_from: commissionRateForm.effective_from,
+        effective_until: commissionRateForm.effective_until || null,
+      });
+
+      if (response.ok) {
+        await fetchCommissionRates();
+        setShowCommissionRateModal(false);
+        setEditingCommissionRate(null);
+        setCommissionRateForm({
+          psp_name: '',
+          commission_rate: '',
+          effective_from: '',
+          effective_until: '',
+        });
+        alert('Commission rate updated successfully!');
+      } else {
+        const errorData = await api.parseResponse(response);
+        alert(`Failed to update commission rate: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error updating commission rate:', error);
+      alert('Failed to update commission rate. Please try again.');
+    }
+  };
+
+  const handleDeleteCommissionRate = async (rateId: number) => {
+    if (!confirm('Are you sure you want to delete this commission rate? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await api.delete(`/api/v1/commission-rates/${rateId}`);
+      if (response.ok) {
+        await fetchCommissionRates();
+        alert('Commission rate deleted successfully!');
+      } else {
+        const errorData = await api.parseResponse(response);
+        alert(`Failed to delete commission rate: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error deleting commission rate:', error);
+      alert('Failed to delete commission rate. Please try again.');
+    }
+  };
+
+  const openCommissionRateModal = (rate: any = null) => {
+    if (rate) {
+      setEditingCommissionRate(rate);
+      setCommissionRateForm({
+        psp_name: rate.psp_name,
+        commission_rate: (rate.commission_rate * 100).toString(),
+        effective_from: rate.effective_from,
+        effective_until: rate.effective_until || '',
+      });
+    } else {
+      setEditingCommissionRate(null);
+      setCommissionRateForm({
+        psp_name: '',
+        commission_rate: '',
+        effective_from: '',
+        effective_until: '',
+      });
+    }
+    setShowCommissionRateModal(true);
   };
 
   const tabs = [
@@ -1034,11 +1177,15 @@ export default function Settings() {
                                     <span className='font-semibold text-gray-900 text-sm'>
                                       {option.value}
                                     </span>
-                                    {option.commission_rate && (
-                                      <span className='inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800'>
-                                        {(option.commission_rate * 100).toFixed(1)}%
+                                    {option.value.toUpperCase() === 'TETHER' ? (
+                                      <span className='inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800'>
+                                        Internal KASA
                                       </span>
-                                    )}
+                                    ) : option.commission_rate && option.commission_rate !== null ? (
+                                      <span className='inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800'>
+                                        {(parseFloat(option.commission_rate.toString()) * 100).toFixed(1)}%
+                                      </span>
+                                    ) : null}
                                     {fieldType.isProtected && (
                                       <span className='inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800'>
                                         <Shield className='h-3 w-3 mr-1' />
@@ -1761,19 +1908,125 @@ export default function Settings() {
         </div>
       ),
     },
+    {
+      id: 'commission-rates',
+      label: 'Commission Rates',
+      icon: Percent,
+      content: (
+        <div className="space-y-6">
+          {/* Commission Rates Management */}
+          <UnifiedCard variant="elevated" className="relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100 rounded-full -translate-y-16 translate-x-16"></div>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
+                    <Percent className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl font-bold text-gray-900">
+                      PSP Commission Rates
+                    </CardTitle>
+                    <CardDescription className="text-gray-600 font-medium">
+                      Manage time-based commission rates for PSPs
+                    </CardDescription>
+                  </div>
+                </div>
+                <UnifiedButton
+                  variant="primary"
+                  size="sm"
+                  onClick={() => openCommissionRateModal()}
+                  icon={<Plus className="h-4 w-4" />}
+                  iconPosition="left"
+                >
+                  Add Rate
+                </UnifiedButton>
+              </div>
+
+              {/* Commission Rates Table */}
+              <div className="space-y-4">
+                {loadingCommissionRates ? (
+                  <div className="flex items-center justify-center py-8">
+                    <LoadingSpinner size="md" />
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          <th className="text-left py-3 px-4 font-semibold text-gray-700">PSP</th>
+                          <th className="text-left py-3 px-4 font-semibold text-gray-700">Rate</th>
+                          <th className="text-left py-3 px-4 font-semibold text-gray-700">Effective From</th>
+                          <th className="text-left py-3 px-4 font-semibold text-gray-700">Effective Until</th>
+                          <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
+                          <th className="text-right py-3 px-4 font-semibold text-gray-700">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {commissionRates.map((rate) => (
+                          <tr key={rate.id} className="border-b border-gray-100 hover:bg-gray-50">
+                            <td className="py-3 px-4">
+                              <div className="font-medium text-gray-900">{rate.psp_name}</div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                                {(rate.commission_rate * 100).toFixed(1)}%
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-4 text-gray-600">
+                              {new Date(rate.effective_from).toLocaleDateString()}
+                            </td>
+                            <td className="py-3 px-4 text-gray-600">
+                              {rate.effective_until ? new Date(rate.effective_until).toLocaleDateString() : 'Current'}
+                            </td>
+                            <td className="py-3 px-4">
+                              <Badge variant={rate.is_active ? "default" : "secondary"}>
+                                {rate.is_active ? 'Active' : 'Inactive'}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => openCommissionRateModal(rate)}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteCommissionRate(rate.id)}
+                                  className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {commissionRates.length === 0 && (
+                          <tr>
+                            <td colSpan={6} className="py-8 text-center text-gray-500">
+                              No commission rates found. Click "Add Rate" to create one.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </UnifiedCard>
+        </div>
+      ),
+    },
   ];
 
   return (
     <div className="p-6">
-      {/* Breadcrumb Navigation */}
-      <div className="mb-6">
-        <Breadcrumb 
-          items={[
-            { label: 'Dashboard', href: '/' },
-            { label: 'Settings', current: true }
-          ]} 
-        />
-      </div>
 
       {/* Page Header with Tabs */}
       <div className="mb-6">
@@ -1808,7 +2061,7 @@ export default function Settings() {
           
           {/* Tab Navigation */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className={`grid w-full grid-cols-7 bg-gray-50/80 border border-gray-200/60 ${getRadius('md')} shadow-sm`}>
+            <TabsList className={`grid w-full grid-cols-8 bg-gray-50/80 border border-gray-200/60 ${getRadius('md')} shadow-sm`}>
               <TabsTrigger value="general" className="flex items-center gap-2">
                 <SettingsIcon className="h-4 w-4" />
                 General
@@ -1836,6 +2089,10 @@ export default function Settings() {
               <TabsTrigger value="translations" className="flex items-center gap-2">
                 <Globe className="h-4 w-4" />
                 Translations
+              </TabsTrigger>
+              <TabsTrigger value="commission-rates" className="flex items-center gap-2">
+                <Percent className="h-4 w-4" />
+                Commission Rates
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -2176,6 +2433,154 @@ export default function Settings() {
               >
                 {isEditingDepartment ? 'Update Department' : 'Add Department'}
               </UnifiedButton>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Commission Rate Modal */}
+      {showCommissionRateModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+          <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full border border-gray-200/50 animate-in zoom-in-95 duration-300">
+            {/* Header */}
+            <div className="px-8 py-6 border-b border-gray-100 bg-gradient-to-br from-white via-blue-50/30 to-blue-50/20 rounded-t-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center shadow-sm">
+                    <Percent className="h-6 w-6 text-blue-700" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 tracking-tight">
+                      {editingCommissionRate ? 'Edit Commission Rate' : 'Add Commission Rate'}
+                    </h3>
+                    <p className="text-sm text-gray-600 font-medium">
+                      {editingCommissionRate ? 'Update commission rate details' : 'Set up a new time-based commission rate'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowCommissionRateModal(false)}
+                  className="w-10 h-10 rounded-xl bg-gray-100/80 hover:bg-gray-200/80 flex items-center justify-center transition-all duration-200 hover:scale-105"
+                >
+                  <X className="h-5 w-5 text-gray-600" />
+                </button>
+              </div>
+            </div>
+            
+            {/* Content */}
+            <div className="px-8 py-6">
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    PSP Name <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="text"
+                    value={commissionRateForm.psp_name}
+                    onChange={(e) => setCommissionRateForm(prev => ({ ...prev, psp_name: e.target.value }))}
+                    className="w-full"
+                    placeholder="Enter PSP name (e.g., SİPAY, KUYUMCU)"
+                    disabled={!!editingCommissionRate}
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    {editingCommissionRate ? 'PSP name cannot be changed' : 'Enter the PSP name for this commission rate'}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Commission Rate (%) <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="number"
+                    value={commissionRateForm.commission_rate}
+                    onChange={(e) => setCommissionRateForm(prev => ({ ...prev, commission_rate: e.target.value }))}
+                    className="w-full"
+                    placeholder="15.0"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Enter as percentage (15.0 = 15%)
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Effective From <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="date"
+                      value={commissionRateForm.effective_from}
+                      onChange={(e) => setCommissionRateForm(prev => ({ ...prev, effective_from: e.target.value }))}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-gray-500 mt-2">
+                      When this rate becomes effective
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Effective Until
+                    </label>
+                    <Input
+                      type="date"
+                      value={commissionRateForm.effective_until}
+                      onChange={(e) => setCommissionRateForm(prev => ({ ...prev, effective_until: e.target.value }))}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-gray-500 mt-2">
+                      Leave empty for current rate
+                    </p>
+                  </div>
+                </div>
+
+                {/* Info Box */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start gap-2">
+                    <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center mt-0.5">
+                      <span className="text-blue-600 text-xs font-bold">i</span>
+                    </div>
+                    <div className="text-sm text-blue-800">
+                      <p className="font-medium mb-1">Time-Based Commission Rates</p>
+                      <p className="text-xs">
+                        Commission rates can change over time. The system will automatically use the correct rate based on the transaction date. 
+                        When adding a new rate, any existing current rate will be automatically closed.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Footer */}
+            <div className="px-8 py-6 border-t border-gray-100 bg-gray-50/50 rounded-b-lg">
+              <div className="flex items-center gap-4">
+                <UnifiedButton
+                  variant="outline"
+                  onClick={() => setShowCommissionRateModal(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </UnifiedButton>
+                <UnifiedButton
+                  variant="primary"
+                  onClick={editingCommissionRate ? handleEditCommissionRate : handleAddCommissionRate}
+                  disabled={
+                    !commissionRateForm.psp_name ||
+                    !commissionRateForm.commission_rate ||
+                    !commissionRateForm.effective_from
+                  }
+                  className="flex-1"
+                  icon={<Save className="h-4 w-4" />}
+                  iconPosition="left"
+                >
+                  {editingCommissionRate ? 'Update Rate' : 'Add Rate'}
+                </UnifiedButton>
+              </div>
             </div>
           </div>
         </div>

@@ -29,6 +29,11 @@ logger = get_logger(__name__)
 # Create blueprint
 api_bp = Blueprint('api', __name__)
 
+# Import strategy functions
+from app.api.v1.endpoints.strategy import (
+    implement_strategy, get_strategy_status, deactivate_strategy
+)
+
 @api_bp.route('/api/csrf-token')
 @login_required
 def get_csrf_token():
@@ -1047,4 +1052,23 @@ def api_clients_list():
         
     except Exception as e:
         logger.error(f"Error in clients list API: {str(e)}")
-        return jsonify({'error': 'Failed to fetch clients data'}), 500 
+        return jsonify({'error': 'Failed to fetch clients data'}), 500
+
+# Strategy Implementation Routes
+@api_bp.route('/api/strategy/implement', methods=['POST'])
+@login_required
+def api_implement_strategy():
+    """Implement a revenue optimization strategy"""
+    return implement_strategy()
+
+@api_bp.route('/api/strategy/status', methods=['GET'])
+@login_required
+def api_get_strategy_status():
+    """Get status of all implemented strategies"""
+    return get_strategy_status()
+
+@api_bp.route('/api/strategy/deactivate', methods=['POST'])
+@login_required
+def api_deactivate_strategy():
+    """Deactivate a strategy"""
+    return deactivate_strategy() 

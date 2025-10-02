@@ -186,4 +186,20 @@ def get_database_service() -> DatabaseService:
     global database_service
     if database_service is None:
         raise RuntimeError("Database service not initialized")
-    return database_service 
+    return database_service
+
+def get_db_connection():
+    """Get a direct database connection for raw SQL operations"""
+    import sqlite3
+    from app import app
+    
+    # Get database URL from Flask app config
+    database_url = app.config.get('SQLALCHEMY_DATABASE_URI', 'sqlite:///instance/treasury_improved.db')
+    
+    # Convert SQLAlchemy URL to SQLite path
+    if database_url.startswith('sqlite:///'):
+        db_path = database_url.replace('sqlite:///', '')
+        return sqlite3.connect(db_path)
+    else:
+        # For other databases, you might need different connection logic
+        raise NotImplementedError(f"Direct connection not implemented for {database_url}") 

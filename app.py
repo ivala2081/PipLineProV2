@@ -6,6 +6,9 @@ import os
 import sys
 from pathlib import Path
 
+# Configure logging level early
+from app.utils.logging_config import configure_logging_level
+
 # Load environment variables from .env files
 try:
     from dotenv import load_dotenv
@@ -22,6 +25,11 @@ try:
         print("ℹ️ No .env file found, using system environment variables")
 except ImportError:
     print("ℹ️ python-dotenv not available, using system environment variables")
+
+# Configure logging level based on environment
+log_level = os.getenv('LOG_LEVEL', 'INFO')
+configure_logging_level(log_level)
+print(f"📝 Logging level set to: {log_level}")
 
 def setup_development_environment():
     """Set up development environment variables"""

@@ -21,7 +21,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port: 5173,
     host: '0.0.0.0', // Bind to both IPv4 and IPv6
     proxy: {
       '/api': {

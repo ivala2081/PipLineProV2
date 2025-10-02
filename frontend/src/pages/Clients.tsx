@@ -300,12 +300,12 @@ export default function Clients() {
   });
   const [filters, setFilters] = useState({
     search: '',
-    category: '',
-    psp: '',
-    company: '',
-    payment_method: '',
-    currency: '',
-    status: '',
+    category: 'all',
+    psp: 'all',
+    company: 'all',
+    payment_method: 'all',
+    currency: 'all',
+    status: 'all',
     date_from: '',
     date_to: '',
     amount_min: '',
@@ -378,7 +378,7 @@ export default function Clients() {
       return;
     }
     
-    console.log('🔄 Clients: Starting loadAllData...');
+    console.log('🔄 Clients: Starting loadAllData...', new Date().toISOString());
     setLoading(true);
     setError(null);
 
@@ -519,12 +519,12 @@ export default function Clients() {
       
       // Add all filter parameters
       if (filters.search && filters.search.trim() !== '') params.append('search', filters.search);
-      if (filters.category && filters.category.trim() !== '') params.append('category', filters.category);
-      if (filters.psp && filters.psp.trim() !== '') params.append('psp', filters.psp);
-      if (filters.company && filters.company.trim() !== '') params.append('company', filters.company);
-      if (filters.payment_method && filters.payment_method.trim() !== '') params.append('payment_method', filters.payment_method);
-      if (filters.currency && filters.currency.trim() !== '') params.append('currency', filters.currency);
-      if (filters.status && filters.status.trim() !== '') params.append('status', filters.status);
+      if (filters.category && filters.category.trim() !== '' && filters.category !== 'all') params.append('category', filters.category);
+      if (filters.psp && filters.psp.trim() !== '' && filters.psp !== 'all') params.append('psp', filters.psp);
+      if (filters.company && filters.company.trim() !== '' && filters.company !== 'all') params.append('company', filters.company);
+      if (filters.payment_method && filters.payment_method.trim() !== '' && filters.payment_method !== 'all') params.append('payment_method', filters.payment_method);
+      if (filters.currency && filters.currency.trim() !== '' && filters.currency !== 'all') params.append('currency', filters.currency);
+      if (filters.status && filters.status.trim() !== '' && filters.status !== 'all') params.append('status', filters.status);
       if (filters.date_from && filters.date_from.trim() !== '') params.append('date_from', filters.date_from);
       if (filters.date_to && filters.date_to.trim() !== '') params.append('date_to', filters.date_to);
       if (filters.amount_min && filters.amount_min.trim() !== '') params.append('amount_min', filters.amount_min);
@@ -847,7 +847,7 @@ export default function Clients() {
         return [];
       }
 
-      const response = await api.get('/api/v1/transactions/clients');
+      const response = await api.get(`/api/v1/transactions/clients?_t=${Date.now()}&_refresh=${Math.random()}`);
 
       console.log('🔄 Clients: Clients API response:', {
         status: response.status,
@@ -947,12 +947,12 @@ export default function Clients() {
       
       // Add all filter parameters
       if (filters.search && filters.search.trim() !== '') params.append('search', filters.search);
-      if (filters.category && filters.category.trim() !== '') params.append('category', filters.category);
-      if (filters.psp && filters.psp.trim() !== '') params.append('psp', filters.psp);
-      if (filters.company && filters.company.trim() !== '') params.append('company', filters.company);
-      if (filters.payment_method && filters.payment_method.trim() !== '') params.append('payment_method', filters.payment_method);
-      if (filters.currency && filters.currency.trim() !== '') params.append('currency', filters.currency);
-      if (filters.status && filters.status.trim() !== '') params.append('status', filters.status);
+      if (filters.category && filters.category.trim() !== '' && filters.category !== 'all') params.append('category', filters.category);
+      if (filters.psp && filters.psp.trim() !== '' && filters.psp !== 'all') params.append('psp', filters.psp);
+      if (filters.company && filters.company.trim() !== '' && filters.company !== 'all') params.append('company', filters.company);
+      if (filters.payment_method && filters.payment_method.trim() !== '' && filters.payment_method !== 'all') params.append('payment_method', filters.payment_method);
+      if (filters.currency && filters.currency.trim() !== '' && filters.currency !== 'all') params.append('currency', filters.currency);
+      if (filters.status && filters.status.trim() !== '' && filters.status !== 'all') params.append('status', filters.status);
       if (filters.date_from && filters.date_from.trim() !== '') params.append('date_from', filters.date_from);
       if (filters.date_to && filters.date_to.trim() !== '') params.append('date_to', filters.date_to);
       if (filters.amount_min && filters.amount_min.trim() !== '') params.append('amount_min', filters.amount_min);
@@ -1971,28 +1971,28 @@ export default function Clients() {
             .includes(filters.client_name.toLowerCase());
 
         const matchesPaymentMethod =
-          !filters.payment_method ||
+          !filters.payment_method || filters.payment_method === 'all' ||
           (client.payment_method &&
             client.payment_method
               .toLowerCase()
               .includes(filters.payment_method.toLowerCase()));
 
         const matchesCategory =
-          !filters.category ||
+          !filters.category || filters.category === 'all' ||
           (client.category &&
             client.category
               .toLowerCase()
               .includes(filters.category.toLowerCase()));
 
         const matchesPSP =
-          !filters.psp ||
+          !filters.psp || filters.psp === 'all' ||
           (Array.isArray(client.psps) &&
             client.psps.some(psp =>
               psp.toLowerCase().includes(filters.psp.toLowerCase())
             ));
 
         const matchesCurrency =
-          !filters.currency ||
+          !filters.currency || filters.currency === 'all' ||
           (Array.isArray(client.currencies) &&
             client.currencies.some(currency =>
               currency.toLowerCase().includes(filters.currency.toLowerCase())
@@ -2039,7 +2039,8 @@ export default function Clients() {
     totalCommissions,
     sampleClient: filteredClients[0] ? {
       name: filteredClients[0].client_name,
-      commission: filteredClients[0].total_commission
+      commission: filteredClients[0].total_commission,
+      total_amount: filteredClients[0].total_amount
     } : 'No clients',
     allCommissions: filteredClients.map(c => ({ name: c.client_name, commission: c.total_commission }))
   });
@@ -2047,14 +2048,159 @@ export default function Clients() {
   const avgTransactionValue =
     totalTransactions > 0 ? totalVolume / totalTransactions : 0;
 
-  // Calculate deposit and withdrawal metrics from transactions - make it reactive
+  // State for dashboard financial data
+  const [dashboardFinancialData, setDashboardFinancialData] = useState<{
+    total_revenue: number;
+    total_commission: number;
+    total_net: number;
+    total_deposits: number;
+    total_withdrawals: number;
+  } | null>(null);
+
+  // State for payment method data
+  const [paymentMethodData, setPaymentMethodData] = useState<{
+    [key: string]: { deposits: number; withdrawals: number; total: number; count: number };
+  } | null>(null);
+
+  // Fetch dashboard financial data for accurate calculations
+  const fetchDashboardFinancialData = useCallback(async () => {
+    try {
+      const response = await api.get('/api/v1/analytics/dashboard/stats?range=all');
+      if (response.ok) {
+        const data = await api.parseResponse(response);
+        setDashboardFinancialData({
+          total_revenue: data.summary?.total_revenue || 0,
+          total_commission: data.summary?.total_commission || 0,
+          total_net: data.summary?.total_net || 0,
+          total_deposits: data.summary?.total_revenue || 0, // For now, use total_revenue as deposits
+          total_withdrawals: (data.summary?.total_revenue || 0) - (data.summary?.total_net || 0), // Calculate withdrawals
+        });
+        console.log('🔄 Clients: Dashboard financial data loaded:', data.summary);
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard financial data:', error);
+    }
+  }, []);
+
+  // Normalize payment method names for display
+  const normalizePaymentMethodName = (rawMethod: string): string => {
+    const methodMap: { [key: string]: string } = {
+      'KK': 'Credit Card',
+      'BANKA': 'Bank',
+      'Banka': 'Bank',
+      'BANK': 'Bank',
+      'CC': 'Credit Card',
+      'CARD': 'Credit Card',
+      'CREDIT CARD': 'Credit Card',
+      'CASH': 'Cash',
+      'WIRE': 'Wire Transfer',
+      'TRANSFER': 'Transfer',
+      'PAYPAL': 'PayPal',
+      'STRIPE': 'Stripe',
+      'SQUARE': 'Square',
+      'TETHER': 'Tether',
+      'USDT': 'Tether',
+      'UNKNOWN': 'Unknown'
+    };
+    
+    // First try exact match
+    if (methodMap[rawMethod]) {
+      return methodMap[rawMethod];
+    }
+    
+    // Then try uppercase match
+    const upperMethod = rawMethod.toUpperCase();
+    if (methodMap[upperMethod]) {
+      return methodMap[upperMethod];
+    }
+    
+    // Handle case variations for common methods
+    if (upperMethod.includes('CREDIT') && upperMethod.includes('CARD')) {
+      return 'Credit Card';
+    }
+    if (upperMethod.includes('BANK')) {
+      return 'Bank';
+    }
+    if (upperMethod.includes('TETHER') || upperMethod.includes('USDT')) {
+      return 'Tether';
+    }
+    
+    // Return original if no match found
+    return rawMethod;
+  };
+
+  // Fetch payment method data for accurate analysis
+  const fetchPaymentMethodData = useCallback(async () => {
+    try {
+      // Get all transactions without pagination for payment method analysis
+      const response = await api.get('/api/v1/transactions/?per_page=10000&page=1');
+      if (response.ok) {
+        const data = await api.parseResponse(response);
+        const allTransactions = Array.isArray(data.transactions) ? data.transactions : [];
+        
+        console.log('🔄 Clients: Fetched all transactions for payment method analysis:', allTransactions.length);
+        
+        const breakdown: { [key: string]: { deposits: number; withdrawals: number; total: number; count: number } } = {};
+        
+        allTransactions.forEach((transaction: any) => {
+          const rawMethod = transaction.payment_method || 'Unknown';
+          
+          // Normalize payment method names for display
+          const method = normalizePaymentMethodName(rawMethod);
+          
+          if (!breakdown[method]) {
+            breakdown[method] = { deposits: 0, withdrawals: 0, total: 0, count: 0 };
+          }
+          
+          // Use converted amounts (amount_tl) for proper currency conversion
+          const amount = transaction.amount_tl !== null && transaction.amount_tl !== undefined ? transaction.amount_tl : transaction.amount || 0;
+          
+          breakdown[method].count += 1;
+          
+          if (transaction.category === 'DEP' || transaction.category === 'Deposit' || transaction.category === 'Investment') {
+            breakdown[method].deposits += amount;
+            breakdown[method].total += amount;
+          } else if (transaction.category === 'WD' || transaction.category === 'Withdraw' || transaction.category === 'Withdrawal') {
+            breakdown[method].withdrawals += amount;
+            breakdown[method].total -= amount;
+          }
+        });
+        
+        setPaymentMethodData(breakdown);
+        console.log('🔄 Clients: Payment method data calculated from all transactions:', Object.keys(breakdown).length, 'methods');
+      }
+    } catch (error) {
+      console.error('Error fetching payment method data:', error);
+    }
+  }, []);
+
+  // Fetch dashboard data when component mounts
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      fetchDashboardFinancialData();
+      fetchPaymentMethodData();
+    }
+  }, [isAuthenticated, authLoading, fetchDashboardFinancialData, fetchPaymentMethodData]);
+
+  // Calculate deposit and withdrawal metrics using dashboard data
   const depositWithdrawMetrics = useMemo(() => {
+    if (dashboardFinancialData) {
+      // Use dashboard data for accurate calculations
+      console.log('🔄 Clients: Using dashboard financial data for calculations');
+      return {
+        totalDeposits: dashboardFinancialData.total_deposits,
+        totalWithdrawals: dashboardFinancialData.total_withdrawals,
+      };
+    }
+    
+    // Fallback to paginated transactions (with warning)
+    console.log('🔄 Clients: Using paginated transactions as fallback (may be inaccurate)');
+    console.log('⚠️  WARNING: Using paginated transactions for financial calculations may give incorrect results');
+    
     if (!Array.isArray(transactions)) {
       console.log('🔄 Clients: No transactions array available for deposit/withdrawal calculation');
       return { totalDeposits: 0, totalWithdrawals: 0 };
     }
-    
-    console.log('🔄 Clients: Calculating deposit/withdrawal metrics from', transactions.length, 'transactions');
     
     // Handle both category formats: 'DEP'/'WD' and 'Deposit'/'Withdraw'
     const deposits = transactions.filter(t => 
@@ -2064,15 +2210,25 @@ export default function Clients() {
       t.category === 'WD' || t.category === 'Withdraw' || t.category === 'Withdrawal'
     );
     
-    console.log('🔄 Clients: Found', deposits.length, 'deposits and', withdrawals.length, 'withdrawals');
+    console.log('🔄 Clients: Found', deposits.length, 'deposits and', withdrawals.length, 'withdrawals in paginated data');
     
-    const totalDeposits = deposits.reduce((sum, t) => sum + (t.amount || 0), 0);
-    const totalWithdrawals = withdrawals.reduce((sum, t) => sum + (t.amount || 0), 0);
+    // Use converted amounts (amount_tl) for proper currency conversion
+    const totalDeposits = deposits.reduce((sum, t) => {
+      // Use amount_tl if available (converted amount), otherwise fallback to amount
+      const amount = t.amount_tl !== null && t.amount_tl !== undefined ? t.amount_tl : t.amount || 0;
+      return sum + amount;
+    }, 0);
+    const totalWithdrawals = withdrawals.reduce((sum, t) => {
+      // Use amount_tl if available (converted amount), otherwise fallback to amount
+      const amount = t.amount_tl !== null && t.amount_tl !== undefined ? t.amount_tl : t.amount || 0;
+      return sum + amount;
+    }, 0);
     
-    console.log('🔄 Clients: Calculated totals - Deposits:', totalDeposits, 'Withdrawals:', totalWithdrawals);
+    console.log('🔄 Clients: Calculated totals from paginated data - Deposits:', totalDeposits, 'Withdrawals:', totalWithdrawals);
+    console.log('⚠️  NOTE: These values are from paginated data and may not represent the full financial picture');
     
     return { totalDeposits, totalWithdrawals };
-  }, [transactions]); // Make it reactive to transactions changes
+  }, [dashboardFinancialData, transactions]); // Make it reactive to dashboard data and transactions changes
 
   const { totalDeposits, totalWithdrawals } = depositWithdrawMetrics;
 
@@ -2087,30 +2243,51 @@ export default function Clients() {
     activeTab
   });
 
-  // Calculate payment method breakdown - make it reactive
+  // Calculate payment method breakdown - use all transactions data for accuracy
   const paymentMethodBreakdown = useMemo(() => {
+    if (paymentMethodData) {
+      // Use complete payment method data from all transactions
+      console.log('🔄 Clients: Using complete payment method data from all transactions');
+      return paymentMethodData;
+    }
+    
+    // Fallback to paginated transactions (with warning)
+    console.log('🔄 Clients: Using paginated transactions as fallback for payment method analysis');
+    console.log('⚠️  WARNING: Using paginated transactions for payment method analysis may give incomplete results');
+    
     if (!Array.isArray(transactions)) return {};
     
-    const breakdown: { [key: string]: { deposits: number; withdrawals: number; total: number } } = {};
+    const breakdown: { [key: string]: { deposits: number; withdrawals: number; total: number; count: number } } = {};
     
     transactions.forEach(transaction => {
-      const method = transaction.payment_method || 'Unknown';
+      const rawMethod = transaction.payment_method || 'Unknown';
+      
+      // Normalize payment method names for display
+      const method = normalizePaymentMethodName(rawMethod);
       
       if (!breakdown[method]) {
-        breakdown[method] = { deposits: 0, withdrawals: 0, total: 0 };
+        breakdown[method] = { deposits: 0, withdrawals: 0, total: 0, count: 0 };
       }
       
+      // Use converted amounts (amount_tl) for proper currency conversion
+      const amount = transaction.amount_tl !== null && transaction.amount_tl !== undefined ? transaction.amount_tl : transaction.amount || 0;
+      
+      breakdown[method].count += 1;
+      
       if (transaction.category === 'DEP' || transaction.category === 'Deposit' || transaction.category === 'Investment') {
-        breakdown[method].deposits += transaction.amount || 0;
-        breakdown[method].total += transaction.amount || 0;
+        breakdown[method].deposits += amount;
+        breakdown[method].total += amount;
       } else if (transaction.category === 'WD' || transaction.category === 'Withdraw' || transaction.category === 'Withdrawal') {
-        breakdown[method].withdrawals += transaction.amount || 0;
-        breakdown[method].total -= transaction.amount || 0;
+        breakdown[method].withdrawals += amount;
+        breakdown[method].total -= amount;
       }
     });
     
+    console.log('🔄 Clients: Payment method breakdown calculated from', transactions.length, 'paginated transactions');
+    console.log('⚠️  NOTE: This breakdown may be incomplete due to pagination');
+    
     return breakdown;
-  }, [transactions]); // Make it reactive to transactions changes
+  }, [paymentMethodData, transactions]); // Make it reactive to payment method data and transactions changes
 
   // Calculate daily deposit and withdrawal metrics for the selected date
   const calculateDailyDepositWithdrawMetrics = (date: string) => {
@@ -2140,9 +2317,15 @@ export default function Clients() {
       t.category === 'WD' || t.category === 'Withdraw' || t.category === 'Withdrawal'
     );
     
-    // Use original amounts since we now have automatic rate conversion from backend
-    const totalDeposits = deposits.reduce((sum, t) => sum + (t.amount || 0), 0);
-    const totalWithdrawals = withdrawals.reduce((sum, t) => sum + (t.amount || 0), 0);
+    // Use converted amounts (amount_tl) for proper currency conversion
+    const totalDeposits = deposits.reduce((sum, t) => {
+      const amount = t.amount_tl !== null && t.amount_tl !== undefined ? t.amount_tl : t.amount || 0;
+      return sum + amount;
+    }, 0);
+    const totalWithdrawals = withdrawals.reduce((sum, t) => {
+      const amount = t.amount_tl !== null && t.amount_tl !== undefined ? t.amount_tl : t.amount || 0;
+      return sum + amount;
+    }, 0);
     
     // Calculate transaction count and unique clients from the same filtered transactions
     const transactionCount = dateTransactions.length;
@@ -2163,7 +2346,11 @@ export default function Clients() {
     const breakdown: { [key: string]: { deposits: number; withdrawals: number; total: number } } = {};
     
     dateTransactions.forEach(transaction => {
-      const method = transaction.payment_method || 'Unknown';
+      const rawMethod = transaction.payment_method || 'Unknown';
+      
+      // Normalize payment method names for display
+      const method = normalizePaymentMethodName(rawMethod);
+      
       const amount = transaction.amount || 0; // Use original amount since we have automatic conversion
       
       if (!breakdown[method]) {
@@ -2311,7 +2498,8 @@ export default function Clients() {
 
   const preparePaymentMethodChartData = () => {
     const methodData = transactions.reduce((acc, transaction) => {
-      const method = transaction.payment_method || 'Unknown';
+      const rawMethod = transaction.payment_method || 'Unknown';
+      const method = normalizePaymentMethodName(rawMethod);
       if (!acc[method]) {
         acc[method] = { method, volume: 0, count: 0 };
       }
@@ -2486,7 +2674,7 @@ export default function Clients() {
             <div className='flex items-center gap-4'>
               {/* Enhanced Date Icon */}
               <div className='relative'>
-                <div className='w-10 h-10 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:scale-105 transition-all duration-300 ease-out'>
+                <div className='w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:scale-105 transition-all duration-300 ease-out'>
                   <Calendar className='h-5 w-5 text-white' />
                 </div>
                 {/* Subtle glow effect */}
@@ -2513,7 +2701,7 @@ export default function Clients() {
                     <span className='text-gray-500'>transaction{dateGroup.transactions.length !== 1 ? 's' : ''}</span>
                   </div>
                   <div className='flex items-center gap-1.5 text-gray-600'>
-                    <div className='w-2 h-2 bg-blue-500 rounded-full'></div>
+                    <div className='w-2 h-2 bg-green-500 rounded-full'></div>
                     <span className='font-medium'>
                       {dateGroup.netBalance ? formatCurrency(dateGroup.netBalance, '₺') : formatCurrency(dateGroup.transactions.reduce((sum, t) => {
                         // Convert to TRY using each transaction's own exchange rate
@@ -2624,7 +2812,7 @@ export default function Clients() {
                   </td>
 
                   <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b border-gray-100'>
-                    {transaction.payment_method || 'N/A'}
+                    {normalizePaymentMethodName(transaction.payment_method || 'N/A')}
                   </td>
                   <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-b border-gray-100'>
                     {transaction.category || 'N/A'}
@@ -2821,15 +3009,6 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
 
   return (
     <div className="p-6">
-      {/* Breadcrumb Navigation */}
-      <div className="mb-6">
-        <Breadcrumb 
-          items={[
-            { label: 'Dashboard', href: '/' },
-            { label: 'Clients', current: true }
-          ]} 
-        />
-      </div>
 
       {/* Page Header */}
       <div className="mb-6">
@@ -2952,7 +3131,7 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
                             <span className="font-medium">{t('dashboard.active_clients')}: {clients.length}</span>
           </div>
           <div className='flex items-center gap-2'>
-            <div className='w-2 h-2 bg-gray-500 rounded-full'></div>
+            <div className='w-2 h-2 bg-gray-400 rounded-full'></div>
             <span className="font-medium">Total Volume: {formatCurrency(totalVolume, '₺')}</span>
           </div>
         </div>
@@ -3000,32 +3179,32 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <MetricCard
                 title="Total Deposit"
-                value={formatCurrency(totalDeposits, '₺')}
-                subtitle="DEP Transactions"
+                value={formatCurrency(dashboardFinancialData?.total_deposits || totalDeposits, '₺')}
+                subtitle={dashboardFinancialData ? "All DEP Transactions" : "DEP Transactions"}
                 icon={TrendingUp}
                 color="green"
               />
               
               <MetricCard
                 title="Total Withdraw"
-                value={formatCurrency(Math.abs(totalWithdrawals), '₺')}
-                subtitle="WD Transactions"
+                value={formatCurrency(Math.abs(dashboardFinancialData?.total_withdrawals || totalWithdrawals), '₺')}
+                subtitle={dashboardFinancialData ? "All WD Transactions" : "WD Transactions"}
                 icon={TrendingDown}
                 color="red"
               />
               
               <MetricCard
                 title="Net Cash"
-                value={formatCurrency(totalDeposits - totalWithdrawals, '₺')}
-                subtitle="Tot DEP - Tot WD"
+                value={formatCurrency(dashboardFinancialData?.total_net || (totalDeposits - totalWithdrawals), '₺')}
+                subtitle={dashboardFinancialData ? "All Transactions Net" : "Tot DEP - Tot WD"}
                 icon={DollarSign}
-                color={totalDeposits - totalWithdrawals >= 0 ? "gray" : "red"}
+                color={(dashboardFinancialData?.total_net || (totalDeposits - totalWithdrawals)) >= 0 ? "gray" : "red"}
               />
               
               <MetricCard
                 title="Total Commissions"
-                value={formatCurrency(totalCommissions, '₺')}
-                subtitle="All paid commissions"
+                value={formatCurrency(dashboardFinancialData?.total_commission || totalCommissions, '₺')}
+                subtitle={dashboardFinancialData ? "All Transactions Commission" : "All paid commissions"}
                 icon={FileText}
                 color="purple"
               />
@@ -3056,8 +3235,8 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
 
               <MetricCard
                 title="Top Performers"
-                value={filteredClients.length > 0 ? filteredClients.reduce((max, client) => client.total_amount > max.total_amount ? client : max).client_name : 'N/A'}
-                subtitle={`Most transactions: ${filteredClients.length > 0 ? filteredClients.reduce((max, client) => client.transaction_count > max.transaction_count ? client : max).client_name : 'N/A'}`}
+                value={clients.length > 0 ? clients.reduce((max, client) => client.total_amount > max.total_amount ? client : max).client_name : 'N/A'}
+                subtitle={`Most transactions: ${clients.length > 0 ? clients.reduce((max, client) => client.transaction_count > max.transaction_count ? client : max).client_name : 'N/A'}`}
                 icon={Award}
                 color="purple"
               />
@@ -3084,9 +3263,14 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
                   .map(([method, data]) => (
                     <div key={method} className='bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors duration-200'>
                       <div className='flex items-center justify-between mb-3'>
-                        <h4 className='text-lg font-semibold text-gray-900'>
-                          {method}
-                        </h4>
+                        <div>
+                          <h4 className='text-lg font-semibold text-gray-900'>
+                            {method}
+                          </h4>
+                          <p className='text-sm text-gray-500'>
+                            {data.count || 0} transactions
+                          </p>
+                        </div>
                         <div className={`text-lg font-bold ${data.total >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                           {formatCurrency(Math.abs(data.total), '₺')}
                         </div>
@@ -3271,9 +3455,9 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
                             Basic Filters
                           </h3>
                           <div className="flex items-center gap-2">
-                            {(filters.search || filters.category || filters.status) && (
+                            {(filters.search || (filters.category && filters.category !== 'all') || (filters.status && filters.status !== 'all')) && (
                               <UnifiedBadge variant="secondary" size="sm">
-                                {(filters.search ? 1 : 0) + (filters.category ? 1 : 0) + (filters.status ? 1 : 0)} active
+                                {(filters.search ? 1 : 0) + ((filters.category && filters.category !== 'all') ? 1 : 0) + ((filters.status && filters.status !== 'all') ? 1 : 0)} active
                               </UnifiedBadge>
                             )}
                             <div className={`transform transition-transform ${expandedFilterSections.basic ? 'rotate-90' : ''}`}>
@@ -3302,7 +3486,7 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
                                   <SelectValue placeholder="All Categories" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="">All Categories</SelectItem>
+                                  <SelectItem value="all">All Categories</SelectItem>
                                   <SelectItem value="DEP">Deposit (DEP)</SelectItem>
                                   <SelectItem value="WD">Withdrawal (WD)</SelectItem>
                                 </SelectContent>
@@ -3317,7 +3501,7 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
                                   <SelectValue placeholder="All Status" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="">All Status</SelectItem>
+                                  <SelectItem value="all">All Status</SelectItem>
                                   <SelectItem value="completed">Completed</SelectItem>
                                   <SelectItem value="pending">Pending</SelectItem>
                                   <SelectItem value="failed">Failed</SelectItem>
@@ -3339,9 +3523,9 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
                             Advanced Filters
                           </h3>
                           <div className="flex items-center gap-2">
-                            {(filters.psp || filters.company || filters.payment_method || filters.currency) && (
+                            {((filters.psp && filters.psp !== 'all') || (filters.company && filters.company !== 'all') || (filters.payment_method && filters.payment_method !== 'all') || (filters.currency && filters.currency !== 'all')) && (
                               <UnifiedBadge variant="secondary" size="sm">
-                                {(filters.psp ? 1 : 0) + (filters.company ? 1 : 0) + (filters.payment_method ? 1 : 0) + (filters.currency ? 1 : 0)} active
+                                {((filters.psp && filters.psp !== 'all') ? 1 : 0) + ((filters.company && filters.company !== 'all') ? 1 : 0) + ((filters.payment_method && filters.payment_method !== 'all') ? 1 : 0) + ((filters.currency && filters.currency !== 'all') ? 1 : 0)} active
                               </UnifiedBadge>
                             )}
                             <div className={`transform transition-transform ${expandedFilterSections.advanced ? 'rotate-90' : ''}`}>
@@ -3361,7 +3545,7 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
                                   <SelectValue placeholder="All PSPs" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="">All PSPs</SelectItem>
+                                  <SelectItem value="all">All PSPs</SelectItem>
                                 {dropdownOptions.psps.map((psp: string) => (
                                     <SelectItem key={psp} value={psp}>{psp}</SelectItem>
                                   ))}
@@ -3377,7 +3561,7 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
                                   <SelectValue placeholder="All Companies" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="">All Companies</SelectItem>
+                                  <SelectItem value="all">All Companies</SelectItem>
                                 {dropdownOptions.companies.map((company: string) => (
                                     <SelectItem key={company} value={company}>{company}</SelectItem>
                                   ))}
@@ -3393,7 +3577,7 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
                                   <SelectValue placeholder="All Methods" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="">All Methods</SelectItem>
+                                  <SelectItem value="all">All Methods</SelectItem>
                                 {dropdownOptions.payment_methods.map((method: string) => (
                                     <SelectItem key={method} value={method}>{method}</SelectItem>
                                   ))}
@@ -3409,7 +3593,7 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
                                   <SelectValue placeholder="All Currencies" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="">All Currencies</SelectItem>
+                                  <SelectItem value="all">All Currencies</SelectItem>
                                 {dropdownOptions.currencies.map((currency: string) => (
                                     <SelectItem key={currency} value={currency}>{currency}</SelectItem>
                                 ))}
@@ -3571,32 +3755,32 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
                                 Search: "{filters.search}"
                               </UnifiedBadge>
                             )}
-                {filters.category && (
+                {(filters.category && filters.category !== 'all') && (
                               <UnifiedBadge variant="secondary" size="sm" className="bg-green-100 text-green-800">
                                 Category: {filters.category}
                               </UnifiedBadge>
                             )}
-                            {filters.psp && (
+                            {(filters.psp && filters.psp !== 'all') && (
                               <UnifiedBadge variant="secondary" size="sm" className="bg-purple-100 text-purple-800">
                                 PSP: {filters.psp}
                               </UnifiedBadge>
                             )}
-                            {filters.company && (
+                            {(filters.company && filters.company !== 'all') && (
                               <UnifiedBadge variant="secondary" size="sm" className="bg-orange-100 text-orange-800">
                                 Company: {filters.company}
                               </UnifiedBadge>
                             )}
-                            {filters.payment_method && (
+                            {(filters.payment_method && filters.payment_method !== 'all') && (
                               <UnifiedBadge variant="secondary" size="sm" className="bg-indigo-100 text-indigo-800">
                                 Method: {filters.payment_method}
                               </UnifiedBadge>
                             )}
-                            {filters.currency && (
+                            {(filters.currency && filters.currency !== 'all') && (
                               <UnifiedBadge variant="secondary" size="sm" className="bg-cyan-100 text-cyan-800">
                                 Currency: {filters.currency}
                               </UnifiedBadge>
                             )}
-                            {filters.status && (
+                            {(filters.status && filters.status !== 'all') && (
                               <UnifiedBadge variant="secondary" size="sm" className="bg-yellow-100 text-yellow-800">
                                 Status: {filters.status}
                               </UnifiedBadge>
@@ -3630,12 +3814,12 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
                         <div className="text-sm text-gray-600">
                           {getActiveFilterCount() > 0 ? (
                             <span className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                              <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
                               {getActiveFilterCount()} filter{getActiveFilterCount() !== 1 ? 's' : ''} applied
                             </span>
                           ) : (
                             <span className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                              <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
                               No filters applied
                             </span>
                           )}
@@ -3761,7 +3945,7 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
                 <div className='flex items-center justify-between mb-6'>
                   <h3 className='text-lg font-semibold text-gray-900'>Transaction Volume Trend</h3>
                   <div className='flex items-center gap-2 text-sm text-gray-500'>
-                    <div className='w-3 h-3 bg-emerald-500 rounded-full'></div>
+                    <div className='w-3 h-3 bg-green-500 rounded-full'></div>
                     <span>Deposits</span>
                     <div className='w-3 h-3 bg-red-500 rounded-full'></div>
                     <span>Withdrawals</span>
@@ -4189,7 +4373,7 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
               {/* Total Revenue */}
               <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
                     <DollarSign className="h-6 w-6 text-green-600" />
                   </div>
                   <div className="text-right">
@@ -4233,7 +4417,7 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
               {/* Net Profit */}
               <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl p-6 border border-purple-200">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
                     <BarChart3 className="h-6 w-6 text-purple-600" />
                   </div>
                   <div className="text-right">
@@ -4255,7 +4439,7 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
               {/* Total Transactions */}
               <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-6 border border-orange-200">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
                     <FileText className="h-6 w-6 text-orange-600" />
                   </div>
                   <div className="text-right">
@@ -4285,7 +4469,7 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
               {/* Revenue Report */}
               <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
                     <DollarSign className="h-5 w-5 text-green-600" />
                   </div>
                   <div>
@@ -4317,7 +4501,7 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
               {/* Profit & Loss */}
               <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
                     <BarChart3 className="h-5 w-5 text-purple-600" />
                   </div>
                   <div>
@@ -4721,7 +4905,7 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
                           {/* Deposits */}
                           <div className='bg-white border border-gray-200 rounded-xl p-4 hover:shadow-sm transition-shadow duration-200'>
                             <div className='flex items-center justify-between mb-3'>
-                              <div className='w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center'>
+                              <div className='w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center'>
                                 <TrendingUp className='h-4 w-4 text-green-600' />
                               </div>
                               <span className='text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full'>
@@ -4952,7 +5136,7 @@ Mike Johnson,Global Inc,TR1122334455,Wire Transfer,DEP,5000.00,100.00,4900.00,GB
                             <div className='space-y-2'>
                               {dailySummaryData.payment_method_summary.slice(0, 4).map((method, idx) => (
                                 <div key={idx} className='flex justify-between items-center text-sm'>
-                                  <span className='text-gray-600 truncate'>{method.name}</span>
+                                  <span className='text-gray-600 truncate'>{normalizePaymentMethodName(method.name)}</span>
                                   <span className='font-medium text-gray-900'>{method.count}</span>
                                 </div>
                               ))}

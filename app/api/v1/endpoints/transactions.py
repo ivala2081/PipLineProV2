@@ -3,7 +3,7 @@ Transactions API endpoints for Flask
 """
 from flask import Blueprint, jsonify, request
 from flask_login import login_required, current_user
-from sqlalchemy import func, text
+from sqlalchemy import func, text, case
 from datetime import datetime, timedelta, timezone
 from app.models.transaction import Transaction
 from app.models.financial import PspTrack
@@ -116,9 +116,10 @@ def create_transaction():
 
         # Calculate commission based on category
         if category == 'WD':
-            # WD transactions always have 0 commission
+            # WD transactions always have 0 commission and should be stored as negative amounts
             commission = Decimal('0')
-            logger.info(f"WD transaction - setting commission to 0 for amount: {amount}")
+            amount = -amount  # Store withdrawal amounts as negative values
+            logger.info(f"WD transaction - setting commission to 0 and amount to negative: {amount}")
         elif commission_rate is not None:
             # Calculate commission for DEP transactions
             commission = amount * commission_rate
@@ -219,25 +220,91 @@ def create_transaction():
             'message': str(e)
         }), 500
 
+@transactions_api.route("/debug/company-data")
+@login_required
+def debug_company_data():
+    """Debug endpoint to check company data in database"""
+    try:
+        # Get sample transactions with company data
+        sample_transactions = db.session.query(
+            Transaction.client_name,
+            Transaction.company,
+            Transaction.created_at
+        ).filter(
+            Transaction.client_name.isnot(None),
+            Transaction.client_name != ''
+        ).order_by(Transaction.created_at.desc()).limit(10).all()
+        
+        result = []
+        for t in sample_transactions:
+            result.append({
+                'client_name': t.client_name,
+                'company': t.company,
+                'created_at': t.created_at.isoformat() if t.created_at else None
+            })
+        
+        return jsonify({
+            'total_transactions': Transaction.query.count(),
+            'transactions_with_company': db.session.query(Transaction.company).filter(
+                Transaction.company.isnot(None),
+                Transaction.company != ''
+            ).count(),
+            'sample_transactions': result
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @transactions_api.route("/clients")
 @login_required
 def get_clients():
     """Get clients data (grouped transactions by client)"""
     try:
-        # Get transactions grouped by client with additional data including commission
+        # Get transactions grouped by client with additional data including commission and company
+        # First get the basic stats - use converted amounts (amount_try) for proper currency conversion
         client_stats = db.session.query(
             Transaction.client_name,
             func.count(Transaction.id).label('transaction_count'),
-            func.sum(Transaction.amount).label('total_amount'),
-            func.sum(Transaction.commission).label('total_commission'),
-            func.sum(Transaction.net_amount).label('total_net'),
-            func.avg(Transaction.amount).label('average_amount'),
+            # Use amount_try (converted to TRY) if available, otherwise fallback to amount
+            func.sum(
+                func.coalesce(Transaction.amount_try, Transaction.amount)
+            ).label('total_amount'),
+            # Use commission_try (converted to TRY) if available, otherwise fallback to commission
+            func.sum(
+                func.coalesce(Transaction.commission_try, Transaction.commission)
+            ).label('total_commission'),
+            # Use net_amount_try (converted to TRY) if available, otherwise fallback to net_amount
+            func.sum(
+                func.coalesce(Transaction.net_amount_try, Transaction.net_amount)
+            ).label('total_net'),
+            # For average, use converted amounts as well
+            func.avg(
+                func.coalesce(Transaction.amount_try, Transaction.amount)
+            ).label('average_amount'),
             func.min(Transaction.created_at).label('first_transaction'),
             func.max(Transaction.created_at).label('last_transaction')
         ).filter(
             Transaction.client_name.isnot(None),
             Transaction.client_name != ''
         ).group_by(Transaction.client_name).all()
+        
+        # Get company data separately for each client
+        client_companies = {}
+        for client in client_stats:
+            # Get the most recent company for this client
+            recent_company = db.session.query(Transaction.company).filter(
+                Transaction.client_name == client.client_name,
+                Transaction.company.isnot(None),
+                Transaction.company != ''
+            ).order_by(Transaction.created_at.desc()).first()
+            
+            client_companies[client.client_name] = recent_company.company if recent_company else None
+        
+        # Debug: Check if we have any company data
+        company_count = db.session.query(Transaction.company).filter(
+            Transaction.company.isnot(None),
+            Transaction.company != ''
+        ).count()
+        print(f"DEBUG: Found {company_count} transactions with company data")
         
         # Check if we're getting any data
         if len(client_stats) == 0:
@@ -271,8 +338,16 @@ def get_clients():
             
             # Calculate final values for client
             
+            # Get company name from our dictionary
+            company_name = client_companies.get(client.client_name)
+            
+            # Debug: Log company data for first few clients
+            if len(clients_data) < 3:
+                print(f"DEBUG: Client {client.client_name} - company_name: {company_name}")
+            
             clients_data.append({
                 'client_name': client.client_name,
+                'company_name': company_name,  # Add company name to response
                 'payment_method': payment_method,
                 'category': category,
                 'total_amount': total_amount,
@@ -314,18 +389,39 @@ def get_clients():
                     if not client_transactions:
                         continue
                     
-                    # Calculate manually
-                    total_amount = sum(float(t.amount) for t in client_transactions if t.amount is not None)
-                    total_commission = sum(float(t.commission) for t in client_transactions if t.commission is not None)
-                    total_net = total_amount - total_commission
+                    # Calculate manually using converted amounts (amount_try) for proper currency conversion
+                    total_amount = sum(
+                        float(t.amount_try) if t.amount_try is not None else float(t.amount) 
+                        for t in client_transactions if (t.amount_try is not None or t.amount is not None)
+                    )
+                    total_commission = sum(
+                        float(t.commission_try) if t.commission_try is not None else float(t.commission) 
+                        for t in client_transactions if (t.commission_try is not None or t.commission is not None)
+                    )
+                    # For net amount, use net_amount_try if available, otherwise calculate from converted amounts
+                    total_net = sum(
+                        float(t.net_amount_try) if t.net_amount_try is not None else (float(t.amount_try) if t.amount_try is not None else float(t.amount)) - (float(t.commission_try) if t.commission_try is not None else float(t.commission) if t.commission is not None else 0)
+                        for t in client_transactions if (t.net_amount_try is not None or t.amount_try is not None or t.amount is not None)
+                    )
                     
                     # Alternative calculation for client data
                     
                     # Get other data
                     latest_transaction = max(client_transactions, key=lambda x: x.created_at if x.created_at else datetime.min)
                     
+                    # Handle company name in fallback method
+                    company_name = latest_transaction.company
+                    if not company_name or company_name.strip() == '':
+                        # Try to find any transaction with company data for this client
+                        company_transaction = next((t for t in client_transactions if t.company and t.company.strip() != ''), None)
+                        if company_transaction:
+                            company_name = company_transaction.company
+                        else:
+                            company_name = None
+                    
                     clients_data.append({
                         'client_name': client_name,
+                        'company_name': company_name,  # Add company name from latest transaction
                         'payment_method': latest_transaction.payment_method,
                         'category': latest_transaction.category,
                         'total_amount': total_amount,
@@ -423,7 +519,7 @@ def get_psp_summary_stats():
             # Calculate net total: deposits - withdrawals using lookup dictionaries
             total_deposits = deposits_dict.get(psp.psp, 0.0)
             total_withdrawals = withdrawals_dict.get(psp.psp, 0.0)
-            total_amount = total_deposits - total_withdrawals  # Net total (deposits - withdrawals)
+            total_amount = total_deposits + total_withdrawals  # Net total (deposits + withdrawals, since withdrawals are negative)
             
             # Get total allocations for this PSP
             total_allocations = allocations_dict.get(psp.psp, 0.0)
@@ -443,13 +539,21 @@ def get_psp_summary_stats():
             except Exception:
                 pass  # Skip if error occurs
             
-            # Calculate commission only if rate is available
-            if commission_rate is not None:
-                total_commission = total_amount * (commission_rate / 100)
+            # Calculate commission based on total deposits only (not net total)
+            # Tether is company's own KASA, so no commission calculations
+            if psp.psp.upper() == 'TETHER':
+                total_commission = 0.0
+                total_net = total_amount
+                total_allocations = 0.0  # No allocations for internal company KASA
+                logger.info(f"Summary PSP {psp.psp}: internal company KASA, deposits={total_deposits}, commission=0")
+            elif commission_rate is not None:
+                total_commission = total_deposits * (commission_rate / 100)
                 total_net = total_amount - total_commission
+                logger.info(f"Summary PSP {psp.psp}: deposits={total_deposits}, rate={commission_rate}%, commission={total_commission}")
             else:
                 total_commission = 0.0
                 total_net = total_amount
+                logger.info(f"Summary PSP {psp.psp}: no commission rate found, deposits={total_deposits}, commission=0")
             
             psp_data.append({
                 'psp': psp.psp,
@@ -526,12 +630,23 @@ def get_psp_monthly_stats():
         
         logger.info(f"Date range: {start_date} to {end_date}")
         
-        # Get PSP statistics for the specific month using TRY amounts
+        # Get PSP statistics for the specific month
+        # For Tether, use USD amounts; for others, use TRY amounts
         psp_stats = db.session.query(
             Transaction.psp,
             func.count(Transaction.id).label('transaction_count'),
-            func.sum(func.coalesce(Transaction.amount_try, Transaction.amount)).label('total_amount_try'),
-            func.avg(func.coalesce(Transaction.amount_try, Transaction.amount)).label('average_amount_try')
+            func.sum(
+                case(
+                    (func.upper(Transaction.psp) == 'TETHER', func.coalesce(Transaction.amount, 0)),
+                    else_=func.coalesce(Transaction.amount_try, Transaction.amount)
+                )
+            ).label('total_amount'),
+            func.avg(
+                case(
+                    (func.upper(Transaction.psp) == 'TETHER', func.coalesce(Transaction.amount, 0)),
+                    else_=func.coalesce(Transaction.amount_try, Transaction.amount)
+                )
+            ).label('average_amount')
         ).filter(
             Transaction.psp.isnot(None),
             Transaction.psp != '',
@@ -540,9 +655,15 @@ def get_psp_monthly_stats():
         ).group_by(Transaction.psp).all()
         
         # Get deposits for the month
+        # For Tether, use USD amounts; for others, use TRY amounts
         psp_deposits = db.session.query(
             Transaction.psp,
-            func.sum(func.coalesce(Transaction.amount_try, Transaction.amount)).label('total_deposits_try')
+            func.sum(
+                case(
+                    (func.upper(Transaction.psp) == 'TETHER', func.coalesce(Transaction.amount, 0)),
+                    else_=func.coalesce(Transaction.amount_try, Transaction.amount)
+                )
+            ).label('total_deposits')
         ).filter(
             Transaction.psp.isnot(None),
             Transaction.psp != '',
@@ -552,9 +673,15 @@ def get_psp_monthly_stats():
         ).group_by(Transaction.psp).all()
         
         # Get withdrawals for the month
+        # For Tether, use USD amounts; for others, use TRY amounts
         psp_withdrawals = db.session.query(
             Transaction.psp,
-            func.sum(func.coalesce(Transaction.amount_try, Transaction.amount)).label('total_withdrawals_try')
+            func.sum(
+                case(
+                    (func.upper(Transaction.psp) == 'TETHER', func.coalesce(Transaction.amount, 0)),
+                    else_=func.coalesce(Transaction.amount_try, Transaction.amount)
+                )
+            ).label('total_withdrawals')
         ).filter(
             Transaction.psp.isnot(None),
             Transaction.psp != '',
@@ -581,9 +708,26 @@ def get_psp_monthly_stats():
             psp_allocations = []
         
         # Create lookup dictionaries
-        deposits_dict = {psp.psp: float(psp.total_deposits_try) if psp.total_deposits_try else 0.0 for psp in psp_deposits}
-        withdrawals_dict = {psp.psp: float(psp.total_withdrawals_try) if psp.total_withdrawals_try else 0.0 for psp in psp_withdrawals}
+        deposits_dict = {psp.psp: float(psp.total_deposits) if psp.total_deposits else 0.0 for psp in psp_deposits}
+        withdrawals_dict = {psp.psp: float(psp.total_withdrawals) if psp.total_withdrawals else 0.0 for psp in psp_withdrawals}
         allocations_dict = {psp.psp_name: float(psp.total_allocations) if psp.total_allocations else 0.0 for psp in psp_allocations}
+        
+        # Load manual DEVIR overrides for first day of month only
+        devir_overrides_cache = {}
+        try:
+            from app.models.financial import PSPDevir
+            # Get all DEVIR overrides
+            devir_overrides = PSPDevir.query.all()
+            for override in devir_overrides:
+                if override.psp_name not in devir_overrides_cache:
+                    devir_overrides_cache[override.psp_name] = {}
+                devir_overrides_cache[override.psp_name][override.date] = override.devir_amount
+            logger.info(f"Loaded {len(devir_overrides)} DEVIR overrides for first day of month")
+        except Exception as e:
+            logger.warning(f"Failed to load DEVIR overrides: {e}")
+            devir_overrides_cache = {}
+        
+        calculated_devirs_to_store = []
         
         logger.info(f"Monthly PSP stats query completed, found {len(psp_stats)} PSPs")
         
@@ -593,7 +737,12 @@ def get_psp_monthly_stats():
             # Get daily transactions for this PSP - deposits
             daily_deposits = db.session.query(
                 Transaction.date,
-                func.sum(func.coalesce(Transaction.amount_try, Transaction.amount)).label('daily_deposits'),
+                func.sum(
+                    case(
+                        (func.upper(Transaction.psp) == 'TETHER', func.coalesce(Transaction.amount, 0)),
+                        else_=func.coalesce(Transaction.amount_try, Transaction.amount)
+                    )
+                ).label('daily_deposits'),
                 func.count(Transaction.id).label('deposit_count')
             ).filter(
                 Transaction.psp == psp.psp,
@@ -605,7 +754,12 @@ def get_psp_monthly_stats():
             # Get daily transactions for this PSP - withdrawals
             daily_withdrawals = db.session.query(
                 Transaction.date,
-                func.sum(func.coalesce(Transaction.amount_try, Transaction.amount)).label('daily_withdrawals'),
+                func.sum(
+                    case(
+                        (func.upper(Transaction.psp) == 'TETHER', func.coalesce(Transaction.amount, 0)),
+                        else_=func.coalesce(Transaction.amount_try, Transaction.amount)
+                    )
+                ).label('daily_withdrawals'),
                 func.count(Transaction.id).label('withdrawal_count')
             ).filter(
                 Transaction.psp == psp.psp,
@@ -617,7 +771,12 @@ def get_psp_monthly_stats():
             # Get daily transactions for this PSP - total
             daily_totals = db.session.query(
                 Transaction.date,
-                func.sum(func.coalesce(Transaction.amount_try, Transaction.amount)).label('daily_total'),
+                func.sum(
+                    case(
+                        (func.upper(Transaction.psp) == 'TETHER', func.coalesce(Transaction.amount, 0)),
+                        else_=func.coalesce(Transaction.amount_try, Transaction.amount)
+                    )
+                ).label('daily_total'),
                 func.count(Transaction.id).label('transaction_count')
             ).filter(
                 Transaction.psp == psp.psp,
@@ -656,40 +815,218 @@ def get_psp_monthly_stats():
             for alloc in daily_allocations:
                 all_dates.add(alloc.date)
             
-            for date in sorted(all_dates):
+            # Always use formula calculations - no manual overrides needed
+            
+            # CRITICAL: Process ALL days in the month for continuous calculations
+            # This ensures every day has DEVIR and KASA TOP values, just like the Excel file
+            current_date = start_date
+            while current_date <= end_date:
+                all_dates.add(current_date)
+                current_date += timedelta(days=1)
+            
+            logger.info(f"Processing ALL {len(all_dates)} days for {psp.psp} in {year}-{month:02d}")
+            
+            # Filter dates to only include those within the current month
+            filtered_dates = [date for date in sorted(all_dates) if start_date <= date <= end_date]
+            
+            # Ensure the last day of the month is always included, even if there's no data
+            if filtered_dates and filtered_dates[-1] != end_date:
+                logger.info(f"Adding last day of month {end_date} for {psp.psp} (ensuring complete month coverage)")
+                filtered_dates.append(end_date)
+                filtered_dates.sort()
+            
+            # Log the date range and filtering results for debugging
+            logger.info(f"Date filtering for {psp.psp}: {len(all_dates)} total dates, {len(filtered_dates)} filtered dates")
+            logger.info(f"Date range: {start_date} to {end_date}")
+            if filtered_dates:
+                logger.info(f"First filtered date: {filtered_dates[0]}, Last filtered date: {filtered_dates[-1]}")
+            
+            # Process dates in chronological order to ensure previous day data is available
+            for date in sorted(filtered_dates):
                 daily_deposits_amount = deposits_by_date.get(date, 0.0)
                 daily_withdrawals_amount = withdrawals_by_date.get(date, 0.0)
                 daily_total_amount, transaction_count = totals_by_date.get(date, (0.0, 0))
-                daily_total = daily_deposits_amount - daily_withdrawals_amount
+                daily_total = daily_deposits_amount + daily_withdrawals_amount  # deposits + withdrawals (since withdrawals are negative)
                 daily_allocations = allocations_by_date.get(date, 0.0)
+                
+                # Initialize daily_rollover to prevent UnboundLocalError
+                daily_rollover = 0.0
                 
                 # Log allocation-only dates for debugging
                 if daily_allocations > 0 and transaction_count == 0:
                     logger.info(f"Allocation-only date for {psp.psp} on {date}: {daily_allocations} TRY")
                 
-                # Get commission rate for this PSP
+                # Get commission rate for this PSP using time-based system
                 commission_rate = None
                 try:
-                    from app.models.config import Option
-                    psp_option = Option.query.filter_by(
-                        field_name='psp',
-                        value=psp.psp,
-                        is_active=True
-                    ).first()
-                    
-                    if psp_option and psp_option.commission_rate is not None:
-                        commission_rate = float(psp_option.commission_rate) * 100
-                except Exception:
+                    from app.services.commission_rate_service import CommissionRateService
+                    # Get rate for the specific date
+                    target_date = date
+                    commission_rate = CommissionRateService.get_commission_rate_percentage(psp.psp, target_date)
+                except Exception as e:
+                    logger.warning(f"Error getting daily commission rate for {psp.psp} on {date}: {e}")
                     pass
                 
                 if commission_rate is not None:
-                    daily_commission = daily_total * (commission_rate / 100)
+                    daily_commission = daily_deposits_amount * (commission_rate / 100)
                     daily_net = daily_total - daily_commission
+                    logger.info(f"Daily {psp.psp} {date}: deposits={daily_deposits_amount}, rate={commission_rate}%, commission={daily_commission}")
                 else:
                     daily_commission = 0.0
                     daily_net = daily_total
+                    logger.info(f"Daily {psp.psp} {date}: no commission rate, deposits={daily_deposits_amount}, commission=0")
                 
-                daily_rollover = daily_net - daily_allocations
+                # Calculate daily KASA TOP (revenue = NET + previous day's DEVİR)
+                # For the first day of the month, check for previous month's last day DEVİR
+                # For subsequent days, use NET + previous day's DEVİR
+                
+                # Check if this is the first day of the month
+                is_first_day_of_month = (date.day == 1)
+                
+                # Debug logging
+                logger.info(f"Processing {psp.psp} on {date}: is_first_day={is_first_day_of_month}, daily_data_count={len(daily_data)}")
+                
+                # KASA TOP calculation moved to after DEVIR calculation
+                # This ensures we use current day NET + current day DEVIR
+                
+                # Calculate daily rollover (DEVİR = previous day KASA_TOP - previous day TAHS_TUTARI)
+                # For first day of month, try to get previous month's DEVİR
+                # For subsequent days, DEVİR = previous day's KASA_TOP - previous day's TAHS_TUTARI
+                if is_first_day_of_month:
+                    # For first day of month, check for manual override first
+                    if date in devir_overrides_cache.get(psp.psp, {}):
+                        daily_rollover = float(devir_overrides_cache[psp.psp][date])
+                        logger.info(f"FIRST DAY DEVIR OVERRIDE: {psp.psp} on {date} - Using manual override: {daily_rollover:,.2f}")
+                    else:
+                        # For first day of month, DEVIR starts at 0 (no previous day)
+                        daily_rollover = 0.0
+                        logger.info(f"FIRST DAY DEVIR: {psp.psp} on {date} - Starting with 0.0 (first day of month)")
+                else:
+                    # CORRECT FORMULA: DEVIR = PREVIOUS DAY KASA TOP - PREVIOUS DAY TAHS TUTARI
+                    # Get previous day's KASA TOP and TAHS TUTARI
+                    previous_day_kasa_top = 0.0
+                    previous_day_tahs_tutari = 0.0
+                    
+                    # Calculate previous day
+                    previous_date = date - timedelta(days=1)
+                    
+                    # Get previous day's KASA TOP from daily breakdown if available
+                    if psp.psp in daily_breakdown and daily_breakdown[psp.psp]:
+                        # Look for previous day in the daily breakdown
+                        for day_data in daily_breakdown[psp.psp]:
+                            if day_data.get('date') == previous_date:
+                                previous_day_kasa_top = day_data.get('kasa_top', 0.0)
+                                previous_day_tahs_tutari = day_data.get('allocations', 0.0)
+                                break
+                    
+                    # If not found in daily breakdown, try to get from database
+                    if previous_day_kasa_top == 0.0 and previous_day_tahs_tutari == 0.0:
+                        try:
+                            # Get previous day's transactions
+                            prev_day_deposits = db.session.query(
+                                func.sum(
+                                    case(
+                                        (func.upper(Transaction.psp) == 'TETHER', func.coalesce(Transaction.amount, 0)),
+                                        else_=func.coalesce(Transaction.amount_try, Transaction.amount)
+                                    )
+                                )
+                            ).filter(
+                                Transaction.psp == psp.psp,
+                                func.upper(Transaction.category).in_(['DEP', 'DEPOSIT', 'INVESTMENT']),
+                                Transaction.date == previous_date
+                            ).scalar() or 0.0
+                            
+                            prev_day_withdrawals = db.session.query(
+                                func.sum(
+                                    case(
+                                        (func.upper(Transaction.psp) == 'TETHER', func.coalesce(Transaction.amount, 0)),
+                                        else_=func.coalesce(Transaction.amount_try, Transaction.amount)
+                                    )
+                                )
+                            ).filter(
+                                Transaction.psp == psp.psp,
+                                func.upper(Transaction.category).in_(['WD', 'WITHDRAW', 'WITHDRAWAL']),
+                                Transaction.date == previous_date
+                            ).scalar() or 0.0
+                            
+                            prev_day_total = float(prev_day_deposits) + float(prev_day_withdrawals)
+                            prev_day_commission = float(prev_day_deposits) * (commission_rate / 100) if commission_rate else 0.0
+                            prev_day_net = prev_day_total - prev_day_commission
+                            
+                            # Get previous day's allocations (TAHS TUTARI)
+                            try:
+                                from app.models.financial import PSPAllocation
+                                prev_day_allocations = db.session.query(
+                                    func.sum(PSPAllocation.allocation_amount)
+                                ).filter(
+                                    PSPAllocation.psp_name == psp.psp,
+                                    PSPAllocation.date == previous_date
+                                ).scalar() or 0.0
+                            except ImportError:
+                                prev_day_allocations = 0.0
+                            
+                            # For previous day's KASA TOP, we need to get it from the database properly
+                            # Since KASA TOP = NET + DEVIR, we need to find the previous day's DEVIR
+                            
+                            # Calculate previous day's KASA TOP by looking at the daily breakdown
+                            # This ensures we get the actual calculated KASA TOP from previous day
+                            previous_day_kasa_top = 0.0
+                            
+                            # First, try to get from daily_data (already processed days in chronological order)
+                            if daily_data:
+                                # Get the last processed day's KASA TOP (skip summary rows)
+                                last_day_data = daily_data[-1]
+                                if last_day_data.get('date') == 'MONTHLY_SUMMARY':
+                                    # If the last entry is a summary row, get the second-to-last entry
+                                    if len(daily_data) > 1:
+                                        last_day_data = daily_data[-2]
+                                    else:
+                                        last_day_data = None
+                                
+                                if last_day_data:
+                                    previous_day_kasa_top = last_day_data.get('kasa_top', 0.0)
+                                    logger.info(f"Found previous day KASA TOP from daily_data for {psp.psp} on {previous_date}: {previous_day_kasa_top}")
+                                else:
+                                    logger.info(f"No valid previous day data available in daily_data for {psp.psp} on {previous_date}")
+                            else:
+                                logger.info(f"No previous day data available in daily_data for {psp.psp} on {previous_date}")
+                            
+                            # If not found in daily breakdown, use NET as KASA TOP (no manual overrides)
+                            if previous_day_kasa_top == 0.0:
+                                previous_day_kasa_top = prev_day_net
+                                logger.info(f"No previous day data found for {psp.psp} on {previous_date}, using NET as KASA TOP: {previous_day_kasa_top}")
+                            
+                            previous_day_tahs_tutari = float(prev_day_allocations)
+                            
+                        except Exception as e:
+                            logger.warning(f"Could not get previous day data for {psp.psp} on {previous_date}: {e}")
+                            previous_day_kasa_top = 0.0
+                            previous_day_tahs_tutari = 0.0
+                    
+                    # Calculate DEVIR using previous day's values
+                    # Ensure both values are floats to avoid type mismatch
+                    previous_day_kasa_top_float = float(previous_day_kasa_top)
+                    previous_day_tahs_tutari_float = float(previous_day_tahs_tutari)
+                    daily_rollover = previous_day_kasa_top_float - previous_day_tahs_tutari_float
+                    # Reduced logging for performance
+                    if date.day % 5 == 0:  # Only log every 5th day
+                        logger.info(f"CORRECT DEVIR: {psp.psp} on {date} - PREVIOUS DAY KASA TOP {previous_day_kasa_top_float:,.2f} - PREVIOUS DAY TAHS TUTARI {previous_day_tahs_tutari_float:,.2f} = DEVIR {daily_rollover:,.2f}")
+                
+                # Store the calculated DEVIR value for future use (batch operation)
+                # Only store if it's not a manual override for first day of month
+                is_manual_override = is_first_day_of_month and date in devir_overrides_cache.get(psp.psp, {})
+                if not is_manual_override:
+                    calculated_devirs_to_store.append({
+                        'psp_name': psp.psp,
+                        'date': date,
+                        'devir_amount': daily_rollover
+                    })
+                
+                # CORRECT FORMULA: KASA TOP = CURRENT DAY DEVIR + CURRENT DAY NET
+                daily_kasa_top = daily_rollover + daily_net
+                # Reduced logging for performance
+                if date.day % 5 == 0:  # Only log every 5th day
+                    logger.info(f"KASA TOP CALCULATION: {psp.psp} on {date} - DEVIR {daily_rollover:,.2f} + NET {daily_net:,.2f} = KASA TOP {daily_kasa_top:,.2f}")
                 
                 daily_data.append({
                     'date': date.isoformat(),
@@ -699,48 +1036,109 @@ def get_psp_monthly_stats():
                     'komisyon': daily_commission,
                     'net': daily_net,
                     'tahs_tutari': daily_allocations,
-                    'kasa_top': daily_net,
+                    'kasa_top': daily_kasa_top,
                     'devir': daily_rollover,
                     'transaction_count': transaction_count
                 })
-            
-            daily_breakdown[psp.psp] = daily_data
+                
+                daily_breakdown[psp.psp] = daily_data
         
+        # Note: Summary rows will be added after all calculations are complete
+        
+        # Build PSP data for monthly summary (after daily breakdown is complete)
         psp_data = []
         for psp in psp_stats:
             # Calculate net total: deposits - withdrawals using lookup dictionaries
             total_deposits = deposits_dict.get(psp.psp, 0.0)
             total_withdrawals = withdrawals_dict.get(psp.psp, 0.0)
-            total_amount = total_deposits - total_withdrawals  # Net total (deposits - withdrawals)
+            total_amount = total_deposits + total_withdrawals  # Net total (deposits + withdrawals, since withdrawals are negative)
             
             # Get total allocations for this PSP in the month
             total_allocations = allocations_dict.get(psp.psp, 0.0)
             
-            # Get the actual commission rate for this PSP from options (no defaults)
+            # Get the actual commission rate for this PSP using time-based system
             commission_rate = None
             try:
-                from app.models.config import Option
-                psp_option = Option.query.filter_by(
-                    field_name='psp',
-                    value=psp.psp,
-                    is_active=True
-                ).first()
-                
-                if psp_option and psp_option.commission_rate is not None:
-                    commission_rate = float(psp_option.commission_rate) * 100  # Convert to percentage
-            except Exception:
+                from app.services.commission_rate_service import CommissionRateService
+                # Get rate for the first day of the month being calculated
+                target_date = datetime(year, month, 1).date()
+                commission_rate = CommissionRateService.get_commission_rate_percentage(psp.psp, target_date)
+            except Exception as e:
+                logger.warning(f"Error getting commission rate for {psp.psp}: {e}")
                 pass  # Skip if error occurs
             
-            # Calculate commission only if rate is available
-            if commission_rate is not None:
-                total_commission = total_amount * (commission_rate / 100)
+            # Calculate commission based on total deposits only (not net total)
+            # Tether is company's own KASA, so no commission calculations
+            if psp.psp.upper() == 'TETHER':
+                total_commission = 0.0
+                total_net = total_amount
+                total_allocations = 0.0  # No allocations for internal company KASA
+                logger.info(f"Monthly PSP {psp.psp}: internal company KASA, deposits={total_deposits}, commission=0")
+            elif commission_rate is not None and commission_rate > 0:
+                total_commission = total_deposits * (commission_rate / 100)
                 total_net = total_amount - total_commission
+                logger.info(f"Monthly PSP {psp.psp}: deposits={total_deposits}, rate={commission_rate}%, commission={total_commission}")
             else:
                 total_commission = 0.0
                 total_net = total_amount
+                logger.info(f"Monthly PSP {psp.psp}: no commission rate found, deposits={total_deposits}, commission=0")
             
             # Calculate rollover (KASA TOP - TAHS TUTARI)
-            rollover = total_net - total_allocations
+            # Tether is company's own KASA, so no allocations or devir calculations
+            if psp.psp.upper() == 'TETHER':
+                rollover = 0.0  # No devir for internal company KASA
+                total_allocations = 0.0  # No allocations for internal company KASA
+                kasa_top = total_net  # KASA TOP = NET for internal KASA (no rollover)
+                logger.info(f"TETHER is internal KASA - no DEVIR/rollover calculations, KASA TOP = NET: {total_net}")
+            else:
+                rollover = total_net - total_allocations
+                
+                # Check for Devir overrides for this PSP in this month
+                try:
+                    from app.models.financial import PSPDevir
+                    
+                    # IMPORTANT: For monthly rollover, use the LAST day's DEVIR, not the sum
+                    # DEVIR represents cumulative carryover - only the last day matters for month-end
+                    
+                    # Calculate DEVIR using the correct formula: LAST KASA TOP - LAST TAHS TUTARI
+                    if psp.psp in daily_breakdown and daily_breakdown[psp.psp]:
+                        # Get the last day's KASA TOP and TAHS TUTARI (skip summary rows)
+                        daily_data = daily_breakdown[psp.psp]
+                        last_day_data = daily_data[-1]
+                        
+                        # If the last entry is a summary row, get the second-to-last entry
+                        if last_day_data.get('date') == 'MONTHLY_SUMMARY':
+                            if len(daily_data) > 1:
+                                last_day_data = daily_data[-2]
+                            else:
+                                last_day_data = None
+                        
+                        if last_day_data:
+                            last_day_kasa_top = float(last_day_data.get('kasa_top', 0.0))
+                            last_day_tahs_tutari = float(last_day_data.get('tahs_tutari', 0.0))
+                            
+                            # Calculate DEVIR using the formula: LAST KASA TOP - LAST TAHS TUTARI
+                            rollover = last_day_kasa_top - last_day_tahs_tutari
+                            logger.info(f"Calculated DEVIR for {psp.psp} in {year}-{month:02d}: LAST KASA TOP {last_day_kasa_top:,.2f} - LAST TAHS TUTARI {last_day_tahs_tutari:,.2f} = DEVIR {rollover:,.2f}")
+                        else:
+                            logger.warning(f"No valid last day data found for {psp.psp} in {year}-{month:02d}")
+                        
+                except Exception as e:
+                    logger.warning(f"Could not get last day's DEVIR for {psp.psp}: {e}")
+                    # Continue with calculated rollover if fetch fails
+                
+                # Calculate KASA TOP using correct formula: DEVIR + NET
+                # For monthly, use the last day's KASA TOP from daily breakdown
+                kasa_top = total_net  # Default fallback
+                
+                # Get the last day's KASA TOP from the daily breakdown (calculated with correct formula)
+                if psp.psp in daily_breakdown and daily_breakdown[psp.psp]:
+                    last_day_kasa_top = daily_breakdown[psp.psp][-1].get('kasa_top', kasa_top)
+                    kasa_top = last_day_kasa_top
+                    logger.info(f"Using last day's KASA TOP for {psp.psp} in {year}-{month:02d}: {last_day_kasa_top}")
+                
+                # KASA TOP is now calculated automatically using the formula: DEVIR + NET
+                # No manual overrides needed - the formula is fixed
             
             psp_data.append({
                 'psp': psp.psp,
@@ -750,7 +1148,7 @@ def get_psp_monthly_stats():
                 'komisyon': total_commission,  # KOMİSYON (commission)
                 'net': total_net,  # NET (toplam - komisyon)
                 'tahs_tutari': total_allocations,  # TAHS TUTARI (allocation amount)
-                'kasa_top': total_net,  # KASA TOP (revenue = NET + rollover, simplified as NET for monthly)
+                'kasa_top': kasa_top,  # KASA TOP (revenue = NET + rollover, with overrides)
                 'devir': rollover,  # DEVİR (rollover = kasa_top - tahs_tutari)
                 'transaction_count': psp.transaction_count,
                 'commission_rate': commission_rate,
@@ -763,6 +1161,70 @@ def get_psp_monthly_stats():
         psp_data.sort(key=lambda x: x['toplam'], reverse=True)
         
         logger.info(f"Monthly PSP stats completed successfully, returning {len(psp_data)} PSPs")
+        
+        # PERFORMANCE OPTIMIZATION: Batch store calculated DEVIR values
+        if calculated_devirs_to_store:
+            try:
+                from app.models.financial import PSPDevir
+                logger.info(f"Storing {len(calculated_devirs_to_store)} calculated DEVIR values...")
+                
+                for devir_data in calculated_devirs_to_store:
+                    # Check if record already exists
+                    existing = PSPDevir.query.filter_by(
+                        psp_name=devir_data['psp_name'],
+                        date=devir_data['date']
+                    ).first()
+                    
+                    if not existing:
+                        # Create new record
+                        new_devir = PSPDevir(
+                            psp_name=devir_data['psp_name'],
+                            date=devir_data['date'],
+                            devir_amount=devir_data['devir_amount']
+                        )
+                        db.session.add(new_devir)
+                    else:
+                        # Update existing record if significantly different
+                        if abs(float(existing.devir_amount) - devir_data['devir_amount']) > 0.01:
+                            existing.devir_amount = devir_data['devir_amount']
+                
+                db.session.commit()
+                logger.info(f"Successfully stored {len(calculated_devirs_to_store)} DEVIR values")
+            except Exception as e:
+                logger.warning(f"Could not batch store DEVIR values: {e}")
+                db.session.rollback()
+        
+        # Add monthly summary rows for each PSP after all calculations are complete
+        for psp_data_item in psp_data:
+            psp_name = psp_data_item['psp']
+            if psp_name in daily_breakdown and daily_breakdown[psp_name]:
+                daily_data = daily_breakdown[psp_name]
+                last_day_data = daily_data[-1]  # Get the last day's data
+                final_kasa_top = last_day_data['kasa_top']
+                final_devir = last_day_data['devir']
+                
+                # Add summary row
+                summary_row = {
+                    'date': 'MONTHLY_SUMMARY',
+                    'yatimim': '---',
+                    'cekme': '---', 
+                    'toplam': '---',
+                    'komisyon': '---',
+                    'net': '---',
+                    'tahs_tutari': '---',
+                    'kasa_top': f'FINAL: {final_kasa_top:,.2f}',
+                    'devir': f'FINAL: {final_devir:,.2f}',
+                    'transaction_count': '---',
+                    'formulas': {
+                        'kasa_top_formula': 'KASA TOP = CURRENT DAY DEVIR + CURRENT DAY NET',
+                        'devir_formula': 'DEVIR = PREVIOUS DAY KASA TOP - PREVIOUS DAY TAHS TUTARI'
+                    }
+                }
+                daily_data.append(summary_row)
+                daily_breakdown[psp_name] = daily_data
+                
+                # Update the PSP data with the modified daily breakdown
+                psp_data_item['daily_breakdown'] = daily_data
         
         return jsonify({
             'data': psp_data,
@@ -1728,15 +2190,26 @@ def update_transaction(transaction_id):
 def get_clients_by_date():
     """Get clients data grouped by transaction date"""
     try:
-        # Get transactions grouped by client and date
+        # Get transactions grouped by client and date - use converted amounts for proper currency conversion
         client_date_stats = db.session.query(
             Transaction.client_name,
             Transaction.date,
             func.count(Transaction.id).label('transaction_count'),
-            func.sum(Transaction.amount).label('total_amount'),
-            func.avg(Transaction.amount).label('average_amount'),
-            func.sum(Transaction.commission).label('total_commission'),
-            func.sum(Transaction.net_amount).label('total_net')
+            # Use amount_try (converted to TRY) if available, otherwise fallback to amount
+            func.sum(
+                func.coalesce(Transaction.amount_try, Transaction.amount)
+            ).label('total_amount'),
+            func.avg(
+                func.coalesce(Transaction.amount_try, Transaction.amount)
+            ).label('average_amount'),
+            # Use commission_try (converted to TRY) if available, otherwise fallback to commission
+            func.sum(
+                func.coalesce(Transaction.commission_try, Transaction.commission)
+            ).label('total_commission'),
+            # Use net_amount_try (converted to TRY) if available, otherwise fallback to net_amount
+            func.sum(
+                func.coalesce(Transaction.net_amount_try, Transaction.net_amount)
+            ).label('total_net')
         ).filter(
             Transaction.client_name.isnot(None),
             Transaction.client_name != ''
@@ -1771,6 +2244,7 @@ def get_clients_by_date():
             
             grouped_by_date[date_str].append({
                 'client_name': stat.client_name,
+                'company_name': latest_transaction.company if latest_transaction else None,  # Add company name
                 'payment_method': latest_transaction.payment_method if latest_transaction else None,
                 'category': latest_transaction.category if latest_transaction else None,
                 'date': date_str,
@@ -2021,9 +2495,10 @@ def bulk_import_transactions():
                             logger.warning(f"Error fetching PSP commission rate for '{psp}': {e}")
                     
                     if category == 'WD':
-                        # WD transactions always have 0 commission
+                        # WD transactions always have 0 commission and should be stored as negative amounts
                         commission = Decimal('0')
-                        logger.info(f"WD transaction - setting commission to 0 for amount: {amount_decimal}")
+                        amount_decimal = -amount_decimal  # Store withdrawal amounts as negative values
+                        logger.info(f"WD transaction - setting commission to 0 and amount to negative: {amount_decimal}")
                     elif commission_rate is not None:
                         # Calculate commission based on absolute amount for DEP transactions
                         commission = abs(amount_decimal) * commission_rate

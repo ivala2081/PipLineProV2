@@ -133,14 +133,14 @@ export default {
         heading: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
       },
       fontSize: {
-        // Professional Typography - 4 Sizes Only
-        'xs': ['0.75rem', { lineHeight: '1.5' }],      // 12px - Small text
-        'sm': ['0.875rem', { lineHeight: '1.5' }],     // 14px - Body text
-        'base': ['1rem', { lineHeight: '1.6' }],       // 16px - Default text
-        'lg': ['1.125rem', { lineHeight: '1.5' }],     // 18px - Large text
-        'xl': ['1.25rem', { lineHeight: '1.4' }],      // 20px - Headings
-        '2xl': ['1.5rem', { lineHeight: '1.3' }],      // 24px - Large headings
-        '3xl': ['1.875rem', { lineHeight: '1.2' }],    // 30px - Page titles
+        // Compact Professional Typography
+        'xs': ['0.625rem', { lineHeight: '1.4' }],     // 10px - Small text
+        'sm': ['0.75rem', { lineHeight: '1.4' }],      // 12px - Body text
+        'base': ['0.875rem', { lineHeight: '1.5' }],   // 14px - Default text
+        'lg': ['1rem', { lineHeight: '1.4' }],         // 16px - Large text
+        'xl': ['1.125rem', { lineHeight: '1.3' }],     // 18px - Headings
+        '2xl': ['1.25rem', { lineHeight: '1.2' }],     // 20px - Large headings
+        '3xl': ['1.5rem', { lineHeight: '1.1' }],      // 24px - Page titles
       },
       fontWeight: {
         // Professional Font Weights - 4 Weights Only
@@ -192,21 +192,21 @@ export default {
         '3xl': '2rem',      // 32px
       },
       spacing: {
-        // Professional Business Spacing System - 8px Grid
+        // Compact Professional Business Spacing System - 4px Grid
         '18': '4.5rem',     // 72px
         '88': '22rem',      // 352px
         '128': '32rem',     // 512px
         '144': '36rem',     // 576px
-        // Business-specific spacing
-        'business-xs': '0.5rem',    // 8px
-        'business-sm': '0.75rem',   // 12px
-        'business-md': '1rem',      // 16px
-        'business-lg': '1.5rem',    // 24px
-        'business-xl': '2rem',      // 32px
-        'business-2xl': '3rem',     // 48px
-        'business-3xl': '4rem',     // 64px
-        'business-4xl': '6rem',     // 96px
-        'business-5xl': '8rem',     // 128px
+        // Compact business-specific spacing
+        'business-xs': '0.25rem',   // 4px - reduced from 8px
+        'business-sm': '0.375rem',  // 6px - reduced from 12px
+        'business-md': '0.5rem',    // 8px - reduced from 16px
+        'business-lg': '0.75rem',   // 12px - reduced from 24px
+        'business-xl': '1rem',      // 16px - reduced from 32px
+        'business-2xl': '1.5rem',   // 24px - reduced from 48px
+        'business-3xl': '2rem',     // 32px - reduced from 64px
+        'business-4xl': '3rem',     // 48px - reduced from 96px
+        'business-5xl': '4rem',     // 64px - reduced from 128px
       },
       width: {
         '50': '12.5rem',    // 200px

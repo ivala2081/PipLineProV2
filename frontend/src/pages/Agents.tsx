@@ -254,15 +254,6 @@ export default function Agents() {
 
   return (
     <div className="p-6">
-      {/* Breadcrumb Navigation */}
-      <div className="mb-6">
-        <Breadcrumb 
-          items={[
-            { label: 'Dashboard', href: '/' },
-            { label: 'Agent Management', current: true }
-          ]} 
-        />
-      </div>
 
       {/* Page Header */}
       <div className="mb-6">

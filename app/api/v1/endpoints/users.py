@@ -55,19 +55,38 @@ def user_settings():
         try:
             data = request.get_json()
             
+            if not data:
+                return jsonify({
+                    'success': False,
+                    'error': 'No data provided'
+                }), 400
+            
             # Get or create user settings
             user_settings = UserSettings.query.filter_by(user_id=current_user.id).first()
             if not user_settings:
                 user_settings = UserSettings(user_id=current_user.id)
                 db.session.add(user_settings)
             
-            # Update settings
+            # Update settings with validation
             if 'language' in data:
                 user_settings.language = data['language']
             if 'landing_page' in data:
                 user_settings.landing_page = data['landing_page']
             if 'table_page_size' in data:
-                user_settings.table_page_size = data['table_page_size']
+                # Validate table page size
+                try:
+                    page_size = int(data['table_page_size'])
+                    if page_size < 10 or page_size > 100:
+                        return jsonify({
+                            'success': False,
+                            'error': 'Table page size must be between 10 and 100'
+                        }), 400
+                    user_settings.table_page_size = page_size
+                except (ValueError, TypeError):
+                    return jsonify({
+                        'success': False,
+                        'error': 'Invalid table page size'
+                    }), 400
             if 'table_density' in data:
                 user_settings.table_density = data['table_density']
             if 'font_size' in data:
@@ -79,11 +98,26 @@ def user_settings():
             
             return jsonify({
                 'success': True,
-                'message': 'Settings updated successfully'
+                'message': 'Settings updated successfully',
+                'settings': {
+                    'language': user_settings.language,
+                    'landing_page': user_settings.landing_page,
+                    'table_page_size': user_settings.table_page_size,
+                    'table_density': user_settings.table_density,
+                    'font_size': user_settings.font_size,
+                    'color_scheme': user_settings.color_scheme
+                }
             })
             
+        except ValueError as ve:
+            db.session.rollback()
+            return jsonify({
+                'success': False,
+                'error': f'Validation error: {str(ve)}'
+            }), 400
         except Exception as e:
             db.session.rollback()
+            print(f"Error updating user settings: {e}")  # Debug logging
             return jsonify({
                 'success': False,
                 'error': 'Failed to update settings'

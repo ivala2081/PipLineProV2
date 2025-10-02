@@ -10,15 +10,19 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { AuthProvider } from './contexts/AuthContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { AccessibilityProvider } from './contexts/AccessibilityContext';
+import { NavigationProvider } from './contexts/NavigationContext';
 import { swrConfig } from './config/swrConfig';
 import { ToastProvider } from './components/ToastProvider';
 import SkipLink from './components/SkipLink';
 import PerformanceWidget from './components/PerformanceWidget';
+import NavigationLoadingIndicator from './components/NavigationLoadingIndicator';
+import { useScrollRestoration } from './hooks/useScrollRestoration';
 // import { preloadComponents } from './components/LazyComponents';
 import { performanceOptimizer } from './utils/performanceOptimizer';
 
 import './utils/apiTest'; // Auto-run API tests
 import './styles/navigation-hover-effects.css'; // Navigation hover effects
+import './styles/navigation-performance.css'; // Navigation performance optimizations
 import './styles/mobile-first.css'; // Mobile-first responsive design
 import './styles/accessibility-enhanced.css'; // Professional accessibility enhancements
 
@@ -26,20 +30,24 @@ import './styles/accessibility-enhanced.css'; // Professional accessibility enha
 const Dashboard = lazy(() => import('./pages/ModernDashboardPage'));
 const Analytics = lazy(() => import('./pages/Analytics'));
 const Login = lazy(() => import('./pages/Login'));
-const Clients = lazy(() => import('./pages/clients'));
+const Clients = lazy(() => import('./pages/Clients'));
 const Agents = lazy(() => import('./pages/Agents'));
 const Ledger = lazy(() => import('./pages/Ledger'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Reports = lazy(() => import('./pages/Reports'));
 const BusinessAnalytics = lazy(() => import('./pages/BusinessAnalytics'));
 const SystemMonitor = lazy(() => import('./pages/SystemMonitor'));
-const Transactions = lazy(() => import('./pages/transactions'));
+const Transactions = lazy(() => import('./pages/Transactions'));
 const AddTransaction = lazy(() => import('./pages/AddTransaction'));
 const Accounting = lazy(() => import('./pages/Accounting'));
 const RevenueAnalytics = lazy(() => import('./pages/RevenueAnalytics'));
 const Future = lazy(() => import('./pages/Future'));
+const TabShowcase = lazy(() => import('./components/TabShowcase'));
 
 function App() {
+  // Enable scroll restoration
+  useScrollRestoration();
+
   // Preload critical components and setup performance optimization
   useEffect(() => {
     // Preload critical components after initial load
@@ -62,10 +70,12 @@ function App() {
       <SWRConfig value={swrConfig}>
         <ErrorBoundary>
           <AuthProvider>
-            <LanguageProvider>
-              <AccessibilityProvider>
-                <ToastProvider>
+            <NavigationProvider>
+              <LanguageProvider>
+                <AccessibilityProvider>
+                  <ToastProvider>
                   <SkipLink />
+                  <NavigationLoadingIndicator />
 
                   <div className='min-h-screen bg-slate-50'>
                     <Suspense fallback={<LoadingSpinner />}>
@@ -93,6 +103,7 @@ function App() {
                           <Route path='analytics' element={<Analytics />} />
                           <Route path='revenue-analytics' element={<RevenueAnalytics />} />
                           <Route path='future' element={<Future />} />
+                          <Route path='tab-showcase' element={<TabShowcase />} />
                           <Route path='settings' element={<Settings />} />
                           <Route path='reports' element={<Reports />} />
                           <Route
@@ -182,9 +193,10 @@ function App() {
                       console.warn('Performance issue detected:', metrics);
                     }}
                   />
-                </ToastProvider>
-              </AccessibilityProvider>
-            </LanguageProvider>
+                  </ToastProvider>
+                </AccessibilityProvider>
+              </LanguageProvider>
+            </NavigationProvider>
           </AuthProvider>
         </ErrorBoundary>
       </SWRConfig>

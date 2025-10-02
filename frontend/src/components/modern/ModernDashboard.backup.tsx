@@ -12,7 +12,6 @@ import {
   UnifiedSection, 
   UnifiedGrid 
 } from '../../design-system';
-import { Breadcrumb } from '../ui';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { RevenueChart } from './RevenueChart';
 import { DataTable } from './DataTable';
@@ -689,14 +688,6 @@ const ModernDashboard: React.FC<ModernDashboardProps> = ({ user }) => {
 
   return (
     <div className={`${getComponentSpacing('lg').padding}`}>
-      {/* Breadcrumb Navigation */}
-      <div className={`${getSectionSpacing('md').margin}`}>
-        <Breadcrumb 
-          items={[
-            { label: 'Dashboard', href: '/', current: true }
-          ]} 
-        />
-        </div>
         
       {/* Page Header */}
       <div className={`${getSectionSpacing('md').margin}`}>

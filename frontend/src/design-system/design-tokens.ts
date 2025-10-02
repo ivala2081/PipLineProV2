@@ -170,7 +170,7 @@ export const designTokens = {
     '2xl': '1536px',
   },
 
-  // Z-Index
+  // Z-Index - Centralized layering system
   zIndex: {
     hide: -1,
     auto: 'auto',
@@ -178,13 +178,14 @@ export const designTokens = {
     docked: 10,
     dropdown: 1000,
     sticky: 1100,
-    banner: 1200,
-    overlay: 1300,
+    fixed: 1200,
+    modalBackdrop: 1300,
     modal: 1400,
     popover: 1500,
-    skipLink: 1600,
+    tooltip: 1600,
     toast: 1700,
-    tooltip: 1800,
+    skipLink: 1800,
+    introOverlay: 1900,
   },
 
   // Animation

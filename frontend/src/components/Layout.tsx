@@ -162,7 +162,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 z-40 lg:hidden"
+          className="fixed inset-0 lg:hidden"
+          style={{ zIndex: 'var(--z-modal-backdrop)' }}
           onClick={closeSidebar}
         >
           <div className="fixed inset-0 bg-gray-600 bg-opacity-75" />
@@ -170,9 +171,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       )}
 
       {/* Mobile sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-56 bg-white shadow-xl transform transition-transform duration-300 ease-in-out lg:hidden ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
+      <div 
+        className={`fixed inset-y-0 left-0 sidebar bg-white shadow-xl transform transition-transform duration-300 ease-in-out lg:hidden ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+        style={{ zIndex: 'var(--z-modal)' }}
+      >
         <div className="bg-white border-b" style={{ borderColor: 'var(--border-light)', padding: 'var(--space-4)' }}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -212,7 +216,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </nav>
 
         <div className="business-card-footer">
-          <div className="flex items-center gap-4 p-2">
+          <div className="flex items-center gap-4 spacing-sm">
             <div className="relative user-avatar">
               <div className="w-12 h-12 bg-gradient-to-br from-gray-500 via-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg ring-2 ring-white/20 ring-offset-1 ring-offset-gray-100">
                 <User className="h-6 w-6 text-white" />
@@ -234,7 +238,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     navigate('/settings');
                     closeSidebar();
                   }}
-                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-white/60 rounded-lg transition-all duration-200 hover:shadow-sm hover:scale-105 transform"
+                  className="spacing-sm text-gray-500 hover:text-gray-700 hover:bg-white/60 rounded-lg transition-all duration-200 hover:shadow-sm hover:scale-105 transform"
                   title="Settings"
                 >
                 <Settings className="h-4 w-4" />
@@ -245,7 +249,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </div>
 
       {/* Desktop sidebar */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-56 lg:flex-col">
+      <div className="hidden lg:fixed lg:inset-y-0 lg:flex sidebar lg:flex-col">
         <div className="flex flex-col flex-grow enterprise-nav shadow-xl">
           <div className="bg-white border-b" style={{ borderColor: 'var(--border-light)', padding: 'var(--space-4)' }}>
             <div className="flex items-center gap-3">
@@ -276,7 +280,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </nav>
 
           <div className="business-card-footer">
-            <div className="flex items-center gap-4 p-2">
+            <div className="flex items-center gap-4 spacing-sm">
               <div className="relative user-avatar user-avatar-hover">
                 <div className="w-12 h-12 bg-gradient-to-br from-gray-500 via-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg ring-2 ring-white/20 ring-offset-1 ring-offset-gray-100">
                   <User className="h-6 w-6 text-white" />
@@ -295,7 +299,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <div className="flex flex-col gap-1">
                 <button 
                   onClick={() => navigate('/settings')}
-                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-white/60 rounded-lg transition-all duration-200 hover:shadow-sm hover:scale-105 transform settings-button-hover"
+                  className="spacing-sm text-gray-500 hover:text-gray-700 hover:bg-white/60 rounded-lg transition-all duration-200 hover:shadow-sm hover:scale-105 transform settings-button-hover"
                   title="Settings"
                 >
                   <Settings className="h-4 w-4" />
@@ -307,9 +311,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </div>
 
       {/* Main content */}
-      <div className="lg:pl-56">
+      <div className="main-content">
         {/* Top header */}
-        <header className="business-container flex items-center justify-between h-12">
+        <header className="business-container flex items-center justify-between header">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}

@@ -28,11 +28,14 @@ import {
   Target,
   ChevronDown,
   ChevronRight,
+  Edit,
+  Save as SaveIcon,
+  X as XIcon,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { api } from '../utils/apiClient';
-import { formatCurrency } from '../utils/currencyUtils';
+import { formatCurrency, formatTetherCurrency } from '../utils/currencyUtils';
 import { 
   UnifiedCard
 } from '../design-system';
@@ -111,11 +114,13 @@ interface DayData {
   };
 }
 
-interface AllocationHistoryEntry {
-  id: number;
+interface UnifiedHistoryEntry {
+  id: string;
+  type: string;
+  type_code: string;
   date: string;
   psp_name: string;
-  allocation_amount: number;
+  amount: number;
   created_at: string;
   updated_at: string;
 }
@@ -129,9 +134,35 @@ interface HistoryPagination {
   has_prev: boolean;
 }
 
+// Helper function to get commission rate color
+const getCommissionRateColor = (rate: number) => {
+  if (rate === 0) return 'text-gray-500';
+  if (rate <= 2) return 'text-green-600';
+  if (rate <= 5) return 'text-yellow-600';
+  if (rate <= 10) return 'text-orange-600';
+  return 'text-red-600';
+};
+
+// Helper function to get commission rate background color
+const getCommissionRateBgColor = (rate: number) => {
+  if (rate === 0) return 'bg-gray-100 text-gray-600';
+  if (rate <= 2) return 'bg-green-100 text-green-800';
+  if (rate <= 5) return 'bg-yellow-100 text-yellow-800';
+  if (rate <= 10) return 'bg-orange-100 text-orange-800';
+  return 'bg-red-100 text-red-800';
+};
+
 export default function Ledger() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { t } = useLanguage();
+
+  // Helper function to format currency based on PSP type
+  const formatPSPCurrency = (amount: number, pspName: string) => {
+    if (pspName.toUpperCase() === 'TETHER') {
+      return formatTetherCurrency(amount);
+    }
+    return formatCurrency(amount, '₺');
+  };
   const [pspData, setPspData] = useState<PSPData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -140,6 +171,9 @@ export default function Ledger() {
   const [refreshing, setRefreshing] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'ledger' | 'monthly' | 'analytics' | 'history'>('overview');
+  const [commissionCalculating, setCommissionCalculating] = useState(false);
+  const [commissionCalculationStatus, setCommissionCalculationStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [commissionDataCached, setCommissionDataCached] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedPsp, setSelectedPsp] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -171,15 +205,114 @@ export default function Ledger() {
   const [bulkAllocationSaving, setBulkAllocationSaving] = useState(false);
   
   // History tab state
-  const [historyData, setHistoryData] = useState<AllocationHistoryEntry[]>([]);
+  const [historyData, setHistoryData] = useState<UnifiedHistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyPagination, setHistoryPagination] = useState<HistoryPagination | null>(null);
+  
+  // Edit allocation modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingAllocation, setEditingAllocation] = useState<{
+    psp: string;
+    date: string;
+    currentAmount: number;
+  } | null>(null);
+  const [editAmount, setEditAmount] = useState<string>('');
+  const [editSaving, setEditSaving] = useState(false);
+
+  // Edit Devir modal state
+  const [showEditDevirModal, setShowEditDevirModal] = useState(false);
+  const [editingDevir, setEditingDevir] = useState<{
+    psp: string;
+    date: string;
+    currentAmount: number;
+  } | null>(null);
+  const [editDevirAmount, setEditDevirAmount] = useState<string>('');
+  const [editDevirSaving, setEditDevirSaving] = useState(false);
+  const [devirSecretCode, setDevirSecretCode] = useState<string>('');
+
+  // Edit KASA TOP modal state
+  const [showEditKasaTopModal, setShowEditKasaTopModal] = useState(false);
+  const [editingKasaTop, setEditingKasaTop] = useState<{
+    psp: string;
+    date: string;
+    currentAmount: number;
+  } | null>(null);
+  const [editKasaTopAmount, setEditKasaTopAmount] = useState<string>('');
+  const [editKasaTopSaving, setEditKasaTopSaving] = useState(false);
+  const [kasaTopSecretCode, setKasaTopSecretCode] = useState<string>('');
   const [historyFilters, setHistoryFilters] = useState({
     startDate: '',
     endDate: '',
     psp: '',
+    type: '', // 'all', 'allocation', 'devir', 'kasa_top'
     page: 1
   });
+
+  // Generate all days of the month for complete daily breakdown
+  const generateAllDaysOfMonth = (year: number, month: number) => {
+    // month is 1-based (1=January, 6=June, etc.)
+    // To get the last day of the current month, use month + 1 with day 0
+    const daysInMonth = new Date(year, month + 1, 0).getDate(); // This gets the last day of the current month
+    const days = [];
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, month - 1, day); // month - 1 because Date constructor uses 0-based months
+      // Use local date formatting instead of toISOString() to avoid timezone issues
+      const dateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      days.push({
+        date: dateString,
+        day: day,
+        dayName: date.toLocaleDateString('tr-TR', { weekday: 'short' }),
+        isWeekend: date.getDay() === 0 || date.getDay() === 6
+      });
+    }
+    
+    return days;
+  };
+
+  // Create complete daily breakdown with all days of the month
+  const createCompleteDailyBreakdown = (pspData: any, year: number, month: number) => {
+    const allDays = generateAllDaysOfMonth(year, month);
+    const transactionDays = pspData.daily_breakdown || [];
+    
+    // Create a map of existing transaction days for quick lookup
+    const transactionMap = new Map();
+    transactionDays.forEach((day: any) => {
+      transactionMap.set(day.date, day);
+    });
+    
+    // Generate complete breakdown with all days
+    return allDays.map(dayInfo => {
+      const existingDay = transactionMap.get(dayInfo.date);
+      
+      if (existingDay) {
+        // Return existing transaction data
+        return {
+          ...existingDay,
+          day: dayInfo.day,
+          dayName: dayInfo.dayName,
+          isWeekend: dayInfo.isWeekend
+        };
+      } else {
+        // Return zero-filled day
+        return {
+          date: dayInfo.date,
+          day: dayInfo.day,
+          dayName: dayInfo.dayName,
+          isWeekend: dayInfo.isWeekend,
+          yatimim: 0,
+          cekme: 0,
+          toplam: 0,
+          komisyon: 0,
+          net: 0,
+          tahs_tutari: 0,
+          kasa_top: 0,
+          devir: 0,
+          transaction_count: 0
+        };
+      }
+    });
+  };
 
   // Consolidated data fetching effect
   useEffect(() => {
@@ -204,7 +337,7 @@ export default function Ledger() {
     if (activeTab === 'history' && isAuthenticated && !authLoading) {
       fetchHistoryData(historyFilters.page);
     }
-  }, [activeTab, isAuthenticated, authLoading, historyFilters.startDate, historyFilters.endDate, historyFilters.psp]);
+  }, [activeTab, isAuthenticated, authLoading, historyFilters.startDate, historyFilters.endDate, historyFilters.psp, historyFilters.type]);
 
   // Fetch monthly data when Monthly tab is active
   useEffect(() => {
@@ -554,11 +687,16 @@ export default function Ledger() {
       setMonthlyLoading(true);
       setError(null);
 
-      const response = await api.get(`/api/v1/transactions/psp_monthly_stats?year=${year}&month=${month}`, undefined, !forceRefresh);
+      // Add cache-busting timestamp when forcing refresh to ensure fresh data
+      const cacheBuster = forceRefresh ? `&_t=${Date.now()}` : '';
+      const url = `/api/v1/transactions/psp_monthly_stats?year=${year}&month=${month}${cacheBuster}`;
+      
+      const response = await api.get(url, undefined, !forceRefresh);
       console.log('🔄 Ledger: Monthly API response received:', {
         status: response.status,
         ok: response.ok,
-        statusText: response.statusText
+        statusText: response.statusText,
+        url: url
       });
 
       if (response.status === 401) {
@@ -820,8 +958,9 @@ export default function Ledger() {
       if (historyFilters.startDate) params.append('start_date', historyFilters.startDate);
       if (historyFilters.endDate) params.append('end_date', historyFilters.endDate);
       if (historyFilters.psp) params.append('psp', historyFilters.psp);
+      if (historyFilters.type) params.append('type', historyFilters.type);
       
-      const response = await api.get(`/api/v1/analytics/allocation-history?${params}`);
+      const response = await api.get(`/api/v1/analytics/unified-history?${params}`);
       
       if (response.ok) {
         const data = await api.parseResponse(response);
@@ -859,8 +998,9 @@ export default function Ledger() {
       if (historyFilters.startDate) params.append('start_date', historyFilters.startDate);
       if (historyFilters.endDate) params.append('end_date', historyFilters.endDate);
       if (historyFilters.psp) params.append('psp', historyFilters.psp);
+      if (historyFilters.type) params.append('type', historyFilters.type);
       
-      const response = await api.get(`/api/v1/analytics/allocation-history/export?${params}`, {
+      const response = await api.get(`/api/v1/analytics/unified-history/export?${params}`, {
         responseType: 'blob'
       });
       
@@ -869,7 +1009,7 @@ export default function Ledger() {
         const url = window.URL.createObjectURL(await response.blob());
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', `allocation_history_${new Date().toISOString().split('T')[0]}.${format}`);
+        link.setAttribute('download', `unified_history_${new Date().toISOString().split('T')[0]}.${format}`);
         document.body.appendChild(link);
         link.click();
         link.remove();
@@ -923,6 +1063,195 @@ export default function Ledger() {
     } catch (error) {
       console.error('💥 CSRF test error:', error);
       alert('CSRF test error!');
+    }
+  };
+
+  // Edit allocation functions
+  const openEditModal = (psp: string, date: string, currentAmount: number) => {
+    setEditingAllocation({ psp, date, currentAmount });
+    setEditAmount(currentAmount.toString());
+    setShowEditModal(true);
+  };
+
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setEditingAllocation(null);
+    setEditAmount('');
+  };
+
+  const handleEditAllocation = async () => {
+    if (!editingAllocation) return;
+    
+    const newAmount = parseFloat(editAmount);
+    if (isNaN(newAmount) || newAmount < 0) {
+      alert('Please enter a valid amount');
+      return;
+    }
+
+    setEditSaving(true);
+    try {
+      await saveAllocation(editingAllocation.date, editingAllocation.psp, newAmount);
+      
+      // Refresh all data to show updated allocation
+      await Promise.all([
+        fetchMonthlyData(selectedYear, selectedMonth, true),
+        fetchLedgerData(true),
+        fetchHistoryData(historyFilters.page)
+      ]);
+      
+      closeEditModal();
+      alert('Allocation updated successfully!');
+    } catch (error) {
+      console.error('Error updating allocation:', error);
+      alert('Failed to update allocation. Please try again.');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  // Edit Devir functions
+  const openEditDevirModal = (psp: string, date: string, currentAmount: number) => {
+    setEditingDevir({ psp, date, currentAmount });
+    setEditDevirAmount(currentAmount.toString());
+    setDevirSecretCode('');
+    setShowEditDevirModal(true);
+  };
+
+  const closeEditDevirModal = () => {
+    setShowEditDevirModal(false);
+    setEditingDevir(null);
+    setEditDevirAmount('');
+    setDevirSecretCode('');
+  };
+
+  const handleEditDevir = async () => {
+    if (!editingDevir) return;
+    
+    // Validate secret code
+    if (devirSecretCode !== '4561') {
+      alert('Invalid secret code. Please enter 4561 to edit Devir amount.');
+      return;
+    }
+    
+    const newAmount = parseFloat(editDevirAmount);
+    if (isNaN(newAmount)) {
+      alert('Please enter a valid amount');
+      return;
+    }
+
+    setEditDevirSaving(true);
+    try {
+      // Use the new Devir-specific endpoint
+      const requestData = {
+        date: editingDevir.date,
+        psp: editingDevir.psp,
+        devir_amount: newAmount
+      };
+      console.log('📤 Sending Devir update request:', requestData);
+      
+      const response = await api.post('/api/v1/analytics/update-devir', requestData);
+
+      if (response.ok) {
+        const responseData = await api.parseResponse(response);
+        console.log('✅ Devir saved successfully:', responseData);
+        
+        // Refresh all data to show updated Devir
+        console.log('🔄 Refreshing data after Devir update...');
+        await Promise.all([
+          fetchMonthlyData(selectedYear, selectedMonth, true),
+          fetchLedgerData(true),
+          fetchHistoryData(historyFilters.page)
+        ]);
+        console.log('✅ Data refresh completed after Devir update');
+        
+        // Add a small delay to ensure data is properly refreshed
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        closeEditDevirModal();
+        alert('Devir amount updated successfully!');
+      } else {
+        const errorData = await api.parseResponse(response);
+        console.error('❌ Devir save failed:', errorData);
+        alert(`Failed to update Devir: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error updating Devir:', error);
+      alert('Failed to update Devir amount. Please try again.');
+    } finally {
+      setEditDevirSaving(false);
+    }
+  };
+
+  // KASA TOP edit functions
+  const openEditKasaTopModal = (psp: string, date: string, currentAmount: number) => {
+    setEditingKasaTop({ psp, date, currentAmount });
+    setEditKasaTopAmount(currentAmount.toString());
+    setKasaTopSecretCode('');
+    setShowEditKasaTopModal(true);
+  };
+
+  const closeEditKasaTopModal = () => {
+    setShowEditKasaTopModal(false);
+    setEditingKasaTop(null);
+    setEditKasaTopAmount('');
+    setKasaTopSecretCode('');
+  };
+
+  const handleEditKasaTop = async () => {
+    if (!editingKasaTop) return;
+    
+    // Validate secret code
+    if (kasaTopSecretCode !== '4561') {
+      alert('Invalid secret code. Please enter 4561 to edit KASA TOP amount.');
+      return;
+    }
+    
+    const newAmount = parseFloat(editKasaTopAmount);
+    if (isNaN(newAmount)) {
+      alert('Please enter a valid amount');
+      return;
+    }
+
+    setEditKasaTopSaving(true);
+    try {
+      // Use the new KASA TOP-specific endpoint
+      const requestData = {
+        date: editingKasaTop.date,
+        psp: editingKasaTop.psp,
+        kasa_top_amount: newAmount
+      };
+      console.log('📤 Sending KASA TOP update request:', requestData);
+      
+      const response = await api.post('/api/v1/analytics/update-kasa-top', requestData);
+
+      if (response.ok) {
+        const responseData = await api.parseResponse(response);
+        console.log('✅ KASA TOP saved successfully:', responseData);
+        
+        // Refresh all data to show updated KASA TOP
+        console.log('🔄 Refreshing data after KASA TOP update...');
+        await Promise.all([
+          fetchMonthlyData(selectedYear, selectedMonth, true),
+          fetchLedgerData(true),
+          fetchHistoryData(historyFilters.page)
+        ]);
+        console.log('✅ Data refresh completed after KASA TOP update');
+        
+        // Add a small delay to ensure data is properly refreshed
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        closeEditKasaTopModal();
+        alert('KASA TOP amount updated successfully!');
+      } else {
+        const errorData = await api.parseResponse(response);
+        console.error('❌ KASA TOP save failed:', errorData);
+        alert(`Failed to update KASA TOP: ${errorData.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error updating KASA TOP:', error);
+      alert('Failed to update KASA TOP amount. Please try again.');
+    } finally {
+      setEditKasaTopSaving(false);
     }
   };
 
@@ -1181,7 +1510,7 @@ export default function Ledger() {
     return (
       <div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-red-50'>
         <div className='text-center max-w-md mx-auto p-8'>
-          <div className='w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6'>
+          <div className='w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6'>
             <AlertCircle className='h-10 w-10 text-red-600' />
           </div>
           <h2 className='text-2xl font-bold text-gray-900 mb-4'>
@@ -1202,15 +1531,6 @@ export default function Ledger() {
 
   return (
     <div className="p-6">
-      {/* Breadcrumb Navigation */}
-      <div className="mb-6">
-        <Breadcrumb 
-          items={[
-            { label: 'Dashboard', href: '/' },
-            { label: 'PSP Ledger', current: true }
-          ]} 
-        />
-      </div>
 
       {/* Page Header */}
       <div className="mb-6">
@@ -1255,7 +1575,7 @@ export default function Ledger() {
             <span className="font-medium">Total Entries: {totalEntries}</span>
           </div>
           <div className='flex items-center gap-2'>
-            <div className='w-2 h-2 bg-gray-500 rounded-full'></div>
+            <div className='w-2 h-2 bg-gray-400 rounded-full'></div>
             <span className="font-medium">Total Volume: {formatCurrency(totalAmount, '₺')}</span>
           </div>
         </div>
@@ -1350,7 +1670,7 @@ export default function Ledger() {
 
               <MetricCard
                 title={t('ledger.total_allocations')}
-                value={formatCurrency(pspData.reduce((sum, psp) => sum + psp.total_allocations, 0), '₺')}
+                value={formatCurrency(pspData.reduce((sum, psp) => sum + (psp.psp.toUpperCase() === 'TETHER' ? 0 : psp.total_allocations), 0), '₺')}
                 subtitle="Funds allocated"
                 icon={CreditCard}
                 color="orange"
@@ -1358,7 +1678,7 @@ export default function Ledger() {
 
               <MetricCard
                 title={t('ledger.total_rollover')}
-                value={formatCurrency(pspData.reduce((sum, psp) => sum + (psp.total_allocations - psp.total_net), 0), '₺')}
+                value={formatCurrency(pspData.reduce((sum, psp) => sum + (psp.psp.toUpperCase() === 'TETHER' ? 0 : (psp.total_allocations - psp.total_net)), 0), '₺')}
                 subtitle="Available balance"
                 icon={Activity}
                 color="purple"
@@ -1410,7 +1730,7 @@ export default function Ledger() {
                       <div className='p-6 border-b border-gray-100'>
                         <div className='flex items-center justify-between'>
                           <div className='flex items-center gap-3'>
-                            <div className='w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center'>
+                            <div className='w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center'>
                               <PSPSpecificIcon className='h-5 w-5 text-primary-700' />
                           </div>
                           <div>
@@ -1432,28 +1752,28 @@ export default function Ledger() {
                         <div className='grid grid-cols-2 gap-4'>
                           <div className='text-center p-3 bg-gray-100 rounded-lg'>
                             <div className='text-xs text-gray-500 mb-1'>Total Deposits</div>
-                            <div className='text-sm font-semibold text-primary-900'>{formatCurrency(psp.total_deposits, '₺')}</div>
+                            <div className='text-sm font-semibold text-primary-900'>{formatPSPCurrency(psp.total_deposits, psp.psp)}</div>
                         </div>
                           <div className='text-center p-3 bg-gray-100 rounded-lg'>
                             <div className='text-xs text-gray-500 mb-1'>Total Withdrawals</div>
-                            <div className='text-sm font-semibold text-primary-900'>{formatCurrency(psp.total_withdrawals, '₺')}</div>
+                            <div className='text-sm font-semibold text-primary-900'>{formatPSPCurrency(psp.total_withdrawals, psp.psp)}</div>
                         </div>
                         </div>
                         
                         <div className='text-center p-4 bg-primary-50 rounded-lg border border-primary-100'>
                           <div className='text-xs text-primary-600 mb-1'>Net Amount</div>
-                          <div className='text-lg font-semibold text-primary-900'>{formatCurrency(psp.total_net, '₺')}</div>
+                          <div className='text-lg font-semibold text-primary-900'>{formatPSPCurrency(psp.total_net, psp.psp)}</div>
                       </div>
 
                         <div className='grid grid-cols-2 gap-4'>
                           <div className='text-center p-3 bg-gray-100 rounded-lg'>
                             <div className='text-xs text-gray-500 mb-1'>{t('ledger.allocations')}</div>
-                            <div className='text-sm font-semibold text-warning-600'>{formatCurrency(psp.total_allocations, '₺')}</div>
+                            <div className='text-sm font-semibold text-warning-600'>{formatPSPCurrency(psp.total_allocations, psp.psp)}</div>
                         </div>
                           <div className='text-center p-3 bg-gray-100 rounded-lg'>
                             <div className='text-xs text-gray-500 mb-1'>{t('ledger.rollover')}</div>
                             <div className={`text-sm font-semibold ${isRolloverPositive ? 'text-success-600' : 'text-destructive-600'}`}>
-                            {formatCurrency(rolloverAmount, '₺')}
+                            {formatPSPCurrency(rolloverAmount, psp.psp)}
                             </div>
                           </div>
                         </div>
@@ -1468,7 +1788,7 @@ export default function Ledger() {
                         </div>
                         <div className='text-center'>
                           <div className='text-xs text-gray-500'>Avg. Transaction</div>
-                            <div className='text-sm font-semibold text-primary-900'>{formatCurrency(psp.transaction_count > 0 ? psp.total_net / psp.transaction_count : 0, '₺')}</div>
+                            <div className='text-sm font-semibold text-primary-900'>{formatPSPCurrency(psp.transaction_count > 0 ? psp.total_net / psp.transaction_count : 0, psp.psp)}</div>
                           </div>
                         </div>
                       </div>
@@ -1878,7 +2198,7 @@ export default function Ledger() {
                         </div>
                           <div className='flex items-center gap-6 text-sm text-gray-600'>
                             <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                               <span className="font-medium">{dayData.totals.total_psp} PSPs</span>
                             </div>
                             <div className="flex items-center gap-2">
@@ -1972,27 +2292,27 @@ export default function Ledger() {
                                 </td>
                                 <td className='px-4 py-3 text-right'>
                                   <div className='text-sm text-gray-900'>
-                                    {formatCurrency(typedPspData.deposit, '₺')}
+                                    {formatPSPCurrency(typedPspData.deposit, psp)}
                                   </div>
                                 </td>
                                 <td className='px-4 py-3 text-right'>
                                   <div className='text-sm text-gray-900'>
-                                    {formatCurrency(typedPspData.withdraw, '₺')}
+                                    {formatPSPCurrency(typedPspData.withdraw, psp)}
                                   </div>
                                 </td>
                                 <td className='px-4 py-3 text-right'>
                                   <div className='text-sm font-medium text-gray-900'>
-                                    {formatCurrency(typedPspData.toplam, '₺')}
+                                    {formatPSPCurrency(typedPspData.toplam, psp)}
                                   </div>
                                 </td>
                                 <td className='px-4 py-3 text-right'>
                                   <div className='text-sm text-gray-900'>
-                                    {formatCurrency(typedPspData.komisyon, '₺')}
+                                    {formatPSPCurrency(typedPspData.komisyon, psp)}
                                   </div>
                                 </td>
                                 <td className='px-4 py-3 text-right'>
                                   <div className='text-sm font-semibold text-gray-900'>
-                                    {formatCurrency(typedPspData.net, '₺')}
+                                    {formatPSPCurrency(typedPspData.net, psp)}
                                   </div>
                                 </td>
                                 <td className='px-4 py-3 text-right'>
@@ -2016,7 +2336,7 @@ export default function Ledger() {
                                 </td>
                                 <td className='px-4 py-3 text-right'>
                                   <div className={`text-sm ${rolloverAmount > 0 ? 'text-red-600' : 'text-gray-600'}`}>
-                                    {formatCurrency(rolloverAmount, '₺')}
+                                    {formatPSPCurrency(rolloverAmount, psp)}
                                   </div>
                                 </td>
                                 <td className='px-4 py-3 text-center'>
@@ -2211,10 +2531,59 @@ export default function Ledger() {
                             TOPLAM
                           </div>
                         </th>
-                        <th className="text-right py-4 px-6 font-semibold text-slate-700 text-xs uppercase tracking-wider min-w-[120px]">
-                          <div className="flex items-center justify-end gap-2">
-                            <Activity className="h-4 w-4 text-amber-500" />
-                            KOMİSYON
+                        <th className="text-right py-4 px-6 font-semibold text-slate-700 text-xs uppercase tracking-wider min-w-[140px]">
+                          <div className="flex flex-col items-end gap-1">
+                            <div 
+                              className="flex items-center gap-2 group focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-opacity-50 rounded px-2 py-1" 
+                              role="columnheader" 
+                              aria-label="Commission column with calculation method"
+                              tabIndex={0}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  // Toggle tooltip or show more info
+                                }
+                              }}
+                            >
+                              {commissionCalculating ? (
+                                <div 
+                                  className="animate-spin h-4 w-4 border-2 border-amber-500 border-t-transparent rounded-full"
+                                  aria-label="Commission calculation in progress"
+                                ></div>
+                              ) : (
+                                <Activity className="h-4 w-4 text-amber-500" aria-hidden="true" />
+                              )}
+                              <span className="group-hover:text-amber-600 transition-colors" aria-label="Commission amount calculated from deposits only">KOMİSYON</span>
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute bg-slate-900 text-white text-xs rounded-lg px-3 py-2 z-50 whitespace-nowrap transform -translate-x-1/2 translate-y-8">
+                                Commission = Total Deposits × Commission Rate
+                                <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
+                              </div>
+                            </div>
+                            <div className="text-xs font-normal text-slate-500 normal-case flex items-center gap-1">
+                              {commissionCalculating ? (
+                                <span className="flex items-center gap-1">
+                                  <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></div>
+                                  Calculating...
+                                </span>
+                              ) : commissionCalculationStatus === 'success' ? (
+                                <span className="flex items-center gap-1 text-green-600">
+                                  <CheckCircle className="w-3 h-3" />
+                                  Updated
+                                </span>
+                              ) : commissionCalculationStatus === 'error' ? (
+                                <span className="flex items-center gap-1 text-red-600">
+                                  <AlertCircle className="w-3 h-3" />
+                                  Error
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1">
+                                  Deposits Only
+                                  {commissionDataCached && (
+                                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" title="Data cached"></div>
+                                  )}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </th>
                         <th className="text-right py-4 px-6 font-semibold text-slate-700 text-xs uppercase tracking-wider min-w-[120px]">
@@ -2262,7 +2631,7 @@ export default function Ledger() {
                             </td>
                             <td className="py-5 px-6">
                               <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg flex items-center justify-center shadow-sm">
+                                <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center shadow-sm">
                                   <Building className="h-5 w-5 text-blue-600" />
                                 </div>
                                 <div>
@@ -2274,7 +2643,7 @@ export default function Ledger() {
                             <td className="py-5 px-6 text-right">
                               <div className="flex flex-col items-end">
                                 <span className="font-mono text-sm font-semibold text-emerald-700">
-                                  {formatCurrency(psp.yatimim || 0)}
+                                  {formatPSPCurrency(psp.yatimim || 0, psp.psp)}
                                 </span>
                                 <span className="text-xs text-emerald-600/70">Deposits</span>
                               </div>
@@ -2282,7 +2651,7 @@ export default function Ledger() {
                             <td className="py-5 px-6 text-right">
                               <div className="flex flex-col items-end">
                                 <span className="font-mono text-sm font-semibold text-red-700">
-                                  {formatCurrency(psp.cekme || 0)}
+                                  {formatPSPCurrency(psp.cekme || 0, psp.psp)}
                                 </span>
                                 <span className="text-xs text-red-600/70">Withdrawals</span>
                               </div>
@@ -2290,39 +2659,69 @@ export default function Ledger() {
                             <td className="py-5 px-6 text-right">
                               <div className="flex flex-col items-end">
                                 <span className="font-mono text-sm font-bold text-slate-900">
-                                  {formatCurrency(psp.toplam || 0)}
+                                  {formatPSPCurrency(psp.toplam || 0, psp.psp)}
                                 </span>
                                 <span className="text-xs text-slate-600/70">Net Total</span>
                               </div>
                             </td>
                             <td className="py-5 px-6 text-right">
                               <div className="flex flex-col items-end">
-                                <span className="font-mono text-sm font-semibold text-amber-700">
-                                  {formatCurrency(psp.komisyon || 0)}
-                                </span>
-                                <span className="text-xs text-amber-600/70">Commission</span>
+                                <div className="flex items-center gap-2" role="cell" aria-label={`Commission for ${psp.psp}: ${formatCurrency(psp.komisyon || 0)} at ${psp.commission_rate || 0}% rate`}>
+                                  <span className={`font-mono text-sm font-semibold ${getCommissionRateColor(psp.commission_rate || 0)}`}>
+                                    {formatPSPCurrency(psp.komisyon || 0, psp.psp)}
+                                  </span>
+                                  {psp.psp.toUpperCase() === 'TETHER' ? (
+                                    <span 
+                                      className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                                      aria-label="Company internal KASA"
+                                    >
+                                      Internal KASA
+                                    </span>
+                                  ) : psp.commission_rate !== undefined ? (
+                                    <span 
+                                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getCommissionRateBgColor(psp.commission_rate)}`}
+                                      aria-label={`Commission rate: ${psp.commission_rate}%`}
+                                    >
+                                      {psp.commission_rate}%
+                                    </span>
+                                  ) : null}
+                                </div>
+                                <div className="flex items-center gap-1 mt-1">
+                                  <span className="text-xs text-amber-600/70">Commission</span>
+                                  <span className="text-xs text-slate-500">•</span>
+                                  <span className="text-xs text-slate-500">Deposits Only</span>
+                                </div>
                               </div>
                             </td>
                             <td className="py-5 px-6 text-right">
                               <div className="flex flex-col items-end">
                                 <span className="font-mono text-sm font-semibold text-blue-700">
-                                  {formatCurrency(psp.net || 0)}
+                                  {formatPSPCurrency(psp.net || 0, psp.psp)}
                                 </span>
                                 <span className="text-xs text-blue-600/70">Net Amount</span>
                               </div>
                             </td>
                             <td className="py-5 px-6 text-right">
                               <div className="flex flex-col items-end">
-                                <span className="font-mono text-sm font-semibold text-purple-700">
-                                  {formatCurrency(psp.tahs_tutari || 0)}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono text-sm font-semibold text-purple-700">
+                                    {formatPSPCurrency(psp.tahs_tutari || 0, psp.psp)}
+                                  </span>
+                                  <button
+                                    onClick={() => openEditModal(psp.psp, new Date().toISOString().split('T')[0], psp.tahs_tutari || 0)}
+                                    className="p-1.5 hover:bg-purple-100 rounded-md transition-colors duration-200 group opacity-70 hover:opacity-100"
+                                    title="Edit allocation amount"
+                                  >
+                                    <Edit className="h-4 w-4 text-purple-600 group-hover:text-purple-700" />
+                                  </button>
+                                </div>
                                 <span className="text-xs text-purple-600/70">Allocation</span>
                               </div>
                             </td>
                             <td className="py-5 px-6 text-right">
                               <div className="flex flex-col items-end">
                                 <span className="font-mono text-sm font-semibold text-indigo-700">
-                                  {formatCurrency(psp.kasa_top || 0)}
+                                  {formatPSPCurrency(psp.kasa_top || 0, psp.psp)}
                                 </span>
                                 <span className="text-xs text-indigo-600/70">Revenue</span>
                               </div>
@@ -2330,7 +2729,7 @@ export default function Ledger() {
                             <td className="py-5 px-6 text-right">
                               <div className="flex flex-col items-end">
                                 <span className={`font-mono text-sm font-semibold ${(psp.devir || 0) >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-                                  {formatCurrency(psp.devir || 0)}
+                                  {formatPSPCurrency(psp.devir || 0, psp.psp)}
                                 </span>
                                 <span className={`text-xs ${(psp.devir || 0) >= 0 ? 'text-emerald-600/70' : 'text-red-600/70'}`}>
                                   Rollover
@@ -2340,18 +2739,18 @@ export default function Ledger() {
                           </tr>
                           
                           {/* Daily Breakdown Row */}
-                          {expandedPSPs.has(psp.psp) && psp.daily_breakdown && psp.daily_breakdown.length > 0 && (
+                          {expandedPSPs.has(psp.psp) && (
                             <tr key={`${psp.psp}-daily`} className="bg-gradient-to-r from-slate-50/50 to-blue-50/30">
                               <td colSpan={10} className="py-6 px-6">
                                 <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200/60 shadow-lg shadow-slate-200/20">
                                   <div className="px-6 py-4 border-b border-slate-200/60 bg-gradient-to-r from-slate-50/80 to-blue-50/40 rounded-t-xl">
                                     <h4 className="text-sm font-bold text-slate-800 flex items-center gap-3">
-                                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                                      <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center">
                                         <Calendar className="h-4 w-4 text-white" />
                                       </div>
                                       Daily Transaction Breakdown - {psp.psp}
                                       <span className="ml-auto text-xs font-medium text-slate-600 bg-slate-200/60 px-3 py-1 rounded-full">
-                                        {psp.daily_breakdown.length} days
+                                        {createCompleteDailyBreakdown(psp, selectedYear, selectedMonth).length} days
                                       </span>
                                     </h4>
                                   </div>
@@ -2363,7 +2762,12 @@ export default function Ledger() {
                                           <th className="text-right py-3 px-4 font-semibold text-slate-700 text-xs uppercase tracking-wider">YATIRIM</th>
                                           <th className="text-right py-3 px-4 font-semibold text-slate-700 text-xs uppercase tracking-wider">ÇEKME</th>
                                           <th className="text-right py-3 px-4 font-semibold text-slate-700 text-xs uppercase tracking-wider">TOPLAM</th>
-                                          <th className="text-right py-3 px-4 font-semibold text-slate-700 text-xs uppercase tracking-wider">KOMİSYON</th>
+                                          <th className="text-right py-3 px-4 font-semibold text-slate-700 text-xs uppercase tracking-wider">
+                                            <div className="flex flex-col items-end">
+                                              <span>KOMİSYON</span>
+                                              <span className="text-xs font-normal text-slate-500 normal-case">Deposits Only</span>
+                                            </div>
+                                          </th>
                                           <th className="text-right py-3 px-4 font-semibold text-slate-700 text-xs uppercase tracking-wider">NET</th>
                                           <th className="text-right py-3 px-4 font-semibold text-slate-700 text-xs uppercase tracking-wider">TAHS TUTARI</th>
                                           <th className="text-right py-3 px-4 font-semibold text-slate-700 text-xs uppercase tracking-wider">KASA TOP</th>
@@ -2372,58 +2776,140 @@ export default function Ledger() {
                                         </tr>
                                       </thead>
                                       <tbody className="divide-y divide-slate-100/60">
-                                        {psp.daily_breakdown.map((daily: any, dailyIndex: number) => (
-                                          <tr key={daily.date} className={`hover:bg-slate-50/50 transition-colors duration-150 ${dailyIndex % 2 === 0 ? 'bg-white/50' : 'bg-slate-50/30'}`}>
+                                        {createCompleteDailyBreakdown(psp, selectedYear, selectedMonth).map((daily: any, dailyIndex: number) => (
+                                          <tr key={daily.date} className={`hover:bg-slate-50/50 transition-colors duration-150 ${
+                                            daily.transaction_count > 0 
+                                              ? (dailyIndex % 2 === 0 ? 'bg-white/50' : 'bg-slate-50/30')
+                                              : daily.isWeekend
+                                                ? 'bg-orange-50/30'
+                                                : 'bg-gray-50/20'
+                                          }`}>
                                             <td className="py-3 px-4">
                                               <div className="flex items-center gap-2">
-                                                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                                                <span className="font-medium text-slate-800 text-sm">
-                                                  {new Date(daily.date).toLocaleDateString('tr-TR')}
-                                                </span>
+                                                <div className={`w-2 h-2 rounded-full ${
+                                                  daily.transaction_count > 0 
+                                                    ? 'bg-blue-400' 
+                                                    : daily.isWeekend 
+                                                      ? 'bg-orange-300' 
+                                                      : 'bg-gray-300'
+                                                }`}></div>
+                                                <div className="flex flex-col">
+                                                  <span className="font-medium text-slate-800 text-sm">
+                                                    {daily.day} {daily.dayName}
+                                                  </span>
+                                                  <span className="text-xs text-gray-500">
+                                                    {new Date(daily.date).toLocaleDateString('tr-TR')}
+                                                  </span>
+                                                </div>
                                               </div>
                                             </td>
                                             <td className="py-3 px-4 text-right">
-                                              <span className="font-mono text-sm font-semibold text-emerald-700">
-                                                {formatCurrency(daily.yatimim || 0)}
+                                              <span className={`font-mono text-sm font-semibold ${
+                                                daily.transaction_count > 0 ? 'text-emerald-700' : 'text-gray-400'
+                                              }`}>
+                                                {formatPSPCurrency(daily.yatimim || 0, psp.psp)}
                                               </span>
                                             </td>
                                             <td className="py-3 px-4 text-right">
-                                              <span className="font-mono text-sm font-semibold text-red-700">
-                                                {formatCurrency(daily.cekme || 0)}
+                                              <span className={`font-mono text-sm font-semibold ${
+                                                daily.transaction_count > 0 ? 'text-red-700' : 'text-gray-400'
+                                              }`}>
+                                                {formatPSPCurrency(daily.cekme || 0, psp.psp)}
                                               </span>
                                             </td>
                                             <td className="py-3 px-4 text-right">
-                                              <span className="font-mono text-sm font-bold text-slate-800">
-                                                {formatCurrency(daily.toplam || 0)}
+                                              <span className={`font-mono text-sm font-bold ${
+                                                daily.transaction_count > 0 ? 'text-slate-800' : 'text-gray-400'
+                                              }`}>
+                                                {formatPSPCurrency(daily.toplam || 0, psp.psp)}
                                               </span>
                                             </td>
                                             <td className="py-3 px-4 text-right">
-                                              <span className="font-mono text-sm font-semibold text-amber-700">
-                                                {formatCurrency(daily.komisyon || 0)}
+                                              <div className="flex flex-col items-end">
+                                                <div className="flex items-center gap-2">
+                                                  <span className={`font-mono text-sm font-semibold ${
+                                                    daily.transaction_count > 0 
+                                                      ? getCommissionRateColor(psp.commission_rate || 0)
+                                                      : 'text-gray-400'
+                                                  }`}>
+                                                    {formatPSPCurrency(daily.komisyon || 0, psp.psp)}
+                                                  </span>
+                                                  {psp.psp.toUpperCase() === 'TETHER' ? (
+                                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                                      Internal KASA
+                                                    </span>
+                                                  ) : psp.commission_rate !== undefined ? (
+                                                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${getCommissionRateBgColor(psp.commission_rate)}`}>
+                                                      {psp.commission_rate}%
+                                                    </span>
+                                                  ) : null}
+                                                </div>
+                                                <span className="text-xs text-slate-500 mt-1">Deposits Only</span>
+                                              </div>
+                                            </td>
+                                            <td className="py-3 px-4 text-right">
+                                              <span className={`font-mono text-sm font-semibold ${
+                                                daily.transaction_count > 0 ? 'text-blue-700' : 'text-gray-400'
+                                              }`}>
+                                                {formatPSPCurrency(daily.net || 0, psp.psp)}
                                               </span>
                                             </td>
                                             <td className="py-3 px-4 text-right">
-                                              <span className="font-mono text-sm font-semibold text-blue-700">
-                                                {formatCurrency(daily.net || 0)}
-                                              </span>
+                                              <div className="flex items-center justify-end gap-2">
+                                                <span className={`font-mono text-sm font-semibold ${
+                                                  daily.transaction_count > 0 ? 'text-purple-700' : 'text-gray-400'
+                                                }`}>
+                                                  {formatPSPCurrency(daily.tahs_tutari || 0, psp.psp)}
+                                                </span>
+                                                <button
+                                                  onClick={() => openEditModal(psp.psp, daily.date, daily.tahs_tutari || 0)}
+                                                  className="p-1.5 hover:bg-purple-100 rounded-md transition-colors duration-200 group opacity-70 hover:opacity-100"
+                                                  title="Edit allocation amount"
+                                                >
+                                                  <Edit className="h-4 w-4 text-purple-600 group-hover:text-purple-700" />
+                                                </button>
+                                              </div>
                                             </td>
+               <td className="py-3 px-4 text-right">
+                 <div className="flex items-center justify-end gap-2">
+                   <span className={`font-mono text-sm font-semibold ${
+                     daily.transaction_count > 0 ? 'text-indigo-700' : 'text-gray-400'
+                   }`}>
+                     {formatPSPCurrency(daily.kasa_top || 0, psp.psp)}
+                   </span>
+                   <button
+                     onClick={() => openEditKasaTopModal(psp.psp, daily.date, daily.kasa_top || 0)}
+                     className="p-1.5 hover:bg-indigo-100 rounded-md transition-colors duration-200 group opacity-70 hover:opacity-100"
+                     title="Edit KASA TOP amount"
+                   >
+                     <Edit className="h-4 w-4 text-indigo-600 group-hover:text-indigo-700" />
+                   </button>
+                 </div>
+               </td>
                                             <td className="py-3 px-4 text-right">
-                                              <span className="font-mono text-sm font-semibold text-purple-700">
-                                                {formatCurrency(daily.tahs_tutari || 0)}
-                                              </span>
-                                            </td>
-                                            <td className="py-3 px-4 text-right">
-                                              <span className="font-mono text-sm font-semibold text-indigo-700">
-                                                {formatCurrency(daily.kasa_top || 0)}
-                                              </span>
-                                            </td>
-                                            <td className="py-3 px-4 text-right">
-                                              <span className={`font-mono text-sm font-semibold ${(daily.devir || 0) >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-                                                {formatCurrency(daily.devir || 0)}
-                                              </span>
+                                              <div className="flex items-center justify-end gap-2">
+                                                <span className={`font-mono text-sm font-semibold ${
+                                                  daily.transaction_count > 0 
+                                                    ? ((daily.devir || 0) >= 0 ? 'text-emerald-700' : 'text-red-700')
+                                                    : 'text-gray-400'
+                                                }`}>
+                                                  {formatPSPCurrency(daily.devir || 0, psp.psp)}
+                                                </span>
+                                                <button
+                                                  onClick={() => openEditDevirModal(psp.psp, daily.date, daily.devir || 0)}
+                                                  className="p-1.5 hover:bg-emerald-100 rounded-md transition-colors duration-200 group opacity-70 hover:opacity-100"
+                                                  title="Edit Devir amount"
+                                                >
+                                                  <Edit className="h-4 w-4 text-emerald-600 group-hover:text-emerald-700" />
+                                                </button>
+                                              </div>
                                             </td>
                                             <td className="py-3 px-4 text-center">
-                                              <span className="inline-flex items-center justify-center w-6 h-6 bg-slate-100 rounded-full text-xs font-medium text-slate-700">
+                                              <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
+                                                daily.transaction_count > 0 
+                                                  ? 'bg-slate-100 text-slate-700' 
+                                                  : 'bg-gray-50 text-gray-400'
+                                              }`}>
                                                 {daily.transaction_count || 0}
                                               </span>
                                             </td>
@@ -2439,32 +2925,32 @@ export default function Ledger() {
                                             </div>
                                           </td>
                                           <td className="py-4 px-4 text-right font-mono text-emerald-800 text-sm">
-                                            {formatCurrency(psp.daily_breakdown.reduce((sum: number, daily: any) => sum + (daily.yatimim || 0), 0))}
+                                            {formatPSPCurrency(createCompleteDailyBreakdown(psp, selectedYear, selectedMonth).reduce((sum: number, daily: any) => sum + (daily.yatimim || 0), 0), psp.psp)}
                                           </td>
                                           <td className="py-4 px-4 text-right font-mono text-red-800 text-sm">
-                                            {formatCurrency(psp.daily_breakdown.reduce((sum: number, daily: any) => sum + (daily.cekme || 0), 0))}
+                                            {formatPSPCurrency(createCompleteDailyBreakdown(psp, selectedYear, selectedMonth).reduce((sum: number, daily: any) => sum + (daily.cekme || 0), 0), psp.psp)}
                                           </td>
                                           <td className="py-4 px-4 text-right font-mono text-slate-800 text-sm">
-                                            {formatCurrency(psp.daily_breakdown.reduce((sum: number, daily: any) => sum + (daily.toplam || 0), 0))}
+                                            {formatPSPCurrency(createCompleteDailyBreakdown(psp, selectedYear, selectedMonth).reduce((sum: number, daily: any) => sum + (daily.toplam || 0), 0), psp.psp)}
                                           </td>
                                           <td className="py-4 px-4 text-right font-mono text-amber-800 text-sm">
-                                            {formatCurrency(psp.daily_breakdown.reduce((sum: number, daily: any) => sum + (daily.komisyon || 0), 0))}
+                                            {formatPSPCurrency(createCompleteDailyBreakdown(psp, selectedYear, selectedMonth).reduce((sum: number, daily: any) => sum + (daily.komisyon || 0), 0), psp.psp)}
                                           </td>
                                           <td className="py-4 px-4 text-right font-mono text-blue-800 text-sm">
-                                            {formatCurrency(psp.daily_breakdown.reduce((sum: number, daily: any) => sum + (daily.net || 0), 0))}
+                                            {formatPSPCurrency(createCompleteDailyBreakdown(psp, selectedYear, selectedMonth).reduce((sum: number, daily: any) => sum + (daily.net || 0), 0), psp.psp)}
                                           </td>
                                           <td className="py-4 px-4 text-right font-mono text-purple-800 text-sm">
-                                            {formatCurrency(psp.daily_breakdown.reduce((sum: number, daily: any) => sum + (daily.tahs_tutari || 0), 0))}
+                                            {formatPSPCurrency(createCompleteDailyBreakdown(psp, selectedYear, selectedMonth).reduce((sum: number, daily: any) => sum + (daily.tahs_tutari || 0), 0), psp.psp)}
                                           </td>
                                           <td className="py-4 px-4 text-right font-mono text-indigo-800 text-sm">
-                                            {formatCurrency(psp.daily_breakdown.reduce((sum: number, daily: any) => sum + (daily.kasa_top || 0), 0))}
+                                            {formatPSPCurrency(createCompleteDailyBreakdown(psp, selectedYear, selectedMonth).reduce((sum: number, daily: any) => sum + (daily.kasa_top || 0), 0), psp.psp)}
                                           </td>
-                                          <td className={`py-4 px-4 text-right font-mono text-sm ${psp.daily_breakdown.reduce((sum: number, daily: any) => sum + (daily.devir || 0), 0) >= 0 ? 'text-emerald-800' : 'text-red-800'}`}>
-                                            {formatCurrency(psp.daily_breakdown.reduce((sum: number, daily: any) => sum + (daily.devir || 0), 0))}
+                                          <td className={`py-4 px-4 text-right font-mono text-sm ${(createCompleteDailyBreakdown(psp, selectedYear, selectedMonth).filter(daily => daily.devir !== null && daily.devir !== undefined).pop()?.devir || 0) >= 0 ? 'text-emerald-800' : 'text-red-800'}`}>
+                                            {formatPSPCurrency(createCompleteDailyBreakdown(psp, selectedYear, selectedMonth).filter(daily => daily.devir !== null && daily.devir !== undefined).pop()?.devir || 0, psp.psp)}
                                           </td>
                                           <td className="py-4 px-4 text-center">
                                             <span className="inline-flex items-center justify-center w-8 h-8 bg-slate-300 rounded-full text-xs font-bold text-slate-800">
-                                              {psp.daily_breakdown.reduce((sum: number, daily: any) => sum + (daily.transaction_count || 0), 0)}
+                                              {createCompleteDailyBreakdown(psp, selectedYear, selectedMonth).reduce((sum: number, daily: any) => sum + (daily.transaction_count || 0), 0)}
                                             </span>
                                           </td>
                                         </tr>
@@ -2495,7 +2981,7 @@ export default function Ledger() {
                         <td className="py-6 px-6 text-right">
                           <div className="flex flex-col items-end">
                             <span className="font-mono text-base font-bold text-emerald-800">
-                              {formatCurrency(monthlyData.reduce((sum, psp) => sum + (psp.yatimim || 0), 0))}
+                              {formatCurrency(monthlyData.reduce((sum, psp) => sum + (psp.psp.toUpperCase() === 'TETHER' ? 0 : (psp.yatimim || 0)), 0))}
                             </span>
                             <span className="text-xs text-emerald-700/70 font-medium">Total Deposits</span>
                           </div>
@@ -2503,7 +2989,7 @@ export default function Ledger() {
                         <td className="py-6 px-6 text-right">
                           <div className="flex flex-col items-end">
                             <span className="font-mono text-base font-bold text-red-800">
-                              {formatCurrency(monthlyData.reduce((sum, psp) => sum + (psp.cekme || 0), 0))}
+                              {formatCurrency(monthlyData.reduce((sum, psp) => sum + (psp.psp.toUpperCase() === 'TETHER' ? 0 : (psp.cekme || 0)), 0))}
                             </span>
                             <span className="text-xs text-red-700/70 font-medium">Total Withdrawals</span>
                           </div>
@@ -2511,7 +2997,7 @@ export default function Ledger() {
                         <td className="py-6 px-6 text-right">
                           <div className="flex flex-col items-end">
                             <span className="font-mono text-base font-bold text-slate-900">
-                              {formatCurrency(monthlyData.reduce((sum, psp) => sum + (psp.toplam || 0), 0))}
+                              {formatCurrency(monthlyData.reduce((sum, psp) => sum + (psp.psp.toUpperCase() === 'TETHER' ? 0 : (psp.toplam || 0)), 0))}
                             </span>
                             <span className="text-xs text-slate-700/70 font-medium">Net Total</span>
                           </div>
@@ -2519,7 +3005,7 @@ export default function Ledger() {
                         <td className="py-6 px-6 text-right">
                           <div className="flex flex-col items-end">
                             <span className="font-mono text-base font-bold text-amber-800">
-                              {formatCurrency(monthlyData.reduce((sum, psp) => sum + (psp.komisyon || 0), 0))}
+                              {formatCurrency(monthlyData.reduce((sum, psp) => sum + (psp.psp.toUpperCase() === 'TETHER' ? 0 : (psp.komisyon || 0)), 0))}
                             </span>
                             <span className="text-xs text-amber-700/70 font-medium">Total Commission</span>
                           </div>
@@ -2527,7 +3013,7 @@ export default function Ledger() {
                         <td className="py-6 px-6 text-right">
                           <div className="flex flex-col items-end">
                             <span className="font-mono text-base font-bold text-blue-800">
-                              {formatCurrency(monthlyData.reduce((sum, psp) => sum + (psp.net || 0), 0))}
+                              {formatCurrency(monthlyData.reduce((sum, psp) => sum + (psp.psp.toUpperCase() === 'TETHER' ? 0 : (psp.net || 0)), 0))}
                             </span>
                             <span className="text-xs text-blue-700/70 font-medium">Net Amount</span>
                           </div>
@@ -2535,7 +3021,7 @@ export default function Ledger() {
                         <td className="py-6 px-6 text-right">
                           <div className="flex flex-col items-end">
                             <span className="font-mono text-base font-bold text-purple-800">
-                              {formatCurrency(monthlyData.reduce((sum, psp) => sum + (psp.tahs_tutari || 0), 0))}
+                              {formatCurrency(monthlyData.reduce((sum, psp) => sum + (psp.psp.toUpperCase() === 'TETHER' ? 0 : (psp.tahs_tutari || 0)), 0))}
                             </span>
                             <span className="text-xs text-purple-700/70 font-medium">Total Allocation</span>
                           </div>
@@ -2543,17 +3029,17 @@ export default function Ledger() {
                         <td className="py-6 px-6 text-right">
                           <div className="flex flex-col items-end">
                             <span className="font-mono text-base font-bold text-indigo-800">
-                              {formatCurrency(monthlyData.reduce((sum, psp) => sum + (psp.kasa_top || 0), 0))}
+                              {formatCurrency(monthlyData.reduce((sum, psp) => sum + (psp.psp.toUpperCase() === 'TETHER' ? 0 : (psp.kasa_top || 0)), 0))}
                             </span>
                             <span className="text-xs text-indigo-700/70 font-medium">Total Revenue</span>
                           </div>
                         </td>
                         <td className="py-6 px-6 text-right">
                           <div className="flex flex-col items-end">
-                            <span className={`font-mono text-base font-bold ${monthlyData.reduce((sum, psp) => sum + (psp.devir || 0), 0) >= 0 ? 'text-emerald-800' : 'text-red-800'}`}>
-                              {formatCurrency(monthlyData.reduce((sum, psp) => sum + (psp.devir || 0), 0))}
+                            <span className={`font-mono text-base font-bold ${monthlyData.reduce((sum, psp) => sum + (psp.psp.toUpperCase() === 'TETHER' ? 0 : (psp.devir || 0)), 0) >= 0 ? 'text-emerald-800' : 'text-red-800'}`}>
+                              {formatCurrency(monthlyData.reduce((sum, psp) => sum + (psp.psp.toUpperCase() === 'TETHER' ? 0 : (psp.devir || 0)), 0))}
                             </span>
-                            <span className={`text-xs font-medium ${monthlyData.reduce((sum, psp) => sum + (psp.devir || 0), 0) >= 0 ? 'text-emerald-700/70' : 'text-red-700/70'}`}>
+                            <span className={`text-xs font-medium ${monthlyData.reduce((sum, psp) => sum + (psp.psp.toUpperCase() === 'TETHER' ? 0 : (psp.devir || 0)), 0) >= 0 ? 'text-emerald-700/70' : 'text-red-700/70'}`}>
                               Total Rollover
                             </span>
                           </div>
@@ -2901,6 +3387,198 @@ export default function Ledger() {
             </UnifiedCard>
           </div>
 
+          {/* Commission Analysis Charts */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-6">
+            <UnifiedCard variant="elevated" className="p-6">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="h-5 w-5 text-primary-600" />
+                  Commission Rate Distribution
+                </CardTitle>
+                <CardDescription>
+                  Commission rates across all PSPs
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64 sm:h-72 lg:h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={pspData.map(psp => ({
+                      psp: psp.psp,
+                      rate: psp.commission_rate,
+                      deposits: psp.total_deposits,
+                      commission: psp.total_commission
+                    }))}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis 
+                        dataKey="psp" 
+                        tick={{ fontSize: 10 }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={60}
+                        interval={0}
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 10 }}
+                        tickFormatter={(value) => `${value}%`}
+                        width={40}
+                      />
+                      <Tooltip 
+                        formatter={(value, name) => [
+                          name === 'rate' ? `${value}%` : formatCurrency(Number(value), '₺'),
+                          name === 'rate' ? 'Commission Rate' : name === 'deposits' ? 'Total Deposits' : 'Commission Amount'
+                        ]}
+                        labelStyle={{ color: '#374151' }}
+                        contentStyle={{ 
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                        }}
+                      />
+                      <Bar 
+                        dataKey="rate" 
+                        fill="#f59e0b" 
+                        radius={[4, 4, 0, 0]}
+                        name="Commission Rate"
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </UnifiedCard>
+
+            <UnifiedCard variant="elevated" className="p-6">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5 text-primary-600" />
+                  Commission vs Deposits
+                </CardTitle>
+                <CardDescription>
+                  Commission amount vs total deposits by PSP
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64 sm:h-72 lg:h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ScatterChart data={pspData.map(psp => ({
+                      deposits: psp.total_deposits,
+                      commission: psp.total_commission,
+                      psp: psp.psp,
+                      rate: psp.commission_rate
+                    }))}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis 
+                        type="number" 
+                        dataKey="deposits" 
+                        name="Total Deposits"
+                        tick={{ fontSize: 10 }}
+                        tickFormatter={(value) => formatCurrency(value, '₺')}
+                        width={60}
+                      />
+                      <YAxis 
+                        type="number" 
+                        dataKey="commission" 
+                        name="Commission"
+                        tick={{ fontSize: 10 }}
+                        tickFormatter={(value) => formatCurrency(value, '₺')}
+                        width={60}
+                      />
+                      <Tooltip 
+                        formatter={(value, name) => [
+                          name === 'deposits' || name === 'commission' ? formatCurrency(Number(value), '₺') : value,
+                          name === 'deposits' ? 'Total Deposits' : name === 'commission' ? 'Commission Amount' : name === 'rate' ? 'Commission Rate' : 'PSP'
+                        ]}
+                        labelStyle={{ color: '#374151' }}
+                        contentStyle={{ 
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                        }}
+                      />
+                      <Scatter 
+                        dataKey="commission" 
+                        fill="#f59e0b" 
+                        r={6}
+                      />
+                    </ScatterChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </UnifiedCard>
+          </div>
+
+          {/* Commission Rate Comparison Table */}
+          <UnifiedCard variant="elevated" className="p-6">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-primary-600" />
+                Commission Rate Comparison
+              </CardTitle>
+              <CardDescription>
+                Detailed comparison of commission rates and their impact
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto -mx-6 px-6">
+                <table className="w-full min-w-[600px]">
+                  <thead className="bg-gradient-to-r from-slate-50 to-slate-100/50">
+                    <tr>
+                      <th className="text-left py-3 px-4 font-semibold text-slate-700 text-xs uppercase tracking-wider">PSP</th>
+                      <th className="text-right py-3 px-4 font-semibold text-slate-700 text-xs uppercase tracking-wider">Commission Rate</th>
+                      <th className="text-right py-3 px-4 font-semibold text-slate-700 text-xs uppercase tracking-wider">Total Deposits</th>
+                      <th className="text-right py-3 px-4 font-semibold text-slate-700 text-xs uppercase tracking-wider">Commission Amount</th>
+                      <th className="text-right py-3 px-4 font-semibold text-slate-700 text-xs uppercase tracking-wider">Efficiency</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100/60">
+                    {pspData
+                      .sort((a, b) => b.commission_rate - a.commission_rate)
+                      .map((psp, index) => {
+                        const efficiency = psp.total_deposits > 0 ? (psp.total_commission / psp.total_deposits) * 100 : 0;
+                        return (
+                          <tr key={psp.psp} className={`hover:bg-slate-50/50 transition-colors duration-150 ${index % 2 === 0 ? 'bg-white/50' : 'bg-slate-50/30'}`}>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-3 h-3 rounded-full ${getCommissionRateBgColor(psp.commission_rate).split(' ')[0]}`}></div>
+                                <span className="font-medium text-slate-800 text-sm">{psp.psp}</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              {psp.psp.toUpperCase() === 'TETHER' ? (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                  Internal KASA
+                                </span>
+                              ) : (
+                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getCommissionRateBgColor(psp.commission_rate)}`}>
+                                  {psp.commission_rate}%
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <span className="font-mono text-sm font-semibold text-slate-800">
+                                {formatCurrency(psp.total_deposits)}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <span className={`font-mono text-sm font-semibold ${getCommissionRateColor(psp.commission_rate)}`}>
+                                {formatCurrency(psp.total_commission || 0)}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <span className="text-sm font-medium text-slate-600">
+                                {efficiency.toFixed(2)}%
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </UnifiedCard>
+
           {/* Performance Insights */}
           <UnifiedCard variant="elevated" className="p-6">
             <CardHeader className="pb-4">
@@ -3016,15 +3694,15 @@ export default function Ledger() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-gray-600" />
-                Allocation History
+                Unified History
                 </CardTitle>
                 <CardDescription>
-                Complete audit trail of all PSP allocation changes with filtering and export capabilities
+                Complete audit trail of all manual overrides (Allocation, Devir, KASA TOP) with filtering and export capabilities
                 </CardDescription>
               </CardHeader>
               <CardContent>
               {/* Filters and Export Controls */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
                   <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
                   <Input
@@ -3052,6 +3730,19 @@ export default function Ledger() {
                     onChange={(e) => handleHistoryFilterChange('psp', e.target.value)}
                     className="w-full"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Type Filter</label>
+                  <select
+                    value={historyFilters.type}
+                    onChange={(e) => handleHistoryFilterChange('type', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">All Types</option>
+                    <option value="allocation">Allocation</option>
+                    <option value="devir">Devir</option>
+                    <option value="kasa_top">KASA TOP</option>
+                  </select>
                 </div>
                 <div className="flex items-end gap-2">
                   <Button
@@ -3087,13 +3778,16 @@ export default function Ledger() {
                         <thead className="bg-gray-50 border-b border-gray-100">
                           <tr>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                              Type
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                               Date
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                           PSP Name
                         </th>
                             <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                              Allocation Amount
+                              Amount
                         </th>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                               Created At
@@ -3106,15 +3800,26 @@ export default function Ledger() {
                         <tbody className="divide-y divide-gray-100">
                           {historyData.length === 0 ? (
                             <tr>
-                              <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                              <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
                                 <Clock className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                                <p>No allocation history found</p>
+                                <p>No history found</p>
                                 <p className="text-sm">Try adjusting your filters or check back later</p>
                             </td>
                             </tr>
                           ) : (
                             historyData.map((entry) => (
                               <tr key={entry.id} className="hover:bg-gray-50 transition-colors duration-150">
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                    entry.type === 'Allocation' 
+                                      ? 'bg-purple-100 text-purple-800' 
+                                      : entry.type === 'Devir'
+                                      ? 'bg-emerald-100 text-emerald-800'
+                                      : 'bg-indigo-100 text-indigo-800'
+                                  }`}>
+                                    {entry.type}
+                                  </span>
+                            </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                   {new Date(entry.date).toLocaleDateString()}
                             </td>
@@ -3125,7 +3830,7 @@ export default function Ledger() {
                   </div>
                             </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-semibold text-gray-900">
-                                  {formatCurrency(entry.allocation_amount, '₺')}
+                                  {formatCurrency(entry.amount, '₺')}
                             </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                   {new Date(entry.created_at).toLocaleString()}
@@ -3495,6 +4200,289 @@ export default function Ledger() {
                     )}
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Allocation Modal */}
+      {showEditModal && editingAllocation && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+          <div className="bg-white rounded-lg shadow-2xl max-w-md w-full border border-gray-200/50 animate-in zoom-in-95 duration-300">
+            {/* Header */}
+            <div className="px-8 py-6 border-b border-gray-100 bg-gradient-to-br from-white via-gray-50/30 to-primary-50/20 rounded-t-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-primary-100 to-primary-200 rounded-2xl flex items-center justify-center shadow-sm">
+                    <Edit className="h-6 w-6 text-primary-700" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 tracking-tight">
+                      Edit Allocation
+                    </h3>
+                    <p className="text-sm text-gray-600 font-medium">
+                      {editingAllocation.psp} - {new Date(editingAllocation.date).toLocaleDateString('tr-TR')}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={closeEditModal}
+                  className="w-10 h-10 rounded-xl bg-gray-100/80 hover:bg-gray-200/80 flex items-center justify-center transition-all duration-200 hover:scale-105"
+                >
+                  <XIcon className="h-5 w-5 text-gray-600" />
+                </button>
+              </div>
+            </div>
+            
+            {/* Content */}
+            <div className="px-8 py-6">
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Allocation Amount (₺)
+                  </label>
+                  <input
+                    type="number"
+                    value={editAmount}
+                    onChange={(e) => setEditAmount(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 text-lg font-mono"
+                    placeholder="Enter allocation amount"
+                    min="0"
+                    step="0.01"
+                    autoFocus
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Current amount: {formatCurrency(editingAllocation.currentAmount, '₺')}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Footer */}
+            <div className="px-8 py-6 border-t border-gray-100 bg-gray-50/50 rounded-b-lg">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={closeEditModal}
+                  className="px-6 py-3 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-all duration-200 font-semibold border border-gray-200 hover:border-gray-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleEditAllocation}
+                  disabled={editSaving}
+                  className="px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded hover:from-primary-700 hover:to-primary-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-3 font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                >
+                  {editSaving ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <SaveIcon className="h-4 w-4" />
+                      Update Allocation
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Devir Modal */}
+      {showEditDevirModal && editingDevir && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+          <div className="bg-white rounded-lg shadow-2xl max-w-md w-full border border-gray-200/50 animate-in zoom-in-95 duration-300">
+            {/* Header */}
+            <div className="px-8 py-6 border-b border-gray-100 bg-gradient-to-br from-white via-emerald-50/30 to-emerald-50/20 rounded-t-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-2xl flex items-center justify-center shadow-sm">
+                    <Edit className="h-6 w-6 text-emerald-700" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 tracking-tight">
+                      Edit Devir Amount
+                    </h3>
+                    <p className="text-sm text-gray-600 font-medium">
+                      {editingDevir.psp} - {new Date(editingDevir.date).toLocaleDateString('tr-TR')}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={closeEditDevirModal}
+                  className="w-10 h-10 rounded-xl bg-gray-100/80 hover:bg-gray-200/80 flex items-center justify-center transition-all duration-200 hover:scale-105"
+                >
+                  <XIcon className="h-5 w-5 text-gray-600" />
+                </button>
+              </div>
+            </div>
+            
+            {/* Content */}
+            <div className="px-8 py-6">
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Secret Code
+                  </label>
+                  <input
+                    type="password"
+                    value={devirSecretCode}
+                    onChange={(e) => setDevirSecretCode(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 text-lg font-mono"
+                    placeholder="Enter secret code (4561)"
+                    autoFocus
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Enter the secret code to edit Devir amount
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Devir Amount (₺)
+                  </label>
+                  <input
+                    type="number"
+                    value={editDevirAmount}
+                    onChange={(e) => setEditDevirAmount(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200 text-lg font-mono"
+                    placeholder="Enter Devir amount"
+                    step="0.01"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Current amount: {formatCurrency(editingDevir.currentAmount, '₺')}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Footer */}
+            <div className="px-8 py-6 border-t border-gray-100 bg-gray-50/50 rounded-b-lg">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={closeEditDevirModal}
+                  className="px-6 py-3 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-all duration-200 font-semibold border border-gray-200 hover:border-gray-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleEditDevir}
+                  disabled={editDevirSaving || devirSecretCode !== '4561'}
+                  className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded hover:from-emerald-700 hover:to-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-3 font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                >
+                  {editDevirSaving ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <SaveIcon className="h-4 w-4" />
+                      Update Devir
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit KASA TOP Modal */}
+      {showEditKasaTopModal && editingKasaTop && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+          <div className="bg-white rounded-lg shadow-2xl max-w-md w-full border border-gray-200/50 animate-in zoom-in-95 duration-300">
+            {/* Header */}
+            <div className="px-8 py-6 border-b border-gray-100 bg-gradient-to-br from-white via-indigo-50/30 to-indigo-50/20 rounded-t-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-100 to-indigo-200 rounded-2xl flex items-center justify-center shadow-sm">
+                    <Edit className="h-6 w-6 text-indigo-700" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 tracking-tight">
+                      Edit KASA TOP Amount
+                    </h3>
+                    <p className="text-sm text-gray-600 font-medium">
+                      {editingKasaTop.psp} - {new Date(editingKasaTop.date).toLocaleDateString('tr-TR')}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={closeEditKasaTopModal}
+                  className="w-10 h-10 rounded-xl bg-gray-100/80 hover:bg-gray-200/80 flex items-center justify-center transition-all duration-200 hover:scale-105"
+                >
+                  <XIcon className="h-5 w-5 text-gray-600" />
+                </button>
+              </div>
+            </div>
+            
+            {/* Content */}
+            <div className="px-8 py-6">
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Secret Code
+                  </label>
+                  <input
+                    type="password"
+                    value={kasaTopSecretCode}
+                    onChange={(e) => setKasaTopSecretCode(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 text-lg font-mono"
+                    placeholder="Enter secret code (4561)"
+                    autoFocus
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Enter the secret code to edit KASA TOP amount
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    KASA TOP Amount (₺)
+                  </label>
+                  <input
+                    type="number"
+                    value={editKasaTopAmount}
+                    onChange={(e) => setEditKasaTopAmount(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 text-lg font-mono"
+                    placeholder="Enter KASA TOP amount"
+                    step="0.01"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Current amount: {formatCurrency(editingKasaTop.currentAmount, '₺')}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Footer */}
+            <div className="px-8 py-6 border-t border-gray-100 bg-gray-50/50 rounded-b-lg">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={closeEditKasaTopModal}
+                  className="px-6 py-3 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-all duration-200 font-semibold border border-gray-200 hover:border-gray-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleEditKasaTop}
+                  disabled={editKasaTopSaving || kasaTopSecretCode !== '4561'}
+                  className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded hover:from-indigo-700 hover:to-indigo-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-3 font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                >
+                  {editKasaTopSaving ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <SaveIcon className="h-4 w-4" />
+                      Update KASA TOP
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>

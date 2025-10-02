@@ -540,15 +540,6 @@ export default function BusinessAnalytics() {
 
   return (
     <div className="p-6">
-      {/* Breadcrumb Navigation */}
-      <div className="mb-6">
-        <Breadcrumb 
-          items={[
-            { label: 'Dashboard', href: '/' },
-            { label: 'Business Analytics', current: true }
-          ]} 
-        />
-      </div>
 
       {/* Page Header */}
       <div className="mb-6">

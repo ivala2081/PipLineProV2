@@ -323,15 +323,5 @@
   outline-offset: 2px;
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .dashboard-glass {
-    background: rgba(15, 23, 42, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-  
-  .metric-card {
-    background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.7) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-}
+/* Theme-independent styling - Always light theme for professional business appearance */
+/* Dark mode support removed to maintain consistent business appearance */

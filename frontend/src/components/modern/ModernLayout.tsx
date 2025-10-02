@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { ModernSidebar } from './ModernSidebar';
+import { useNavigation } from '../../contexts/NavigationContext';
 import { ModernHeader } from './ModernHeader';
-import MobileBottomNavigation from '../MobileBottomNavigation';
+import { UnifiedNavigation } from '../navigation/UnifiedNavigation';
+import { BreadcrumbNavigation } from '../navigation/BreadcrumbNavigation';
+import { Button } from '../ui/button';
+import { Menu } from 'lucide-react';
 
 interface ModernLayoutProps {
   children?: React.ReactNode;
 }
 
 const ModernLayout: React.FC<ModernLayoutProps> = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { state, setSidebarOpen, setMobileMenuOpen } = useNavigation();
 
   const handleLogout = async () => {
     try {
@@ -24,58 +27,47 @@ const ModernLayout: React.FC<ModernLayoutProps> = ({ children }) => {
     }
   };
 
-  const handlePageChange = (page: string) => {
-    setSidebarOpen(false);
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile sidebar overlay */}
-      {sidebarOpen && (
+      {/* Mobile menu overlay */}
+      {state.mobileMenuOpen && (
         <div 
           className="fixed inset-0 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
+          onClick={() => setMobileMenuOpen(false)}
         >
           <div className="fixed inset-0 bg-black/50" />
         </div>
       )}
 
-      {/* Mobile sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:hidden ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
-        <ModernSidebar
-          currentPage=""
-          onPageChange={handlePageChange}
-          onLogout={handleLogout}
-        />
-      </div>
+      {/* Mobile drawer */}
+      <UnifiedNavigation variant="mobile-drawer" />
 
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-        <ModernSidebar
-          currentPage=""
-          onPageChange={handlePageChange}
-          onLogout={handleLogout}
-        />
+        <UnifiedNavigation variant="sidebar" />
       </div>
 
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Header */}
         <ModernHeader
-          onMenuClick={() => setSidebarOpen(true)}
+          onMenuClick={() => setMobileMenuOpen(true)}
           onLogout={handleLogout}
         />
 
+        {/* Breadcrumb Navigation */}
+        <div className="px-6 py-3 bg-white border-b border-gray-200">
+          <BreadcrumbNavigation />
+        </div>
+
         {/* Page content */}
-        <main className="min-h-[calc(100vh-4rem)] bg-gray-50">
+        <main className="min-h-[calc(100vh-7rem)] bg-gray-50">
           {children || <Outlet />}
         </main>
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <MobileBottomNavigation />
+      <UnifiedNavigation variant="mobile-bottom" />
     </div>
   );
 };

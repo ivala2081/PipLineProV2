@@ -148,10 +148,24 @@ export const formatCurrencyPositive = (
  * @returns Formatted number string (always positive)
  */
 export const formatAmountPositive = (
-  amount: number,
+  amount: number, 
   locale: string = 'en-US'
 ): string => {
   // Always display as positive value
   const positiveAmount = Math.abs(amount);
   return formatAmount(positiveAmount, locale);
+};
+
+/**
+ * Format currency for Tether PSP (always displays in USD as it's company's internal KASA)
+ * @param amount - The amount to format
+ * @param locale - The locale for formatting (default: 'en-US')
+ * @returns Formatted currency string in USD
+ */
+export const formatTetherCurrency = (
+  amount: number,
+  locale: string = 'en-US'
+): string => {
+  // Tether is always displayed in USD as it's the company's internal KASA
+  return formatCurrency(amount, '$', locale);
 };

@@ -137,4 +137,96 @@ class PSPAllocation(db.Model):
         }
     
     def __repr__(self):
-        return f'<PSPAllocation {self.date}:{self.psp_name}:{self.allocation_amount}>' 
+        return f'<PSPAllocation {self.date}:{self.psp_name}:{self.allocation_amount}>'
+
+class PSPDevir(db.Model):
+    """PSP Devir (Transfer/Carryover) model for storing manual Devir overrides by date"""
+    __tablename__ = 'psp_devir'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date, nullable=False)
+    psp_name = db.Column(db.String(100), nullable=False)
+    devir_amount = db.Column(db.Numeric(15, 2), default=0.0)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    
+    # Composite unique constraint to ensure one Devir override per PSP per date
+    __table_args__ = (
+        db.UniqueConstraint('date', 'psp_name', name='uq_psp_devir_date_psp'),
+        db.Index('idx_psp_devir_date', 'date'),
+        db.Index('idx_psp_devir_psp', 'psp_name'),
+        db.Index('idx_psp_devir_date_psp', 'date', 'psp_name'),
+    )
+    
+    @validates('devir_amount')
+    def validate_devir_amount(self, key, value):
+        """Validate Devir amount"""
+        try:
+            amount = Decimal(str(value))
+            if amount < -999999999.99:
+                raise ValueError('Devir amount too small')
+            if amount > 999999999.99:
+                raise ValueError('Devir amount too large')
+            return amount
+        except (InvalidOperation, ValueError) as e:
+            raise ValueError(f'Invalid Devir amount: {e}')
+    
+    def to_dict(self):
+        """Convert to dictionary"""
+        return {
+            'id': self.id,
+            'date': self.date.isoformat() if self.date else None,
+            'psp_name': self.psp_name,
+            'devir_amount': float(self.devir_amount) if self.devir_amount else 0.0,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+    
+    def __repr__(self):
+        return f'<PSPDevir {self.date}:{self.psp_name}:{self.devir_amount}>'
+
+class PSPKasaTop(db.Model):
+    """PSP KASA TOP (Revenue) model for storing manual KASA TOP overrides by date"""
+    __tablename__ = 'psp_kasa_top'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date, nullable=False)
+    psp_name = db.Column(db.String(100), nullable=False)
+    kasa_top_amount = db.Column(db.Numeric(15, 2), default=0.0)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    
+    # Composite unique constraint to ensure one KASA TOP override per PSP per date
+    __table_args__ = (
+        db.UniqueConstraint('date', 'psp_name', name='uq_psp_kasa_top_date_psp'),
+        db.Index('idx_psp_kasa_top_date', 'date'),
+        db.Index('idx_psp_kasa_top_psp', 'psp_name'),
+        db.Index('idx_psp_kasa_top_date_psp', 'date', 'psp_name'),
+    )
+    
+    @validates('kasa_top_amount')
+    def validate_kasa_top_amount(self, key, value):
+        """Validate KASA TOP amount"""
+        try:
+            amount = Decimal(str(value))
+            if amount < -999999999.99:
+                raise ValueError('KASA TOP amount too small')
+            if amount > 999999999.99:
+                raise ValueError('KASA TOP amount too large')
+            return amount
+        except (InvalidOperation, ValueError) as e:
+            raise ValueError(f'Invalid KASA TOP amount: {e}')
+    
+    def to_dict(self):
+        """Convert to dictionary"""
+        return {
+            'id': self.id,
+            'date': self.date.isoformat() if self.date else None,
+            'psp_name': self.psp_name,
+            'kasa_top_amount': float(self.kasa_top_amount) if self.kasa_top_amount else 0.0,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+    
+    def __repr__(self):
+        return f'<PSPKasaTop {self.date}:{self.psp_name}:{self.kasa_top_amount}>' 

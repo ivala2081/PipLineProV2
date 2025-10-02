@@ -369,9 +369,9 @@ export default function Login() {
         </div>
 
         {/* Security Notice */}
-        <Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20">
+        <Alert className="border-amber-200 bg-amber-50">
           <Shield className="h-4 w-4 text-amber-600" />
-          <AlertDescription className="text-amber-800 dark:text-amber-200">
+          <AlertDescription className="text-amber-800">
             {t('login.securityNotice')}
           </AlertDescription>
         </Alert>
@@ -391,9 +391,9 @@ export default function Login() {
 
         {/* Network Status Warning */}
         {!isOnline && (
-          <Alert className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-900/20">
+          <Alert className="border-orange-200 bg-orange-50">
             <WifiOff className="h-4 w-4 text-orange-600" />
-            <AlertDescription className="text-orange-800 dark:text-orange-200">
+            <AlertDescription className="text-orange-800">
               {t('login.offlineMode')}
             </AlertDescription>
           </Alert>

@@ -298,15 +298,6 @@ export default function Analytics() {
 
   return (
     <div className="p-6">
-      {/* Breadcrumb Navigation */}
-      <div className="mb-6">
-        <Breadcrumb 
-          items={[
-            { label: 'Dashboard', href: '/' },
-            { label: 'Analytics', current: true }
-          ]} 
-        />
-      </div>
 
       {/* Page Header with Tabs */}
       <div className="mb-6">

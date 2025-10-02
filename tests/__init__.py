@@ -1,3 +1,0 @@
-"""
-PipLinePro Unit Test Suite
-"""

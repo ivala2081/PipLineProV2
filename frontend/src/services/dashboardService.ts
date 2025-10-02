@@ -144,12 +144,69 @@ export interface SecurityMetrics {
 
 class DashboardService {
   private baseUrl = '/api/v1';
+  private cache = new Map<string, { data: any; timestamp: number }>();
+  private readonly CACHE_DURATION = 30000; // 30 seconds cache
+  private pendingRequests = new Map<string, Promise<any>>(); // Request deduplication
+
+  /**
+   * Check if cached data is still valid
+   */
+  private isCacheValid(key: string): boolean {
+    const cached = this.cache.get(key);
+    if (!cached) return false;
+    return Date.now() - cached.timestamp < this.CACHE_DURATION;
+  }
+
+  /**
+   * Get cached data or fetch new data with request deduplication
+   */
+  private async getCachedOrFetch<T>(key: string, fetchFn: () => Promise<T>): Promise<T> {
+    if (this.isCacheValid(key)) {
+      console.log(`📦 Using cached data for ${key}`);
+      return this.cache.get(key)!.data;
+    }
+
+    // Check if there's already a pending request for this key
+    if (this.pendingRequests.has(key)) {
+      console.log(`⏳ Waiting for pending request for ${key}`);
+      return this.pendingRequests.get(key)!;
+    }
+
+    console.log(`🌐 Fetching fresh data for ${key}`);
+    const requestPromise = fetchFn().then(data => {
+      this.cache.set(key, { data, timestamp: Date.now() });
+      this.pendingRequests.delete(key);
+      return data;
+    }).catch(error => {
+      this.pendingRequests.delete(key);
+      throw error;
+    });
+
+    this.pendingRequests.set(key, requestPromise);
+    return requestPromise;
+  }
+
+  /**
+   * Clear cache for specific key or all cache
+   */
+  clearCache(key?: string): void {
+    if (key) {
+      this.cache.delete(key);
+      this.pendingRequests.delete(key);
+      console.log(`🗑️ Cleared cache for ${key}`);
+    } else {
+      this.cache.clear();
+      this.pendingRequests.clear();
+      console.log(`🗑️ Cleared all cache and pending requests`);
+    }
+  }
 
   /**
    * Get dashboard statistics
    */
   async getDashboardStats(timeRange: string = 'all'): Promise<DashboardData> {
-    try {
+    const cacheKey = `dashboard-stats-${timeRange}`;
+    return this.getCachedOrFetch(cacheKey, async () => {
       const response = await fetch(`${this.baseUrl}/analytics/dashboard/stats?range=${timeRange}`, {
         method: 'GET',
         credentials: 'include',
@@ -164,10 +221,7 @@ class DashboardService {
 
       const data = await response.json();
       return data;
-    } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
-      throw error;
-    }
+    });
   }
 
   /**
@@ -325,7 +379,8 @@ class DashboardService {
    * Get commission analytics
    */
   async getCommissionAnalytics(timeRange: string = 'all'): Promise<any> {
-    try {
+    const cacheKey = `commission-analytics-${timeRange}`;
+    return this.getCachedOrFetch(cacheKey, async () => {
       const response = await fetch(`${this.baseUrl}/analytics/commission/analytics?range=${timeRange}`, {
         method: 'GET',
         credentials: 'include',
@@ -340,17 +395,15 @@ class DashboardService {
 
       const data = await response.json();
       return data;
-    } catch (error) {
-      console.error('Error fetching commission analytics:', error);
-      throw error;
-    }
+    });
   }
 
   /**
    * Get current exchange rates
    */
   async getExchangeRates(): Promise<any> {
-    try {
+    const cacheKey = 'exchange-rates';
+    return this.getCachedOrFetch(cacheKey, async () => {
       const response = await fetch(`${this.baseUrl}/exchange-rates/rates`, {
         method: 'GET',
         credentials: 'include',
@@ -365,10 +418,7 @@ class DashboardService {
 
       const data = await response.json();
       return data;
-    } catch (error) {
-      console.error('Error fetching exchange rates:', error);
-      throw error;
-    }
+    });
   }
 
   /**
@@ -447,10 +497,25 @@ class DashboardService {
   }
 
   /**
+   * Get financial performance data
+   */
+  async getFinancialPerformance(timeRange: string = 'all'): Promise<any> {
+    const cacheKey = `financial-performance-${timeRange}`;
+    return this.getCachedOrFetch(cacheKey, async () => {
+      const response = await fetch(`${this.baseUrl}/financial-performance?range=${timeRange}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    });
+  }
+
+  /**
    * Refresh dashboard data
    */
   async refreshDashboard(timeRange: string = 'all'): Promise<DashboardData> {
-    // Clear any cached data and fetch fresh
+    // Clear cached data and fetch fresh
+    this.clearCache();
     return this.getDashboardStats(timeRange);
   }
 }

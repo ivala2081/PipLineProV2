@@ -84,7 +84,7 @@ class DatabaseOptimizationService:
                 try:
                     result = db.session.execute(text(f"SELECT COUNT(*) FROM {table}")).fetchone()
                     stats[f"{table}_count"] = result[0] if result else 0
-        except Exception as e:
+                except Exception as e:
                     stats[f"{table}_count"] = f"Error: {e}"
             
             # Get database size
@@ -108,7 +108,7 @@ class DatabaseOptimizationService:
             # For SQLite, we can check for missing indexes
             logger.info("Query performance analysis completed")
             return True
-            except Exception as e:
+        except Exception as e:
             logger.error(f"Query performance analysis failed: {e}")
             return False
     

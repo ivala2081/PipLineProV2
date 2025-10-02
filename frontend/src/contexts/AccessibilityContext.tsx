@@ -159,6 +159,9 @@ export const useAccessibility = (): AccessibilityContextType => {
   return context;
 };
 
+// Export the context for external use if needed
+export { AccessibilityContext };
+
 // Utility hook for keyboard navigation
 export const useKeyboardNavigation = () => {
   const { isKeyboardNavigation } = useAccessibility();
@@ -265,4 +268,4 @@ export const useScreenReader = () => {
   return { announce };
 };
 
-export default AccessibilityContext;
+// Removed default export to fix HMR compatibility

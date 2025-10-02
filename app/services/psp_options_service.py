@@ -92,7 +92,7 @@ class PspOptionsService:
             'kuyumcu': Decimal('0.12'),       # 12.0%
             'sipay': Decimal('0.0015'),       # 0.15% - Updated rate
             'sipay-15': Decimal('0.0015'),    # 0.15% - Updated rate
-            'tether': Decimal('0.0'),         # 0.0% - No commission for TETHER
+            'tether': Decimal('0.0'),         # 0.0% - Company's internal KASA in USD
         }
         
         fixed_options = []
@@ -169,7 +169,7 @@ class PspOptionsService:
                 'kuyumcu': Decimal('0.12'),       # 12.0%
                 'sipay': Decimal('0.0015'),       # 0.15% - Updated rate
                 'sipay-15': Decimal('0.0015'),    # 0.15% - Updated rate
-                'tether': Decimal('0.0'),         # 0.0% - No commission for TETHER
+                'tether': Decimal('0.0'),         # 0.0% - Company's internal KASA in USD
             }
             
             psp_lower = psp.lower().strip()

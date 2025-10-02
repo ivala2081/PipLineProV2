@@ -1,0 +1,104 @@
+/**
+ * Navigation Performance Styles
+ * Optimizes navigation transitions and loading states
+ */
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Navigation loading indicator animations */
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.navigation-loading-indicator {
+  animation: slideDown 0.3s ease-out;
+}
+
+/* Page transition optimizations */
+.page-transition {
+  transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+}
+
+.page-transition-entering {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-transition-entered {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.page-transition-exiting {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* Optimize rendering performance */
+.navigation-optimized {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Reduce layout thrashing during navigation */
+.navigation-container {
+  contain: layout style paint;
+}
+
+/* Smooth focus transitions */
+.navigation-focus {
+  transition: all 0.15s ease-in-out;
+}
+
+.navigation-focus:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Loading state optimizations */
+.loading-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Prevent flash of unstyled content during navigation */
+.navigation-preload {
+  visibility: hidden;
+}
+
+.navigation-preload.loaded {
+  visibility: visible;
+}
+
+/* Optimize scroll performance */
+.scroll-optimized {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Reduce paint operations during navigation */
+.navigation-paint-optimized {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}

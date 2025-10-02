@@ -420,6 +420,10 @@ def create_app(config_name=None):
     app.register_blueprint(analytics_api, url_prefix='/api/v1/analytics')
     app.register_blueprint(health_api, url_prefix='/api/v1/health')
     
+    # Register commission rates API
+    from app.api.v1.endpoints.commission_rates import commission_rates_api
+    app.register_blueprint(commission_rates_api, url_prefix='/api/v1/commission-rates')
+    
     # Register performance monitoring blueprint
     from app.api.v1.endpoints.performance import performance_api
     app.register_blueprint(performance_api, url_prefix='/api/v1/performance')
@@ -436,7 +440,7 @@ def create_app(config_name=None):
     from app.utils.safe_logging import setup_safe_logging
     enhanced_logger = setup_logging(app)
     setup_safe_logging()  # Setup safe logging for Unicode handling
-    print("✅ Unified logging system enabled")
+    print("SUCCESS: Unified logging system enabled")
     
     # Error handling (always enabled)
     from app.utils.enhanced_error_handler import (

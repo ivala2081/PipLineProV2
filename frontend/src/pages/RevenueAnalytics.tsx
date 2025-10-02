@@ -23,6 +23,7 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  AlertCircle,
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
@@ -298,11 +299,15 @@ export default function RevenueAnalytics() {
     return (
       <ContentArea spacing="xl">
         <div className="text-center py-12">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <BarChart3 className="h-8 w-8 text-gray-400" />
+          <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="h-8 w-8 text-yellow-600" />
           </div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">No Data Available</h3>
-          <p className="text-gray-600">No revenue analytics data is currently available.</p>
+          <p className="text-gray-600 mb-6">No analytics data available for the selected time range</p>
+          <Button onClick={handleRefresh} variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
         </div>
       </ContentArea>
     );
@@ -310,15 +315,6 @@ export default function RevenueAnalytics() {
 
   return (
     <div className="p-6">
-      {/* Breadcrumb Navigation */}
-      <div className="mb-6">
-        <Breadcrumb 
-          items={[
-            { label: 'Dashboard', href: '/' },
-            { label: 'Revenue Analytics', current: true }
-          ]} 
-        />
-      </div>
 
       {/* Page Header */}
       <div className="mb-6">
@@ -434,7 +430,7 @@ export default function RevenueAnalytics() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Clients</SelectItem>
-                    {analyticsData.top_clients.map((client, index) => (
+                    {analyticsData?.top_clients?.map((client, index) => (
                       <SelectItem key={index} value={client.client_name}>
                         {client.client_name}
                       </SelectItem>
@@ -451,7 +447,7 @@ export default function RevenueAnalytics() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All PSPs</SelectItem>
-                    {analyticsData.psp_breakdown.map((psp, index) => (
+                    {analyticsData?.psp_breakdown?.map((psp, index) => (
                       <SelectItem key={index} value={psp.psp}>
                         {psp.psp}
                       </SelectItem>
@@ -477,12 +473,12 @@ export default function RevenueAnalytics() {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Total Revenue</p>
                   <p className="text-3xl font-bold text-gray-900">
-                    {formatCurrency(analyticsData.total_revenue)}
+                    {formatCurrency(analyticsData?.total_revenue || 0)}
                   </p>
                   <div className="flex items-center mt-2">
                     <ArrowUpRight className="h-4 w-4 text-green-500 mr-1" />
                     <span className="text-sm text-green-600">
-                      {analyticsData.growth_rate > 0 ? '+' : ''}{analyticsData.growth_rate.toFixed(1)}%
+                      {analyticsData?.growth_rate ? (analyticsData.growth_rate > 0 ? '+' : '') + analyticsData.growth_rate.toFixed(1) + '%' : '0.0%'}
                     </span>
                   </div>
                 </div>
@@ -518,10 +514,12 @@ export default function RevenueAnalytics() {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Total Deposits</p>
                   <p className="text-3xl font-bold text-gray-900">
-                    {formatCurrency(analyticsData.total_deposits)}
+                    {formatCurrency(analyticsData?.total_deposits || 0)}
                   </p>
                   <p className="text-sm text-gray-500 mt-2">
-                    {((analyticsData.total_deposits / analyticsData.total_revenue) * 100).toFixed(1)}% of total
+                    {analyticsData?.total_deposits && analyticsData?.total_revenue ? 
+                      ((analyticsData.total_deposits / analyticsData.total_revenue) * 100).toFixed(1) + '% of total' : 
+                      '0.0% of total'}
                   </p>
                 </div>
                 <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
@@ -588,7 +586,7 @@ export default function RevenueAnalytics() {
               <CardContent>
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={analyticsData.daily_revenue} key="revenue-bar-chart" margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                    <BarChart data={analyticsData?.daily_revenue || []} key="revenue-bar-chart" margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                       <defs>
                         <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="0%" stopColor="#3B82F6" stopOpacity={1} />
@@ -702,7 +700,7 @@ export default function RevenueAnalytics() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {analyticsData.top_clients.slice(0, 10).map((client, index) => (
+                  {analyticsData?.top_clients?.slice(0, 10).map((client, index) => (
                     <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -716,7 +714,9 @@ export default function RevenueAnalytics() {
                       <div className="text-right">
                         <p className="font-semibold text-gray-900">{formatCurrency(client.total_amount)}</p>
                         <p className="text-sm text-gray-500">
-                          {((client.total_amount / analyticsData.total_revenue) * 100).toFixed(1)}%
+                          {analyticsData?.total_revenue ? 
+                            ((client.total_amount / analyticsData.total_revenue) * 100).toFixed(1) + '%' : 
+                            '0.0%'}
                         </p>
                       </div>
                     </div>
@@ -740,7 +740,7 @@ export default function RevenueAnalytics() {
               <CardContent>
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={analyticsData.daily_revenue} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                    <BarChart data={analyticsData?.daily_revenue || []} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                       <defs>
                         <linearGradient id="depositsGradient" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="0%" stopColor="#10B981" stopOpacity={1} />
@@ -909,7 +909,7 @@ export default function RevenueAnalytics() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {analyticsData.top_clients.map((client, index) => (
+                      {analyticsData?.top_clients?.map((client, index) => (
                         <tr key={index} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
@@ -931,7 +931,9 @@ export default function RevenueAnalytics() {
                             {formatCurrency(client.total_amount / client.transaction_count)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {((client.total_amount / analyticsData.total_revenue) * 100).toFixed(1)}%
+                            {analyticsData?.total_revenue ? 
+                              ((client.total_amount / analyticsData.total_revenue) * 100).toFixed(1) + '%' : 
+                              '0.0%'}
                           </td>
                         </tr>
                       ))}
@@ -959,7 +961,7 @@ export default function RevenueAnalytics() {
                     <ResponsiveContainer width="100%" height="100%">
                       <RechartsPieChart>
                         <Pie
-                          data={analyticsData.psp_breakdown.map((item, index) => ({
+                          data={analyticsData?.psp_breakdown?.map((item, index) => ({
                             name: item.psp,
                             value: item.total_amount,
                             fill: chartColors[index % chartColors.length]
@@ -970,7 +972,7 @@ export default function RevenueAnalytics() {
                           dataKey="value"
                           label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                         >
-                          {analyticsData.psp_breakdown.map((entry, index) => (
+                          {analyticsData?.psp_breakdown?.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={chartColors[index % chartColors.length]} />
                           ))}
                         </Pie>
@@ -992,7 +994,7 @@ export default function RevenueAnalytics() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {analyticsData.category_breakdown.map((category, index) => (
+                    {analyticsData?.category_breakdown?.map((category, index) => (
                       <div key={index} className="space-y-2">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -1017,7 +1019,7 @@ export default function RevenueAnalytics() {
                         </div>
                         <div className="flex justify-between text-xs text-gray-500">
                           <span>{category.transaction_count} transactions</span>
-                          <span>{category.percentage.toFixed(1)}%</span>
+                          <span>{category?.percentage ? category.percentage.toFixed(1) + '%' : '0.0%'}</span>
                         </div>
                       </div>
                     ))}
