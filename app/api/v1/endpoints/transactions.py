@@ -654,6 +654,75 @@ def get_psp_monthly_stats():
             Transaction.date <= end_date
         ).group_by(Transaction.psp).all()
         
+        # Get PSPs with high DEVIR (>100) even if they have no transactions in this month
+        # These PSPs need to be tracked due to their debt
+        high_devir_psps = []
+        try:
+            from app.models.financial import PSPDevir
+            # Get the most recent DEVIR for each PSP
+            latest_devir_subquery = db.session.query(
+                PSPDevir.psp_name,
+                func.max(PSPDevir.date).label('latest_date')
+            ).group_by(PSPDevir.psp_name).subquery()
+            
+            high_devir_psps = db.session.query(
+                PSPDevir.psp_name,
+                PSPDevir.devir_amount
+            ).join(
+                latest_devir_subquery,
+                (PSPDevir.psp_name == latest_devir_subquery.c.psp_name) &
+                (PSPDevir.date == latest_devir_subquery.c.latest_date)
+            ).filter(
+                PSPDevir.devir_amount > 100
+            ).all()
+            
+            logger.info(f"Found {len(high_devir_psps)} PSPs with DEVIR > 100")
+        except Exception as e:
+            logger.warning(f"Failed to get high DEVIR PSPs: {e}")
+            high_devir_psps = []
+        
+        # Get PSPs with any DEVIR history (rollovers from past months)
+        try:
+            from app.models.financial import PSPDevir
+            # Get all PSPs that have any DEVIR records (indicating they had rollovers)
+            psp_devir_history = db.session.query(PSPDevir.psp_name).distinct().all()
+            psp_with_devir_history = {psp.psp_name for psp in psp_devir_history}
+            logger.info(f"Found {len(psp_with_devir_history)} PSPs with DEVIR history: {sorted(psp_with_devir_history)}")
+        except Exception as e:
+            logger.warning(f"Failed to get PSPs with DEVIR history: {e}")
+            psp_with_devir_history = set()
+        
+        # Get unique PSP names from transaction-based and high DEVIR PSPs
+        transaction_psps = {psp.psp for psp in psp_stats}
+        high_devir_psp_names = {psp.psp_name for psp in high_devir_psps}
+        
+        # Combine PSPs: those with DEVIR history + those with transactions + those with high DEVIR
+        all_psp_names = psp_with_devir_history.union(transaction_psps).union(high_devir_psp_names)
+        
+        # Create a comprehensive PSP list with transaction data
+        comprehensive_psp_stats = []
+        for psp_name in all_psp_names:
+            # Find transaction data for this PSP
+            psp_transaction_data = next((psp for psp in psp_stats if psp.psp == psp_name), None)
+            
+            if psp_transaction_data:
+                # PSP has transactions in this month
+                comprehensive_psp_stats.append(psp_transaction_data)
+            else:
+                # PSP has no transactions but high DEVIR - create dummy entry
+                from sqlalchemy import text
+                dummy_psp = type('DummyPSP', (), {
+                    'psp': psp_name,
+                    'transaction_count': 0,
+                    'total_amount': 0.0,
+                    'average_amount': 0.0
+                })()
+                comprehensive_psp_stats.append(dummy_psp)
+                logger.info(f"Added PSP {psp_name} with high DEVIR but no transactions")
+        
+        # Use the comprehensive PSP list
+        psp_stats = comprehensive_psp_stats
+        
         # Get deposits for the month
         # For Tether, use USD amounts; for others, use TRY amounts
         psp_deposits = db.session.query(
