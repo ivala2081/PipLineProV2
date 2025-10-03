@@ -5,12 +5,18 @@
 
 import React, { Suspense, lazy } from 'react';
 import LoadingSpinner from './LoadingSpinner';
+import { lazyLoadingOptimizer } from '../utils/lazyLoadingOptimizer';
 
 // Lazy load heavy components
 export const LazyDashboard = lazy(() => import('./modern/ModernDashboard'));
 export const LazyRevenueChart = lazy(() => import('./modern/RevenueChart'));
 export const LazyDataTable = lazy(() => import('./modern/DataTable'));
 export const LazyGlobalSearch = lazy(() => import('./modern/GlobalSearch'));
+export const LazyModernHeader = lazy(() => import('./modern/ModernHeader').then(module => ({ default: module.ModernHeader })));
+export const LazyModernLayout = lazy(() => import('./modern/ModernLayout'));
+export const LazyNotificationSystem = lazy(() => import('./modern/NotificationSystem').then(module => ({ default: module.NotificationSystem })));
+export const LazyProgressIndicator = lazy(() => import('./modern/ProgressIndicator').then(module => ({ default: module.ProgressIndicator })));
+export const LazySkeletonLoader = lazy(() => import('./modern/SkeletonLoader').then(module => ({ default: module.SkeletonLoader })));
 
 // Lazy load forms and modals (only if they exist)
 // export const LazyTransactionForm = lazy(() => import('./forms/TransactionForm'));
@@ -38,14 +44,53 @@ export const withLazyLoading = <P extends Record<string, any>>(
 };
 
 // Preload components for better UX
-export const preloadComponents = () => {
-  // Preload critical components
-  import('./modern/ModernDashboard');
-  import('./modern/ModernHeader');
-  import('./modern/ModernSidebar');
+export const preloadComponents = async () => {
+  const startTime = performance.now();
   
-  // Preload existing charts
-  import('./modern/RevenueChart');
+  try {
+    // Preload critical components
+    await Promise.all([
+      import('./modern/ModernDashboard'),
+      import('./modern/ModernHeader'),
+      import('./modern/ModernLayout'),
+    ]);
+    
+    // Preload existing charts and data components
+    await Promise.all([
+      import('./modern/RevenueChart'),
+      import('./modern/DataTable'),
+      import('./modern/GlobalSearch'),
+    ]);
+    
+    // Preload UI components
+    await Promise.all([
+      import('./modern/NotificationSystem'),
+      import('./modern/ProgressIndicator'),
+      import('./modern/SkeletonLoader'),
+    ]);
+
+    const loadTime = performance.now() - startTime;
+    lazyLoadingOptimizer.recordMetrics('preloadComponents', {
+      loadTime,
+      preloadSuccess: true,
+      cacheHit: false,
+      retryCount: 0,
+      errorRate: 0,
+    });
+
+    console.log(`Components preloaded successfully in ${loadTime.toFixed(2)}ms`);
+  } catch (error) {
+    const loadTime = performance.now() - startTime;
+    lazyLoadingOptimizer.recordMetrics('preloadComponents', {
+      loadTime,
+      preloadSuccess: false,
+      cacheHit: false,
+      retryCount: 0,
+      errorRate: 1,
+    });
+    
+    console.error('Failed to preload components:', error);
+  }
 };
 
 // Component that handles lazy loading with error boundaries
@@ -118,6 +163,11 @@ export default {
   LazyRevenueChart,
   LazyDataTable,
   LazyGlobalSearch,
+  LazyModernHeader,
+  LazyModernLayout,
+  LazyNotificationSystem,
+  LazyProgressIndicator,
+  LazySkeletonLoader,
   withLazyLoading,
   preloadComponents,
   LazyWrapper

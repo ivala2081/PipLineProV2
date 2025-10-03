@@ -5,6 +5,7 @@ __pycache__/
 *.so
 .Python
 venv/
+.venv/
 env/
 ENV/
 env.bak/
@@ -14,6 +15,9 @@ venv.bak/
 instance/sessions/
 *.db-shm
 *.db-wal
+
+# Keep database file for deployment
+!instance/treasury_improved.db
 
 # Logs
 logs/

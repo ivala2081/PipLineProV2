@@ -1,0 +1,119 @@
+[
+  {
+    "check": "Dependencies",
+    "status": "PASS",
+    "message": "All required dependencies are available",
+    "timestamp": "2025-10-03T11:48:13.793821",
+    "details": null
+  },
+  {
+    "check": "Process Status",
+    "status": "PASS",
+    "message": "Application process running (PID: 12696)",
+    "timestamp": "2025-10-03T11:48:14.800675",
+    "details": null
+  },
+  {
+    "check": "CPU Usage",
+    "status": "PASS",
+    "message": "CPU usage: 11.5%",
+    "timestamp": "2025-10-03T11:48:15.801088",
+    "details": null
+  },
+  {
+    "check": "Memory Usage",
+    "status": "PASS",
+    "message": "Memory usage: 79.4%",
+    "timestamp": "2025-10-03T11:48:15.804547",
+    "details": null
+  },
+  {
+    "check": "Disk Usage",
+    "status": "PASS",
+    "message": "Disk usage: 30.4%",
+    "timestamp": "2025-10-03T11:48:15.804713",
+    "details": null
+  },
+  {
+    "check": "Application Health",
+    "status": "PASS",
+    "message": "Application is healthy",
+    "timestamp": "2025-10-03T11:48:17.862757",
+    "details": {
+      "service": "PipLinePro API",
+      "status": "healthy",
+      "timestamp": "2025-10-03T08:48:17.860040+00:00",
+      "version": "1.0.0"
+    }
+  },
+  {
+    "check": "Database Connection",
+    "status": "FAIL",
+    "message": "Database check returned status 404",
+    "timestamp": "2025-10-03T11:48:19.913336",
+    "details": null
+  },
+  {
+    "check": "API Endpoint /api/v1/auth/check",
+    "status": "PASS",
+    "message": "Endpoint responding (status: 401)",
+    "timestamp": "2025-10-03T11:48:21.957925",
+    "details": null
+  },
+  {
+    "check": "API Endpoint /api/v1/transactions/psp_summary_stats",
+    "status": "PASS",
+    "message": "Endpoint responding (status: 401)",
+    "timestamp": "2025-10-03T11:48:24.029696",
+    "details": null
+  },
+  {
+    "check": "API Endpoint /api/v1/analytics/dashboard/stats",
+    "status": "PASS",
+    "message": "Endpoint responding (status: 401)",
+    "timestamp": "2025-10-03T11:48:26.092276",
+    "details": null
+  },
+  {
+    "check": "Log File logs/pipelinepro_enhanced.log",
+    "status": "PASS",
+    "message": "Log file size: 0.3KB",
+    "timestamp": "2025-10-03T11:48:26.092563",
+    "details": null
+  },
+  {
+    "check": "Log Errors logs/pipelinepro_enhanced.log",
+    "status": "PASS",
+    "message": "Error count in recent logs: 0",
+    "timestamp": "2025-10-03T11:48:26.092783",
+    "details": null
+  },
+  {
+    "check": "Log File logs/pipelinepro_errors.log",
+    "status": "PASS",
+    "message": "Log file size: 24.1KB",
+    "timestamp": "2025-10-03T11:48:26.092906",
+    "details": null
+  },
+  {
+    "check": "Log Errors logs/pipelinepro_errors.log",
+    "status": "WARN",
+    "message": "High error count in recent logs: 60",
+    "timestamp": "2025-10-03T11:48:26.107682",
+    "details": null
+  },
+  {
+    "check": "Log File logs/pipelinepro_performance.log",
+    "status": "PASS",
+    "message": "Log file size: 827.5KB",
+    "timestamp": "2025-10-03T11:48:26.107860",
+    "details": null
+  },
+  {
+    "check": "Log Errors logs/pipelinepro_performance.log",
+    "status": "PASS",
+    "message": "Error count in recent logs: 0",
+    "timestamp": "2025-10-03T11:48:26.124210",
+    "details": null
+  }
+]

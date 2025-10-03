@@ -17,8 +17,10 @@ import SkipLink from './components/SkipLink';
 import PerformanceWidget from './components/PerformanceWidget';
 import NavigationLoadingIndicator from './components/NavigationLoadingIndicator';
 import { useScrollRestoration } from './hooks/useScrollRestoration';
-// import { preloadComponents } from './components/LazyComponents';
+import { preloadComponents } from './components/LazyComponents';
 import { performanceOptimizer } from './utils/performanceOptimizer';
+import LazyRoute, { createLazyRoute, LazyRouteConfigs } from './components/LazyRoute';
+import { lazyLoadingOptimizer } from './utils/lazyLoadingOptimizer';
 
 import './utils/apiTest'; // Auto-run API tests
 import './styles/navigation-hover-effects.css'; // Navigation hover effects
@@ -26,23 +28,23 @@ import './styles/navigation-performance.css'; // Navigation performance optimiza
 import './styles/mobile-first.css'; // Mobile-first responsive design
 import './styles/accessibility-enhanced.css'; // Professional accessibility enhancements
 
-// Lazy load pages for code splitting
-const Dashboard = lazy(() => import('./pages/ModernDashboardPage'));
-const Analytics = lazy(() => import('./pages/Analytics'));
-const Login = lazy(() => import('./pages/Login'));
-const Clients = lazy(() => import('./pages/Clients'));
-const Agents = lazy(() => import('./pages/Agents'));
-const Ledger = lazy(() => import('./pages/Ledger'));
-const Settings = lazy(() => import('./pages/Settings'));
-const Reports = lazy(() => import('./pages/Reports'));
-const BusinessAnalytics = lazy(() => import('./pages/BusinessAnalytics'));
-const SystemMonitor = lazy(() => import('./pages/SystemMonitor'));
-const Transactions = lazy(() => import('./pages/Transactions'));
-const AddTransaction = lazy(() => import('./pages/AddTransaction'));
-const Accounting = lazy(() => import('./pages/Accounting'));
-const RevenueAnalytics = lazy(() => import('./pages/RevenueAnalytics'));
-const Future = lazy(() => import('./pages/Future'));
-const TabShowcase = lazy(() => import('./components/TabShowcase'));
+// Lazy load pages for code splitting with enhanced configurations
+const Dashboard = createLazyRoute(() => import('./pages/ModernDashboardPage'), LazyRouteConfigs.critical);
+const Analytics = createLazyRoute(() => import('./pages/Analytics'), LazyRouteConfigs.standard);
+const Login = createLazyRoute(() => import('./pages/Login'), LazyRouteConfigs.critical);
+const Clients = createLazyRoute(() => import('./pages/Clients'), LazyRouteConfigs.standard);
+const Agents = createLazyRoute(() => import('./pages/Agents'), LazyRouteConfigs.standard);
+const Ledger = createLazyRoute(() => import('./pages/Ledger'), LazyRouteConfigs.standard);
+const Settings = createLazyRoute(() => import('./pages/Settings'), LazyRouteConfigs.standard);
+const Reports = createLazyRoute(() => import('./pages/Reports'), LazyRouteConfigs.heavy);
+const BusinessAnalytics = createLazyRoute(() => import('./pages/BusinessAnalytics'), LazyRouteConfigs.heavy);
+const SystemMonitor = createLazyRoute(() => import('./pages/SystemMonitor'), LazyRouteConfigs.heavy);
+const Transactions = createLazyRoute(() => import('./pages/Transactions'), LazyRouteConfigs.standard);
+const AddTransaction = createLazyRoute(() => import('./pages/AddTransaction'), LazyRouteConfigs.standard);
+const Accounting = createLazyRoute(() => import('./pages/Accounting'), LazyRouteConfigs.standard);
+const RevenueAnalytics = createLazyRoute(() => import('./pages/RevenueAnalytics'), LazyRouteConfigs.heavy);
+const Future = createLazyRoute(() => import('./pages/Future'), LazyRouteConfigs.onDemand);
+const TabShowcase = createLazyRoute(() => import('./components/TabShowcase'), LazyRouteConfigs.onDemand);
 
 function App() {
   // Enable scroll restoration
@@ -51,17 +53,20 @@ function App() {
   // Preload critical components and setup performance optimization
   useEffect(() => {
     // Preload critical components after initial load
-    // const timer = setTimeout(() => {
-    //   preloadComponents();
-    // }, 1000);
+    const timer = setTimeout(async () => {
+      await preloadComponents();
+      // Start optimization based on usage patterns
+      lazyLoadingOptimizer.preloadBasedOnPatterns();
+    }, 1000);
 
     // Setup performance monitoring
     performanceOptimizer.setupLazyImages();
 
     // Cleanup on unmount
     return () => {
-      // clearTimeout(timer);
+      clearTimeout(timer);
       performanceOptimizer.cleanup();
+      lazyLoadingOptimizer.cleanup();
     };
   }, []);
 

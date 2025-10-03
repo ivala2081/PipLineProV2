@@ -984,7 +984,18 @@ def get_psp_monthly_stats():
                                         last_day_data = None
                                 
                                 if last_day_data:
-                                    previous_day_kasa_top = last_day_data.get('kasa_top', 0.0)
+                                    # Ensure we get numeric values, not formatted strings
+                                    kasa_top_value = last_day_data.get('kasa_top', 0.0)
+                                    
+                                    # Convert to float, handling both numeric and string values
+                                    if isinstance(kasa_top_value, str):
+                                        # Extract numeric value from formatted strings like "FINAL: 1,168.00"
+                                        import re
+                                        numeric_match = re.search(r'[\d,]+\.?\d*', kasa_top_value.replace(',', ''))
+                                        previous_day_kasa_top = float(numeric_match.group()) if numeric_match else 0.0
+                                    else:
+                                        previous_day_kasa_top = float(kasa_top_value)
+                                        
                                     logger.info(f"Found previous day KASA TOP from daily_data for {psp.psp} on {previous_date}: {previous_day_kasa_top}")
                                 else:
                                     logger.info(f"No valid previous day data available in daily_data for {psp.psp} on {previous_date}")
@@ -996,7 +1007,14 @@ def get_psp_monthly_stats():
                                 previous_day_kasa_top = prev_day_net
                                 logger.info(f"No previous day data found for {psp.psp} on {previous_date}, using NET as KASA TOP: {previous_day_kasa_top}")
                             
-                            previous_day_tahs_tutari = float(prev_day_allocations)
+                            # Ensure we get numeric values for TAHS TUTARI
+                            if isinstance(prev_day_allocations, str):
+                                # Extract numeric value from formatted strings
+                                import re
+                                numeric_match = re.search(r'[\d,]+\.?\d*', prev_day_allocations.replace(',', ''))
+                                previous_day_tahs_tutari = float(numeric_match.group()) if numeric_match else 0.0
+                            else:
+                                previous_day_tahs_tutari = float(prev_day_allocations)
                             
                         except Exception as e:
                             logger.warning(f"Could not get previous day data for {psp.psp} on {previous_date}: {e}")
@@ -1114,8 +1132,25 @@ def get_psp_monthly_stats():
                                 last_day_data = None
                         
                         if last_day_data:
-                            last_day_kasa_top = float(last_day_data.get('kasa_top', 0.0))
-                            last_day_tahs_tutari = float(last_day_data.get('tahs_tutari', 0.0))
+                            # Ensure we get numeric values, not formatted strings
+                            kasa_top_value = last_day_data.get('kasa_top', 0.0)
+                            tahs_tutari_value = last_day_data.get('tahs_tutari', 0.0)
+                            
+                            # Convert to float, handling both numeric and string values
+                            if isinstance(kasa_top_value, str):
+                                # Extract numeric value from formatted strings like "FINAL: 1,168.00"
+                                import re
+                                numeric_match = re.search(r'[\d,]+\.?\d*', kasa_top_value.replace(',', ''))
+                                last_day_kasa_top = float(numeric_match.group()) if numeric_match else 0.0
+                            else:
+                                last_day_kasa_top = float(kasa_top_value)
+                                
+                            if isinstance(tahs_tutari_value, str):
+                                # Extract numeric value from formatted strings
+                                numeric_match = re.search(r'[\d,]+\.?\d*', tahs_tutari_value.replace(',', ''))
+                                last_day_tahs_tutari = float(numeric_match.group()) if numeric_match else 0.0
+                            else:
+                                last_day_tahs_tutari = float(tahs_tutari_value)
                             
                             # Calculate DEVIR using the formula: LAST KASA TOP - LAST TAHS TUTARI
                             rollover = last_day_kasa_top - last_day_tahs_tutari

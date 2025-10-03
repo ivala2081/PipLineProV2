@@ -21,7 +21,7 @@ import {
   Shield,
   Globe
 } from 'lucide-react';
-import MobileBottomNavigation from './MobileBottomNavigation';
+// import MobileBottomNavigation from './MobileBottomNavigation'; // Component not found
 import WorldClocks from './WorldClock';
 import { GlobalSearch } from './modern/GlobalSearch';
 
@@ -560,7 +560,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <MobileBottomNavigation />
+      {/* <MobileBottomNavigation /> */} {/* Component not found */}
     </div>
   );
 };

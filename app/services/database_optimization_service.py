@@ -121,7 +121,7 @@ class DatabaseOptimizationService:
             db.session.commit()
             logger.info("Database vacuum completed")
             return True
-            except Exception as e:
+        except Exception as e:
             logger.error(f"Database vacuum failed: {e}")
             return False
     
@@ -137,7 +137,7 @@ class DatabaseOptimizationService:
                 try:
                     result = db.session.execute(text(f"SELECT COUNT(*) FROM {table}")).fetchone()
                     stats[f"{table}_count"] = result[0] if result else 0
-        except Exception as e:
+                except Exception as e:
                     stats[f"{table}_count"] = f"Error: {e}"
             
             # Get database size (SQLite specific)

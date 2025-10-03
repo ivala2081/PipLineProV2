@@ -60,12 +60,12 @@ class Config:
         'tr': 'Türkçe'
     }
     
-    # PostgreSQL Configuration
-    POSTGRES_HOST = os.environ.get('POSTGRES_HOST', 'localhost')
+    # PostgreSQL Configuration - Use environment variables only
+    POSTGRES_HOST = os.environ.get('POSTGRES_HOST')
     POSTGRES_PORT = os.environ.get('POSTGRES_PORT', '5432')
-    POSTGRES_DB = os.environ.get('POSTGRES_DB', 'pipeline_pro')
-    POSTGRES_USER = os.environ.get('POSTGRES_USER', 'pipeline_user')
-    POSTGRES_PASSWORD = os.environ.get('POSTGRES_PASSWORD', 'pipeline_password')
+    POSTGRES_DB = os.environ.get('POSTGRES_DB')
+    POSTGRES_USER = os.environ.get('POSTGRES_USER')
+    POSTGRES_PASSWORD = os.environ.get('POSTGRES_PASSWORD')
     POSTGRES_SSL_MODE = os.environ.get('POSTGRES_SSL_MODE', 'prefer')
     
     # Database engine options will be set per environment
@@ -214,13 +214,21 @@ class ProductionConfig(Config):
         if os.environ.get('DATABASE_URL'):
             return os.environ.get('DATABASE_URL')
         
-        # Build PostgreSQL URI from components
-        host = os.environ.get('POSTGRES_HOST', 'localhost')
+        # Build PostgreSQL URI from components - require environment variables
+        host = os.environ.get('POSTGRES_HOST')
         port = os.environ.get('POSTGRES_PORT', '5432')
-        db = os.environ.get('POSTGRES_DB', 'pipeline_pro')
-        user = os.environ.get('POSTGRES_USER', 'pipeline_user')
-        password = os.environ.get('POSTGRES_PASSWORD', 'pipeline_password')
+        db = os.environ.get('POSTGRES_DB')
+        user = os.environ.get('POSTGRES_USER')
+        password = os.environ.get('POSTGRES_PASSWORD')
         ssl_mode = os.environ.get('POSTGRES_SSL_MODE', 'prefer')
+        
+        # Validate required environment variables
+        if not all([host, db, user, password]):
+            # In development, fall back to SQLite if PostgreSQL is not configured
+            if os.environ.get('FLASK_ENV') == 'development':
+                return f'sqlite:///{os.path.join(os.path.dirname(os.path.abspath(__file__)), "instance", "treasury_improved.db").replace(os.sep, "/")}'
+            else:
+                raise ValueError("Missing required PostgreSQL environment variables: POSTGRES_HOST, POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD")
         
         return f"postgresql://{user}:{password}@{host}:{port}/{db}?sslmode={ssl_mode}"
     
