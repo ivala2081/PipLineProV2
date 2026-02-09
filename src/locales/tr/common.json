@@ -1,0 +1,18 @@
+{
+  "close": "Kapat",
+  "save": "Kaydet",
+  "cancel": "İptal",
+  "delete": "Sil",
+  "edit": "Düzenle",
+  "submit": "Gönder",
+  "search": "Ara",
+  "loading": "Yükleniyor…",
+  "error": "Bir şeyler ters gitti",
+  "retry": "Tekrar dene",
+  "confirm": "Onayla",
+  "back": "Geri",
+  "next": "İleri",
+  "previous": "Önceki",
+  "yes": "Evet",
+  "no": "Hayır"
+}

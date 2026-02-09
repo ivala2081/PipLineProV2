@@ -1,0 +1,21 @@
+{
+  "sidebar": {
+    "toggle": "Kenar Çubuğunu Aç/Kapat"
+  },
+  "pagination": {
+    "previous": "Önceki",
+    "next": "Sonraki",
+    "goToPrevious": "Önceki sayfaya git",
+    "goToNext": "Sonraki sayfaya git",
+    "morePages": "Daha fazla sayfa"
+  },
+  "dialog": {
+    "close": "Kapat"
+  },
+  "sheet": {
+    "close": "Kapat"
+  },
+  "breadcrumb": {
+    "more": "Daha fazla"
+  }
+}

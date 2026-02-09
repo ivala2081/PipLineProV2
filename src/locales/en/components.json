@@ -1,0 +1,21 @@
+{
+  "sidebar": {
+    "toggle": "Toggle Sidebar"
+  },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "goToPrevious": "Go to previous page",
+    "goToNext": "Go to next page",
+    "morePages": "More pages"
+  },
+  "dialog": {
+    "close": "Close"
+  },
+  "sheet": {
+    "close": "Close"
+  },
+  "breadcrumb": {
+    "more": "More"
+  }
+}
