@@ -13,7 +13,8 @@
       "Bash(pushd:*)",
       "Bash(popd:*)",
       "Bash(del \"c:\\\\Users\\\\ACER\\\\Desktop\\\\PipLineProV2\\\\src\\\\pages\\\\modules\\\\module-1.tsx\")",
-      "Bash(ls -la \"c:\\\\Users\\\\ACER\\\\Desktop\\\\PipLineProV2\\\\src\\\\hooks\"\" 2>&1 || echo \"Directory listing failed \")"
+      "Bash(ls -la \"c:\\\\Users\\\\ACER\\\\Desktop\\\\PipLineProV2\\\\src\\\\hooks\"\" 2>&1 || echo \"Directory listing failed \")",
+      "Bash(del:*)"
     ]
   }
 }

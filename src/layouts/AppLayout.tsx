@@ -1,9 +1,11 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
+  Buildings,
   CaretUpDown,
   Check,
+  PencilSimple,
   SignOut,
   Moon,
   Sun,
@@ -12,6 +14,7 @@ import {
 
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
+import { supabase } from '@/lib/supabase'
 import {
   SidebarProvider,
   Sidebar,
@@ -34,9 +37,17 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
   Avatar,
   AvatarImage,
   AvatarFallback,
+  Button,
+  Input,
+  Label,
   Tag,
   Separator,
   useTheme,
@@ -154,17 +165,117 @@ function SidebarNav() {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Edit Profile Dialog                                                */
+/* ------------------------------------------------------------------ */
+
+function EditProfileDialog({
+  open,
+  onClose,
+}: {
+  open: boolean
+  onClose: () => void
+}) {
+  const { t } = useTranslation('pages')
+  const { user, profile, refreshProfile } = useAuth()
+  const [displayName, setDisplayName] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  // Sync state when dialog opens
+  useEffect(() => {
+    if (open) {
+      setDisplayName(profile?.display_name ?? '')
+      setError(null)
+    }
+  }, [open, profile?.display_name])
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!user) return
+
+    const trimmed = displayName.trim()
+    if (!trimmed) {
+      setError(t('layout.profile.validation.nameRequired'))
+      return
+    }
+
+    setIsSaving(true)
+    setError(null)
+
+    const { error: dbError } = await supabase
+      .from('profiles')
+      .update({ display_name: trimmed })
+      .eq('id', user.id)
+
+    if (dbError) {
+      setError(dbError.message)
+      setIsSaving(false)
+      return
+    }
+
+    await refreshProfile()
+    setIsSaving(false)
+    onClose()
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{t('layout.profile.editTitle')}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label>{t('layout.profile.email')}</Label>
+            <Input
+              value={user?.email ?? ''}
+              disabled
+              className="text-black/50"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>{t('layout.profile.displayName')}</Label>
+            <Input
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder={t('layout.profile.displayNamePlaceholder')}
+              autoFocus
+            />
+            {error && <p className="text-xs text-red-500">{error}</p>}
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isSaving}
+            >
+              {t('layout.profile.cancel')}
+            </Button>
+            <Button type="submit" variant="filled" disabled={isSaving}>
+              {isSaving ? t('layout.profile.saving') : t('layout.profile.save')}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/* ------------------------------------------------------------------ */
 /*  User Menu (sidebar footer)                                         */
 /* ------------------------------------------------------------------ */
 
 function UserMenu() {
   const { t } = useTranslation('pages')
-  const { profile, isGod, signOut } = useAuth()
+  const { user, profile, isGod, signOut } = useAuth()
   const { membership } = useOrganization()
   const navigate = useNavigate()
   const [isSigningOut, setIsSigningOut] = useState(false)
+  const [editProfileOpen, setEditProfileOpen] = useState(false)
 
-  const displayName = profile?.display_name || profile?.id?.slice(0, 8) || '?'
+  const email = user?.email ?? ''
+  const displayName = profile?.display_name || email.split('@')[0] || '?'
   const initials = displayName.charAt(0).toUpperCase()
 
   const roleBadge = isGod
@@ -179,73 +290,128 @@ function UserMenu() {
     if (isSigningOut) return
 
     setIsSigningOut(true)
-    const { error } = await signOut()
-
-    if (error) {
-      console.error('[AppLayout] Sign out error:', error)
-      setIsSigningOut(false)
-      return
+    try {
+      const { error } = await signOut()
+      if (error) {
+        console.error('[AppLayout] Sign out error:', error)
+      }
+    } finally {
+      try {
+        localStorage.removeItem('piplinepro-org')
+      } catch {
+        // ignore
+      }
+      navigate('/login', { replace: true })
     }
-
-    localStorage.removeItem('piplinepro-org')
-    navigate('/login', { replace: true })
   }
 
   return (
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              size="lg"
-              className="data-[state=open]:bg-black/8"
+    <>
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <SidebarMenuButton
+                size="lg"
+                className="data-[state=open]:bg-black/8"
+              >
+                <Avatar className="size-8">
+                  <AvatarImage src={profile?.avatar_url ?? undefined} alt={displayName} />
+                  <AvatarFallback className="text-xs font-medium">{initials}</AvatarFallback>
+                </Avatar>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">{displayName}</span>
+                  <span className="truncate text-xs text-black/50">{email}</span>
+                </div>
+                <CaretUpDown size={16} className="ml-auto text-black/60" />
+              </SidebarMenuButton>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              className="w-[--radix-dropdown-menu-trigger-width] min-w-56"
+              side="bottom"
+              align="end"
+              sideOffset={4}
             >
-              <Avatar className="size-8">
-                <AvatarImage src={profile?.avatar_url ?? undefined} alt={displayName} />
-                <AvatarFallback className="text-xs font-medium">{initials}</AvatarFallback>
-              </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">{displayName}</span>
-                {roleBadge && (
-                  <Tag variant={roleBadge.variant} className="mt-0.5 w-fit text-[10px]">
-                    {roleBadge.label}
-                  </Tag>
-                )}
-              </div>
-              <CaretUpDown size={16} className="ml-auto text-black/60" />
-            </SidebarMenuButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="w-[--radix-dropdown-menu-trigger-width] min-w-56"
-            side="bottom"
-            align="end"
-            sideOffset={4}
-          >
-            <DropdownMenuLabel className="font-normal">
-              <div className="flex flex-col gap-1">
-                <p className="text-sm font-medium">{displayName}</p>
-                {roleBadge && (
-                  <Tag variant={roleBadge.variant} className="w-fit text-[10px]">
-                    {roleBadge.label}
-                  </Tag>
-                )}
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => void handleSignOut()}>
-              <SignOut size={16} />
-              <span>{t('layout.signOut')}</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </SidebarMenuItem>
-    </SidebarMenu>
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex items-start gap-3">
+                  <Avatar className="size-9">
+                    <AvatarImage src={profile?.avatar_url ?? undefined} alt={displayName} />
+                    <AvatarFallback className="text-xs font-medium">{initials}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col gap-0.5">
+                    <p className="text-sm font-medium leading-tight">{displayName}</p>
+                    <p className="text-xs text-black/50 leading-tight">{email}</p>
+                    {roleBadge && (
+                      <Tag variant={roleBadge.variant} className="mt-1 w-fit text-[10px]">
+                        {roleBadge.label}
+                      </Tag>
+                    )}
+                  </div>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => setEditProfileOpen(true)}>
+                <PencilSimple size={16} />
+                <span>{t('layout.profile.edit')}</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => void handleSignOut()}>
+                <SignOut size={16} />
+                <span>{t('layout.signOut')}</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </SidebarMenuItem>
+      </SidebarMenu>
+
+      <EditProfileDialog
+        open={editProfileOpen}
+        onClose={() => setEditProfileOpen(false)}
+      />
+    </>
   )
 }
 
 /* ------------------------------------------------------------------ */
 /*  Header Bar                                                         */
 /* ------------------------------------------------------------------ */
+
+function HeaderOrgSwitcher() {
+  const { t } = useTranslation('pages')
+  const { currentOrg, organizations, selectOrg } = useOrganization()
+
+  if (organizations.length === 0) return null
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="flex h-8 items-center gap-1.5 rounded-md border border-black/10 bg-black/[0.02] px-2.5 text-xs font-medium text-black/70 transition-colors hover:bg-black/8 hover:text-black">
+          <Buildings size={14} />
+          <span className="max-w-[120px] truncate">{currentOrg?.name ?? t('layout.noOrganization')}</span>
+          <CaretUpDown size={12} className="text-black/40" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" sideOffset={4} className="min-w-48">
+        <DropdownMenuLabel>{t('layout.organizations')}</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {organizations.map((org) => (
+          <DropdownMenuItem
+            key={org.id}
+            onSelect={() => selectOrg(org.id)}
+          >
+            <div className="flex aspect-square size-5 items-center justify-center rounded bg-brand/10 text-brand text-[10px] font-bold">
+              {org.name.charAt(0).toUpperCase()}
+            </div>
+            <span className="truncate">{org.name}</span>
+            {org.id === currentOrg?.id && (
+              <Check size={14} className="ml-auto text-brand" />
+            )}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
 
 function HeaderBar() {
   const { t } = useTranslation('pages')
@@ -293,6 +459,8 @@ function HeaderBar() {
 
       {/* Right side controls */}
       <div className="ml-auto flex items-center gap-1">
+        <HeaderOrgSwitcher />
+        <Separator orientation="vertical" className="mx-1 h-4" />
         <button
           onClick={() => changeLocale(nextLocale)}
           className="flex h-8 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-black/70 transition-colors hover:bg-black/8 hover:text-black"

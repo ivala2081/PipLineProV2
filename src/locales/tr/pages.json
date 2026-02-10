@@ -19,7 +19,20 @@
     "organizations": "Organizasyonlar",
     "signOut": "\u00c7\u0131k\u0131\u015f Yap",
     "toggleTheme": "Tema de\u011fi\u015ftir",
-    "changeLanguage": "Dil de\u011fi\u015ftir"
+    "changeLanguage": "Dil de\u011fi\u015ftir",
+    "profile": {
+      "edit": "Profili D\u00fczenle",
+      "editTitle": "Profili D\u00fczenle",
+      "email": "E-posta",
+      "displayName": "G\u00f6r\u00fcnen Ad",
+      "displayNamePlaceholder": "Ad\u0131n\u0131z\u0131 girin",
+      "save": "Kaydet",
+      "saving": "Kaydediliyor...",
+      "cancel": "\u0130ptal",
+      "validation": {
+        "nameRequired": "G\u00f6r\u00fcnen ad zorunludur"
+      }
+    }
   },
   "placeholder": {
     "emptyTitle": "Hen\u00fcz bir \u015fey yok",
@@ -169,7 +182,116 @@
   },
   "organizations": {
     "title": "Organizasyonlar",
-    "subtitle": "Organizasyonlar\u0131 y\u00f6netin."
+    "subtitle": "T\u00fcm organizasyonlar\u0131 g\u00f6r\u00fcnt\u00fcleyin ve y\u00f6netin.",
+    "create": "Organizasyon Olu\u015ftur",
+    "active": "Aktif",
+    "inactive": "Pasif",
+    "backToList": "Organizasyonlara D\u00f6n",
+    "columns": {
+      "name": "Ad",
+      "slug": "Slug",
+      "members": "\u00dcyeler",
+      "status": "Durum",
+      "createdAt": "Olu\u015fturulma"
+    },
+    "empty": {
+      "title": "Hen\u00fcz organizasyon yok",
+      "description": "Ba\u015flamak i\u00e7in ilk organizasyonunuzu olu\u015fturun."
+    },
+    "tabs": {
+      "overview": "Genel Bak\u0131\u015f",
+      "members": "\u00dcyeler",
+      "invitations": "Davetiyeler",
+      "settings": "Ayarlar"
+    },
+    "overview": {
+      "name": "Organizasyon Ad\u0131",
+      "slug": "Slug",
+      "status": "Durum",
+      "members": "\u00dcyeler",
+      "createdAt": "Olu\u015fturulma Tarihi"
+    },
+    "createDialog": {
+      "title": "Organizasyon Olu\u015ftur",
+      "name": "Organizasyon Ad\u0131",
+      "namePlaceholder": "Organizasyon ad\u0131n\u0131 girin",
+      "slug": "Slug",
+      "slugPlaceholder": "url-uyumlu-slug",
+      "slugHint": "Addan otomatik olu\u015fturulur. K\u00fc\u00e7\u00fck harf ve tire.",
+      "create": "Olu\u015ftur",
+      "cancel": "\u0130ptal",
+      "creating": "Olu\u015fturuluyor..."
+    },
+    "members": {
+      "title": "\u00dcyeler",
+      "subtitle": "Organizasyon \u00fcyelerini ve rollerini y\u00f6netin.",
+      "columns": {
+        "name": "Ad",
+        "role": "Rol",
+        "joined": "Kat\u0131lma"
+      },
+      "actions": {
+        "promoteToAdmin": "Admin Yap",
+        "demoteToOperation": "Operasyona \u0130ndir",
+        "remove": "\u00dcyeyi Kald\u0131r"
+      },
+      "removeConfirm": {
+        "title": "\u00dcyeyi Kald\u0131r",
+        "description": "\"{{name}}\" \u00fcyesini bu organizasyondan kald\u0131rmak istedi\u011finize emin misiniz? Bu i\u015flem geri al\u0131namaz."
+      },
+      "empty": "Bu organizasyonda \u00fcye yok."
+    },
+    "invitations": {
+      "title": "Davetiyeler",
+      "subtitle": "Bekleyen davetiyeleri y\u00f6netin.",
+      "invite": "\u00dcye Davet Et",
+      "columns": {
+        "email": "E-posta",
+        "role": "Rol",
+        "status": "Durum",
+        "createdAt": "G\u00f6nderilme",
+        "expiresAt": "Biti\u015f"
+      },
+      "statuses": {
+        "pending": "Bekliyor",
+        "accepted": "Kabul Edildi",
+        "expired": "S\u00fcresi Doldu"
+      },
+      "revoke": "\u0130ptal Et",
+      "revokeConfirm": {
+        "title": "Daveti \u0130ptal Et",
+        "description": "\"{{email}}\" i\u00e7in g\u00f6nderilen daveti iptal etmek istedi\u011finize emin misiniz?"
+      },
+      "empty": "Hen\u00fcz davetiye yok."
+    },
+    "inviteDialog": {
+      "title": "\u00dcye Davet Et",
+      "email": "E-posta Adresi",
+      "emailPlaceholder": "kullanici@ornek.com",
+      "role": "Rol",
+      "roleAdmin": "Admin",
+      "roleOperation": "Operasyon",
+      "invite": "Davet G\u00f6nder",
+      "cancel": "\u0130ptal",
+      "sending": "G\u00f6nderiliyor..."
+    },
+    "settings": {
+      "title": "Organizasyon Ayarlar\u0131",
+      "subtitle": "Organizasyon bilgilerini g\u00fcncelleyin.",
+      "name": "Organizasyon Ad\u0131",
+      "isActive": "Organizasyon aktif",
+      "save": "De\u011fi\u015fiklikleri Kaydet",
+      "saving": "Kaydediliyor..."
+    },
+    "toast": {
+      "created": "Organizasyon ba\u015far\u0131yla olu\u015fturuldu",
+      "updated": "Organizasyon ba\u015far\u0131yla g\u00fcncellendi",
+      "memberRemoved": "\u00dcye ba\u015far\u0131yla kald\u0131r\u0131ld\u0131",
+      "roleUpdated": "\u00dcye rol\u00fc ba\u015far\u0131yla g\u00fcncellendi",
+      "invited": "Davet ba\u015far\u0131yla g\u00f6nderildi",
+      "invitationRevoked": "Davet ba\u015far\u0131yla iptal edildi",
+      "error": "Bir hata olu\u015ftu. L\u00fctfen tekrar deneyin."
+    }
   },
   "login": {
     "brand": "PipLinePro",

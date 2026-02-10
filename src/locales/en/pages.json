@@ -19,7 +19,20 @@
     "organizations": "Organizations",
     "signOut": "Sign Out",
     "toggleTheme": "Toggle theme",
-    "changeLanguage": "Change language"
+    "changeLanguage": "Change language",
+    "profile": {
+      "edit": "Edit Profile",
+      "editTitle": "Edit Profile",
+      "email": "Email",
+      "displayName": "Display Name",
+      "displayNamePlaceholder": "Enter your name",
+      "save": "Save",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "validation": {
+        "nameRequired": "Display name is required"
+      }
+    }
   },
   "placeholder": {
     "emptyTitle": "Nothing here yet",
@@ -169,7 +182,116 @@
   },
   "organizations": {
     "title": "Organizations",
-    "subtitle": "Manage organizations."
+    "subtitle": "View and manage all organizations.",
+    "create": "Create Organization",
+    "active": "Active",
+    "inactive": "Inactive",
+    "backToList": "Back to Organizations",
+    "columns": {
+      "name": "Name",
+      "slug": "Slug",
+      "members": "Members",
+      "status": "Status",
+      "createdAt": "Created"
+    },
+    "empty": {
+      "title": "No organizations yet",
+      "description": "Create your first organization to get started."
+    },
+    "tabs": {
+      "overview": "Overview",
+      "members": "Members",
+      "invitations": "Invitations",
+      "settings": "Settings"
+    },
+    "overview": {
+      "name": "Organization Name",
+      "slug": "Slug",
+      "status": "Status",
+      "members": "Members",
+      "createdAt": "Created At"
+    },
+    "createDialog": {
+      "title": "Create Organization",
+      "name": "Organization Name",
+      "namePlaceholder": "Enter organization name",
+      "slug": "Slug",
+      "slugPlaceholder": "url-safe-slug",
+      "slugHint": "Auto-generated from name. Lowercase, hyphens only.",
+      "create": "Create",
+      "cancel": "Cancel",
+      "creating": "Creating..."
+    },
+    "members": {
+      "title": "Members",
+      "subtitle": "Manage organization members and their roles.",
+      "columns": {
+        "name": "Name",
+        "role": "Role",
+        "joined": "Joined"
+      },
+      "actions": {
+        "promoteToAdmin": "Promote to Admin",
+        "demoteToOperation": "Demote to Operation",
+        "remove": "Remove Member"
+      },
+      "removeConfirm": {
+        "title": "Remove Member",
+        "description": "Are you sure you want to remove \"{{name}}\" from this organization? This action cannot be undone."
+      },
+      "empty": "No members in this organization."
+    },
+    "invitations": {
+      "title": "Invitations",
+      "subtitle": "Manage pending invitations.",
+      "invite": "Invite Member",
+      "columns": {
+        "email": "Email",
+        "role": "Role",
+        "status": "Status",
+        "createdAt": "Sent",
+        "expiresAt": "Expires"
+      },
+      "statuses": {
+        "pending": "Pending",
+        "accepted": "Accepted",
+        "expired": "Expired"
+      },
+      "revoke": "Revoke",
+      "revokeConfirm": {
+        "title": "Revoke Invitation",
+        "description": "Are you sure you want to revoke the invitation for \"{{email}}\"?"
+      },
+      "empty": "No invitations yet."
+    },
+    "inviteDialog": {
+      "title": "Invite Member",
+      "email": "Email Address",
+      "emailPlaceholder": "user@example.com",
+      "role": "Role",
+      "roleAdmin": "Admin",
+      "roleOperation": "Operation",
+      "invite": "Send Invitation",
+      "cancel": "Cancel",
+      "sending": "Sending..."
+    },
+    "settings": {
+      "title": "Organization Settings",
+      "subtitle": "Update organization details.",
+      "name": "Organization Name",
+      "isActive": "Organization is active",
+      "save": "Save Changes",
+      "saving": "Saving..."
+    },
+    "toast": {
+      "created": "Organization created successfully",
+      "updated": "Organization updated successfully",
+      "memberRemoved": "Member removed successfully",
+      "roleUpdated": "Member role updated successfully",
+      "invited": "Invitation sent successfully",
+      "invitationRevoked": "Invitation revoked successfully",
+      "error": "An error occurred. Please try again."
+    }
   },
   "login": {
     "brand": "PipLinePro",

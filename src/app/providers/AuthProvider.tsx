@@ -4,6 +4,7 @@ import {
   useEffect,
   useState,
   useCallback,
+  useRef,
   type ReactNode,
 } from 'react'
 import type { User, Session, AuthError } from '@supabase/supabase-js'
@@ -51,55 +52,100 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading: true,
   })
 
-  /* ---- Fetch profile from profiles table -------------------------- */
-  const fetchProfile = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-    return data as Profile | null
-  }, [])
+  // Counter to cancel stale profile fetches when user changes
+  const profileFetchId = useRef(0)
 
-  /* ---- Bootstrap: get current session + listen for changes -------- */
+  /* ---- 1. Listen for auth state changes (user/session only) ------- */
   useEffect(() => {
     let mounted = true
 
-    // Listen for auth state changes — the INITIAL_SESSION event fires
-    // almost immediately with the session from localStorage (no network).
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return
 
-      // Unblock the UI immediately — don't wait for profile fetch
+      if (import.meta.env.DEV) {
+        console.debug('[AuthProvider] onAuthStateChange:', event, {
+          hasSession: Boolean(session),
+          userId: session?.user?.id ?? null,
+        })
+      }
+
+      // Only update user/session here — profile is handled separately
       setState((prev) => ({
         user: session?.user ?? null,
         session,
-        profile: prev.profile,
+        profile: session?.user ? prev.profile : null,
         isLoading: false,
       }))
-
-      // Fetch profile in the background
-      if (session?.user) {
-        try {
-          const profile = await fetchProfile(session.user.id)
-          if (mounted) {
-            setState((prev) => ({ ...prev, profile }))
-          }
-        } catch {
-          // Profile fetch failed — continue without it
-        }
-      } else {
-        setState((prev) => ({ ...prev, profile: null }))
-      }
     })
 
     return () => {
       mounted = false
       subscription.unsubscribe()
     }
-  }, [fetchProfile])
+  }, [])
+
+  /* ---- 2. Fetch profile when user.id changes (decoupled) ---------- */
+  useEffect(() => {
+    const userId = state.user?.id
+    if (!userId) return
+
+    // Increment to invalidate any in-flight fetch from a previous cycle
+    const currentFetchId = ++profileFetchId.current
+
+    const fetchWithRetry = async () => {
+      const MAX_ATTEMPTS = 3
+      const RETRY_DELAY = 800
+
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        // Bail if a newer fetch cycle started (user changed)
+        if (profileFetchId.current !== currentFetchId) return
+
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single()
+
+        if (import.meta.env.DEV) {
+          console.debug(`[AuthProvider] fetchProfile attempt ${attempt}/${MAX_ATTEMPTS}:`, {
+            userId,
+            data: data ? { id: data.id, system_role: (data as Profile).system_role } : null,
+            error: error?.message,
+          })
+        }
+
+        if (data && profileFetchId.current === currentFetchId) {
+          setState((prev) => ({ ...prev, profile: data as Profile }))
+          return
+        }
+
+        if (error) {
+          console.error(
+            `[AuthProvider] fetchProfile attempt ${attempt}/${MAX_ATTEMPTS}:`,
+            error.message,
+            error.details,
+            error.hint,
+          )
+        }
+
+        // Wait before retrying (skip delay on last attempt)
+        if (attempt < MAX_ATTEMPTS) {
+          await new Promise((r) => setTimeout(r, RETRY_DELAY))
+        }
+      }
+
+      console.error('[AuthProvider] All profile fetch attempts failed for user:', userId)
+    }
+
+    fetchWithRetry()
+
+    return () => {
+      // Invalidate this fetch cycle on cleanup
+      profileFetchId.current++
+    }
+  }, [state.user?.id])
 
   /* ---- Auth actions ---------------------------------------------- */
   /* No signUp — users are created by God admins via Supabase dashboard. */
@@ -110,7 +156,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signOut = useCallback(async () => {
-    const { error } = await supabase.auth.signOut()
+    // Optimistically clear local auth state so route guards redirect immediately,
+    // even if the network call to revoke tokens fails.
+    setState({
+      user: null,
+      session: null,
+      profile: null,
+      isLoading: false,
+    })
+
+    // Best-effort: clear org selection (avoid cross-user leakage)
+    try {
+      localStorage.removeItem('piplinepro-org')
+    } catch {
+      // ignore
+    }
+
+    // Prefer local sign-out (reliable offline / avoids global revoke surprises)
+    const { error } = await supabase.auth.signOut({ scope: 'local' })
+
+    if (import.meta.env.DEV) {
+      console.debug('[AuthProvider] signOut(scope=local):', error ?? 'ok')
+    }
     return { error }
   }, [])
 
@@ -128,9 +195,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshProfile = useCallback(async () => {
     if (!state.user) return
-    const profile = await fetchProfile(state.user.id)
-    setState((prev) => ({ ...prev, profile }))
-  }, [state.user, fetchProfile])
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', state.user.id)
+      .single()
+    if (data) {
+      setState((prev) => ({ ...prev, profile: data as Profile }))
+    }
+  }, [state.user])
 
   /* ---- Render ---------------------------------------------------- */
 
