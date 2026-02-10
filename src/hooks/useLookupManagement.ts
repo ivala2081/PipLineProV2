@@ -24,6 +24,15 @@ interface UseLookupManagementReturn {
   refresh: () => Promise<void>
 }
 
+/**
+ * @deprecated Use useLookupMutation from '@/hooks/queries/useLookupMutation' instead.
+ * This hook will be removed in the next major version.
+ *
+ * Migration guide:
+ * - Replace `import { useLookupManagement } from '@/hooks/useLookupManagement'`
+ * - With `import { useLookupMutation } from '@/hooks/queries/useLookupMutation'`
+ * - Note: useLookupMutation uses React Query and automatically handles cache invalidation
+ */
 export function useLookupManagement(table: LookupTable): UseLookupManagementReturn {
   const { currentOrg } = useOrganization()
   const [items, setItems] = useState<LookupItem[]>([])

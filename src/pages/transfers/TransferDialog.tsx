@@ -1,10 +1,12 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
-import type { TransferRow, TransferFormData } from '@/hooks/useTransfers'
-import { computeTransfer } from '@/hooks/useTransfers'
-import type { useLookupData } from '@/hooks/useLookupData'
-import type { useTransfers } from '@/hooks/useTransfers'
+import type { TransferRow } from '@/hooks/useTransfers'
+import type { useLookupQueries } from '@/hooks/queries/useLookupQueries'
+import type { useTransfersQuery } from '@/hooks/queries/useTransfersQuery'
 import { useToast } from '@/hooks/useToast'
+import { transferFormSchema, type TransferFormValues } from '@/schemas/transferSchema'
 import { basicInputClasses, disabledInputClasses, focusInputClasses } from '@ds/components/Input'
 import {
   Dialog,
@@ -28,8 +30,8 @@ interface TransferDialogProps {
   open: boolean
   onClose: () => void
   transfer: TransferRow | null
-  lookupData: ReturnType<typeof useLookupData>
-  onSubmit: ReturnType<typeof useTransfers>
+  lookupData: ReturnType<typeof useLookupQueries>
+  onSubmit: ReturnType<typeof useTransfersQuery>
 }
 
 export function TransferDialog({
@@ -43,55 +45,60 @@ export function TransferDialog({
   const { toast } = useToast()
   const isEdit = !!transfer
 
-  const [fullName, setFullName] = useState('')
-  const [paymentMethodId, setPaymentMethodId] = useState('')
-  const [transferDate, setTransferDate] = useState('')
-  const [categoryId, setCategoryId] = useState('')
-  const [rawAmount, setRawAmount] = useState('')
-  const [currency, setCurrency] = useState<'TL' | 'USD'>('TL')
-  const [pspId, setPspId] = useState('')
-  const [typeId, setTypeId] = useState('')
-  const [crmId, setCrmId] = useState('')
-  const [metaId, setMetaId] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const form = useForm<TransferFormValues>({
+    resolver: zodResolver(transferFormSchema),
+    defaultValues: {
+      full_name: '',
+      payment_method_id: '',
+      transfer_date: new Date().toISOString().slice(0, 16),
+      category_id: '',
+      raw_amount: 0,
+      currency: 'TL',
+      psp_id: '',
+      type_id: '',
+      crm_id: '',
+      meta_id: '',
+    },
+  })
 
   // Reset form when dialog opens/closes or transfer changes
   useEffect(() => {
     if (open) {
       if (transfer) {
-        setFullName(transfer.full_name)
-        setPaymentMethodId(transfer.payment_method_id)
-        setTransferDate(
-          transfer.transfer_date
+        form.reset({
+          full_name: transfer.full_name,
+          payment_method_id: transfer.payment_method_id,
+          transfer_date: transfer.transfer_date
             ? new Date(transfer.transfer_date).toISOString().slice(0, 16)
             : '',
-        )
-        setCategoryId(transfer.category_id)
-        setRawAmount(String(Math.abs(transfer.amount)))
-        setCurrency(transfer.currency)
-        setPspId(transfer.psp_id)
-        setTypeId(transfer.type_id)
-        setCrmId(transfer.crm_id ?? '')
-        setMetaId(transfer.meta_id ?? '')
+          category_id: transfer.category_id,
+          raw_amount: Math.abs(transfer.amount),
+          currency: transfer.currency,
+          psp_id: transfer.psp_id,
+          type_id: transfer.type_id,
+          crm_id: transfer.crm_id ?? '',
+          meta_id: transfer.meta_id ?? '',
+        })
       } else {
-        setFullName('')
-        setPaymentMethodId('')
-        setTransferDate(new Date().toISOString().slice(0, 16))
-        setCategoryId('')
-        setRawAmount('')
-        setCurrency('TL')
-        setPspId('')
-        setTypeId('')
-        setCrmId('')
-        setMetaId('')
+        form.reset({
+          full_name: '',
+          payment_method_id: '',
+          transfer_date: new Date().toISOString().slice(0, 16),
+          category_id: '',
+          raw_amount: 0,
+          currency: 'TL',
+          psp_id: '',
+          type_id: '',
+          crm_id: '',
+          meta_id: '',
+        })
       }
-      setErrors({})
-      setSaving(false)
     }
-  }, [open, transfer])
+  }, [open, transfer, form])
 
-  // Live commission/net computation
+  // Watch category/psp for submission computation
+  const [categoryId, pspId] = form.watch(['category_id', 'psp_id'])
+
   const selectedCategory = useMemo(
     () => lookupData.categories.find((c) => c.id === categoryId),
     [lookupData.categories, categoryId],
@@ -101,63 +108,43 @@ export function TransferDialog({
     [lookupData.psps, pspId],
   )
 
-  const computed = useMemo(() => {
-    const amt = parseFloat(rawAmount) || 0
-    if (!selectedCategory || !selectedPsp || amt <= 0) {
-      return { amount: 0, commission: 0, net: 0 }
-    }
-    return computeTransfer(amt, selectedCategory, selectedPsp)
-  }, [rawAmount, selectedCategory, selectedPsp])
-
-  const validate = (): boolean => {
-    const newErrors: Record<string, string> = {}
-    if (!fullName.trim()) newErrors.fullName = t('transfers.validation.fullNameRequired')
-    if (!paymentMethodId) newErrors.paymentMethod = t('transfers.validation.paymentMethodRequired')
-    if (!transferDate) newErrors.date = t('transfers.validation.dateRequired')
-    if (!categoryId) newErrors.category = t('transfers.validation.categoryRequired')
-    const amt = parseFloat(rawAmount)
-    if (!rawAmount || isNaN(amt)) newErrors.amount = t('transfers.validation.amountRequired')
-    else if (amt <= 0) newErrors.amount = t('transfers.validation.amountPositive')
-    if (!pspId) newErrors.psp = t('transfers.validation.pspRequired')
-    if (!typeId) newErrors.type = t('transfers.validation.typeRequired')
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const handleSubmit = async () => {
-    if (!validate() || !selectedCategory || !selectedPsp) return
-
-    setSaving(true)
-
-    const formData: TransferFormData = {
-      full_name: fullName.trim(),
-      payment_method_id: paymentMethodId,
-      transfer_date: new Date(transferDate).toISOString(),
-      category_id: categoryId,
-      raw_amount: parseFloat(rawAmount),
-      currency,
-      psp_id: pspId,
-      type_id: typeId,
-      crm_id: crmId.trim() || undefined,
-      meta_id: metaId.trim() || undefined,
-    }
-
-    const result = isEdit
-      ? await onSubmit.updateTransfer(transfer!.id, formData, selectedCategory, selectedPsp)
-      : await onSubmit.createTransfer(formData, selectedCategory, selectedPsp)
-
-    setSaving(false)
-
-    if (result.error) {
+  const handleSubmit = form.handleSubmit(async (data) => {
+    if (!selectedCategory || !selectedPsp) {
       toast({ title: t('transfers.toast.error'), variant: 'error' })
-    } else {
-      toast({
-        title: isEdit ? t('transfers.toast.updated') : t('transfers.toast.created'),
-        variant: 'success',
-      })
-      onClose()
+      return
     }
-  }
+
+    try {
+      const formData = {
+        ...data,
+        transfer_date: new Date(data.transfer_date).toISOString(),
+      }
+
+      if (isEdit && transfer) {
+        await onSubmit.updateTransfer(
+          transfer.id,
+          formData,
+          selectedCategory,
+          selectedPsp,
+        )
+        toast({
+          title: t('transfers.toast.updated'),
+          variant: 'success',
+        })
+      } else {
+        await onSubmit.createTransfer(formData, selectedCategory, selectedPsp)
+        toast({
+          title: t('transfers.toast.created'),
+          variant: 'success',
+        })
+      }
+      onClose()
+    } catch (error) {
+      toast({ title: t('transfers.toast.error'), variant: 'error' })
+    }
+  })
+
+  const isSubmitting = onSubmit.isCreating || onSubmit.isUpdating
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -166,27 +153,35 @@ export function TransferDialog({
           <DialogTitle>
             {isEdit ? t('transfers.editTransfer') : t('transfers.addTransfer')}
           </DialogTitle>
-          <DialogDescription>
-            {t('transfers.subtitle')}
-          </DialogDescription>
+          <DialogDescription>{t('transfers.subtitle')}</DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {/* Full Name */}
           <div className="sm:col-span-2">
-            <Label className="mb-1 text-sm font-medium">{t('transfers.form.fullName')}</Label>
+            <Label className="mb-1 text-sm font-medium">
+              {t('transfers.form.fullName')}
+            </Label>
             <Input
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
+              {...form.register('full_name')}
               placeholder={t('transfers.form.fullNamePlaceholder')}
             />
-            {errors.fullName && <p className="mt-1 text-xs text-red-500">{errors.fullName}</p>}
+            {form.formState.errors.full_name && (
+              <p className="mt-1 text-xs text-red-500">
+                {form.formState.errors.full_name.message}
+              </p>
+            )}
           </div>
 
           {/* Payment Method */}
           <div>
-            <Label className="mb-1 text-sm font-medium">{t('transfers.form.paymentMethod')}</Label>
-            <Select value={paymentMethodId} onValueChange={setPaymentMethodId}>
+            <Label className="mb-1 text-sm font-medium">
+              {t('transfers.form.paymentMethod')}
+            </Label>
+            <Select
+              value={form.watch('payment_method_id')}
+              onValueChange={(value) => form.setValue('payment_method_id', value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder={t('transfers.form.selectPaymentMethod')} />
               </SelectTrigger>
@@ -198,16 +193,21 @@ export function TransferDialog({
                 ))}
               </SelectContent>
             </Select>
-            {errors.paymentMethod && <p className="mt-1 text-xs text-red-500">{errors.paymentMethod}</p>}
+            {form.formState.errors.payment_method_id && (
+              <p className="mt-1 text-xs text-red-500">
+                {form.formState.errors.payment_method_id.message}
+              </p>
+            )}
           </div>
 
           {/* Date & Time */}
           <div>
-            <Label className="mb-1 text-sm font-medium">{t('transfers.form.date')}</Label>
+            <Label className="mb-1 text-sm font-medium">
+              {t('transfers.form.date')}
+            </Label>
             <input
               type="datetime-local"
-              value={transferDate}
-              onChange={(e) => setTransferDate(e.target.value)}
+              {...form.register('transfer_date')}
               className={cn(
                 basicInputClasses,
                 disabledInputClasses,
@@ -215,13 +215,22 @@ export function TransferDialog({
                 'w-full',
               )}
             />
-            {errors.date && <p className="mt-1 text-xs text-red-500">{errors.date}</p>}
+            {form.formState.errors.transfer_date && (
+              <p className="mt-1 text-xs text-red-500">
+                {form.formState.errors.transfer_date.message}
+              </p>
+            )}
           </div>
 
           {/* Category */}
           <div>
-            <Label className="mb-1 text-sm font-medium">{t('transfers.form.category')}</Label>
-            <Select value={categoryId} onValueChange={setCategoryId}>
+            <Label className="mb-1 text-sm font-medium">
+              {t('transfers.form.category')}
+            </Label>
+            <Select
+              value={form.watch('category_id')}
+              onValueChange={(value) => form.setValue('category_id', value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder={t('transfers.form.selectCategory')} />
               </SelectTrigger>
@@ -233,28 +242,46 @@ export function TransferDialog({
                 ))}
               </SelectContent>
             </Select>
-            {errors.category && <p className="mt-1 text-xs text-red-500">{errors.category}</p>}
+            {form.formState.errors.category_id && (
+              <p className="mt-1 text-xs text-red-500">
+                {form.formState.errors.category_id.message}
+              </p>
+            )}
           </div>
 
           {/* Amount */}
           <div>
-            <Label className="mb-1 text-sm font-medium">{t('transfers.form.amount')}</Label>
+            <Label className="mb-1 text-sm font-medium">
+              {t('transfers.form.amount')}
+            </Label>
             <Input
               type="number"
               min="0"
               step="0.01"
-              value={rawAmount}
-              onChange={(e) => setRawAmount(e.target.value)}
+              {...form.register('raw_amount')}
               placeholder="0.00"
             />
-            <p className="mt-1 text-xs text-black/40">{t('transfers.form.amountHint')}</p>
-            {errors.amount && <p className="mt-1 text-xs text-red-500">{errors.amount}</p>}
+            <p className="mt-1 text-xs text-black/40">
+              {t('transfers.form.amountHint')}
+            </p>
+            {form.formState.errors.raw_amount && (
+              <p className="mt-1 text-xs text-red-500">
+                {form.formState.errors.raw_amount.message}
+              </p>
+            )}
           </div>
 
           {/* Currency */}
           <div>
-            <Label className="mb-1 text-sm font-medium">{t('transfers.form.currency')}</Label>
-            <Select value={currency} onValueChange={(v) => setCurrency(v as 'TL' | 'USD')}>
+            <Label className="mb-1 text-sm font-medium">
+              {t('transfers.form.currency')}
+            </Label>
+            <Select
+              value={form.watch('currency')}
+              onValueChange={(value) =>
+                form.setValue('currency', value as 'TL' | 'USD')
+              }
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -267,8 +294,13 @@ export function TransferDialog({
 
           {/* PSP */}
           <div>
-            <Label className="mb-1 text-sm font-medium">{t('transfers.form.psp')}</Label>
-            <Select value={pspId} onValueChange={setPspId}>
+            <Label className="mb-1 text-sm font-medium">
+              {t('transfers.form.psp')}
+            </Label>
+            <Select
+              value={form.watch('psp_id')}
+              onValueChange={(value) => form.setValue('psp_id', value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder={t('transfers.form.selectPsp')} />
               </SelectTrigger>
@@ -280,13 +312,22 @@ export function TransferDialog({
                 ))}
               </SelectContent>
             </Select>
-            {errors.psp && <p className="mt-1 text-xs text-red-500">{errors.psp}</p>}
+            {form.formState.errors.psp_id && (
+              <p className="mt-1 text-xs text-red-500">
+                {form.formState.errors.psp_id.message}
+              </p>
+            )}
           </div>
 
           {/* Type */}
           <div>
-            <Label className="mb-1 text-sm font-medium">{t('transfers.form.type')}</Label>
-            <Select value={typeId} onValueChange={setTypeId}>
+            <Label className="mb-1 text-sm font-medium">
+              {t('transfers.form.type')}
+            </Label>
+            <Select
+              value={form.watch('type_id')}
+              onValueChange={(value) => form.setValue('type_id', value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder={t('transfers.form.selectType')} />
               </SelectTrigger>
@@ -298,59 +339,48 @@ export function TransferDialog({
                 ))}
               </SelectContent>
             </Select>
-            {errors.type && <p className="mt-1 text-xs text-red-500">{errors.type}</p>}
-          </div>
-
-          {/* Commission (read-only) */}
-          <div>
-            <Label className="mb-1 text-sm font-medium">{t('transfers.form.commission')}</Label>
-            <div className="rounded-2xl bg-black/5 px-5 py-4 text-lg text-black/60">
-              {computed.commission.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </div>
-            <p className="mt-1 text-xs text-black/40">{t('transfers.form.commissionAuto')}</p>
-          </div>
-
-          {/* Net (read-only) */}
-          <div>
-            <Label className="mb-1 text-sm font-medium">{t('transfers.form.net')}</Label>
-            <div className={cn(
-              'rounded-2xl bg-black/5 px-5 py-4 text-lg',
-              computed.net >= 0 ? 'text-green-600' : 'text-red-600',
-            )}>
-              {computed.net.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </div>
-            <p className="mt-1 text-xs text-black/40">{t('transfers.form.netAuto')}</p>
+            {form.formState.errors.type_id && (
+              <p className="mt-1 text-xs text-red-500">
+                {form.formState.errors.type_id.message}
+              </p>
+            )}
           </div>
 
           {/* CRM ID */}
           <div>
-            <Label className="mb-1 text-sm font-medium">{t('transfers.form.crmId')}</Label>
+            <Label className="mb-1 text-sm font-medium">
+              {t('transfers.form.crmId')}
+            </Label>
             <Input
-              value={crmId}
-              onChange={(e) => setCrmId(e.target.value)}
+              {...form.register('crm_id')}
               placeholder={t('transfers.form.crmIdPlaceholder')}
             />
           </div>
 
           {/* META ID */}
           <div>
-            <Label className="mb-1 text-sm font-medium">{t('transfers.form.metaId')}</Label>
+            <Label className="mb-1 text-sm font-medium">
+              {t('transfers.form.metaId')}
+            </Label>
             <Input
-              value={metaId}
-              onChange={(e) => setMetaId(e.target.value)}
+              {...form.register('meta_id')}
               placeholder={t('transfers.form.metaIdPlaceholder')}
             />
           </div>
-        </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            {t('transfers.form.cancel')}
-          </Button>
-          <Button variant="filled" onClick={handleSubmit} disabled={saving}>
-            {saving ? t('transfers.form.saving') : t('transfers.form.save')}
-          </Button>
-        </DialogFooter>
+          <div className="sm:col-span-2">
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={onClose}>
+                {t('transfers.form.cancel')}
+              </Button>
+              <Button type="submit" variant="filled" disabled={isSubmitting}>
+                {isSubmitting
+                  ? t('transfers.form.saving')
+                  : t('transfers.form.save')}
+              </Button>
+            </DialogFooter>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   )

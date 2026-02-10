@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { Plus } from '@phosphor-icons/react'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
-import { useLookupData } from '@/hooks/useLookupData'
-import { useTransfers } from '@/hooks/useTransfers'
+import { useLookupQueries } from '@/hooks/queries/useLookupQueries'
+import { useTransfersQuery } from '@/hooks/queries/useTransfersQuery'
 import type { TransferRow } from '@/hooks/useTransfers'
 import { Button, Tabs, TabsList, TabsTrigger, TabsContent } from '@ds'
 import { TransfersTable } from './TransfersTable'
@@ -18,8 +18,8 @@ export function TransfersPage() {
   const { membership } = useOrganization()
   const isAdmin = isGod || membership?.role === 'admin'
 
-  const lookupData = useLookupData()
-  const transfers = useTransfers()
+  const lookupData = useLookupQueries()
+  const transfers = useTransfersQuery()
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingTransfer, setEditingTransfer] = useState<TransferRow | null>(null)
@@ -86,7 +86,7 @@ export function TransfersPage() {
           </TabsList>
           <TabsContent value="transfers">{tableContent}</TabsContent>
           <TabsContent value="settings">
-            <LookupSettings onLookupChange={lookupData.refresh} />
+            <LookupSettings />
           </TabsContent>
         </Tabs>
       ) : (

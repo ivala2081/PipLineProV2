@@ -1,4 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { queryClient } from '@/lib/queryClient'
 import { ThemeProvider } from '@/app/providers/ThemeProvider'
 import { AuthProvider, useAuth } from '@/app/providers/AuthProvider'
 import { OrganizationProvider } from '@/app/providers/OrganizationProvider'
@@ -52,54 +55,57 @@ function LoadingScreen() {
 
 export function App() {
   return (
-    <ThemeProvider defaultTheme="light">
-      <AppToastProvider>
-        <AuthProvider>
-          <Routes>
-          <Route
-            path="/login"
-            element={
-              <PublicRoute>
-                <LoginPage />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/forgot-password"
-            element={
-              <PublicRoute>
-                <ForgotPasswordPage />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/reset-password"
-            element={<ResetPasswordPage />}
-          />
-          <Route
-            path="/*"
-            element={
-              <PrivateRoute>
-                <OrganizationProvider>
-                  <AppLayout>
-                    <Routes>
-                      <Route path="/" element={<DashboardPage />} />
-                      <Route path="/transfers" element={<TransfersPage />} />
-                      <Route path="/module-2" element={<Module2Page />} />
-                      <Route path="/module-3" element={<Module3Page />} />
-                      <Route path="/members" element={<MembersPage />} />
-                      <Route path="/invitations" element={<InvitationsPage />} />
-                      <Route path="/organizations" element={<OrganizationsPage />} />
-                      <Route path="*" element={<Navigate to="/" replace />} />
-                    </Routes>
-                  </AppLayout>
-                </OrganizationProvider>
-              </PrivateRoute>
-            }
-          />
-          </Routes>
-        </AuthProvider>
-      </AppToastProvider>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="light">
+        <AppToastProvider>
+          <AuthProvider>
+            <Routes>
+            <Route
+              path="/login"
+              element={
+                <PublicRoute>
+                  <LoginPage />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/forgot-password"
+              element={
+                <PublicRoute>
+                  <ForgotPasswordPage />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/reset-password"
+              element={<ResetPasswordPage />}
+            />
+            <Route
+              path="/*"
+              element={
+                <PrivateRoute>
+                  <OrganizationProvider>
+                    <AppLayout>
+                      <Routes>
+                        <Route path="/" element={<DashboardPage />} />
+                        <Route path="/transfers" element={<TransfersPage />} />
+                        <Route path="/module-2" element={<Module2Page />} />
+                        <Route path="/module-3" element={<Module3Page />} />
+                        <Route path="/members" element={<MembersPage />} />
+                        <Route path="/invitations" element={<InvitationsPage />} />
+                        <Route path="/organizations" element={<OrganizationsPage />} />
+                        <Route path="*" element={<Navigate to="/" replace />} />
+                      </Routes>
+                    </AppLayout>
+                  </OrganizationProvider>
+                </PrivateRoute>
+              }
+            />
+            </Routes>
+          </AuthProvider>
+        </AppToastProvider>
+      </ThemeProvider>
+      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+    </QueryClientProvider>
   )
 }

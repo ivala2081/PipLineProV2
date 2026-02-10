@@ -1,18 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, PencilSimple, Trash } from '@phosphor-icons/react'
-import { useLookupManagement } from '@/hooks/useLookupManagement'
+import { useLookupMutation } from '@/hooks/queries/useLookupMutation'
 import { useToast } from '@/hooks/useToast'
+import { LookupFormDialog } from './LookupFormDialog'
 import {
   Card,
   Button,
-  Input,
-  Label,
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
   Table,
   TableHeader,
   TableBody,
@@ -23,11 +17,11 @@ import {
   Separator,
 } from '@ds'
 
-interface LookupSettingsProps {
-  onLookupChange: () => Promise<void>
-}
-
-type LookupTable = 'psps' | 'transfer_categories' | 'payment_methods' | 'transfer_types'
+type LookupTable =
+  | 'psps'
+  | 'transfer_categories'
+  | 'payment_methods'
+  | 'transfer_types'
 
 interface SectionConfig {
   table: LookupTable
@@ -37,87 +31,78 @@ interface SectionConfig {
 }
 
 const sections: SectionConfig[] = [
-  { table: 'psps', titleKey: 'transfers.settings.psps', hasCommissionRate: true },
-  { table: 'transfer_categories', titleKey: 'transfers.settings.categories', hasIsDeposit: true },
+  {
+    table: 'psps',
+    titleKey: 'transfers.settings.psps',
+    hasCommissionRate: true,
+  },
+  {
+    table: 'transfer_categories',
+    titleKey: 'transfers.settings.categories',
+    hasIsDeposit: true,
+  },
   { table: 'payment_methods', titleKey: 'transfers.settings.paymentMethods' },
   { table: 'transfer_types', titleKey: 'transfers.settings.types' },
 ]
 
-function LookupSection({
-  config,
-  onLookupChange,
-}: {
-  config: SectionConfig
-  onLookupChange: () => Promise<void>
-}) {
+function LookupSection({ config }: { config: SectionConfig }) {
   const { t } = useTranslation('pages')
   const { toast } = useToast()
-  const { items, createItem, updateItem, deleteItem } = useLookupManagement(config.table)
+  const { items, createItem, updateItem, deleteItem, isCreating, isUpdating } =
+    useLookupMutation(config.table)
 
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [name, setName] = useState('')
-  const [commissionRate, setCommissionRate] = useState('')
-  const [isDeposit, setIsDeposit] = useState(true)
-  const [saving, setSaving] = useState(false)
+  const [editingItem, setEditingItem] = useState<Record<string, unknown> | null>(
+    null,
+  )
 
   const openAdd = () => {
-    setEditingId(null)
-    setName('')
-    setCommissionRate('')
-    setIsDeposit(true)
+    setEditingItem(null)
     setDialogOpen(true)
   }
 
   const openEdit = (item: Record<string, unknown>) => {
-    setEditingId(item.id as string)
-    setName(item.name as string)
-    if (config.hasCommissionRate) {
-      setCommissionRate(String(((item.commission_rate as number) ?? 0) * 100))
-    }
-    if (config.hasIsDeposit) {
-      setIsDeposit((item.is_deposit as boolean) ?? true)
-    }
+    setEditingItem(item)
     setDialogOpen(true)
   }
 
-  const handleSave = async () => {
-    if (!name.trim()) return
-    setSaving(true)
-
-    const data: Record<string, unknown> = { name: name.trim() }
-    if (config.hasCommissionRate) {
-      data.commission_rate = (parseFloat(commissionRate) || 0) / 100
-    }
-    if (config.hasIsDeposit) {
-      data.is_deposit = isDeposit
-    }
-
-    const result = editingId
-      ? await updateItem(editingId, data)
-      : await createItem(data)
-
-    setSaving(false)
-
-    if (result.error) {
-      toast({ title: result.error, variant: 'error' })
-    } else {
+  const handleSave = async (data: Record<string, unknown>) => {
+    try {
+      if (editingItem) {
+        await updateItem(editingItem.id as string, data)
+        toast({
+          title: t('transfers.toast.lookupUpdated'),
+          variant: 'success',
+        })
+      } else {
+        await createItem(data)
+        toast({
+          title: t('transfers.toast.lookupCreated'),
+          variant: 'success',
+        })
+      }
+      // No manual refresh needed - useLookupMutation handles it!
+    } catch (error) {
       toast({
-        title: editingId ? t('transfers.toast.lookupUpdated') : t('transfers.toast.lookupCreated'),
-        variant: 'success',
+        title: (error as Error).message || t('transfers.toast.error'),
+        variant: 'error',
       })
-      setDialogOpen(false)
-      await onLookupChange()
     }
   }
 
   const handleDelete = async (id: string) => {
-    const result = await deleteItem(id)
-    if (result.error) {
-      toast({ title: result.error, variant: 'error' })
-    } else {
-      toast({ title: t('transfers.toast.lookupDeleted'), variant: 'success' })
-      await onLookupChange()
+    try {
+      await deleteItem(id)
+      toast({
+        title: t('transfers.toast.lookupDeleted'),
+        variant: 'success',
+      })
+      // No manual refresh needed!
+    } catch (error) {
+      toast({
+        title: (error as Error).message || t('transfers.toast.error'),
+        variant: 'error',
+      })
     }
   }
 
@@ -132,7 +117,9 @@ function LookupSection({
       </div>
 
       {items.length === 0 ? (
-        <p className="text-sm text-black/40 py-4">{t('transfers.settings.noItems')}</p>
+        <p className="py-4 text-sm text-black/40">
+          {t('transfers.settings.noItems')}
+        </p>
       ) : (
         <Table>
           <TableHeader>
@@ -153,19 +140,35 @@ function LookupSection({
                 <TableCell className="font-medium">{item.name}</TableCell>
                 {config.hasCommissionRate && (
                   <TableCell>
-                    {(((item as Record<string, unknown>).commission_rate as number) * 100).toFixed(1)}%
+                    {(
+                      ((item as Record<string, unknown>).commission_rate as number) *
+                      100
+                    ).toFixed(1)}
+                    %
                   </TableCell>
                 )}
                 {config.hasIsDeposit && (
                   <TableCell>
-                    <Tag variant={(item as Record<string, unknown>).is_deposit ? 'green' : 'red'}>
-                      {(item as Record<string, unknown>).is_deposit ? 'Deposit' : 'Withdrawal'}
+                    <Tag
+                      variant={
+                        (item as Record<string, unknown>).is_deposit
+                          ? 'green'
+                          : 'red'
+                      }
+                    >
+                      {(item as Record<string, unknown>).is_deposit
+                        ? 'Deposit'
+                        : 'Withdrawal'}
                     </Tag>
                   </TableCell>
                 )}
                 <TableCell>
                   <div className="flex gap-1">
-                    <Button variant="borderless" size="sm" onClick={() => openEdit(item)}>
+                    <Button
+                      variant="borderless"
+                      size="sm"
+                      onClick={() => openEdit(item)}
+                    >
                       <PencilSimple size={14} />
                     </Button>
                     <Button
@@ -184,84 +187,39 @@ function LookupSection({
         </Table>
       )}
 
-      <Dialog open={dialogOpen} onOpenChange={(o) => !o && setDialogOpen(false)}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>
-              {editingId ? t('transfers.settings.editItem') : t('transfers.settings.addItem')}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div>
-              <Label className="mb-1 text-sm font-medium">{t('transfers.settings.name')}</Label>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={t('transfers.settings.namePlaceholder')}
-              />
-            </div>
-
-            {config.hasCommissionRate && (
-              <div>
-                <Label className="mb-1 text-sm font-medium">
-                  {t('transfers.settings.commissionRate')}
-                </Label>
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={commissionRate}
-                  onChange={(e) => setCommissionRate(e.target.value)}
-                  placeholder={t('transfers.settings.commissionRatePlaceholder')}
-                />
-              </div>
-            )}
-
-            {config.hasIsDeposit && (
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="is-deposit"
-                  checked={isDeposit}
-                  onChange={(e) => setIsDeposit(e.target.checked)}
-                  className="h-4 w-4 rounded"
-                />
-                <Label htmlFor="is-deposit" className="text-sm">
-                  {t('transfers.settings.isDeposit')}
-                </Label>
-              </div>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              {t('transfers.settings.cancel')}
-            </Button>
-            <Button variant="filled" onClick={handleSave} disabled={saving}>
-              {t('transfers.settings.save')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <LookupFormDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        onSave={handleSave}
+        editingItem={editingItem}
+        hasCommissionRate={config.hasCommissionRate}
+        hasIsDeposit={config.hasIsDeposit}
+        title={
+          editingItem
+            ? t('transfers.settings.editItem')
+            : t('transfers.settings.addItem')
+        }
+        isSaving={isCreating || isUpdating}
+      />
     </div>
   )
 }
 
-export function LookupSettings({ onLookupChange }: LookupSettingsProps) {
+export function LookupSettings() {
   const { t } = useTranslation('pages')
 
   return (
     <Card className="space-y-6 border border-black/5 bg-bg1 p-6">
       <div>
         <h2 className="text-lg font-semibold">{t('transfers.settings.title')}</h2>
-        <p className="mt-1 text-sm text-black/40">{t('transfers.settings.subtitle')}</p>
+        <p className="mt-1 text-sm text-black/40">
+          {t('transfers.settings.subtitle')}
+        </p>
       </div>
 
       {sections.map((config, i) => (
         <div key={config.table}>
-          <LookupSection config={config} onLookupChange={onLookupChange} />
+          <LookupSection config={config} />
           {i < sections.length - 1 && <Separator className="mt-6" />}
         </div>
       ))}

@@ -109,7 +109,7 @@ export const SidebarProvider: FC<SidebarProviderProps> = ({
       <TooltipProvider delayDuration={0}>
         <div
           style={{ '--sidebar-width': SIDEBAR_WIDTH, '--sidebar-width-icon': SIDEBAR_WIDTH_ICON, ...style } as CSSProperties}
-          className={cn('group/sidebar-wrapper flex min-h-svh w-full has-[[data-variant=inset]]:bg-bg2', className)}
+          className={cn('group/sidebar-wrapper flex min-h-svh w-full bg-bg1 has-[[data-variant=inset]]:bg-bg2', className)}
           {...props}
         >
           {children}
@@ -155,8 +155,19 @@ export const Sidebar: FC<SidebarProps> = ({
   }
 
   return (
-    <div className="group peer hidden md:block" data-state={state} data-collapsible={state === 'collapsed' ? collapsible : ''} data-variant={variant} data-side={side}>
-      <div className={cn('relative h-svh w-[--sidebar-width] bg-transparent transition-[width] duration-200 ease-linear', 'group-data-[collapsible=offcanvas]:w-0', 'group-data-[side=right]:rotate-180', variant === 'floating' || variant === 'inset' ? 'group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]' : 'group-data-[collapsible=icon]:w-[--sidebar-width-icon]')} />
+    <div
+      className={cn(
+        'group peer hidden shrink-0 md:block',
+        'data-[state=expanded]:w-[var(--sidebar-width)]',
+        'data-[state=collapsed][data-collapsible=offcanvas]:w-0',
+        'data-[state=collapsed][data-collapsible=icon]:w-[var(--sidebar-width-icon)]',
+      )}
+      data-state={state}
+      data-collapsible={state === 'collapsed' ? collapsible : ''}
+      data-variant={variant}
+      data-side={side}
+    >
+      <div className={cn('relative h-svh w-[--sidebar-width] bg-bg1 transition-[width] duration-200 ease-linear', 'group-data-[collapsible=offcanvas]:w-0', 'group-data-[side=right]:rotate-180', variant === 'floating' || variant === 'inset' ? 'group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]' : 'group-data-[collapsible=icon]:w-[--sidebar-width-icon]')} />
       <div className={cn('fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] duration-200 ease-linear md:flex', side === 'left' ? 'left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]' : 'right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]', variant === 'floating' || variant === 'inset' ? 'p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]' : 'group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l', className)}>
         <div data-sidebar="sidebar" className="flex h-full w-full flex-col bg-bg1 group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-black/10 group-data-[variant=floating]:shadow">
           {children}

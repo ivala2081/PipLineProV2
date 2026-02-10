@@ -13,6 +13,15 @@ interface LookupData {
   refresh: () => Promise<void>
 }
 
+/**
+ * @deprecated Use useLookupQueries from '@/hooks/queries/useLookupQueries' instead.
+ * This hook will be removed in the next major version.
+ *
+ * Migration guide:
+ * - Replace `import { useLookupData } from '@/hooks/useLookupData'`
+ * - With `import { useLookupQueries } from '@/hooks/queries/useLookupQueries'`
+ * - API is compatible, no other changes needed
+ */
 export function useLookupData(): LookupData {
   const { currentOrg } = useOrganization()
   const [psps, setPsps] = useState<Psp[]>([])

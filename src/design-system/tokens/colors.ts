@@ -26,8 +26,8 @@ export const themeColors = {
     brand: 'rgb(159, 159, 248)',
     brandHover: 'rgb(95, 95, 149)',
     bg1: 'rgb(42, 42, 42)',
-    bg2: 'rgb(255, 255, 255)',
-    bg5: 'rgb(229, 229, 229)',
+    bg2: 'rgb(35, 35, 35)',
+    bg5: 'rgb(52, 52, 52)',
   },
 } as const
 

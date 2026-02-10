@@ -95,6 +95,15 @@ export function computeTransfer(
 /*  Hook                                                               */
 /* ------------------------------------------------------------------ */
 
+/**
+ * @deprecated Use useTransfersQuery from '@/hooks/queries/useTransfersQuery' instead.
+ * This hook will be removed in the next major version.
+ *
+ * Migration guide:
+ * - Replace `import { useTransfers } from '@/hooks/useTransfers'`
+ * - With `import { useTransfersQuery } from '@/hooks/queries/useTransfersQuery'`
+ * - API is compatible, no other changes needed
+ */
 export function useTransfers(): UseTransfersReturn {
   const { user } = useAuth()
   const { currentOrg } = useOrganization()

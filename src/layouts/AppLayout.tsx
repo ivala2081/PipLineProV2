@@ -232,13 +232,7 @@ function UserMenu() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                handleSignOut()
-              }}
-            >
+            <DropdownMenuItem onSelect={() => void handleSignOut()}>
               <SignOut size={16} />
               <span>{t('layout.signOut')}</span>
             </DropdownMenuItem>
