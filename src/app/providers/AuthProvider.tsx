@@ -24,9 +24,7 @@ interface AuthState {
 interface AuthContextValue extends AuthState {
   /** True when the user has the 'god' system role */
   isGod: boolean
-  signUp: (email: string, password: string) => Promise<{ error: AuthError | null }>
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>
-  signInWithOAuth: (provider: 'google' | 'github' | 'discord') => Promise<{ error: AuthError | null }>
   signOut: () => Promise<{ error: AuthError | null }>
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>
   /** Re-fetch the profile from the database (e.g. after role change) */
@@ -108,24 +106,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchProfile])
 
   /* ---- Auth actions ---------------------------------------------- */
-
-  const signUp = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password })
-    return { error }
-  }, [])
+  /* No signUp — users are created by God admins via Supabase dashboard. */
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     return { error }
   }, [])
-
-  const signInWithOAuth = useCallback(
-    async (provider: 'google' | 'github' | 'discord') => {
-      const { error } = await supabase.auth.signInWithOAuth({ provider })
-      return { error }
-    },
-    [],
-  )
 
   const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut()
@@ -148,9 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthContextValue = {
     ...state,
     isGod: state.profile?.system_role === 'god',
-    signUp,
     signIn,
-    signInWithOAuth,
     signOut,
     resetPassword,
     refreshProfile,
