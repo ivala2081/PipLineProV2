@@ -280,7 +280,7 @@ function HeaderBar() {
   }
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b border-black/10 px-4">
+    <header className="relative z-20 flex h-14 shrink-0 items-center gap-2 border-b border-black/10 bg-bg1 px-4">
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="mr-2 h-4" />
 
@@ -338,9 +338,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </SidebarFooter>
         <SidebarRail />
       </Sidebar>
-      <SidebarInset>
+      <SidebarInset className="max-h-svh min-w-0 w-full">
         <HeaderBar />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <main className="min-h-0 min-w-0 flex-1 overflow-x-auto overflow-y-auto p-4 md:p-6">
           {children}
         </main>
       </SidebarInset>
