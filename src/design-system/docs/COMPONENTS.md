@@ -165,6 +165,9 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from 
 </Dialog>
 ```
 
+Window behavior, layout, and UX rules are documented in
+`src/design-system/docs/WINDOW_STANDARDS.md`.
+
 ### DropdownMenu
 
 ```tsx
