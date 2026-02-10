@@ -7,14 +7,14 @@ import { Typography } from '../Text'
 const defaultTag = 'button'
 
 const buttonVariants = cva(
-  'group transition-all hover:cursor-pointer disabled:cursor-not-allowed text-black disabled:text-black/10 inline-flex justify-center items-center focus:outline-hidden focus:ring-4 focus:ring-black/5 active:scale-95',
+  'group transition-all hover:cursor-pointer disabled:cursor-not-allowed text-black disabled:text-black/10 inline-flex justify-center items-center focus:outline-hidden focus:ring-4 focus:ring-black/10 active:scale-95',
   {
     variants: {
       variant: {
-        borderless: 'bg-transparent font-normal hover:bg-black/5',
-        gray: 'bg-black/5 hover:bg-black/20 disabled:bg-black/5 focus:ring-offset-2',
+        borderless: 'bg-transparent font-normal hover:bg-black/8',
+        gray: 'bg-black/10 hover:bg-black/20 disabled:bg-black/5 focus:ring-offset-2',
         outline:
-          'bg-transparent border border-black/10 border-solid hover:bg-black/5 disabled:border-black/10',
+          'bg-transparent border border-black/20 border-solid hover:bg-black/8 disabled:border-black/10',
         filled:
           'text-white bg-brand hover:bg-brand-hover disabled:bg-black/4',
       },

@@ -20,7 +20,7 @@ export const DropdownMenuContent: FC<DropdownMenuContentProps> = ({
     <DropdownMenuPrimitive.Content
       sideOffset={sideOffset}
       className={cn(
-        'z-50 min-w-[8rem] overflow-hidden rounded-xl bg-bg1 p-1 text-black shadow-md',
+        'ui-surface z-50 min-w-[8rem] overflow-hidden rounded-xl bg-bg1 p-1 text-black shadow-md',
         'data-[state=open]:animate-in data-[state=closed]:animate-out',
         'data-[side=bottom]:animate-slide-in-from-top data-[side=top]:animate-slide-in-from-bottom',
         'data-[side=left]:animate-slide-in-from-right data-[side=right]:animate-slide-in-from-left',
@@ -145,7 +145,7 @@ export const DropdownMenuSubContent: FC<DropdownMenuSubContentProps> = ({
 }) => (
   <DropdownMenuPrimitive.SubContent
     className={cn(
-      'z-50 min-w-[8rem] overflow-hidden rounded-xl bg-bg1 p-1 text-black shadow-lg',
+      'ui-surface z-50 min-w-[8rem] overflow-hidden rounded-xl bg-bg1 p-1 text-black shadow-lg',
       'data-[state=open]:animate-in data-[state=closed]:animate-out',
       className,
     )}

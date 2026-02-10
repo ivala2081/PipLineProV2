@@ -14,7 +14,7 @@ export type SheetOverlayProps = ComponentProps<typeof SheetPrimitive.Overlay>
 export const SheetOverlay: FC<SheetOverlayProps> = ({ className, ...props }) => (
   <SheetPrimitive.Overlay
     className={cn(
-      'fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out',
+      'fixed inset-0 z-50 bg-[rgba(4,8,16,0.72)] data-[state=open]:animate-in data-[state=closed]:animate-out',
       className,
     )}
     {...props}
@@ -23,7 +23,7 @@ export const SheetOverlay: FC<SheetOverlayProps> = ({ className, ...props }) => 
 SheetOverlay.displayName = 'SheetOverlay'
 
 const sheetContentVariants = cva(
-  'fixed z-50 gap-4 bg-bg1 p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out',
+  'ui-surface fixed z-50 gap-4 bg-bg1 p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out',
   {
     variants: {
       side: {

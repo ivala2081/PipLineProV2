@@ -13,7 +13,7 @@ export type DialogOverlayProps = ComponentProps<typeof DialogPrimitive.Overlay>
 export const DialogOverlay: FC<DialogOverlayProps> = ({ className, ...props }) => (
   <DialogPrimitive.Overlay
     className={cn(
-      'fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out',
+      'fixed inset-0 z-50 bg-[rgba(4,8,16,0.72)] data-[state=open]:animate-in data-[state=closed]:animate-out',
       className,
     )}
     {...props}
@@ -33,7 +33,7 @@ export const DialogContent: FC<DialogContentProps> = ({
       <DialogOverlay />
       <DialogPrimitive.Content
         className={cn(
-          'fixed left-1/2 top-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 rounded-2xl bg-bg1 p-6 shadow-lg',
+          'ui-surface fixed left-1/2 top-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 rounded-2xl bg-bg1 p-6 shadow-lg',
           'data-[state=open]:animate-in data-[state=closed]:animate-out',
           'data-[state=open]:animate-zoom-in-95 data-[state=closed]:animate-zoom-out-95',
           className,

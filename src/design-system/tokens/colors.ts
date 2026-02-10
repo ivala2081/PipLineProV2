@@ -12,22 +12,22 @@
 
 export const themeColors = {
   light: {
-    black: 'rgb(0, 0, 0)',
-    white: 'rgb(255, 255, 255)',
-    brand: 'rgb(0, 0, 0)',
-    brandHover: 'rgb(102, 102, 102)',
-    bg1: 'rgb(255, 255, 255)',
-    bg2: 'rgb(249, 249, 250)',
-    bg5: 'rgb(255, 255, 255)',
+    black: '#000000',
+    white: '#ffffff',
+    brand: '#000000',
+    brandHover: '#666666',
+    bg1: '#ffffff',
+    bg2: '#f9f9fa',
+    bg5: '#ffffff',
   },
   dark: {
-    black: 'rgb(255, 255, 255)',
-    white: 'rgb(0, 0, 0)',
-    brand: 'rgb(159, 159, 248)',
-    brandHover: 'rgb(95, 95, 149)',
-    bg1: 'rgb(42, 42, 42)',
-    bg2: 'rgb(35, 35, 35)',
-    bg5: 'rgb(52, 52, 52)',
+    black: '#e6e9f2',
+    white: '#0f141f',
+    brand: '#5aa6c8',
+    brandHover: '#75b9d6',
+    bg1: '#0d1119',
+    bg2: '#141b26',
+    bg5: '#1b2533',
   },
 } as const
 

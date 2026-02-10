@@ -1,7 +1,8 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
+import { useOrganization } from '@/app/providers/OrganizationProvider'
 import type { TransferRow } from '@/hooks/useTransfers'
 import type { useLookupQueries } from '@/hooks/queries/useLookupQueries'
 import type { useTransfersQuery } from '@/hooks/queries/useTransfersQuery'
@@ -14,7 +15,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
   Button,
   Input,
   Label,
@@ -34,6 +34,135 @@ interface TransferDialogProps {
   onSubmit: ReturnType<typeof useTransfersQuery>
 }
 
+type SelectOption = {
+  value: string
+  label: string
+  searchText?: string
+}
+
+type RememberedTransferFields = Pick<
+  TransferFormValues,
+  'payment_method_id' | 'category_id' | 'currency' | 'psp_id' | 'type_id'
+>
+
+const TRANSFER_PREFS_KEY = 'piplinepro:transfer-form-prefs'
+
+function getDefaultFormValues(): TransferFormValues {
+  return {
+    full_name: '',
+    payment_method_id: '',
+    transfer_date: new Date().toISOString().slice(0, 16),
+    category_id: '',
+    raw_amount: 0,
+    currency: 'TL',
+    psp_id: '',
+    type_id: '',
+    crm_id: '',
+    meta_id: '',
+  }
+}
+
+function getPrefsKey(orgId?: string): string {
+  return `${TRANSFER_PREFS_KEY}:${orgId ?? 'global'}`
+}
+
+function loadRememberedFields(orgId?: string): Partial<RememberedTransferFields> {
+  if (typeof window === 'undefined') return {}
+  try {
+    const raw = window.localStorage.getItem(getPrefsKey(orgId))
+    if (!raw) return {}
+    const parsed = JSON.parse(raw) as Partial<RememberedTransferFields>
+    return {
+      payment_method_id:
+        typeof parsed.payment_method_id === 'string' ? parsed.payment_method_id : '',
+      category_id: typeof parsed.category_id === 'string' ? parsed.category_id : '',
+      currency: parsed.currency === 'USD' ? 'USD' : 'TL',
+      psp_id: typeof parsed.psp_id === 'string' ? parsed.psp_id : '',
+      type_id: typeof parsed.type_id === 'string' ? parsed.type_id : '',
+    }
+  } catch {
+    return {}
+  }
+}
+
+function saveRememberedFields(
+  orgId: string | undefined,
+  values: RememberedTransferFields,
+): void {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(getPrefsKey(orgId), JSON.stringify(values))
+}
+
+function SearchableSelectField({
+  value,
+  onValueChange,
+  placeholder,
+  options,
+  triggerClassName,
+  searchPlaceholder,
+  noResultsText,
+}: {
+  value: string
+  onValueChange: (next: string) => void
+  placeholder: string
+  options: SelectOption[]
+  triggerClassName?: string
+  searchPlaceholder: string
+  noResultsText: string
+}) {
+  const [query, setQuery] = useState('')
+
+  const filteredOptions = useMemo(() => {
+    const normalized = query.trim().toLowerCase()
+    if (!normalized) return options
+    return options.filter((option) =>
+      (option.searchText ?? option.label).toLowerCase().includes(normalized),
+    )
+  }, [options, query])
+
+  return (
+    <Select
+      value={value}
+      onValueChange={(next) => {
+        onValueChange(next)
+        setQuery('')
+      }}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) setQuery('')
+      }}
+    >
+      <SelectTrigger className={triggerClassName}>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        <div className="px-2 pb-1">
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={(event) => event.stopPropagation()}
+            placeholder={searchPlaceholder}
+            className={cn(
+              basicInputClasses,
+              disabledInputClasses,
+              focusInputClasses,
+              '!h-9 w-full !rounded-lg !px-3 !py-1.5 !text-xs',
+            )}
+          />
+        </div>
+        {filteredOptions.length > 0 ? (
+          filteredOptions.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))
+        ) : (
+          <p className="px-3 py-2 text-xs text-black/55">{noResultsText}</p>
+        )}
+      </SelectContent>
+    </Select>
+  )
+}
+
 export function TransferDialog({
   open,
   onClose,
@@ -43,22 +172,13 @@ export function TransferDialog({
 }: TransferDialogProps) {
   const { t } = useTranslation('pages')
   const { toast } = useToast()
+  const { currentOrg } = useOrganization()
   const isEdit = !!transfer
+  const submitModeRef = useRef<'close' | 'new'>('close')
 
   const form = useForm<TransferFormValues>({
     resolver: zodResolver(transferFormSchema),
-    defaultValues: {
-      full_name: '',
-      payment_method_id: '',
-      transfer_date: new Date().toISOString().slice(0, 16),
-      category_id: '',
-      raw_amount: 0,
-      currency: 'TL',
-      psp_id: '',
-      type_id: '',
-      crm_id: '',
-      meta_id: '',
-    },
+    defaultValues: getDefaultFormValues(),
   })
 
   // Reset form when dialog opens/closes or transfer changes
@@ -80,21 +200,16 @@ export function TransferDialog({
           meta_id: transfer.meta_id ?? '',
         })
       } else {
+        const defaults = getDefaultFormValues()
+        const remembered = loadRememberedFields(currentOrg?.id)
         form.reset({
-          full_name: '',
-          payment_method_id: '',
-          transfer_date: new Date().toISOString().slice(0, 16),
-          category_id: '',
-          raw_amount: 0,
-          currency: 'TL',
-          psp_id: '',
-          type_id: '',
-          crm_id: '',
-          meta_id: '',
+          ...defaults,
+          ...remembered,
+          transfer_date: defaults.transfer_date,
         })
       }
     }
-  }, [open, transfer, form])
+  }, [open, transfer, form, currentOrg?.id])
 
   // Watch category/psp for submission computation
   const [categoryId, pspId] = form.watch(['category_id', 'psp_id'])
@@ -108,6 +223,43 @@ export function TransferDialog({
     [lookupData.psps, pspId],
   )
 
+  const paymentMethodOptions = useMemo<SelectOption[]>(
+    () =>
+      lookupData.paymentMethods.map((pm) => ({
+        value: pm.id,
+        label: pm.name,
+      })),
+    [lookupData.paymentMethods],
+  )
+
+  const categoryOptions = useMemo<SelectOption[]>(
+    () =>
+      lookupData.categories.map((cat) => ({
+        value: cat.id,
+        label: cat.name,
+      })),
+    [lookupData.categories],
+  )
+
+  const pspOptions = useMemo<SelectOption[]>(
+    () =>
+      lookupData.psps.map((psp) => ({
+        value: psp.id,
+        label: `${psp.name} (${(psp.commission_rate * 100).toFixed(1)}%)`,
+        searchText: `${psp.name} ${(psp.commission_rate * 100).toFixed(1)}`,
+      })),
+    [lookupData.psps],
+  )
+
+  const transferTypeOptions = useMemo<SelectOption[]>(
+    () =>
+      lookupData.transferTypes.map((tt) => ({
+        value: tt.id,
+        label: tt.name,
+      })),
+    [lookupData.transferTypes],
+  )
+
   const handleSubmit = form.handleSubmit(async (data) => {
     if (!selectedCategory || !selectedPsp) {
       toast({ title: t('transfers.toast.error'), variant: 'error' })
@@ -119,6 +271,14 @@ export function TransferDialog({
         ...data,
         transfer_date: new Date(data.transfer_date).toISOString(),
       }
+
+      saveRememberedFields(currentOrg?.id, {
+        payment_method_id: data.payment_method_id,
+        category_id: data.category_id,
+        currency: data.currency,
+        psp_id: data.psp_id,
+        type_id: data.type_id,
+      })
 
       if (isEdit && transfer) {
         await onSubmit.updateTransfer(
@@ -138,6 +298,18 @@ export function TransferDialog({
           variant: 'success',
         })
       }
+
+      if (!isEdit && submitModeRef.current === 'new') {
+        const defaults = getDefaultFormValues()
+        const remembered = loadRememberedFields(currentOrg?.id)
+        form.reset({
+          ...defaults,
+          ...remembered,
+          transfer_date: defaults.transfer_date,
+        })
+        return
+      }
+
       onClose()
     } catch (error) {
       toast({ title: t('transfers.toast.error'), variant: 'error' })
@@ -145,64 +317,75 @@ export function TransferDialog({
   })
 
   const isSubmitting = onSubmit.isCreating || onSubmit.isUpdating
+  const compactLabelClasses = 'mb-1 text-xs font-medium tracking-wide text-black/75'
+  const compactControlClasses = '!h-10 !rounded-xl !px-3 !py-2 !text-sm'
+  const compactHintClasses = 'mt-1 text-[11px] text-black/55'
+  const compactErrorClasses = 'mt-1 text-[11px] text-red-500'
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="max-h-[85vh] max-w-xl overflow-y-auto p-4 sm:p-5"
+        onInteractOutside={(event) => event.preventDefault()}
+      >
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="text-base sm:text-lg">
             {isEdit ? t('transfers.editTransfer') : t('transfers.addTransfer')}
           </DialogTitle>
-          <DialogDescription>{t('transfers.subtitle')}</DialogDescription>
+          <DialogDescription className="text-xs text-black/60">
+            {t('transfers.subtitle')}
+          </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <form
+          onSubmit={(event) => {
+            submitModeRef.current = 'close'
+            void handleSubmit(event)
+          }}
+          className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+        >
           {/* Full Name */}
           <div className="sm:col-span-2">
-            <Label className="mb-1 text-sm font-medium">
+            <Label className={compactLabelClasses}>
               {t('transfers.form.fullName')}
             </Label>
             <Input
               {...form.register('full_name')}
               placeholder={t('transfers.form.fullNamePlaceholder')}
+              className={compactControlClasses}
             />
             {form.formState.errors.full_name && (
-              <p className="mt-1 text-xs text-red-500">
+              <p className={compactErrorClasses}>
                 {form.formState.errors.full_name.message}
               </p>
             )}
           </div>
 
           {/* Payment Method */}
-          <div>
-            <Label className="mb-1 text-sm font-medium">
+          <div className="sm:col-span-2">
+            <Label className={compactLabelClasses}>
               {t('transfers.form.paymentMethod')}
             </Label>
-            <Select
+            <SearchableSelectField
               value={form.watch('payment_method_id')}
               onValueChange={(value) => form.setValue('payment_method_id', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t('transfers.form.selectPaymentMethod')} />
-              </SelectTrigger>
-              <SelectContent>
-                {lookupData.paymentMethods.map((pm) => (
-                  <SelectItem key={pm.id} value={pm.id}>
-                    {pm.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder={t('transfers.form.selectPaymentMethod')}
+              options={paymentMethodOptions}
+              triggerClassName={compactControlClasses}
+              searchPlaceholder={t('transfers.form.searchInList')}
+              noResultsText={t('transfers.form.noResults')}
+            />
             {form.formState.errors.payment_method_id && (
-              <p className="mt-1 text-xs text-red-500">
+              <p className={compactErrorClasses}>
                 {form.formState.errors.payment_method_id.message}
               </p>
             )}
           </div>
 
           {/* Date & Time */}
-          <div>
-            <Label className="mb-1 text-sm font-medium">
+          <div className="sm:col-span-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+            <Label className={compactLabelClasses}>
               {t('transfers.form.date')}
             </Label>
             <input
@@ -212,68 +395,20 @@ export function TransferDialog({
                 basicInputClasses,
                 disabledInputClasses,
                 focusInputClasses,
+                compactControlClasses,
                 'w-full',
               )}
             />
             {form.formState.errors.transfer_date && (
-              <p className="mt-1 text-xs text-red-500">
+              <p className={compactErrorClasses}>
                 {form.formState.errors.transfer_date.message}
               </p>
             )}
-          </div>
+            </div>
 
-          {/* Category */}
-          <div>
-            <Label className="mb-1 text-sm font-medium">
-              {t('transfers.form.category')}
-            </Label>
-            <Select
-              value={form.watch('category_id')}
-              onValueChange={(value) => form.setValue('category_id', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t('transfers.form.selectCategory')} />
-              </SelectTrigger>
-              <SelectContent>
-                {lookupData.categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {form.formState.errors.category_id && (
-              <p className="mt-1 text-xs text-red-500">
-                {form.formState.errors.category_id.message}
-              </p>
-            )}
-          </div>
-
-          {/* Amount */}
-          <div>
-            <Label className="mb-1 text-sm font-medium">
-              {t('transfers.form.amount')}
-            </Label>
-            <Input
-              type="number"
-              min="0"
-              step="0.01"
-              {...form.register('raw_amount')}
-              placeholder="0.00"
-            />
-            <p className="mt-1 text-xs text-black/40">
-              {t('transfers.form.amountHint')}
-            </p>
-            {form.formState.errors.raw_amount && (
-              <p className="mt-1 text-xs text-red-500">
-                {form.formState.errors.raw_amount.message}
-              </p>
-            )}
-          </div>
-
-          {/* Currency */}
-          <div>
-            <Label className="mb-1 text-sm font-medium">
+            {/* Currency */}
+            <div>
+            <Label className={compactLabelClasses}>
               {t('transfers.form.currency')}
             </Label>
             <Select
@@ -282,7 +417,7 @@ export function TransferDialog({
                 form.setValue('currency', value as 'TL' | 'USD')
               }
             >
-              <SelectTrigger>
+              <SelectTrigger className={compactControlClasses}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -290,95 +425,148 @@ export function TransferDialog({
                 <SelectItem value="USD">USD</SelectItem>
               </SelectContent>
             </Select>
+            </div>
+          </div>
+
+          {/* Category */}
+          <div className="sm:col-span-2">
+            <Label className={compactLabelClasses}>
+              {t('transfers.form.category')}
+            </Label>
+            <SearchableSelectField
+              value={form.watch('category_id')}
+              onValueChange={(value) => form.setValue('category_id', value)}
+              placeholder={t('transfers.form.selectCategory')}
+              options={categoryOptions}
+              triggerClassName={compactControlClasses}
+              searchPlaceholder={t('transfers.form.searchInList')}
+              noResultsText={t('transfers.form.noResults')}
+            />
+            {form.formState.errors.category_id && (
+              <p className={compactErrorClasses}>
+                {form.formState.errors.category_id.message}
+              </p>
+            )}
+          </div>
+
+          {/* Amount */}
+          <div className="sm:col-span-2">
+            <Label className={compactLabelClasses}>
+              {t('transfers.form.amount')}
+            </Label>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              {...form.register('raw_amount')}
+              placeholder="0.00"
+              className={compactControlClasses}
+            />
+            <p className={compactHintClasses}>
+              {t('transfers.form.amountHint')}
+            </p>
+            {form.formState.errors.raw_amount && (
+              <p className={compactErrorClasses}>
+                {form.formState.errors.raw_amount.message}
+              </p>
+            )}
           </div>
 
           {/* PSP */}
-          <div>
-            <Label className="mb-1 text-sm font-medium">
+          <div className="sm:col-span-2">
+            <Label className={compactLabelClasses}>
               {t('transfers.form.psp')}
             </Label>
-            <Select
+            <SearchableSelectField
               value={form.watch('psp_id')}
               onValueChange={(value) => form.setValue('psp_id', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t('transfers.form.selectPsp')} />
-              </SelectTrigger>
-              <SelectContent>
-                {lookupData.psps.map((psp) => (
-                  <SelectItem key={psp.id} value={psp.id}>
-                    {psp.name} ({(psp.commission_rate * 100).toFixed(1)}%)
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder={t('transfers.form.selectPsp')}
+              options={pspOptions}
+              triggerClassName={compactControlClasses}
+              searchPlaceholder={t('transfers.form.searchInList')}
+              noResultsText={t('transfers.form.noResults')}
+            />
             {form.formState.errors.psp_id && (
-              <p className="mt-1 text-xs text-red-500">
+              <p className={compactErrorClasses}>
                 {form.formState.errors.psp_id.message}
               </p>
             )}
           </div>
 
           {/* Type */}
-          <div>
-            <Label className="mb-1 text-sm font-medium">
+          <div className="sm:col-span-2">
+            <Label className={compactLabelClasses}>
               {t('transfers.form.type')}
             </Label>
-            <Select
+            <SearchableSelectField
               value={form.watch('type_id')}
               onValueChange={(value) => form.setValue('type_id', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t('transfers.form.selectType')} />
-              </SelectTrigger>
-              <SelectContent>
-                {lookupData.transferTypes.map((tt) => (
-                  <SelectItem key={tt.id} value={tt.id}>
-                    {tt.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder={t('transfers.form.selectType')}
+              options={transferTypeOptions}
+              triggerClassName={compactControlClasses}
+              searchPlaceholder={t('transfers.form.searchInList')}
+              noResultsText={t('transfers.form.noResults')}
+            />
             {form.formState.errors.type_id && (
-              <p className="mt-1 text-xs text-red-500">
+              <p className={compactErrorClasses}>
                 {form.formState.errors.type_id.message}
               </p>
             )}
           </div>
 
-          {/* CRM ID */}
-          <div>
-            <Label className="mb-1 text-sm font-medium">
-              {t('transfers.form.crmId')}
-            </Label>
-            <Input
-              {...form.register('crm_id')}
-              placeholder={t('transfers.form.crmIdPlaceholder')}
-            />
+          {/* CRM + META */}
+          <div className="sm:col-span-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <Label className={compactLabelClasses}>
+                {t('transfers.form.crmId')}
+              </Label>
+              <Input
+                {...form.register('crm_id')}
+                placeholder={t('transfers.form.crmIdPlaceholder')}
+                className={compactControlClasses}
+              />
+            </div>
+            <div>
+              <Label className={compactLabelClasses}>
+                {t('transfers.form.metaId')}
+              </Label>
+              <Input
+                {...form.register('meta_id')}
+                placeholder={t('transfers.form.metaIdPlaceholder')}
+                className={compactControlClasses}
+              />
+            </div>
           </div>
 
-          {/* META ID */}
-          <div>
-            <Label className="mb-1 text-sm font-medium">
-              {t('transfers.form.metaId')}
-            </Label>
-            <Input
-              {...form.register('meta_id')}
-              placeholder={t('transfers.form.metaIdPlaceholder')}
-            />
-          </div>
-
-          <div className="sm:col-span-2">
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose}>
+          <div className="pt-1 sm:col-span-2">
+            <div className="flex items-center justify-between gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={onClose}>
                 {t('transfers.form.cancel')}
               </Button>
-              <Button type="submit" variant="filled" disabled={isSubmitting}>
-                {isSubmitting
-                  ? t('transfers.form.saving')
-                  : t('transfers.form.save')}
-              </Button>
-            </DialogFooter>
+              <div className="ml-auto flex items-center gap-2">
+                {!isEdit && (
+                  <Button
+                    type="button"
+                    variant="gray"
+                    size="sm"
+                    disabled={isSubmitting}
+                    onClick={() => {
+                      submitModeRef.current = 'new'
+                      void handleSubmit()
+                    }}
+                  >
+                    {isSubmitting
+                      ? t('transfers.form.saving')
+                      : t('transfers.form.saveAndNew')}
+                  </Button>
+                )}
+                <Button type="submit" variant="filled" size="sm" disabled={isSubmitting}>
+                  {isSubmitting
+                    ? t('transfers.form.saving')
+                    : t('transfers.form.save')}
+                </Button>
+              </div>
+            </div>
           </div>
         </form>
       </DialogContent>

@@ -8,27 +8,27 @@
   /* ---- Font ---- */
   --font-normal: "Inter", sans-serif;
 
-  /* ---- Theme-aware colors (swap via CSS vars) ---- */
-  --color-black: rgba(var(--black));
-  --color-white: rgba(var(--white));
-  --color-brand: rgb(var(--brand));
-  --color-brand-hover: rgb(var(--brand-hover));
-  --color-bg1: rgba(var(--bg1));
-  --color-bg2: rgba(var(--bg2));
-  --color-bg5: rgba(var(--bg5));
+  /* ---- Theme-aware colors (light-mode defaults, overridden at runtime for dark) ---- */
+  --color-black: #000000;
+  --color-white: #ffffff;
+  --color-brand: #000000;
+  --color-brand-hover: #666666;
+  --color-bg1: #ffffff;
+  --color-bg2: #f9f9fa;
+  --color-bg5: #ffffff;
 
   /* ---- Static colors (same in light & dark) ---- */
-  --color-purple: rgba(201, 179, 237);
-  --color-indigo: rgba(159, 159, 248);
-  --color-blue: rgba(146, 191, 255);
-  --color-cyan: rgba(174, 199, 237);
-  --color-mint: rgba(150, 226, 214);
-  --color-green: rgba(148, 233, 184);
-  --color-yellow: rgba(255, 219, 86);
-  --color-orange: rgba(255, 181, 91);
-  --color-red: rgba(255, 71, 71);
-  --color-bg3: rgba(230, 241, 253);
-  --color-bg4: rgba(237, 238, 252);
+  --color-purple: #c9b3ed;
+  --color-indigo: #9f9ff8;
+  --color-blue: #92bfff;
+  --color-cyan: #aec7ed;
+  --color-mint: #96e2d6;
+  --color-green: #94e9b8;
+  --color-yellow: #ffdb56;
+  --color-orange: #ffb55b;
+  --color-red: #ff4747;
+  --color-bg3: #e6f1fd;
+  --color-bg4: #edeefc;
 
   /* ---- Animations ---- */
   --animate-accordion-down: accordion-down 0.3s ease-out;
@@ -48,45 +48,42 @@
 }
 
 /* ==========================================================================
-   Light / Dark Mode CSS Variables
+   Dark Mode – Override @theme CSS custom properties at runtime
    ========================================================================== */
 
 @layer base {
-  :root {
-    --black: 0, 0, 0;
-    --white: 255, 255, 255;
-    --brand: 0, 0, 0;
-    --brand-hover: 102, 102, 102;
-    --bg1: 255, 255, 255;
-    --bg2: 249, 249, 250;
-    --bg5: 255, 255, 255;
+  [data-theme="dark"] {
+    --color-black: #e6e9f2;
+    --color-white: #0f141f;
+    --color-brand: #5aa6c8;
+    --color-brand-hover: #75b9d6;
+    --color-bg1: #0d1119;
+    --color-bg2: #141b26;
+    --color-bg5: #1b2533;
+    color-scheme: dark;
   }
 
-  [data-theme="dark"] {
-    --black: 255, 255, 255;
-    --white: 0, 0, 0;
-    --brand: 159, 159, 248;
-    --brand-hover: 95, 95, 149;
-    --bg1: 42, 42, 42;
-    --bg2: 35, 35, 35;
-    --bg5: 52, 52, 52;
+  [data-theme="light"] {
+    color-scheme: light;
   }
 
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --black: 255, 255, 255;
-      --white: 0, 0, 0;
-      --brand: 159, 159, 248;
-      --brand-hover: 95, 95, 149;
-      --bg1: 42, 42, 42;
-      --bg2: 35, 35, 35;
-      --bg5: 52, 52, 52;
+      --color-black: #e6e9f2;
+      --color-white: #0f141f;
+      --color-brand: #5aa6c8;
+      --color-brand-hover: #75b9d6;
+      --color-bg1: #0d1119;
+      --color-bg2: #141b26;
+      --color-bg5: #1b2533;
+      color-scheme: dark;
     }
   }
 
   html,
   body {
-    background-color: rgba(var(--bg1));
+    background-color: var(--color-bg1);
+    color: var(--color-black);
   }
 
   *,
@@ -176,6 +173,24 @@
    ========================================================================== */
 
 @layer components {
+  .ui-surface {
+    background-color: var(--color-bg5);
+  }
+
+  [data-theme="dark"] .ui-surface {
+    border-color: transparent !important;
+    background-color: color-mix(in srgb, var(--color-bg5) 90%, var(--color-bg2) 10%);
+    box-shadow: 0 10px 26px rgba(2, 8, 20, 0.28);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .ui-surface {
+      border-color: transparent !important;
+      background-color: color-mix(in srgb, var(--color-bg5) 90%, var(--color-bg2) 10%);
+      box-shadow: 0 10px 26px rgba(2, 8, 20, 0.28);
+    }
+  }
+
   textarea::-webkit-resizer {
     transition: all 0.15s ease;
   }

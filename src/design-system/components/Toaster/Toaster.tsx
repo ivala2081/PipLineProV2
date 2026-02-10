@@ -19,7 +19,7 @@ export const ToastViewport: FC<ToastViewportProps> = ({ className, ...props }) =
 ToastViewport.displayName = 'ToastViewport'
 
 const toastVariants = cva(
-  'group pointer-events-auto relative flex w-full items-center justify-between gap-4 overflow-hidden rounded-xl border border-black/10 p-4 pr-8 shadow-lg transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out',
+  'ui-surface group pointer-events-auto relative flex w-full items-center justify-between gap-4 overflow-hidden rounded-xl border border-border p-4 pr-8 shadow-lg transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out',
   {
     variants: {
       variant: {

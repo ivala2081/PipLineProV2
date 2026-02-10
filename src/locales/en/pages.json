@@ -95,8 +95,11 @@
       "metaId": "META ID",
       "metaIdPlaceholder": "Optional",
       "save": "Save",
+      "saveAndNew": "Save & New",
       "saving": "Saving...",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "searchInList": "Search list...",
+      "noResults": "No results found"
     },
     "delete": {
       "title": "Delete Transfer",

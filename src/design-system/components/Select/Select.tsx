@@ -4,6 +4,11 @@ import * as SelectPrimitive from '@radix-ui/react-select'
 import { CaretDown, CaretUp, Check } from '@phosphor-icons/react'
 import type { ComponentProps, FC } from 'react'
 import { cn } from '@ds/utils'
+import {
+  basicInputClasses,
+  disabledInputClasses,
+  focusInputClasses,
+} from '../Input'
 
 export const Select = SelectPrimitive.Root
 export const SelectGroup = SelectPrimitive.Group
@@ -17,10 +22,11 @@ export const SelectTrigger: FC<SelectTriggerProps> = ({
 }) => (
   <SelectPrimitive.Trigger
     className={cn(
-      'flex w-full items-center justify-between gap-2 py-4 px-5 transition-all rounded-2xl bg-white/80 inset-ring inset-ring-black/10 placeholder:text-black/20 hover:inset-ring-black/40 text-black/100',
-      'text-lg focus:ring-4 focus:ring-black/5 focus:outline-none focus:inset-ring-black/40',
-      'disabled:bg-black/5 disabled:text-black/10 disabled:inset-ring-0 disabled:cursor-not-allowed',
-      'data-[placeholder]:text-black/20',
+      'flex w-full items-center justify-between gap-2',
+      basicInputClasses,
+      focusInputClasses,
+      disabledInputClasses,
+      'data-[placeholder]:text-black/45',
       className,
     )}
     {...props}
@@ -43,7 +49,7 @@ export const SelectContent: FC<SelectContentProps> = ({
   <SelectPrimitive.Portal>
     <SelectPrimitive.Content
       className={cn(
-        'relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-xl bg-bg1 text-black shadow-md',
+        'ui-surface relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-xl bg-bg1 text-black shadow-md',
         'data-[state=open]:animate-in data-[state=closed]:animate-out',
         'data-[state=open]:animate-zoom-in-95 data-[state=closed]:animate-zoom-out-95',
         'data-[side=bottom]:animate-slide-in-from-top data-[side=top]:animate-slide-in-from-bottom',

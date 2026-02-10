@@ -5,13 +5,13 @@ import { cn } from '@ds/utils'
 import { Label } from '../Label'
 
 export const basicInputClasses =
-  'peer py-4 px-5 transition-all rounded-2xl bg-white/80 inset-ring inset-ring-black/10 placeholder:text-black/20 hover:inset-ring-black/40 text-black/100'
+  'peer rounded-2xl px-5 py-4 text-black transition-all bg-bg2/75 inset-ring inset-ring-black/15 placeholder:text-black/45 hover:bg-bg2/90 hover:inset-ring-black/30'
 
 export const disabledInputClasses =
-  'disabled:bg-black/5 disabled:text-black/10 disabled:inset-ring-0 disabled:cursor-not-allowed'
+  'disabled:cursor-not-allowed disabled:bg-bg2/45 disabled:text-black/35 disabled:inset-ring-black/8'
 
 export const focusInputClasses =
-  'text-lg focus:ring-4 focus:ring-black/5 focus:outline-none active:inset-ring-black/40 focus:inset-ring-black/40'
+  'text-lg focus:outline-none focus:ring-4 focus:ring-brand/20 focus:inset-ring-brand/55 active:inset-ring-brand/45'
 
 export type InputProps = ComponentProps<'input'> & {
   title?: string
@@ -57,7 +57,7 @@ export const Input: FC<InputProps> = ({
       {title && (
         <Label
           htmlFor={id}
-          className="absolute left-5 top-1 text-xs text-black/40 transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-focus:top-1 peer-focus:text-xs"
+          className="absolute left-5 top-1 text-xs text-black/55 transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-focus:top-1 peer-focus:text-xs"
         >
           {title}
         </Label>

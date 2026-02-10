@@ -62,7 +62,7 @@ function OrgSwitcher() {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-black/5"
+              className="data-[state=open]:bg-black/8"
             >
               <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-brand text-white text-xs font-bold">
                 {currentOrg?.name?.charAt(0)?.toUpperCase() ?? '?'}
@@ -71,11 +71,11 @@ function OrgSwitcher() {
                 <span className="truncate font-semibold">
                   {currentOrg?.name ?? t('layout.noOrganization')}
                 </span>
-                <span className="truncate text-xs text-black/40">
+                <span className="truncate text-xs text-black/60">
                   {currentOrg?.slug ?? ''}
                 </span>
               </div>
-              <CaretUpDown size={16} className="ml-auto text-black/40" />
+              <CaretUpDown size={16} className="ml-auto text-black/60" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -198,7 +198,7 @@ function UserMenu() {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-black/5"
+              className="data-[state=open]:bg-black/8"
             >
               <Avatar className="size-8">
                 <AvatarImage src={profile?.avatar_url ?? undefined} alt={displayName} />
@@ -212,7 +212,7 @@ function UserMenu() {
                   </Tag>
                 )}
               </div>
-              <CaretUpDown size={16} className="ml-auto text-black/40" />
+              <CaretUpDown size={16} className="ml-auto text-black/60" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -274,7 +274,7 @@ function HeaderBar() {
   }
 
   return (
-    <header className="relative z-20 flex h-14 shrink-0 items-center gap-2 border-b border-black/10 bg-bg1 px-4">
+    <header className="relative z-20 flex h-14 shrink-0 items-center gap-2 border-b border-black/15 bg-bg1 px-4">
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="mr-2 h-4" />
 
@@ -282,8 +282,8 @@ function HeaderBar() {
       <nav className="flex items-center gap-1.5 text-sm">
         {currentGroup && currentItem && currentItem.href !== '/' && (
           <>
-            <span className="text-black/40">{tNav(currentGroup.titleKey)}</span>
-            <span className="text-black/20">/</span>
+            <span className="text-black/60">{tNav(currentGroup.titleKey)}</span>
+            <span className="text-black/30">/</span>
           </>
         )}
         {currentItem && (
@@ -295,7 +295,7 @@ function HeaderBar() {
       <div className="ml-auto flex items-center gap-1">
         <button
           onClick={() => changeLocale(nextLocale)}
-          className="flex h-8 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-black/60 transition-colors hover:bg-black/5 hover:text-black"
+          className="flex h-8 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-black/70 transition-colors hover:bg-black/8 hover:text-black"
           aria-label={t('layout.changeLanguage')}
         >
           <Globe size={16} />
@@ -303,7 +303,7 @@ function HeaderBar() {
         </button>
         <button
           onClick={toggleTheme}
-          className="flex size-8 items-center justify-center rounded-md text-black/60 transition-colors hover:bg-black/5 hover:text-black"
+          className="flex size-8 items-center justify-center rounded-md text-black/70 transition-colors hover:bg-black/8 hover:text-black"
           aria-label={t('layout.toggleTheme')}
         >
           {resolvedTheme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}

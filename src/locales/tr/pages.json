@@ -95,8 +95,11 @@
       "metaId": "META ID",
       "metaIdPlaceholder": "\u0130ste\u011fe ba\u011fl\u0131",
       "save": "Kaydet",
+      "saveAndNew": "Kaydet ve Yeni",
       "saving": "Kaydediliyor...",
-      "cancel": "\u0130ptal"
+      "cancel": "\u0130ptal",
+      "searchInList": "Listede ara...",
+      "noResults": "Sonu\u00e7 bulunamad\u0131"
     },
     "delete": {
       "title": "Transferi Sil",
