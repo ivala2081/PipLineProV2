@@ -3,7 +3,16 @@
     "allow": [
       "Bash(npm install:*)",
       "Bash(npx tsc:*)",
-      "Bash(npx vite build)"
+      "Bash(npx vite build)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout:*)",
+      "Bash(del \"c:\\\\Users\\\\ACER\\\\Desktop\\\\PipLineProV2\\\\src\\\\hooks\\\\useToast.ts\")",
+      "Bash(findstr:*)",
+      "Bash(npx vite build:*)",
+      "Bash(pushd:*)",
+      "Bash(popd:*)",
+      "Bash(del \"c:\\\\Users\\\\ACER\\\\Desktop\\\\PipLineProV2\\\\src\\\\pages\\\\modules\\\\module-1.tsx\")"
     ]
   }
 }

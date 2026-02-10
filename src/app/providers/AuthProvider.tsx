@@ -27,6 +27,8 @@ interface AuthContextValue extends AuthState {
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>
   signOut: () => Promise<{ error: AuthError | null }>
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>
+  /** Set a new password (used after password reset flow) */
+  updatePassword: (password: string) => Promise<{ error: AuthError | null }>
   /** Re-fetch the profile from the database (e.g. after role change) */
   refreshProfile: () => Promise<void>
 }
@@ -63,40 +65,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true
 
-    // Get the initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!mounted) return
-
-      let profile: Profile | null = null
-      if (session?.user) {
-        profile = await fetchProfile(session.user.id)
-      }
-
-      setState({
-        user: session?.user ?? null,
-        session,
-        profile,
-        isLoading: false,
-      })
-    })
-
-    // Listen for auth state changes (sign-in, sign-out, token refresh, etc.)
+    // Listen for auth state changes — the INITIAL_SESSION event fires
+    // almost immediately with the session from localStorage (no network).
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!mounted) return
 
-      let profile: Profile | null = null
-      if (session?.user) {
-        profile = await fetchProfile(session.user.id)
-      }
-
-      setState({
+      // Unblock the UI immediately — don't wait for profile fetch
+      setState((prev) => ({
         user: session?.user ?? null,
         session,
-        profile,
+        profile: prev.profile,
         isLoading: false,
-      })
+      }))
+
+      // Fetch profile in the background
+      if (session?.user) {
+        try {
+          const profile = await fetchProfile(session.user.id)
+          if (mounted) {
+            setState((prev) => ({ ...prev, profile }))
+          }
+        } catch {
+          // Profile fetch failed — continue without it
+        }
+      } else {
+        setState((prev) => ({ ...prev, profile: null }))
+      }
     })
 
     return () => {
@@ -119,7 +115,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const resetPassword = useCallback(async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email)
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+    return { error }
+  }, [])
+
+  const updatePassword = useCallback(async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password })
     return { error }
   }, [])
 
@@ -137,6 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signIn,
     signOut,
     resetPassword,
+    updatePassword,
     refreshProfile,
   }
 

@@ -1,0 +1,349 @@
+import { useState, type ReactNode } from 'react'
+import { useLocation, useNavigate, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import {
+  CaretUpDown,
+  Check,
+  SignOut,
+  Moon,
+  Sun,
+  Globe,
+} from '@phosphor-icons/react'
+
+import { useAuth } from '@/app/providers/AuthProvider'
+import { useOrganization } from '@/app/providers/OrganizationProvider'
+import {
+  SidebarProvider,
+  Sidebar,
+  SidebarHeader,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarSeparator,
+  SidebarInset,
+  SidebarTrigger,
+  SidebarRail,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+  Tag,
+  Separator,
+  useTheme,
+} from '@ds'
+import { useLocale } from '@ds/hooks'
+
+import { navGroups } from '@/layouts/nav-config'
+
+/* ------------------------------------------------------------------ */
+/*  Org Switcher (sidebar header)                                      */
+/* ------------------------------------------------------------------ */
+
+function OrgSwitcher() {
+  const { t } = useTranslation('pages')
+  const { currentOrg, organizations, selectOrg } = useOrganization()
+
+  if (organizations.length === 0) return null
+
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuButton
+              size="lg"
+              className="data-[state=open]:bg-black/5"
+            >
+              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-brand text-white text-xs font-bold">
+                {currentOrg?.name?.charAt(0)?.toUpperCase() ?? '?'}
+              </div>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-semibold">
+                  {currentOrg?.name ?? t('layout.noOrganization')}
+                </span>
+                <span className="truncate text-xs text-black/40">
+                  {currentOrg?.slug ?? ''}
+                </span>
+              </div>
+              <CaretUpDown size={16} className="ml-auto text-black/40" />
+            </SidebarMenuButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            className="w-[--radix-dropdown-menu-trigger-width] min-w-56"
+            align="start"
+            side="bottom"
+            sideOffset={4}
+          >
+            <DropdownMenuLabel>{t('layout.organizations')}</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {organizations.map((org) => (
+              <DropdownMenuItem
+                key={org.id}
+                onSelect={() => selectOrg(org.id)}
+              >
+                <div className="flex aspect-square size-6 items-center justify-center rounded bg-brand/10 text-brand text-xs font-bold">
+                  {org.name.charAt(0).toUpperCase()}
+                </div>
+                <span className="truncate">{org.name}</span>
+                {org.id === currentOrg?.id && (
+                  <Check size={16} className="ml-auto text-brand" />
+                )}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Sidebar Navigation                                                 */
+/* ------------------------------------------------------------------ */
+
+function SidebarNav() {
+  const { t } = useTranslation('pages')
+  const location = useLocation()
+  const tNav = t as (key: string) => string
+
+  return (
+    <>
+      {navGroups.map((group, idx) => (
+        <SidebarGroup key={group.titleKey}>
+          {idx > 0 && <SidebarSeparator className="mb-2" />}
+          <SidebarGroupLabel>{tNav(group.titleKey)}</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {group.items.map((item) => {
+                const Icon = item.icon
+                const isActive = item.href === '/'
+                  ? location.pathname === '/'
+                  : location.pathname.startsWith(item.href)
+
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      tooltip={tNav(item.titleKey)}
+                    >
+                      <Link to={item.href}>
+                        <Icon size={18} weight={isActive ? 'fill' : 'regular'} />
+                        <span>{tNav(item.titleKey)}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      ))}
+    </>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  User Menu (sidebar footer)                                         */
+/* ------------------------------------------------------------------ */
+
+function UserMenu() {
+  const { t } = useTranslation('pages')
+  const { profile, isGod, signOut } = useAuth()
+  const { membership } = useOrganization()
+  const navigate = useNavigate()
+  const [isSigningOut, setIsSigningOut] = useState(false)
+
+  const displayName = profile?.display_name || profile?.id?.slice(0, 8) || '?'
+  const initials = displayName.charAt(0).toUpperCase()
+
+  const roleBadge = isGod
+    ? { label: 'God', variant: 'red' as const }
+    : membership?.role === 'admin'
+      ? { label: 'Admin', variant: 'green' as const }
+      : membership?.role === 'operation'
+        ? { label: 'Operation', variant: 'blue' as const }
+        : null
+
+  const handleSignOut = async () => {
+    if (isSigningOut) return
+
+    setIsSigningOut(true)
+    const { error } = await signOut()
+
+    if (error) {
+      console.error('[AppLayout] Sign out error:', error)
+      setIsSigningOut(false)
+      return
+    }
+
+    localStorage.removeItem('piplinepro-org')
+    navigate('/login', { replace: true })
+  }
+
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuButton
+              size="lg"
+              className="data-[state=open]:bg-black/5"
+            >
+              <Avatar className="size-8">
+                <AvatarImage src={profile?.avatar_url ?? undefined} alt={displayName} />
+                <AvatarFallback className="text-xs font-medium">{initials}</AvatarFallback>
+              </Avatar>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-semibold">{displayName}</span>
+                {roleBadge && (
+                  <Tag variant={roleBadge.variant} className="mt-0.5 w-fit text-[10px]">
+                    {roleBadge.label}
+                  </Tag>
+                )}
+              </div>
+              <CaretUpDown size={16} className="ml-auto text-black/40" />
+            </SidebarMenuButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            className="w-[--radix-dropdown-menu-trigger-width] min-w-56"
+            side="bottom"
+            align="end"
+            sideOffset={4}
+          >
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col gap-1">
+                <p className="text-sm font-medium">{displayName}</p>
+                {roleBadge && (
+                  <Tag variant={roleBadge.variant} className="w-fit text-[10px]">
+                    {roleBadge.label}
+                  </Tag>
+                )}
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                handleSignOut()
+              }}
+            >
+              <SignOut size={16} />
+              <span>{t('layout.signOut')}</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    </SidebarMenu>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Header Bar                                                         */
+/* ------------------------------------------------------------------ */
+
+function HeaderBar() {
+  const { t } = useTranslation('pages')
+  const location = useLocation()
+  const { toggleTheme, resolvedTheme } = useTheme()
+  const { locale, changeLocale, localeNames } = useLocale()
+  const tNav = t as (key: string) => string
+
+  const nextLocale = locale === 'en' ? 'tr' : 'en'
+
+  // Find current nav item + its group for breadcrumb
+  let currentGroup: (typeof navGroups)[number] | undefined
+  let currentItem: (typeof navGroups)[number]['items'][number] | undefined
+
+  for (const group of navGroups) {
+    const found = group.items.find((item) =>
+      item.href === '/'
+        ? location.pathname === '/'
+        : location.pathname.startsWith(item.href),
+    )
+    if (found) {
+      currentGroup = group
+      currentItem = found
+      break
+    }
+  }
+
+  return (
+    <header className="flex h-14 shrink-0 items-center gap-2 border-b border-black/10 px-4">
+      <SidebarTrigger className="-ml-1" />
+      <Separator orientation="vertical" className="mr-2 h-4" />
+
+      {/* Breadcrumb: Group > Page */}
+      <nav className="flex items-center gap-1.5 text-sm">
+        {currentGroup && currentItem && currentItem.href !== '/' && (
+          <>
+            <span className="text-black/40">{tNav(currentGroup.titleKey)}</span>
+            <span className="text-black/20">/</span>
+          </>
+        )}
+        {currentItem && (
+          <span className="font-medium text-black">{tNav(currentItem.titleKey)}</span>
+        )}
+      </nav>
+
+      {/* Right side controls */}
+      <div className="ml-auto flex items-center gap-1">
+        <button
+          onClick={() => changeLocale(nextLocale)}
+          className="flex h-8 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-black/60 transition-colors hover:bg-black/5 hover:text-black"
+          aria-label={t('layout.changeLanguage')}
+        >
+          <Globe size={16} />
+          <span className="hidden sm:inline">{localeNames[locale as keyof typeof localeNames]}</span>
+        </button>
+        <button
+          onClick={toggleTheme}
+          className="flex size-8 items-center justify-center rounded-md text-black/60 transition-colors hover:bg-black/5 hover:text-black"
+          aria-label={t('layout.toggleTheme')}
+        >
+          {resolvedTheme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+        </button>
+      </div>
+    </header>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  App Layout                                                         */
+/* ------------------------------------------------------------------ */
+
+export function AppLayout({ children }: { children: ReactNode }) {
+  return (
+    <SidebarProvider defaultOpen={true}>
+      <Sidebar variant="sidebar" collapsible="icon">
+        <SidebarHeader>
+          <OrgSwitcher />
+        </SidebarHeader>
+        <SidebarContent>
+          <SidebarNav />
+        </SidebarContent>
+        <SidebarFooter>
+          <UserMenu />
+        </SidebarFooter>
+        <SidebarRail />
+      </Sidebar>
+      <SidebarInset>
+        <HeaderBar />
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+          {children}
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
+  )
+}

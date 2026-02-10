@@ -15,8 +15,9 @@ export type Json =
   | Json[]
 
 export type SystemRole = 'god' | 'user'
-export type OrgMemberRole = 'admin' | 'member'
+export type OrgMemberRole = 'admin' | 'operation'
 export type InvitationStatus = 'pending' | 'accepted' | 'expired'
+export type Currency = 'TL' | 'USD'
 
 export interface Database {
   public: {
@@ -188,6 +189,255 @@ export interface Database {
           },
         ]
       }
+      psps: {
+        Row: {
+          id: string
+          organization_id: string
+          name: string
+          commission_rate: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          name: string
+          commission_rate?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          name?: string
+          commission_rate?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'psps_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      transfer_categories: {
+        Row: {
+          id: string
+          organization_id: string
+          name: string
+          is_deposit: boolean
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          name: string
+          is_deposit?: boolean
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          name?: string
+          is_deposit?: boolean
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'transfer_categories_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      payment_methods: {
+        Row: {
+          id: string
+          organization_id: string
+          name: string
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          name: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          name?: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'payment_methods_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      transfer_types: {
+        Row: {
+          id: string
+          organization_id: string
+          name: string
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          name: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          name?: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'transfer_types_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      transfers: {
+        Row: {
+          id: string
+          organization_id: string
+          full_name: string
+          payment_method_id: string
+          transfer_date: string
+          category_id: string
+          amount: number
+          commission: number
+          net: number
+          currency: Currency
+          psp_id: string
+          type_id: string
+          crm_id: string | null
+          meta_id: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          full_name: string
+          payment_method_id: string
+          transfer_date?: string
+          category_id: string
+          amount: number
+          commission: number
+          net: number
+          currency?: Currency
+          psp_id: string
+          type_id: string
+          crm_id?: string | null
+          meta_id?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          full_name?: string
+          payment_method_id?: string
+          transfer_date?: string
+          category_id?: string
+          amount?: number
+          commission?: number
+          net?: number
+          currency?: Currency
+          psp_id?: string
+          type_id?: string
+          crm_id?: string | null
+          meta_id?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'transfers_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'transfers_payment_method_id_fkey'
+            columns: ['payment_method_id']
+            isOneToOne: false
+            referencedRelation: 'payment_methods'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'transfers_category_id_fkey'
+            columns: ['category_id']
+            isOneToOne: false
+            referencedRelation: 'transfer_categories'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'transfers_psp_id_fkey'
+            columns: ['psp_id']
+            isOneToOne: false
+            referencedRelation: 'psps'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'transfers_type_id_fkey'
+            columns: ['type_id']
+            isOneToOne: false
+            referencedRelation: 'transfer_types'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'transfers_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: {
       [key: string]: {
@@ -215,3 +465,8 @@ export type Profile = Database['public']['Tables']['profiles']['Row']
 export type Organization = Database['public']['Tables']['organizations']['Row']
 export type OrganizationMember = Database['public']['Tables']['organization_members']['Row']
 export type OrganizationInvitation = Database['public']['Tables']['organization_invitations']['Row']
+export type Psp = Database['public']['Tables']['psps']['Row']
+export type TransferCategory = Database['public']['Tables']['transfer_categories']['Row']
+export type PaymentMethod = Database['public']['Tables']['payment_methods']['Row']
+export type TransferType = Database['public']['Tables']['transfer_types']['Row']
+export type Transfer = Database['public']['Tables']['transfers']['Row']

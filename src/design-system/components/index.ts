@@ -12,6 +12,7 @@ export * from './Link'
 export * from './Avatar'
 
 // Complex components
+export * from './Select'
 export * from './Table'
 export * from './Tabs'
 export * from './Dialog'

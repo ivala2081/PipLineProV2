@@ -1,6 +1,220 @@
 {
+  "nav": {
+    "groups": {
+      "main": "Ana Men\u00fc",
+      "dataEntry": "Veri Giri\u015fi",
+      "management": "Y\u00f6netim",
+      "system": "Sistem"
+    },
+    "dashboard": "Kontrol Paneli",
+    "transfers": "Transferler",
+    "module2": "Mod\u00fcl 2",
+    "module3": "Mod\u00fcl 3",
+    "members": "\u00dcyeler",
+    "invitations": "Davetiyeler",
+    "organizations": "Organizasyonlar"
+  },
+  "layout": {
+    "noOrganization": "Organizasyon Yok",
+    "organizations": "Organizasyonlar",
+    "signOut": "\u00c7\u0131k\u0131\u015f Yap",
+    "toggleTheme": "Tema de\u011fi\u015ftir",
+    "changeLanguage": "Dil de\u011fi\u015ftir"
+  },
+  "placeholder": {
+    "emptyTitle": "Hen\u00fcz bir \u015fey yok",
+    "emptyDescription": "Bu b\u00f6l\u00fcm yak\u0131nda kullan\u0131ma sunulacakt\u0131r."
+  },
   "dashboard": {
-    "title": "PipLinePro Kontrol Paneli",
-    "subtitle": "Tasarım sistemi yüklendi. Oluşturmaya hazır."
+    "title": "Kontrol Paneli",
+    "subtitle": "PipLinePro'ya ho\u015f geldiniz.",
+    "defaultUser": "Kullan\u0131c\u0131",
+    "welcome": "Tekrar ho\u015f geldin, {{name}}",
+    "orgContext": "{{org}} y\u00f6netiliyor",
+    "quickActions": "H\u0131zl\u0131 \u0130\u015flemler",
+    "stats": {
+      "totalRecords": "Toplam Kay\u0131t",
+      "thisWeek": "Bu Hafta",
+      "members": "\u00dcyeler",
+      "organizations": "Organizasyonlar"
+    },
+    "actions": {
+      "transfers": "Transfer veri giri\u015fini a\u00e7",
+      "module2": "Mod\u00fcl 2 veri giri\u015fini a\u00e7",
+      "module3": "Mod\u00fcl 3 veri giri\u015fini a\u00e7",
+      "members": "Organizasyon \u00fcyelerini y\u00f6net",
+      "invitations": "Davetiyeleri y\u00f6net",
+      "organizations": "Organizasyonlar\u0131 y\u00f6net"
+    }
+  },
+  "transfers": {
+    "title": "Transferler",
+    "subtitle": "Finansal transfer ve i\u015flemleri y\u00f6netin.",
+    "addTransfer": "Transfer Ekle",
+    "editTransfer": "Transfer D\u00fczenle",
+    "tabs": {
+      "transfers": "Transferler",
+      "settings": "Ayarlar"
+    },
+    "columns": {
+      "fullName": "Ad Soyad",
+      "paymentMethod": "\u00d6deme Y\u00f6ntemi",
+      "date": "Tarih",
+      "category": "Kategori",
+      "amount": "Tutar",
+      "commission": "Komisyon",
+      "net": "Net",
+      "currency": "Para Birimi",
+      "psp": "Kasa",
+      "type": "T\u00fcr",
+      "crmId": "CRM ID",
+      "metaId": "META ID",
+      "actions": "\u0130\u015flemler"
+    },
+    "form": {
+      "fullName": "Ad Soyad",
+      "fullNamePlaceholder": "Ad soyad girin",
+      "paymentMethod": "\u00d6deme Y\u00f6ntemi",
+      "selectPaymentMethod": "\u00d6deme y\u00f6ntemi se\u00e7in",
+      "date": "Tarih ve Saat",
+      "category": "Kategori",
+      "selectCategory": "Kategori se\u00e7in",
+      "amount": "Tutar",
+      "amountHint": "Pozitif de\u011fer girin. \u0130\u015faret kategoriye g\u00f6re belirlenir.",
+      "commission": "Komisyon",
+      "commissionAuto": "PSP oran\u0131ndan otomatik hesaplan\u0131r",
+      "net": "Net Tutar",
+      "netAuto": "Tutar eksi komisyon",
+      "currency": "Para Birimi",
+      "psp": "Kasa",
+      "selectPsp": "Kasa se\u00e7in",
+      "type": "T\u00fcr",
+      "selectType": "T\u00fcr se\u00e7in",
+      "crmId": "CRM ID",
+      "crmIdPlaceholder": "\u0130ste\u011fe ba\u011fl\u0131",
+      "metaId": "META ID",
+      "metaIdPlaceholder": "\u0130ste\u011fe ba\u011fl\u0131",
+      "save": "Kaydet",
+      "saving": "Kaydediliyor...",
+      "cancel": "\u0130ptal"
+    },
+    "delete": {
+      "title": "Transferi Sil",
+      "description": "\"{{name}}\" transferini silmek istedi\u011finize emin misiniz? Bu i\u015flem geri al\u0131namaz.",
+      "confirm": "Sil",
+      "cancel": "\u0130ptal"
+    },
+    "empty": {
+      "title": "Hen\u00fcz transfer yok",
+      "description": "Ba\u015flamak i\u00e7in ilk transferinizi olu\u015fturun."
+    },
+    "settings": {
+      "title": "Arama Ayarlar\u0131",
+      "subtitle": "Transfer alanlar\u0131 i\u00e7in a\u00e7\u0131l\u0131r men\u00fc de\u011ferlerini y\u00f6netin.",
+      "psps": "Kasalar (PSP)",
+      "categories": "Kategoriler",
+      "paymentMethods": "\u00d6deme Y\u00f6ntemleri",
+      "types": "T\u00fcrler",
+      "addItem": "Ekle",
+      "editItem": "D\u00fczenle",
+      "deleteItem": "Sil",
+      "name": "Ad",
+      "namePlaceholder": "Ad girin",
+      "commissionRate": "Komisyon Oran\u0131 (%)",
+      "commissionRatePlaceholder": "\u00f6rn. 10",
+      "isDeposit": "Yat\u0131r\u0131m m\u0131",
+      "noItems": "Hen\u00fcz \u00f6\u011fe yok. Ba\u015flamak i\u00e7in bir tane ekleyin.",
+      "deleteConfirm": "\"{{name}}\" \u00f6\u011fesini silmek istedi\u011finize emin misiniz?",
+      "save": "Kaydet",
+      "cancel": "\u0130ptal"
+    },
+    "validation": {
+      "fullNameRequired": "Ad soyad gereklidir",
+      "paymentMethodRequired": "\u00d6deme y\u00f6ntemi gereklidir",
+      "dateRequired": "Tarih gereklidir",
+      "categoryRequired": "Kategori gereklidir",
+      "amountRequired": "Tutar gereklidir",
+      "amountPositive": "Tutar 0'dan b\u00fcy\u00fck olmal\u0131d\u0131r",
+      "pspRequired": "Kasa gereklidir",
+      "typeRequired": "T\u00fcr gereklidir"
+    },
+    "toast": {
+      "created": "Transfer ba\u015far\u0131yla olu\u015fturuldu",
+      "updated": "Transfer ba\u015far\u0131yla g\u00fcncellendi",
+      "deleted": "Transfer ba\u015far\u0131yla silindi",
+      "error": "Bir hata olu\u015ftu. L\u00fctfen tekrar deneyin.",
+      "lookupCreated": "\u00d6\u011fe ba\u015far\u0131yla olu\u015fturuldu",
+      "lookupUpdated": "\u00d6\u011fe ba\u015far\u0131yla g\u00fcncellendi",
+      "lookupDeleted": "\u00d6\u011fe ba\u015far\u0131yla silindi"
+    }
+  },
+  "module2": {
+    "title": "Mod\u00fcl 2",
+    "subtitle": "Bu b\u00f6l\u00fcm geli\u015ftirme a\u015famas\u0131ndad\u0131r."
+  },
+  "module3": {
+    "title": "Mod\u00fcl 3",
+    "subtitle": "Bu b\u00f6l\u00fcm geli\u015ftirme a\u015famas\u0131ndad\u0131r."
+  },
+  "members": {
+    "title": "\u00dcyeler",
+    "subtitle": "Organizasyon \u00fcyelerini y\u00f6netin."
+  },
+  "invitations": {
+    "title": "Davetiyeler",
+    "subtitle": "Organizasyon davetiyelerini y\u00f6netin."
+  },
+  "organizations": {
+    "title": "Organizasyonlar",
+    "subtitle": "Organizasyonlar\u0131 y\u00f6netin."
+  },
+  "login": {
+    "brand": "PipLinePro",
+    "title": "Giri\u015f Yap",
+    "subtitle": "Devam etmek i\u00e7in bilgilerinizi girin",
+    "email": "E-posta",
+    "password": "\u015eifre",
+    "submit": "Giri\u015f Yap",
+    "signingIn": "Giri\u015f yap\u0131l\u0131yor...",
+    "forgotPassword": "\u015eifrenizi mi unuttunuz?",
+    "rememberMe": "Beni hat\u0131rla",
+    "error": "Ge\u00e7ersiz e-posta veya \u015fifre",
+    "errorNetwork": "A\u011f hatas\u0131. L\u00fctfen tekrar deneyin.",
+    "errorRateLimit": "\u00c7ok fazla deneme. {{seconds}} saniye sonra tekrar deneyin.",
+    "validationEmailRequired": "E-posta gereklidir",
+    "validationEmailInvalid": "Ge\u00e7erli bir e-posta girin",
+    "validationPasswordRequired": "\u015eifre gereklidir"
+  },
+  "forgotPassword": {
+    "title": "\u015eifre S\u0131f\u0131rla",
+    "subtitle": "S\u0131f\u0131rlama ba\u011flant\u0131s\u0131 almak i\u00e7in e-postan\u0131z\u0131 girin",
+    "email": "E-posta",
+    "submit": "S\u0131f\u0131rlama Ba\u011flant\u0131s\u0131 G\u00f6nder",
+    "sending": "G\u00f6nderiliyor...",
+    "success": "S\u0131f\u0131rlama ba\u011flant\u0131s\u0131 i\u00e7in e-postan\u0131z\u0131 kontrol edin",
+    "resendIn": "{{seconds}}s sonra tekrar g\u00f6nder",
+    "resend": "Ba\u011flant\u0131y\u0131 tekrar g\u00f6nder",
+    "backToLogin": "Giri\u015f sayfas\u0131na d\u00f6n",
+    "validationEmailRequired": "E-posta gereklidir",
+    "validationEmailInvalid": "Ge\u00e7erli bir e-posta girin"
+  },
+  "resetPassword": {
+    "title": "Yeni \u015eifre Belirle",
+    "subtitle": "A\u015fa\u011f\u0131ya yeni \u015fifrenizi girin",
+    "newPassword": "Yeni \u015eifre",
+    "confirmPassword": "\u015eifreyi Onayla",
+    "submit": "\u015eifreyi G\u00fcncelle",
+    "updating": "G\u00fcncelleniyor...",
+    "success": "\u015eifre ba\u015far\u0131yla g\u00fcncellendi",
+    "successMessage": "\u015eifreniz g\u00fcncellendi. Art\u0131k yeni \u015fifrenizle giri\u015f yapabilirsiniz.",
+    "goToLogin": "Giri\u015f Sayfas\u0131na Git",
+    "error": "\u015eifre g\u00fcncellenemedi. L\u00fctfen tekrar deneyin.",
+    "errorExpired": "Bu s\u0131f\u0131rlama ba\u011flant\u0131s\u0131n\u0131n s\u00fcresi doldu. L\u00fctfen yeni bir tane isteyin.",
+    "validationRequired": "\u015eifre gereklidir",
+    "validationMinLength": "\u015eifre en az 8 karakter olmal\u0131d\u0131r",
+    "validationUppercase": "\u015eifre b\u00fcy\u00fck harf i\u00e7ermelidir",
+    "validationLowercase": "\u015eifre k\u00fc\u00e7\u00fck harf i\u00e7ermelidir",
+    "validationNumber": "\u015eifre bir rakam i\u00e7ermelidir",
+    "validationMatch": "\u015eifreler e\u015fle\u015fmiyor"
   }
 }

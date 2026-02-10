@@ -1,6 +1,220 @@
 {
+  "nav": {
+    "groups": {
+      "main": "Main",
+      "dataEntry": "Data Entry",
+      "management": "Management",
+      "system": "System"
+    },
+    "dashboard": "Dashboard",
+    "transfers": "Transfers",
+    "module2": "Module 2",
+    "module3": "Module 3",
+    "members": "Members",
+    "invitations": "Invitations",
+    "organizations": "Organizations"
+  },
+  "layout": {
+    "noOrganization": "No Organization",
+    "organizations": "Organizations",
+    "signOut": "Sign Out",
+    "toggleTheme": "Toggle theme",
+    "changeLanguage": "Change language"
+  },
+  "placeholder": {
+    "emptyTitle": "Nothing here yet",
+    "emptyDescription": "This section will be available soon."
+  },
   "dashboard": {
-    "title": "PipLinePro Dashboard",
-    "subtitle": "Design system loaded. Ready to build."
+    "title": "Dashboard",
+    "subtitle": "Welcome to PipLinePro.",
+    "defaultUser": "User",
+    "welcome": "Welcome back, {{name}}",
+    "orgContext": "Managing {{org}}",
+    "quickActions": "Quick Actions",
+    "stats": {
+      "totalRecords": "Total Records",
+      "thisWeek": "This Week",
+      "members": "Members",
+      "organizations": "Organizations"
+    },
+    "actions": {
+      "transfers": "Open transfers data entry",
+      "module2": "Open Module 2 data entry",
+      "module3": "Open Module 3 data entry",
+      "members": "Manage organization members",
+      "invitations": "Manage invitations",
+      "organizations": "Manage organizations"
+    }
+  },
+  "transfers": {
+    "title": "Transfers",
+    "subtitle": "Manage financial transfers and transactions.",
+    "addTransfer": "Add Transfer",
+    "editTransfer": "Edit Transfer",
+    "tabs": {
+      "transfers": "Transfers",
+      "settings": "Settings"
+    },
+    "columns": {
+      "fullName": "Full Name",
+      "paymentMethod": "Payment Method",
+      "date": "Date",
+      "category": "Category",
+      "amount": "Amount",
+      "commission": "Commission",
+      "net": "Net",
+      "currency": "Currency",
+      "psp": "PSP",
+      "type": "Type",
+      "crmId": "CRM ID",
+      "metaId": "META ID",
+      "actions": "Actions"
+    },
+    "form": {
+      "fullName": "Full Name",
+      "fullNamePlaceholder": "Enter full name",
+      "paymentMethod": "Payment Method",
+      "selectPaymentMethod": "Select payment method",
+      "date": "Date & Time",
+      "category": "Category",
+      "selectCategory": "Select category",
+      "amount": "Amount",
+      "amountHint": "Enter a positive value. Sign is determined by category.",
+      "commission": "Commission",
+      "commissionAuto": "Auto-calculated from PSP rate",
+      "net": "Net Amount",
+      "netAuto": "Amount minus commission",
+      "currency": "Currency",
+      "psp": "PSP",
+      "selectPsp": "Select PSP",
+      "type": "Type",
+      "selectType": "Select type",
+      "crmId": "CRM ID",
+      "crmIdPlaceholder": "Optional",
+      "metaId": "META ID",
+      "metaIdPlaceholder": "Optional",
+      "save": "Save",
+      "saving": "Saving...",
+      "cancel": "Cancel"
+    },
+    "delete": {
+      "title": "Delete Transfer",
+      "description": "Are you sure you want to delete the transfer for \"{{name}}\"? This action cannot be undone.",
+      "confirm": "Delete",
+      "cancel": "Cancel"
+    },
+    "empty": {
+      "title": "No transfers yet",
+      "description": "Create your first transfer to get started."
+    },
+    "settings": {
+      "title": "Lookup Settings",
+      "subtitle": "Manage dropdown values for transfers.",
+      "psps": "PSPs (Payment Service Providers)",
+      "categories": "Categories",
+      "paymentMethods": "Payment Methods",
+      "types": "Types",
+      "addItem": "Add",
+      "editItem": "Edit",
+      "deleteItem": "Delete",
+      "name": "Name",
+      "namePlaceholder": "Enter name",
+      "commissionRate": "Commission Rate (%)",
+      "commissionRatePlaceholder": "e.g. 10",
+      "isDeposit": "Is Deposit",
+      "noItems": "No items yet. Add one to get started.",
+      "deleteConfirm": "Are you sure you want to delete \"{{name}}\"?",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "validation": {
+      "fullNameRequired": "Full name is required",
+      "paymentMethodRequired": "Payment method is required",
+      "dateRequired": "Date is required",
+      "categoryRequired": "Category is required",
+      "amountRequired": "Amount is required",
+      "amountPositive": "Amount must be greater than 0",
+      "pspRequired": "PSP is required",
+      "typeRequired": "Type is required"
+    },
+    "toast": {
+      "created": "Transfer created successfully",
+      "updated": "Transfer updated successfully",
+      "deleted": "Transfer deleted successfully",
+      "error": "An error occurred. Please try again.",
+      "lookupCreated": "Item created successfully",
+      "lookupUpdated": "Item updated successfully",
+      "lookupDeleted": "Item deleted successfully"
+    }
+  },
+  "module2": {
+    "title": "Module 2",
+    "subtitle": "This section is under development."
+  },
+  "module3": {
+    "title": "Module 3",
+    "subtitle": "This section is under development."
+  },
+  "members": {
+    "title": "Members",
+    "subtitle": "Manage organization members."
+  },
+  "invitations": {
+    "title": "Invitations",
+    "subtitle": "Manage organization invitations."
+  },
+  "organizations": {
+    "title": "Organizations",
+    "subtitle": "Manage organizations."
+  },
+  "login": {
+    "brand": "PipLinePro",
+    "title": "Sign In",
+    "subtitle": "Enter your credentials to continue",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign In",
+    "signingIn": "Signing in...",
+    "forgotPassword": "Forgot password?",
+    "rememberMe": "Remember me",
+    "error": "Invalid email or password",
+    "errorNetwork": "Network error. Please try again.",
+    "errorRateLimit": "Too many attempts. Try again in {{seconds}} seconds.",
+    "validationEmailRequired": "Email is required",
+    "validationEmailInvalid": "Please enter a valid email",
+    "validationPasswordRequired": "Password is required"
+  },
+  "forgotPassword": {
+    "title": "Reset Password",
+    "subtitle": "Enter your email to receive a reset link",
+    "email": "Email",
+    "submit": "Send Reset Link",
+    "sending": "Sending...",
+    "success": "Check your email for a reset link",
+    "resendIn": "Resend in {{seconds}}s",
+    "resend": "Resend link",
+    "backToLogin": "Back to sign in",
+    "validationEmailRequired": "Email is required",
+    "validationEmailInvalid": "Please enter a valid email"
+  },
+  "resetPassword": {
+    "title": "Set New Password",
+    "subtitle": "Enter your new password below",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "submit": "Update Password",
+    "updating": "Updating...",
+    "success": "Password updated successfully",
+    "successMessage": "Your password has been updated. You can now sign in with your new password.",
+    "goToLogin": "Go to Sign In",
+    "error": "Failed to update password. Please try again.",
+    "errorExpired": "This reset link has expired. Please request a new one.",
+    "validationRequired": "Password is required",
+    "validationMinLength": "Password must be at least 8 characters",
+    "validationUppercase": "Password must contain an uppercase letter",
+    "validationLowercase": "Password must contain a lowercase letter",
+    "validationNumber": "Password must contain a number",
+    "validationMatch": "Passwords do not match"
   }
 }
