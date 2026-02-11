@@ -199,7 +199,7 @@ export function TransferDialog({
           full_name: transfer.full_name,
           payment_method_id: transfer.payment_method_id,
           transfer_date: transfer.transfer_date
-            ? new Date(transfer.transfer_date).toISOString().slice(0, 16)
+            ? getLocalDatetimeString(new Date(transfer.transfer_date))
             : '',
           category_id: transfer.category_id,
           raw_amount: Math.abs(transfer.amount),
