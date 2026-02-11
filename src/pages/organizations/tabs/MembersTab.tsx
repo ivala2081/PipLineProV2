@@ -64,10 +64,7 @@ export function MembersTab({ orgId, canManage }: MembersTabProps) {
     if (!removeTarget) return
     try {
       await removeMember.mutateAsync(removeTarget.user_id)
-      toast({
-        title: t('organizations.toast.memberRemoved'),
-        variant: 'success',
-      })
+      toast({ title: t('organizations.toast.memberRemoved'), variant: 'success' })
       setRemoveTarget(null)
     } catch (err) {
       toast({ title: (err as Error).message, variant: 'error' })
@@ -88,7 +85,7 @@ export function MembersTab({ orgId, canManage }: MembersTabProps) {
     return (
       <div className="space-y-3 pt-4">
         {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} className="h-12 w-full rounded-lg" />
+          <Skeleton key={i} className="h-14 w-full rounded-lg" />
         ))}
       </div>
     )

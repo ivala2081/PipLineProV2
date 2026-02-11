@@ -141,9 +141,12 @@
       "deleteItem": "Delete",
       "name": "Name",
       "namePlaceholder": "Enter name",
+      "nameRequired": "Name is required",
       "commissionRate": "Commission Rate (%)",
       "commissionRatePlaceholder": "e.g. 10",
       "isDeposit": "Is Deposit",
+      "deposit": "Deposit",
+      "withdrawal": "Withdrawal",
       "noItems": "No items yet. Add one to get started.",
       "deleteConfirm": "Are you sure you want to delete \"{{name}}\"?",
       "save": "Save",
@@ -213,6 +216,15 @@
     "active": "Active",
     "inactive": "Inactive",
     "backToList": "Back to Organizations",
+    "searchPlaceholder": "Search organizations...",
+    "filterAll": "All",
+    "filterActive": "Active",
+    "filterInactive": "Inactive",
+    "orgCount": "{{count}} organization",
+    "orgCount_plural": "{{count}} organizations",
+    "notFound": "Organization not found",
+    "notFoundDescription": "The organization you're looking for doesn't exist or has been removed.",
+    "yourRole": "Your role: {{role}}",
     "columns": {
       "name": "Name",
       "slug": "Slug",
@@ -224,6 +236,7 @@
       "title": "No organizations yet",
       "description": "Create your first organization to get started."
     },
+    "errorRetry": "Retry",
     "tabs": {
       "overview": "Overview",
       "members": "Members",
@@ -234,7 +247,14 @@
       "slug": "Slug",
       "status": "Status",
       "members": "Members",
-      "createdAt": "Created At"
+      "admins": "Admins",
+      "operations": "Operations",
+      "createdAt": "Created At",
+      "updatedAt": "Last Updated",
+      "teamPreview": "Team Members",
+      "moreMembers": "+{{count}} more members",
+      "details": "Organization Details",
+      "orgId": "Organization ID"
     },
     "createDialog": {
       "title": "Create Organization",
@@ -243,6 +263,7 @@
       "slug": "Slug",
       "slugPlaceholder": "url-safe-slug",
       "slugHint": "Auto-generated from name. Lowercase, hyphens only.",
+      "slugPreview": "Your organization URL slug will be:",
       "create": "Create",
       "cancel": "Cancel",
       "creating": "Creating..."
@@ -256,6 +277,10 @@
         "role": "Role",
         "joined": "Joined"
       },
+      "roles": {
+        "admin": "Admin",
+        "operation": "Operation"
+      },
       "actions": {
         "promoteToAdmin": "Promote to Admin",
         "demoteToOperation": "Demote to Operation",
@@ -265,7 +290,8 @@
         "title": "Remove Member",
         "description": "Are you sure you want to remove \"{{name}}\" from this organization? This action cannot be undone."
       },
-      "empty": "No members in this organization."
+      "empty": "No members in this organization.",
+      "emptyDescription": "Invite members to start collaborating."
     },
     "addMemberDialog": {
       "title": "Add Member",
@@ -277,18 +303,26 @@
       "displayNamePlaceholder": "Enter full name",
       "role": "Role",
       "roleAdmin": "Admin",
+      "roleAdminDescription": "Full access to settings and members",
       "roleOperation": "Operation",
+      "roleOperationDescription": "Can view and manage data",
       "add": "Add Member",
       "cancel": "Cancel",
       "adding": "Adding..."
     },
     "settings": {
-      "title": "Organization Settings",
+      "title": "General",
       "subtitle": "Update organization details.",
       "name": "Organization Name",
+      "slug": "Organization Slug",
+      "slugDescription": "The URL-safe identifier for this organization.",
       "isActive": "Organization is active",
+      "isActiveDescription": "When inactive, members cannot access this organization.",
+      "dangerZone": "Danger Zone",
+      "dangerZoneDescription": "Irreversible and destructive actions.",
       "save": "Save Changes",
-      "saving": "Saving..."
+      "saving": "Saving...",
+      "reset": "Reset"
     },
     "toast": {
       "created": "Organization created successfully",

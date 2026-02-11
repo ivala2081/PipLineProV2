@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { UserPlus, ShieldCheck, User, Eye, EyeSlash } from '@phosphor-icons/react'
 import {
   Dialog,
   DialogContent,
@@ -25,6 +26,46 @@ interface InviteMemberDialogProps {
   orgId: string
 }
 
+function RoleCard({
+  selected,
+  onClick,
+  icon,
+  title,
+  description,
+}: {
+  selected: boolean
+  onClick: () => void
+  icon: React.ReactNode
+  title: string
+  description: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex w-full items-start gap-3 rounded-xl border-2 p-4 text-left transition-colors ${
+        selected
+          ? 'border-brand bg-brand/5'
+          : 'border-black/10 hover:border-black/20'
+      }`}
+    >
+      <div
+        className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${
+          selected ? 'bg-brand/10 text-brand' : 'bg-black/5 text-black/40'
+        }`}
+      >
+        {icon}
+      </div>
+      <div>
+        <p className={`text-sm font-medium ${selected ? 'text-brand' : ''}`}>
+          {title}
+        </p>
+        <p className="mt-0.5 text-xs text-black/40">{description}</p>
+      </div>
+    </button>
+  )
+}
+
 export function InviteMemberDialog({
   open,
   onClose,
@@ -33,24 +74,39 @@ export function InviteMemberDialog({
   const { t } = useTranslation('pages')
   const { toast } = useToast()
   const inviteMember = useInviteMember(orgId)
+  const [showPassword, setShowPassword] = useState(false)
 
   const form = useForm<InviteMemberValues>({
     resolver: zodResolver(inviteMemberSchema),
-    defaultValues: { email: '', role: 'operation' },
+    defaultValues: { email: '', role: 'operation', password: '', displayName: '' },
   })
+
+  const selectedRole = form.watch('role')
 
   // Reset form when dialog opens
   useEffect(() => {
-    if (open) form.reset({ email: '', role: 'operation' })
+    if (open) {
+      form.reset({ email: '', role: 'operation', password: '', displayName: '' })
+      setShowPassword(false)
+    }
   }, [open, form])
 
   const handleSubmit = form.handleSubmit(async (data) => {
     try {
-      await inviteMember.mutateAsync(data)
-      toast({ title: t('organizations.toast.invited'), variant: 'success' })
+      const result = await inviteMember.mutateAsync(data)
+      if (result?.userAlreadyExisted) {
+        toast({ title: t('organizations.toast.memberAdded'), variant: 'success' })
+      } else {
+        toast({ title: t('organizations.toast.invited'), variant: 'success' })
+      }
       onClose()
     } catch (err) {
-      toast({ title: (err as Error).message, variant: 'error' })
+      const message = (err as Error).message
+      if (message.includes('DUPLICATE_INVITATION')) {
+        toast({ title: t('organizations.toast.duplicateInvitation'), variant: 'error' })
+      } else {
+        toast({ title: message, variant: 'error' })
+      }
     }
   })
 
@@ -58,9 +114,15 @@ export function InviteMemberDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{t('organizations.inviteDialog.title')}</DialogTitle>
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-lg bg-brand/10">
+              <UserPlus size={20} className="text-brand" />
+            </div>
+            <DialogTitle>{t('organizations.inviteDialog.title')}</DialogTitle>
+          </div>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Email */}
           <div className="space-y-2">
             <Label>{t('organizations.inviteDialog.email')}</Label>
             <Input
@@ -69,40 +131,77 @@ export function InviteMemberDialog({
               placeholder={t('organizations.inviteDialog.emailPlaceholder')}
             />
             {form.formState.errors.email && (
-              <p className="text-xs text-red-500">
+              <p className="text-xs text-red">
                 {form.formState.errors.email.message}
               </p>
             )}
           </div>
 
+          {/* Display Name */}
+          <div className="space-y-2">
+            <Label>
+              {t('organizations.inviteDialog.displayName')}
+              <span className="ml-1 text-xs font-normal text-black/40">
+                ({t('organizations.inviteDialog.optional')})
+              </span>
+            </Label>
+            <Input
+              type="text"
+              {...form.register('displayName')}
+              placeholder={t('organizations.inviteDialog.displayNamePlaceholder')}
+            />
+          </div>
+
+          {/* Password */}
+          <div className="space-y-2">
+            <Label>{t('organizations.inviteDialog.password')}</Label>
+            <div className="relative">
+              <Input
+                type={showPassword ? 'text' : 'password'}
+                {...form.register('password')}
+                placeholder={t('organizations.inviteDialog.passwordPlaceholder')}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-black/40 hover:text-black/60"
+              >
+                {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+            {form.formState.errors.password ? (
+              <p className="text-xs text-red">
+                {form.formState.errors.password.message}
+              </p>
+            ) : (
+              <p className="text-xs text-black/40">
+                {t('organizations.inviteDialog.passwordHint')}
+              </p>
+            )}
+          </div>
+
+          {/* Role */}
           <div className="space-y-2">
             <Label>{t('organizations.inviteDialog.role')}</Label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  value="operation"
-                  {...form.register('role')}
-                  className="size-4"
-                />
-                <span className="text-sm">
-                  {t('organizations.inviteDialog.roleOperation')}
-                </span>
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  value="admin"
-                  {...form.register('role')}
-                  className="size-4"
-                />
-                <span className="text-sm">
-                  {t('organizations.inviteDialog.roleAdmin')}
-                </span>
-              </label>
+            <div className="grid gap-2">
+              <RoleCard
+                selected={selectedRole === 'operation'}
+                onClick={() => form.setValue('role', 'operation')}
+                icon={<User size={18} />}
+                title={t('organizations.inviteDialog.roleOperation')}
+                description={t('organizations.inviteDialog.roleOperationDescription')}
+              />
+              <RoleCard
+                selected={selectedRole === 'admin'}
+                onClick={() => form.setValue('role', 'admin')}
+                icon={<ShieldCheck size={18} />}
+                title={t('organizations.inviteDialog.roleAdmin')}
+                description={t('organizations.inviteDialog.roleAdminDescription')}
+              />
             </div>
             {form.formState.errors.role && (
-              <p className="text-xs text-red-500">
+              <p className="text-xs text-red">
                 {form.formState.errors.role.message}
               </p>
             )}

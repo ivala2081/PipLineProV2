@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { CircleNotch, Sun, Moon, Globe } from '@phosphor-icons/react'
 import { useAuth } from '@/app/providers/AuthProvider'
@@ -184,12 +185,12 @@ export function ForgotPasswordPage() {
 
         {/* Back to login */}
         <div className="text-center">
-          <a
-            href="/login"
+          <Link
+            to="/login"
             className="text-sm text-brand underline-offset-4 transition-colors hover:underline"
           >
             {t('forgotPassword.backToLogin')}
-          </a>
+          </Link>
         </div>
       </Card>
     </div>

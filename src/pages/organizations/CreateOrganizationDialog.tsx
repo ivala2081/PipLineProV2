@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Buildings } from '@phosphor-icons/react'
 import {
   Dialog,
   DialogContent,
@@ -40,6 +41,7 @@ export function CreateOrganizationDialog({
   })
 
   const nameValue = form.watch('name')
+  const slugValue = form.watch('slug')
 
   // Auto-generate slug from name
   useEffect(() => {
@@ -71,7 +73,12 @@ export function CreateOrganizationDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{t('organizations.createDialog.title')}</DialogTitle>
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-lg bg-brand/10">
+              <Buildings size={20} className="text-brand" />
+            </div>
+            <DialogTitle>{t('organizations.createDialog.title')}</DialogTitle>
+          </div>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -81,7 +88,7 @@ export function CreateOrganizationDialog({
               placeholder={t('organizations.createDialog.namePlaceholder')}
             />
             {form.formState.errors.name && (
-              <p className="text-xs text-red-500">
+              <p className="text-xs text-red">
                 {form.formState.errors.name.message}
               </p>
             )}
@@ -96,8 +103,18 @@ export function CreateOrganizationDialog({
             <p className="text-xs text-black/40">
               {t('organizations.createDialog.slugHint')}
             </p>
+            {slugValue && (
+              <div className="rounded-lg bg-black/5 px-3 py-2">
+                <p className="text-xs text-black/40">
+                  {t('organizations.createDialog.slugPreview')}
+                </p>
+                <p className="mt-0.5 font-mono text-sm font-medium">
+                  /{slugValue}
+                </p>
+              </div>
+            )}
             {form.formState.errors.slug && (
-              <p className="text-xs text-red-500">
+              <p className="text-xs text-red">
                 {form.formState.errors.slug.message}
               </p>
             )}

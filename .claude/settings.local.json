@@ -14,7 +14,16 @@
       "Bash(popd:*)",
       "Bash(del \"c:\\\\Users\\\\ACER\\\\Desktop\\\\PipLineProV2\\\\src\\\\pages\\\\modules\\\\module-1.tsx\")",
       "Bash(ls -la \"c:\\\\Users\\\\ACER\\\\Desktop\\\\PipLineProV2\\\\src\\\\hooks\"\" 2>&1 || echo \"Directory listing failed \")",
-      "Bash(del:*)"
+      "Bash(del:*)",
+      "Bash(source ~/.nvm/nvm.sh)",
+      "Bash(nvm list:*)",
+      "Bash(nvm install:*)",
+      "Bash(nvm use:*)",
+      "Bash(python3:*)",
+      "Bash(supabase:*)",
+      "Bash(npx supabase:*)",
+      "Bash(curl:*)",
+      "Bash(SUPABASE_ACCESS_TOKEN=sbp_d462e2c179f066f7799ca40208a690777a0db503 npx supabase:*)"
     ]
   }
 }

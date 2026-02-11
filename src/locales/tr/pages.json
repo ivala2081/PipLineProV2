@@ -147,7 +147,10 @@
       "noItems": "Henüz öğe yok. Başlamak için bir tane ekleyin.",
       "deleteConfirm": "\"{{name}}\" öğesini silmek istediğinize emin misiniz?",
       "save": "Kaydet",
-      "cancel": "İptal"
+      "cancel": "İptal",
+      "deposit": "Yatırım",
+      "withdrawal": "Çekim",
+      "nameRequired": "Ad gereklidir"
     },
     "validation": {
       "fullNameRequired": "Ad soyad gereklidir",
@@ -213,6 +216,15 @@
     "active": "Aktif",
     "inactive": "Pasif",
     "backToList": "Organizasyonlara Dön",
+    "searchPlaceholder": "Organizasyon ara...",
+    "filterAll": "Tümü",
+    "filterActive": "Aktif",
+    "filterInactive": "Pasif",
+    "orgCount": "{{count}} organizasyon",
+    "orgCount_plural": "{{count}} organizasyon",
+    "notFound": "Organizasyon bulunamadı",
+    "notFoundDescription": "Aradığınız organizasyon mevcut değil veya kaldırılmış.",
+    "yourRole": "Rolünüz: {{role}}",
     "columns": {
       "name": "Ad",
       "slug": "Slug",
@@ -224,6 +236,7 @@
       "title": "Henüz organizasyon yok",
       "description": "Başlamak için ilk organizasyonunuzu oluşturun."
     },
+    "errorRetry": "Tekrar Dene",
     "tabs": {
       "overview": "Genel Bakış",
       "members": "Üyeler",
@@ -234,7 +247,14 @@
       "slug": "Slug",
       "status": "Durum",
       "members": "Üyeler",
-      "createdAt": "Oluşturulma Tarihi"
+      "createdAt": "Oluşturulma Tarihi",
+      "admins": "Yöneticiler",
+      "operations": "Operasyonlar",
+      "updatedAt": "Son Güncelleme",
+      "teamPreview": "Takım Üyeleri",
+      "moreMembers": "+{{count}} üye daha",
+      "details": "Organizasyon Detayları",
+      "orgId": "Organizasyon ID"
     },
     "createDialog": {
       "title": "Organizasyon Oluştur",
@@ -243,6 +263,7 @@
       "slug": "Slug",
       "slugPlaceholder": "url-uyumlu-slug",
       "slugHint": "Addan otomatik oluşturulur. Küçük harf ve tire.",
+      "slugPreview": "Organizasyon URL slug'ınız:",
       "create": "Oluştur",
       "cancel": "İptal",
       "creating": "Oluşturuluyor..."
@@ -256,6 +277,10 @@
         "role": "Rol",
         "joined": "Katılma"
       },
+      "roles": {
+        "admin": "Admin",
+        "operation": "Operasyon"
+      },
       "actions": {
         "promoteToAdmin": "Admin Yap",
         "demoteToOperation": "Operasyona İndir",
@@ -265,7 +290,8 @@
         "title": "Üyeyi Kaldır",
         "description": "\"{{name}}\" üyesini bu organizasyondan kaldırmak istediğinize emin misiniz? Bu işlem geri alınamaz."
       },
-      "empty": "Bu organizasyonda üye yok."
+      "empty": "Bu organizasyonda üye yok.",
+      "emptyDescription": "İş birliği yapmak için üye davet edin."
     },
     "addMemberDialog": {
       "title": "Üye Ekle",
@@ -277,18 +303,26 @@
       "displayNamePlaceholder": "Ad soyad girin",
       "role": "Rol",
       "roleAdmin": "Admin",
+      "roleAdminDescription": "Ayarlar ve üyelere tam erişim",
       "roleOperation": "Operasyon",
+      "roleOperationDescription": "Verileri görüntüleyebilir ve yönetebilir",
       "add": "Üye Ekle",
       "cancel": "İptal",
       "adding": "Ekleniyor..."
     },
     "settings": {
-      "title": "Organizasyon Ayarları",
+      "title": "Genel",
       "subtitle": "Organizasyon bilgilerini güncelleyin.",
       "name": "Organizasyon Adı",
+      "slug": "Organizasyon Slug",
+      "slugDescription": "Bu organizasyonun URL uyumlu tanımlayıcısı.",
       "isActive": "Organizasyon aktif",
+      "isActiveDescription": "Pasif olduğunda üyeler bu organizasyona erişemez.",
+      "dangerZone": "Tehlikeli Bölge",
+      "dangerZoneDescription": "Geri alınamaz ve yıkıcı işlemler.",
       "save": "Değişiklikleri Kaydet",
-      "saving": "Kaydediliyor..."
+      "saving": "Kaydediliyor...",
+      "reset": "Sıfırla"
     },
     "toast": {
       "created": "Organizasyon başarıyla oluşturuldu",

@@ -54,7 +54,7 @@ export function ConfirmDialog({
           </Button>
           <Button
             variant="filled"
-            className={destructive ? 'bg-red-600 hover:bg-red-700' : ''}
+            className={destructive ? 'bg-red hover:bg-red/80' : ''}
             onClick={handleConfirm}
             disabled={loading}
           >

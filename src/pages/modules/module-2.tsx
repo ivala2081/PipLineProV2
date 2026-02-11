@@ -12,7 +12,7 @@ export function Module2Page() {
         <p className="mt-1 text-sm text-black/60">{t('module2.subtitle')}</p>
       </div>
       <Card className="flex flex-col items-center justify-center gap-4 border border-black/5 bg-bg1 py-20">
-        <div className="flex size-14 items-center justify-center rounded-2xl bg-black/5 text-black/30">
+        <div className="flex size-14 items-center justify-center rounded-2xl bg-black/5 text-black/40">
           <Table size={28} />
         </div>
         <div className="text-center">
