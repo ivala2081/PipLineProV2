@@ -329,6 +329,7 @@
       "snapshotDate": "Date",
       "tokens": "Balances",
       "noSnapshots": "No snapshots taken yet.",
+      "balanceHistory": "Balance History",
       "form": {
         "label": "Wallet Name",
         "labelPlaceholder": "e.g. Main USDT Wallet",

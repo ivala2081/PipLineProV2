@@ -657,6 +657,7 @@ export interface Database {
           organization_id: string
           snapshot_date: string
           balances: { token: string; balance: string; tokenAddress?: string }[]
+          total_usd: number
           created_at: string
         }
         Insert: {
@@ -665,6 +666,7 @@ export interface Database {
           organization_id: string
           snapshot_date: string
           balances: { token: string; balance: string; tokenAddress?: string }[]
+          total_usd?: number
           created_at?: string
         }
         Update: {
@@ -673,6 +675,7 @@ export interface Database {
           organization_id?: string
           snapshot_date?: string
           balances?: { token: string; balance: string; tokenAddress?: string }[]
+          total_usd?: number
           created_at?: string
         }
         Relationships: [

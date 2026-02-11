@@ -47,5 +47,7 @@ export const queryKeys = {
       [...queryKeys.wallets.all, 'balances', walletId] as const,
     snapshots: (walletId: string) =>
       [...queryKeys.wallets.all, 'snapshots', walletId] as const,
+    chart: (walletId: string) =>
+      [...queryKeys.wallets.all, 'chart', walletId] as const,
   },
 } as const

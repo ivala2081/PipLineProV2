@@ -1,9 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/queryKeys'
-import { getWalletPortfolio, type PortfolioAsset } from '@/lib/tatumService'
+import {
+  getWalletPortfolioWithUsd,
+  type PortfolioAssetWithUsd,
+} from '@/lib/tatumService'
 
 interface UseWalletBalanceReturn {
-  assets: PortfolioAsset[]
+  assets: PortfolioAssetWithUsd[]
+  totalUsd: number
   isLoading: boolean
   error: string | null
   refetch: () => void
@@ -17,14 +21,15 @@ export function useWalletBalanceQuery(
 ): UseWalletBalanceReturn {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: queryKeys.wallets.balances(walletId),
-    queryFn: () => getWalletPortfolio(chain, address),
+    queryFn: () => getWalletPortfolioWithUsd(chain, address),
     enabled: enabled && !!address && !!chain,
     staleTime: 60_000,
     refetchOnWindowFocus: false,
   })
 
   return {
-    assets: data ?? [],
+    assets: data?.assets ?? [],
+    totalUsd: data?.totalUsd ?? 0,
     isLoading,
     error: error?.message ?? null,
     refetch,

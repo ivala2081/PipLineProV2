@@ -1,13 +1,24 @@
 const CACHE_KEY = 'piplinepro:exchange-rates'
 const TIMEOUT_MS = 5_000
 
+/* ── Timeout helper (AbortSignal.timeout fallback) ────────────────── */
+
+function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  return fetch(url, { signal: controller.signal }).finally(() =>
+    clearTimeout(timer),
+  )
+}
+
 /* ── Provider 1: freecurrencyapi.com ─────────────────────────────── */
 
 async function fetchFromFreeCurrencyApi(currency: string): Promise<number> {
-  const API_KEY = 'fca_live_uAWyzDUluOFKnf0tNW0wgIN29gmEygmI7kW4NT0P'
-  const res = await fetch(
-    `https://api.freecurrencyapi.com/v1/latest?apikey=${API_KEY}&base_currency=${currency}&currencies=TRY`,
-    { signal: AbortSignal.timeout(TIMEOUT_MS) },
+  const apiKey = import.meta.env.VITE_EXCHANGE_RATE_API_KEY as string
+  if (!apiKey) throw new Error('VITE_EXCHANGE_RATE_API_KEY is not configured')
+  const res = await fetchWithTimeout(
+    `https://api.freecurrencyapi.com/v1/latest?apikey=${apiKey}&base_currency=${currency}&currencies=TRY`,
+    TIMEOUT_MS,
   )
   if (!res.ok) throw new Error(`freecurrencyapi: ${res.status}`)
   const json = await res.json()
@@ -20,9 +31,9 @@ async function fetchFromFreeCurrencyApi(currency: string): Promise<number> {
 /* ── Provider 2: frankfurter.app (ECB data, no key needed) ───────── */
 
 async function fetchFromFrankfurter(currency: string): Promise<number> {
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `https://api.frankfurter.app/latest?from=${currency}&to=TRY`,
-    { signal: AbortSignal.timeout(TIMEOUT_MS) },
+    TIMEOUT_MS,
   )
   if (!res.ok) throw new Error(`frankfurter: ${res.status}`)
   const json = await res.json()

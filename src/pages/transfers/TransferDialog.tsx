@@ -253,15 +253,33 @@ export function TransferDialog({
   }, [pspId, transferDate])
 
   // Exchange rate auto-fetch (always USD/TRY)
-  const { rate: fetchedRate, isLoading: rateLoading, refetch: refetchRate } =
-    useExchangeRateQuery()
+  const {
+    rate: fetchedRate,
+    isLoading: rateLoading,
+    isError: rateError,
+    refetch: refetchRate,
+  } = useExchangeRateQuery()
 
   // Auto-fill exchange_rate when rate is fetched (only for new transfers)
   useEffect(() => {
-    if (!isEdit && fetchedRate > 1) {
+    if (!isEdit && fetchedRate != null && fetchedRate > 1) {
       form.setValue('exchange_rate', Math.round(fetchedRate * 10000) / 10000)
     }
   }, [fetchedRate, form, isEdit])
+
+  // Show toast when exchange rate fetch fails
+  useEffect(() => {
+    if (rateError && open) {
+      toast({
+        title: t('transfers.toast.exchangeRateError', 'Exchange rate could not be fetched'),
+        description: t(
+          'transfers.toast.exchangeRateErrorDesc',
+          'Please enter the rate manually or try refreshing.',
+        ),
+        variant: 'warning',
+      })
+    }
+  }, [rateError, open, toast, t])
 
   const selectedCategory = useMemo(
     () => lookupData.categories.find((c) => c.id === categoryId),
@@ -527,11 +545,20 @@ export function TransferDialog({
                 )}
               </Button>
             </div>
-            <p className={compactHintClasses}>
-              {t('transfers.form.exchangeRateHint', {
-                rate: exchangeRateValue,
-              })}
-            </p>
+            {rateError ? (
+              <p className="mt-1 text-[11px] text-amber-600">
+                {t(
+                  'transfers.form.exchangeRateWarning',
+                  'Could not fetch rate automatically. Enter manually or retry.',
+                )}
+              </p>
+            ) : (
+              <p className={compactHintClasses}>
+                {t('transfers.form.exchangeRateHint', {
+                  rate: exchangeRateValue,
+                })}
+              </p>
+            )}
             {form.formState.errors.exchange_rate && (
               <p className={compactErrorClasses}>
                 {form.formState.errors.exchange_rate.message}

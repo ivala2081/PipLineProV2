@@ -15,7 +15,6 @@ export function useExchangeRateQuery() {
     gcTime: 1000 * 60 * 60, // 1 hour
     retry: 2,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10_000),
-    placeholderData: 1,
   })
 
   const refetch = () => {
@@ -23,9 +22,11 @@ export function useExchangeRateQuery() {
   }
 
   return {
-    rate: query.data ?? 1,
+    rate: query.data ?? null,
     isLoading: query.isLoading,
+    isFetching: query.isFetching,
     isError: query.isError,
+    error: query.error,
     refetch,
   }
 }

@@ -14,7 +14,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/tatum-api': {
-        target: 'https://api.tatum.io/v4',
+        target: 'https://api.tatum.io',
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/tatum-api/, ''),
       },

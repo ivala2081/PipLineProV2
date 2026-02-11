@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { queryKeys } from '@/lib/queryKeys'
-import { getWalletPortfolio } from '@/lib/tatumService'
+import { getWalletPortfolioWithUsd } from '@/lib/tatumService'
 import type { WalletSnapshot } from '@/lib/database.types'
 
 interface UseWalletSnapshotsReturn {
@@ -40,8 +40,8 @@ export function useWalletSnapshotsQuery(
     mutationFn: async () => {
       if (!currentOrg) throw new Error('No organization selected')
 
-      // Fetch current balances from Tatum
-      const assets = await getWalletPortfolio(chain, address)
+      // Fetch current balances with USD valuation from Tatum
+      const { assets, totalUsd } = await getWalletPortfolioWithUsd(chain, address)
       const balances = assets.map((a) => ({
         token: a.symbol || a.type,
         balance: a.balance,
@@ -56,6 +56,7 @@ export function useWalletSnapshotsQuery(
           organization_id: currentOrg.id,
           snapshot_date: today,
           balances,
+          total_usd: totalUsd,
         } as never,
         { onConflict: 'wallet_id,snapshot_date' },
       )

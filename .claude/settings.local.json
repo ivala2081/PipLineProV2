@@ -26,7 +26,16 @@
       "Bash(SUPABASE_ACCESS_TOKEN=sbp_d462e2c179f066f7799ca40208a690777a0db503 npx supabase:*)",
       "WebFetch(domain:api.freecurrencyapi.com)",
       "WebFetch(domain:docs.tatum.io)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(node --version:*)",
+      "Bash(source:*)",
+      "Bash(for id in 1005114 1005125 1005122 1005110 1005121 1005065 1005120 1005074 1005084)",
+      "Bash(do echo \"=== TRC10: $id ===\")",
+      "Bash(done)",
+      "Bash(for addr in THxYWbzAgzQgQaYi9G4mjeL1tq1hdrZe55 TUazYXMe7p9Yi1Kc8vQhovQbFp5UxipHHA TWxt3jw2qm7kocH7agXtVqL7AJTPkC29rR TGKBroumSbjwsPyyJ3J5X2H8dSKiajBCrd)",
+      "Bash(do echo \"=== Contract: $addr ===\")",
+      "Bash(export SUPABASE_ACCESS_TOKEN=\"sbp_d462b50dbbf44f87803b5fd1f2a1bc3db503\")",
+      "Bash(xxd:*)"
     ]
   }
 }

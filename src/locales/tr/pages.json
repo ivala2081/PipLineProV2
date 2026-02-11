@@ -329,6 +329,7 @@
       "snapshotDate": "Tarih",
       "tokens": "Bakiyeler",
       "noSnapshots": "Henüz anlık görüntü alınmamış.",
+      "balanceHistory": "Bakiye Geçmişi",
       "form": {
         "label": "Cüzdan Adı",
         "labelPlaceholder": "örn. Ana USDT Cüzdanı",

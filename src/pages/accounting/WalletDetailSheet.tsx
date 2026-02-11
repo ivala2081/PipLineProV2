@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Copy, Camera } from '@phosphor-icons/react'
+import { Copy, Camera, ArrowsClockwise } from '@phosphor-icons/react'
 import type { Wallet } from '@/lib/database.types'
 import { useWalletBalanceQuery } from '@/hooks/queries/useWalletBalanceQuery'
 import { useWalletSnapshotsQuery } from '@/hooks/queries/useWalletSnapshotsQuery'
@@ -27,6 +27,13 @@ const CHAIN_LABELS: Record<string, string> = {
   solana: 'Solana',
 }
 
+function formatUsd(value: number): string {
+  return value.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+}
+
 interface WalletDetailSheetProps {
   wallet: Wallet | null
   onClose: () => void
@@ -35,7 +42,7 @@ interface WalletDetailSheetProps {
 export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
   const { t } = useTranslation('pages')
 
-  const { assets, isLoading: isBalanceLoading, refetch } = useWalletBalanceQuery(
+  const { assets, totalUsd, isLoading: isBalanceLoading, refetch } = useWalletBalanceQuery(
     wallet?.id ?? '',
     wallet?.chain ?? '',
     wallet?.address ?? '',
@@ -52,6 +59,8 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
   const handleCopy = () => {
     if (wallet) navigator.clipboard.writeText(wallet.address)
   }
+
+  const sortedAssets = [...assets].sort((a, b) => b.usdValue - a.usdValue)
 
   return (
     <Sheet open={wallet !== null} onOpenChange={(open) => !open && onClose()}>
@@ -82,6 +91,20 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
               </div>
             </div>
 
+            {/* Total Value */}
+            <div className="rounded-xl border border-black/[0.06] bg-black/[0.015] px-4 py-3">
+              <p className="text-[10px] font-medium uppercase tracking-wider text-black/35">
+                {t('accounting.wallets.totalValue', 'Total Value')}
+              </p>
+              {isBalanceLoading ? (
+                <Skeleton className="mt-1 h-8 w-32 rounded" />
+              ) : (
+                <p className="mt-0.5 text-2xl font-bold tabular-nums text-black/85">
+                  ${formatUsd(totalUsd)}
+                </p>
+              )}
+            </div>
+
             {/* Token Balances */}
             <div>
               <div className="mb-3 flex items-center justify-between">
@@ -91,46 +114,60 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 text-xs"
+                  className="h-7 gap-1 text-xs"
                   onClick={() => refetch()}
                 >
+                  <ArrowsClockwise size={12} />
                   {t('accounting.wallets.refresh')}
                 </Button>
               </div>
               {isBalanceLoading ? (
                 <div className="space-y-2">
                   {Array.from({ length: 3 }).map((_, i) => (
-                    <Skeleton key={i} className="h-5 w-full rounded" />
+                    <Skeleton key={i} className="h-12 w-full rounded-lg" />
                   ))}
                 </div>
-              ) : assets.length === 0 ? (
+              ) : sortedAssets.length === 0 ? (
                 <p className="text-xs text-black/40">
                   {t('accounting.wallets.noBalances')}
                 </p>
               ) : (
-                <div className="divide-y divide-black/[0.06] rounded-lg border border-black/[0.06]">
-                  {assets.map((asset, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between px-3 py-2.5"
-                    >
-                      <div>
-                        <span className="text-[13px] font-medium text-black/80">
-                          {asset.symbol || asset.type}
-                        </span>
-                        {asset.tokenAddress && (
-                          <p className="text-[10px] text-black/30">
-                            {asset.tokenAddress.slice(0, 10)}...
+                <div className="divide-y divide-black/[0.04] rounded-xl border border-black/[0.06]">
+                  {sortedAssets.map((asset, i) => {
+                    const label =
+                      asset.symbol ||
+                      (asset.tokenAddress
+                        ? `${asset.tokenAddress.slice(0, 8)}…`
+                        : asset.type)
+                    const bal = parseFloat(asset.balance)
+                    return (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between px-4 py-3"
+                      >
+                        <div>
+                          <span className="text-[13px] font-semibold text-black/80">
+                            {label}
+                          </span>
+                          {asset.tokenAddress && (
+                            <p className="text-[10px] text-black/25">
+                              {asset.tokenAddress.slice(0, 12)}…{asset.tokenAddress.slice(-4)}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <p className="font-mono text-[13px] font-semibold tabular-nums text-black/85">
+                            {bal.toLocaleString('en-US', { maximumFractionDigits: 6 })}
                           </p>
-                        )}
+                          {asset.usdValue > 0 && (
+                            <p className="font-mono text-[11px] tabular-nums text-black/40">
+                              ${formatUsd(asset.usdValue)}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <span className="font-mono text-[13px] font-semibold tabular-nums text-black/90">
-                        {parseFloat(asset.balance).toLocaleString('tr-TR', {
-                          maximumFractionDigits: 6,
-                        })}
-                      </span>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -148,7 +185,11 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
                   onClick={() => takeSnapshot()}
                   disabled={isTakingSnapshot}
                 >
-                  <Camera size={12} />
+                  {isTakingSnapshot ? (
+                    <ArrowsClockwise size={12} className="animate-spin" />
+                  ) : (
+                    <Camera size={12} />
+                  )}
                   {isTakingSnapshot
                     ? t('accounting.wallets.snapshotting')
                     : t('accounting.wallets.snapshot')}
@@ -166,12 +207,15 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
                   {t('accounting.wallets.noSnapshots')}
                 </p>
               ) : (
-                <div className="overflow-x-auto rounded-lg border border-black/[0.06]">
+                <div className="overflow-x-auto rounded-xl border border-black/[0.06]">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-black/[0.015]">
                         <TableHead className="h-9 px-3 text-[11px] font-semibold uppercase tracking-wider text-black/40">
                           {t('accounting.wallets.snapshotDate')}
+                        </TableHead>
+                        <TableHead className="h-9 px-3 text-right text-[11px] font-semibold uppercase tracking-wider text-black/40">
+                          USD
                         </TableHead>
                         <TableHead className="h-9 px-3 text-[11px] font-semibold uppercase tracking-wider text-black/40">
                           {t('accounting.wallets.tokens')}
@@ -187,6 +231,11 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
                               { day: 'numeric', month: 'short', year: 'numeric' },
                             )}
                           </TableCell>
+                          <TableCell className="px-3 py-2 text-right font-mono text-[13px] font-semibold tabular-nums text-black/80">
+                            {snap.total_usd > 0
+                              ? `$${formatUsd(snap.total_usd)}`
+                              : '—'}
+                          </TableCell>
                           <TableCell className="px-3 py-2">
                             <div className="space-y-0.5">
                               {snap.balances.map((b, i) => (
@@ -196,7 +245,7 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
                                 >
                                   <span className="text-black/50">{b.token}</span>
                                   <span className="font-mono tabular-nums text-black/70">
-                                    {parseFloat(b.balance).toLocaleString('tr-TR', {
+                                    {parseFloat(b.balance).toLocaleString('en-US', {
                                       maximumFractionDigits: 4,
                                     })}
                                   </span>
