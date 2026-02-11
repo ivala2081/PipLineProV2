@@ -16,7 +16,7 @@ export interface AuditLogEntry {
 const AUDIT_PAGE_SIZE = 10
 
 const AUDIT_SELECT =
-  '*, performer:profiles!transfer_audit_log_performed_by_fkey(display_name)'
+  '*, performer:profiles!transfer_audit_log_performed_by_profiles_fkey(display_name)'
 
 export function useTransferAuditQuery(
   transferId: string | null,
