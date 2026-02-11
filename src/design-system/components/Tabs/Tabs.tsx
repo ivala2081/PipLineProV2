@@ -22,7 +22,7 @@ export type TabsTriggerProps = ComponentProps<typeof TabsPrimitive.Trigger>
 export const TabsTrigger: FC<TabsTriggerProps> = ({ className, ...props }) => (
   <TabsPrimitive.Trigger
     className={cn(
-      'inline-flex items-center justify-center whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition-all',
+      'inline-flex items-center justify-center whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/5 focus-visible:ring-offset-2',
       'disabled:pointer-events-none disabled:opacity-50',
       'data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:shadow-sm',

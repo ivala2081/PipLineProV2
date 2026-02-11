@@ -20,13 +20,13 @@ export const AccordionTrigger: FC<AccordionTriggerProps> = ({
   <AccordionPrimitive.Header className="flex">
     <AccordionPrimitive.Trigger
       className={cn(
-        'flex flex-1 items-center justify-between py-4 text-sm font-medium transition-all hover:underline [&[data-state=open]>svg]:rotate-180',
+        'flex flex-1 items-center justify-between py-4 text-sm font-medium hover:underline [&[data-state=open]>svg]:rotate-180',
         className,
       )}
       {...props}
     >
       {children}
-      <CaretDown size={16} className="shrink-0 text-black/40 transition-transform duration-200" />
+      <CaretDown size={16} className="shrink-0 text-black/40" />
     </AccordionPrimitive.Trigger>
   </AccordionPrimitive.Header>
 )
@@ -39,7 +39,7 @@ export const AccordionContent: FC<AccordionContentProps> = ({
   ...props
 }) => (
   <AccordionPrimitive.Content
-    className="overflow-hidden text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
+    className="overflow-hidden text-sm"
     {...props}
   >
     <div className={cn('pb-4 pt-0', className)}>{children}</div>

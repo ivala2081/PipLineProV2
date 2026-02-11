@@ -167,8 +167,8 @@ export const Sidebar: FC<SidebarProps> = ({
       data-variant={variant}
       data-side={side}
     >
-      <div className={cn('relative h-svh w-[var(--sidebar-width)] bg-bg1 transition-[width] duration-200 ease-linear', 'group-data-[collapsible=offcanvas]:w-0', 'group-data-[side=right]:rotate-180', variant === 'floating' || variant === 'inset' ? 'group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]' : 'group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)]')} />
-      <div className={cn('fixed inset-y-0 z-10 hidden h-svh w-[var(--sidebar-width)] transition-[left,right,width] duration-200 ease-linear md:flex', side === 'left' ? 'left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]' : 'right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]', variant === 'floating' || variant === 'inset' ? 'p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]' : 'group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)]', className)}>
+      <div className={cn('relative h-svh w-[var(--sidebar-width)] bg-bg1', 'group-data-[collapsible=offcanvas]:w-0', 'group-data-[side=right]:rotate-180', variant === 'floating' || variant === 'inset' ? 'group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]' : 'group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)]')} />
+      <div className={cn('fixed inset-y-0 z-10 hidden h-svh w-[var(--sidebar-width)] md:flex', side === 'left' ? 'left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]' : 'right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]', variant === 'floating' || variant === 'inset' ? 'p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]' : 'group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)]', className)}>
         <div data-sidebar="sidebar" className="flex h-full w-full flex-col bg-bg2 group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-black/10 group-data-[variant=floating]:shadow">
           {children}
         </div>
@@ -237,7 +237,7 @@ export type SidebarGroupLabelProps = ComponentProps<'div'> & { asChild?: boolean
 export const SidebarGroupLabel: FC<SidebarGroupLabelProps> = ({ className, asChild = false, ...props }) => {
   const Comp = asChild ? Slot : 'div'
   return (
-    <Comp className={cn('flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-black/40 outline-none transition-[margin,opa] duration-200 ease-linear [&>svg]:size-4 [&>svg]:shrink-0 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0', className)} {...props} />
+    <Comp className={cn('flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-black/40 outline-none [&>svg]:size-4 [&>svg]:shrink-0 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0', className)} {...props} />
   )
 }
 SidebarGroupLabel.displayName = 'SidebarGroupLabel'
@@ -261,7 +261,7 @@ export const SidebarMenuItem: FC<SidebarMenuItemProps> = ({ className, ...props 
 SidebarMenuItem.displayName = 'SidebarMenuItem'
 
 const sidebarMenuButtonVariants = cva(
-  'peer/menu-button flex w-full cursor-pointer items-center gap-2 overflow-hidden rounded-md p-2 text-left text-black text-sm outline-none transition-[width,height,padding] hover:bg-black/4 focus-visible:ring-2 active:bg-black/4 disabled:pointer-events-none disabled:opacity-50 data-[active=true]:bg-black/10 data-[active=true]:font-medium [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0',
+  'peer/menu-button flex w-full cursor-pointer items-center gap-2 overflow-hidden rounded-md p-2 text-left text-black text-sm outline-none hover:bg-black/4 focus-visible:ring-2 active:bg-black/4 disabled:pointer-events-none disabled:opacity-50 data-[active=true]:bg-black/10 data-[active=true]:font-medium [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0',
   {
     variants: {
       variant: {
@@ -371,7 +371,7 @@ export const SidebarRail: FC<SidebarRailProps> = ({ className, ...props }) => {
       tabIndex={-1}
       onClick={toggleSidebar}
       title={t('sidebar.toggle')}
-      className={cn('absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 transition-all ease-linear after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] hover:after:bg-black/10 group-data-[side=left]:-right-4 group-data-[side=right]:left-0 sm:flex', '[[data-side=left]_&]:cursor-w-resize [[data-side=right]_&]:cursor-e-resize', '[[data-side=left][data-state=collapsed]_&]:cursor-e-resize [[data-side=right][data-state=collapsed]_&]:cursor-w-resize', className)}
+      className={cn('absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] hover:after:bg-black/10 group-data-[side=left]:-right-4 group-data-[side=right]:left-0 sm:flex', '[[data-side=left]_&]:cursor-w-resize [[data-side=right]_&]:cursor-e-resize', '[[data-side=left][data-state=collapsed]_&]:cursor-e-resize [[data-side=right][data-state=collapsed]_&]:cursor-w-resize', className)}
       {...props}
     />
   )

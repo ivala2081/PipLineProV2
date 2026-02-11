@@ -1,28 +1,37 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/app/providers/AuthProvider'
 import { queryKeys } from '@/lib/queryKeys'
 import type { OrgMemberRole } from '@/lib/database.types'
 
-export function useInviteMember(orgId: string) {
-  const { user } = useAuth()
+export function useAddMember(orgId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ email, role }: { email: string; role: OrgMemberRole }) => {
-      const { error } = await supabase
-        .from('organization_invitations')
-        .insert({
-          organization_id: orgId,
-          email,
-          role,
-          invited_by: user?.id ?? null,
-        })
+    mutationFn: async ({
+      email,
+      password,
+      role,
+      display_name,
+    }: {
+      email: string
+      password: string
+      role: OrgMemberRole
+      display_name?: string
+    }) => {
+      const { data, error } = await supabase.rpc('add_organization_member', {
+        _org_id: orgId,
+        _email: email,
+        _password: password,
+        _role: role,
+        _display_name: display_name ?? null,
+      })
 
       if (error) throw error
+      return data as { user_id: string; created: boolean }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.organizations.invitations(orgId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.organizations.members(orgId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.organizations.list() })
     },
   })
 }
@@ -62,24 +71,6 @@ export function useRemoveMember(orgId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.organizations.members(orgId) })
       queryClient.invalidateQueries({ queryKey: queryKeys.organizations.list() })
-    },
-  })
-}
-
-export function useRevokeInvitation(orgId: string) {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async (invitationId: string) => {
-      const { error } = await supabase
-        .from('organization_invitations')
-        .delete()
-        .eq('id', invitationId)
-
-      if (error) throw error
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.organizations.invitations(orgId) })
     },
   })
 }

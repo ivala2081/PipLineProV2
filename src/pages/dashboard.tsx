@@ -5,7 +5,6 @@ import {
   Table,
   ClipboardText,
   Users,
-  EnvelopeSimple,
   Buildings,
   ArrowRight,
   TrendUp,
@@ -55,9 +54,9 @@ function QuickAction({
   return (
     <Link
       to={href}
-      className="ui-surface group flex items-center gap-4 rounded-xl border border-black/10 bg-bg2/70 p-4 transition-all hover:bg-bg5"
+      className="ui-surface group flex items-center gap-4 rounded-xl border border-black/10 bg-bg2/70 p-4 hover:bg-bg5"
     >
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-black/12 text-black/80 transition-colors group-hover:bg-brand/15 group-hover:text-brand">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-black/12 text-black/80 group-hover:bg-brand/15 group-hover:text-brand">
         <Icon size={20} />
       </div>
       <div className="min-w-0 flex-1">
@@ -66,7 +65,7 @@ function QuickAction({
       </div>
       <ArrowRight
         size={16}
-        className="shrink-0 text-black/40 transition-colors group-hover:text-black/75"
+        className="shrink-0 text-black/40 group-hover:text-black/75"
       />
     </Link>
   )
@@ -152,12 +151,6 @@ export function DashboardPage() {
             label={t('nav.members')}
             description={t('dashboard.actions.members')}
             href="/members"
-          />
-          <QuickAction
-            icon={EnvelopeSimple}
-            label={t('nav.invitations')}
-            description={t('dashboard.actions.invitations')}
-            href="/invitations"
           />
           <QuickAction
             icon={Buildings}

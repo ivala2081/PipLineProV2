@@ -19,9 +19,6 @@ export const PopoverContent: FC<PopoverContentProps> = ({
       sideOffset={sideOffset}
       className={cn(
         'ui-surface z-50 w-72 rounded-xl bg-bg1 p-4 text-black shadow-md outline-none',
-        'data-[state=open]:animate-in data-[state=closed]:animate-out',
-        'data-[side=bottom]:animate-slide-in-from-top data-[side=top]:animate-slide-in-from-bottom',
-        'data-[side=left]:animate-slide-in-from-right data-[side=right]:animate-slide-in-from-left',
         className,
       )}
       {...props}

@@ -50,9 +50,6 @@ export const SelectContent: FC<SelectContentProps> = ({
     <SelectPrimitive.Content
       className={cn(
         'ui-surface relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-xl bg-bg1 text-black shadow-md',
-        'data-[state=open]:animate-in data-[state=closed]:animate-out',
-        'data-[state=open]:animate-zoom-in-95 data-[state=closed]:animate-zoom-out-95',
-        'data-[side=bottom]:animate-slide-in-from-top data-[side=top]:animate-slide-in-from-bottom',
         position === 'popper' &&
           'data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1',
         className,
@@ -84,7 +81,7 @@ export const SelectItem: FC<SelectItemProps> = ({
 }) => (
   <SelectPrimitive.Item
     className={cn(
-      'relative flex w-full cursor-pointer select-none items-center rounded-lg py-1.5 pl-8 pr-2 text-sm outline-none transition-colors',
+      'relative flex w-full cursor-pointer select-none items-center rounded-lg py-1.5 pl-8 pr-2 text-sm outline-none',
       'focus:bg-black/5 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       className,
     )}

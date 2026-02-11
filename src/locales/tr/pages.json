@@ -1,77 +1,75 @@
 {
   "nav": {
     "groups": {
-      "main": "Ana Men\u00fc",
-      "dataEntry": "Veri Giri\u015fi",
-      "management": "Y\u00f6netim",
+      "main": "Ana Menü",
+      "dataEntry": "Veri Girişi",
+      "management": "Yönetim",
       "system": "Sistem"
     },
     "dashboard": "Kontrol Paneli",
     "transfers": "Transferler",
-    "module2": "Mod\u00fcl 2",
-    "module3": "Mod\u00fcl 3",
-    "members": "\u00dcyeler",
-    "invitations": "Davetiyeler",
+    "module2": "Modül 2",
+    "module3": "Modül 3",
+    "members": "Üyeler",
     "organizations": "Organizasyonlar"
   },
   "layout": {
     "noOrganization": "Organizasyon Yok",
     "organizations": "Organizasyonlar",
-    "signOut": "\u00c7\u0131k\u0131\u015f Yap",
-    "toggleTheme": "Tema de\u011fi\u015ftir",
-    "changeLanguage": "Dil de\u011fi\u015ftir",
+    "signOut": "Çıkış Yap",
+    "toggleTheme": "Tema değiştir",
+    "changeLanguage": "Dil değiştir",
     "profile": {
-      "edit": "Profili D\u00fczenle",
-      "editTitle": "Profili D\u00fczenle",
+      "edit": "Profili Düzenle",
+      "editTitle": "Profili Düzenle",
       "email": "E-posta",
-      "displayName": "G\u00f6r\u00fcnen Ad",
-      "displayNamePlaceholder": "Ad\u0131n\u0131z\u0131 girin",
+      "displayName": "Görünen Ad",
+      "displayNamePlaceholder": "Adınızı girin",
       "save": "Kaydet",
       "saving": "Kaydediliyor...",
-      "cancel": "\u0130ptal",
+      "cancel": "İptal",
       "validation": {
-        "nameRequired": "G\u00f6r\u00fcnen ad zorunludur"
+        "nameRequired": "Görünen ad zorunludur"
       }
     }
   },
   "placeholder": {
-    "emptyTitle": "Hen\u00fcz bir \u015fey yok",
-    "emptyDescription": "Bu b\u00f6l\u00fcm yak\u0131nda kullan\u0131ma sunulacakt\u0131r."
+    "emptyTitle": "Henüz bir şey yok",
+    "emptyDescription": "Bu bölüm yakında kullanıma sunulacaktır."
   },
   "dashboard": {
     "title": "Kontrol Paneli",
-    "subtitle": "PipLinePro'ya ho\u015f geldiniz.",
-    "defaultUser": "Kullan\u0131c\u0131",
-    "welcome": "Tekrar ho\u015f geldin, {{name}}",
-    "orgContext": "{{org}} y\u00f6netiliyor",
-    "quickActions": "H\u0131zl\u0131 \u0130\u015flemler",
+    "subtitle": "PipLinePro'ya hoş geldiniz.",
+    "defaultUser": "Kullanıcı",
+    "welcome": "Tekrar hoş geldin, {{name}}",
+    "orgContext": "{{org}} yönetiliyor",
+    "quickActions": "Hızlı İşlemler",
     "stats": {
-      "totalRecords": "Toplam Kay\u0131t",
+      "totalRecords": "Toplam Kayıt",
       "thisWeek": "Bu Hafta",
-      "members": "\u00dcyeler",
+      "members": "Üyeler",
       "organizations": "Organizasyonlar"
     },
     "actions": {
-      "transfers": "Transfer veri giri\u015fini a\u00e7",
-      "module2": "Mod\u00fcl 2 veri giri\u015fini a\u00e7",
-      "module3": "Mod\u00fcl 3 veri giri\u015fini a\u00e7",
-      "members": "Organizasyon \u00fcyelerini y\u00f6net",
-      "invitations": "Davetiyeleri y\u00f6net",
-      "organizations": "Organizasyonlar\u0131 y\u00f6net"
+      "transfers": "Transfer veri girişini aç",
+      "module2": "Modül 2 veri girişini aç",
+      "module3": "Modül 3 veri girişini aç",
+      "members": "Organizasyon üyelerini yönet",
+      "organizations": "Organizasyonları yönet"
     }
   },
   "transfers": {
     "title": "Transferler",
-    "subtitle": "Finansal transfer ve i\u015flemleri y\u00f6netin.",
+    "subtitle": "Finansal transfer ve işlemleri yönetin.",
     "addTransfer": "Transfer Ekle",
-    "editTransfer": "Transfer D\u00fczenle",
+    "editTransfer": "Transfer Düzenle",
     "tabs": {
       "transfers": "Transferler",
       "settings": "Ayarlar"
     },
     "columns": {
       "fullName": "Ad Soyad",
-      "paymentMethod": "\u00d6deme Y\u00f6ntemi",
+      "paymentMethod": "Ödeme Yöntemi",
       "date": "Tarih",
       "category": "Kategori",
       "amount": "Tutar",
@@ -79,267 +77,275 @@
       "net": "Net",
       "currency": "Para Birimi",
       "psp": "Kasa",
-      "type": "T\u00fcr",
+      "type": "Tür",
       "crmId": "CRM ID",
       "metaId": "META ID",
-      "actions": "\u0130\u015flemler"
+      "actions": "İşlemler"
+    },
+    "typeValues": {
+      "Payment": "Ödeme",
+      "Client": "Müşteri"
     },
     "form": {
       "fullName": "Ad Soyad",
       "fullNamePlaceholder": "Ad soyad girin",
-      "paymentMethod": "\u00d6deme Y\u00f6ntemi",
-      "selectPaymentMethod": "\u00d6deme y\u00f6ntemi se\u00e7in",
+      "paymentMethod": "Ödeme Yöntemi",
+      "selectPaymentMethod": "Ödeme yöntemi seçin",
       "date": "Tarih ve Saat",
       "category": "Kategori",
-      "selectCategory": "Kategori se\u00e7in",
+      "selectCategory": "Kategori seçin",
       "amount": "Tutar",
-      "amountHint": "Pozitif de\u011fer girin. \u0130\u015faret kategoriye g\u00f6re belirlenir.",
+      "amountHint": "Pozitif değer girin. İşaret kategoriye göre belirlenir.",
       "commission": "Komisyon",
-      "commissionAuto": "PSP oran\u0131ndan otomatik hesaplan\u0131r",
+      "commissionAuto": "PSP oranından otomatik hesaplanır",
       "net": "Net Tutar",
       "netAuto": "Tutar eksi komisyon",
       "currency": "Para Birimi",
       "psp": "Kasa",
-      "selectPsp": "Kasa se\u00e7in",
-      "type": "T\u00fcr",
-      "selectType": "T\u00fcr se\u00e7in",
+      "selectPsp": "Kasa seçin",
+      "type": "Tür",
+      "selectType": "Tür seçin",
       "crmId": "CRM ID",
-      "crmIdPlaceholder": "\u0130ste\u011fe ba\u011fl\u0131",
+      "crmIdPlaceholder": "İsteğe bağlı",
       "metaId": "META ID",
-      "metaIdPlaceholder": "\u0130ste\u011fe ba\u011fl\u0131",
+      "metaIdPlaceholder": "İsteğe bağlı",
       "save": "Kaydet",
       "saveAndNew": "Kaydet ve Yeni",
       "saving": "Kaydediliyor...",
-      "cancel": "\u0130ptal",
+      "cancel": "İptal",
       "searchInList": "Listede ara...",
-      "noResults": "Sonu\u00e7 bulunamad\u0131"
+      "noResults": "Sonuç bulunamadı"
     },
     "delete": {
       "title": "Transferi Sil",
-      "description": "\"{{name}}\" transferini silmek istedi\u011finize emin misiniz? Bu i\u015flem geri al\u0131namaz.",
+      "description": "\"{{name}}\" transferini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.",
       "confirm": "Sil",
-      "cancel": "\u0130ptal"
+      "cancel": "İptal"
+    },
+    "detail": {
+      "title": "Transfer Detayı"
     },
     "empty": {
-      "title": "Hen\u00fcz transfer yok",
-      "description": "Ba\u015flamak i\u00e7in ilk transferinizi olu\u015fturun."
+      "title": "Henüz transfer yok",
+      "description": "Başlamak için ilk transferinizi oluşturun."
     },
     "settings": {
-      "title": "Arama Ayarlar\u0131",
-      "subtitle": "Transfer alanlar\u0131 i\u00e7in a\u00e7\u0131l\u0131r men\u00fc de\u011ferlerini y\u00f6netin.",
+      "title": "Arama Ayarları",
+      "subtitle": "Transfer alanları için açılır menü değerlerini yönetin.",
       "psps": "Kasalar (PSP)",
       "categories": "Kategoriler",
-      "paymentMethods": "\u00d6deme Y\u00f6ntemleri",
-      "types": "T\u00fcrler",
+      "paymentMethods": "Ödeme Yöntemleri",
+      "types": "Türler",
       "addItem": "Ekle",
-      "editItem": "D\u00fczenle",
+      "editItem": "Düzenle",
       "deleteItem": "Sil",
       "name": "Ad",
       "namePlaceholder": "Ad girin",
-      "commissionRate": "Komisyon Oran\u0131 (%)",
-      "commissionRatePlaceholder": "\u00f6rn. 10",
-      "isDeposit": "Yat\u0131r\u0131m m\u0131",
-      "noItems": "Hen\u00fcz \u00f6\u011fe yok. Ba\u015flamak i\u00e7in bir tane ekleyin.",
-      "deleteConfirm": "\"{{name}}\" \u00f6\u011fesini silmek istedi\u011finize emin misiniz?",
+      "commissionRate": "Komisyon Oranı (%)",
+      "commissionRatePlaceholder": "örn. 10",
+      "isDeposit": "Yatırım mı",
+      "noItems": "Henüz öğe yok. Başlamak için bir tane ekleyin.",
+      "deleteConfirm": "\"{{name}}\" öğesini silmek istediğinize emin misiniz?",
       "save": "Kaydet",
-      "cancel": "\u0130ptal"
+      "cancel": "İptal"
     },
     "validation": {
       "fullNameRequired": "Ad soyad gereklidir",
-      "paymentMethodRequired": "\u00d6deme y\u00f6ntemi gereklidir",
+      "paymentMethodRequired": "Ödeme yöntemi gereklidir",
       "dateRequired": "Tarih gereklidir",
       "categoryRequired": "Kategori gereklidir",
       "amountRequired": "Tutar gereklidir",
-      "amountPositive": "Tutar 0'dan b\u00fcy\u00fck olmal\u0131d\u0131r",
+      "amountPositive": "Tutar 0'dan büyük olmalıdır",
       "pspRequired": "Kasa gereklidir",
-      "typeRequired": "T\u00fcr gereklidir"
+      "typeRequired": "Tür gereklidir"
     },
     "toast": {
-      "created": "Transfer ba\u015far\u0131yla olu\u015fturuldu",
-      "updated": "Transfer ba\u015far\u0131yla g\u00fcncellendi",
-      "deleted": "Transfer ba\u015far\u0131yla silindi",
-      "error": "Bir hata olu\u015ftu. L\u00fctfen tekrar deneyin.",
-      "lookupCreated": "\u00d6\u011fe ba\u015far\u0131yla olu\u015fturuldu",
-      "lookupUpdated": "\u00d6\u011fe ba\u015far\u0131yla g\u00fcncellendi",
-      "lookupDeleted": "\u00d6\u011fe ba\u015far\u0131yla silindi"
+      "created": "Transfer başarıyla oluşturuldu",
+      "updated": "Transfer başarıyla güncellendi",
+      "deleted": "Transfer başarıyla silindi",
+      "error": "Bir hata oluştu. Lütfen tekrar deneyin.",
+      "lookupCreated": "Öğe başarıyla oluşturuldu",
+      "lookupUpdated": "Öğe başarıyla güncellendi",
+      "lookupDeleted": "Öğe başarıyla silindi"
+    },
+    "audit": {
+      "title": "Denetim Geçmişi",
+      "button": "Denetim",
+      "empty": "Henüz denetim kaydı yok.",
+      "unknownUser": "Bilinmeyen Kullanıcı",
+      "actionCreated": "Bu transferi oluşturdu",
+      "actionUpdated": "{{count}} alan güncellendi",
+      "fields": {
+        "full_name": "Ad Soyad",
+        "amount": "Tutar",
+        "commission": "Komisyon",
+        "net": "Net",
+        "currency": "Para Birimi",
+        "payment_method_id": "Ödeme Yöntemi",
+        "category_id": "Kategori",
+        "psp_id": "Kasa",
+        "type_id": "Tür",
+        "crm_id": "CRM ID",
+        "meta_id": "META ID",
+        "transfer_date": "Tarih"
+      }
     }
   },
   "module2": {
-    "title": "Mod\u00fcl 2",
-    "subtitle": "Bu b\u00f6l\u00fcm geli\u015ftirme a\u015famas\u0131ndad\u0131r."
+    "title": "Modül 2",
+    "subtitle": "Bu bölüm geliştirme aşamasındadır."
   },
   "module3": {
-    "title": "Mod\u00fcl 3",
-    "subtitle": "Bu b\u00f6l\u00fcm geli\u015ftirme a\u015famas\u0131ndad\u0131r."
+    "title": "Modül 3",
+    "subtitle": "Bu bölüm geliştirme aşamasındadır."
   },
   "members": {
-    "title": "\u00dcyeler",
-    "subtitle": "Organizasyon \u00fcyelerini y\u00f6netin."
-  },
-  "invitations": {
-    "title": "Davetiyeler",
-    "subtitle": "Organizasyon davetiyelerini y\u00f6netin."
+    "title": "Üyeler",
+    "subtitle": "Organizasyon üyelerini yönetin.",
+    "addMember": "Üye Ekle",
+    "noOrg": "Üyeleri görmek için bir organizasyon seçin.",
+    "totalMembers": "üye"
   },
   "organizations": {
     "title": "Organizasyonlar",
-    "subtitle": "T\u00fcm organizasyonlar\u0131 g\u00f6r\u00fcnt\u00fcleyin ve y\u00f6netin.",
-    "create": "Organizasyon Olu\u015ftur",
+    "subtitle": "Tüm organizasyonları görüntüleyin ve yönetin.",
+    "create": "Organizasyon Oluştur",
     "active": "Aktif",
     "inactive": "Pasif",
-    "backToList": "Organizasyonlara D\u00f6n",
+    "backToList": "Organizasyonlara Dön",
     "columns": {
       "name": "Ad",
       "slug": "Slug",
-      "members": "\u00dcyeler",
+      "members": "Üyeler",
       "status": "Durum",
-      "createdAt": "Olu\u015fturulma"
+      "createdAt": "Oluşturulma"
     },
     "empty": {
-      "title": "Hen\u00fcz organizasyon yok",
-      "description": "Ba\u015flamak i\u00e7in ilk organizasyonunuzu olu\u015fturun."
+      "title": "Henüz organizasyon yok",
+      "description": "Başlamak için ilk organizasyonunuzu oluşturun."
     },
     "tabs": {
-      "overview": "Genel Bak\u0131\u015f",
-      "members": "\u00dcyeler",
-      "invitations": "Davetiyeler",
+      "overview": "Genel Bakış",
+      "members": "Üyeler",
       "settings": "Ayarlar"
     },
     "overview": {
-      "name": "Organizasyon Ad\u0131",
+      "name": "Organizasyon Adı",
       "slug": "Slug",
       "status": "Durum",
-      "members": "\u00dcyeler",
-      "createdAt": "Olu\u015fturulma Tarihi"
+      "members": "Üyeler",
+      "createdAt": "Oluşturulma Tarihi"
     },
     "createDialog": {
-      "title": "Organizasyon Olu\u015ftur",
-      "name": "Organizasyon Ad\u0131",
-      "namePlaceholder": "Organizasyon ad\u0131n\u0131 girin",
+      "title": "Organizasyon Oluştur",
+      "name": "Organizasyon Adı",
+      "namePlaceholder": "Organizasyon adını girin",
       "slug": "Slug",
       "slugPlaceholder": "url-uyumlu-slug",
-      "slugHint": "Addan otomatik olu\u015fturulur. K\u00fc\u00e7\u00fck harf ve tire.",
-      "create": "Olu\u015ftur",
-      "cancel": "\u0130ptal",
-      "creating": "Olu\u015fturuluyor..."
+      "slugHint": "Addan otomatik oluşturulur. Küçük harf ve tire.",
+      "create": "Oluştur",
+      "cancel": "İptal",
+      "creating": "Oluşturuluyor..."
     },
     "members": {
-      "title": "\u00dcyeler",
-      "subtitle": "Organizasyon \u00fcyelerini ve rollerini y\u00f6netin.",
+      "title": "Üyeler",
+      "subtitle": "Organizasyon üyelerini ve rollerini yönetin.",
+      "addMember": "Üye Ekle",
       "columns": {
         "name": "Ad",
         "role": "Rol",
-        "joined": "Kat\u0131lma"
+        "joined": "Katılma"
       },
       "actions": {
         "promoteToAdmin": "Admin Yap",
-        "demoteToOperation": "Operasyona \u0130ndir",
-        "remove": "\u00dcyeyi Kald\u0131r"
+        "demoteToOperation": "Operasyona İndir",
+        "remove": "Üyeyi Kaldır"
       },
       "removeConfirm": {
-        "title": "\u00dcyeyi Kald\u0131r",
-        "description": "\"{{name}}\" \u00fcyesini bu organizasyondan kald\u0131rmak istedi\u011finize emin misiniz? Bu i\u015flem geri al\u0131namaz."
+        "title": "Üyeyi Kaldır",
+        "description": "\"{{name}}\" üyesini bu organizasyondan kaldırmak istediğinize emin misiniz? Bu işlem geri alınamaz."
       },
-      "empty": "Bu organizasyonda \u00fcye yok."
+      "empty": "Bu organizasyonda üye yok."
     },
-    "invitations": {
-      "title": "Davetiyeler",
-      "subtitle": "Bekleyen davetiyeleri y\u00f6netin.",
-      "invite": "\u00dcye Davet Et",
-      "columns": {
-        "email": "E-posta",
-        "role": "Rol",
-        "status": "Durum",
-        "createdAt": "G\u00f6nderilme",
-        "expiresAt": "Biti\u015f"
-      },
-      "statuses": {
-        "pending": "Bekliyor",
-        "accepted": "Kabul Edildi",
-        "expired": "S\u00fcresi Doldu"
-      },
-      "revoke": "\u0130ptal Et",
-      "revokeConfirm": {
-        "title": "Daveti \u0130ptal Et",
-        "description": "\"{{email}}\" i\u00e7in g\u00f6nderilen daveti iptal etmek istedi\u011finize emin misiniz?"
-      },
-      "empty": "Hen\u00fcz davetiye yok."
-    },
-    "inviteDialog": {
-      "title": "\u00dcye Davet Et",
+    "addMemberDialog": {
+      "title": "Üye Ekle",
       "email": "E-posta Adresi",
       "emailPlaceholder": "kullanici@ornek.com",
+      "password": "Şifre",
+      "passwordPlaceholder": "En az 6 karakter",
+      "displayName": "Görünen Ad",
+      "displayNamePlaceholder": "Ad soyad girin",
       "role": "Rol",
       "roleAdmin": "Admin",
       "roleOperation": "Operasyon",
-      "invite": "Davet G\u00f6nder",
-      "cancel": "\u0130ptal",
-      "sending": "G\u00f6nderiliyor..."
+      "add": "Üye Ekle",
+      "cancel": "İptal",
+      "adding": "Ekleniyor..."
     },
     "settings": {
-      "title": "Organizasyon Ayarlar\u0131",
-      "subtitle": "Organizasyon bilgilerini g\u00fcncelleyin.",
-      "name": "Organizasyon Ad\u0131",
+      "title": "Organizasyon Ayarları",
+      "subtitle": "Organizasyon bilgilerini güncelleyin.",
+      "name": "Organizasyon Adı",
       "isActive": "Organizasyon aktif",
-      "save": "De\u011fi\u015fiklikleri Kaydet",
+      "save": "Değişiklikleri Kaydet",
       "saving": "Kaydediliyor..."
     },
     "toast": {
-      "created": "Organizasyon ba\u015far\u0131yla olu\u015fturuldu",
-      "updated": "Organizasyon ba\u015far\u0131yla g\u00fcncellendi",
-      "memberRemoved": "\u00dcye ba\u015far\u0131yla kald\u0131r\u0131ld\u0131",
-      "roleUpdated": "\u00dcye rol\u00fc ba\u015far\u0131yla g\u00fcncellendi",
-      "invited": "Davet ba\u015far\u0131yla g\u00f6nderildi",
-      "invitationRevoked": "Davet ba\u015far\u0131yla iptal edildi",
-      "error": "Bir hata olu\u015ftu. L\u00fctfen tekrar deneyin."
+      "created": "Organizasyon başarıyla oluşturuldu",
+      "updated": "Organizasyon başarıyla güncellendi",
+      "memberRemoved": "Üye başarıyla kaldırıldı",
+      "roleUpdated": "Üye rolü başarıyla güncellendi",
+      "memberAdded": "Üye başarıyla eklendi",
+      "error": "Bir hata oluştu. Lütfen tekrar deneyin."
     }
   },
   "login": {
     "brand": "PipLinePro",
-    "title": "Giri\u015f Yap",
-    "subtitle": "Devam etmek i\u00e7in bilgilerinizi girin",
+    "title": "Giriş Yap",
+    "subtitle": "Devam etmek için bilgilerinizi girin",
     "email": "E-posta",
-    "password": "\u015eifre",
-    "submit": "Giri\u015f Yap",
-    "signingIn": "Giri\u015f yap\u0131l\u0131yor...",
-    "forgotPassword": "\u015eifrenizi mi unuttunuz?",
-    "rememberMe": "Beni hat\u0131rla",
-    "error": "Ge\u00e7ersiz e-posta veya \u015fifre",
-    "errorNetwork": "A\u011f hatas\u0131. L\u00fctfen tekrar deneyin.",
-    "errorRateLimit": "\u00c7ok fazla deneme. {{seconds}} saniye sonra tekrar deneyin.",
+    "password": "Şifre",
+    "submit": "Giriş Yap",
+    "signingIn": "Giriş yapılıyor...",
+    "forgotPassword": "Şifrenizi mi unuttunuz?",
+    "rememberMe": "Beni hatırla",
+    "error": "Geçersiz e-posta veya şifre",
+    "errorNetwork": "Ağ hatası. Lütfen tekrar deneyin.",
+    "errorRateLimit": "Çok fazla deneme. {{seconds}} saniye sonra tekrar deneyin.",
     "validationEmailRequired": "E-posta gereklidir",
-    "validationEmailInvalid": "Ge\u00e7erli bir e-posta girin",
-    "validationPasswordRequired": "\u015eifre gereklidir"
+    "validationEmailInvalid": "Geçerli bir e-posta girin",
+    "validationPasswordRequired": "Şifre gereklidir"
   },
   "forgotPassword": {
-    "title": "\u015eifre S\u0131f\u0131rla",
-    "subtitle": "S\u0131f\u0131rlama ba\u011flant\u0131s\u0131 almak i\u00e7in e-postan\u0131z\u0131 girin",
+    "title": "Şifre Sıfırla",
+    "subtitle": "Sıfırlama bağlantısı almak için e-postanızı girin",
     "email": "E-posta",
-    "submit": "S\u0131f\u0131rlama Ba\u011flant\u0131s\u0131 G\u00f6nder",
-    "sending": "G\u00f6nderiliyor...",
-    "success": "S\u0131f\u0131rlama ba\u011flant\u0131s\u0131 i\u00e7in e-postan\u0131z\u0131 kontrol edin",
-    "resendIn": "{{seconds}}s sonra tekrar g\u00f6nder",
-    "resend": "Ba\u011flant\u0131y\u0131 tekrar g\u00f6nder",
-    "backToLogin": "Giri\u015f sayfas\u0131na d\u00f6n",
+    "submit": "Sıfırlama Bağlantısı Gönder",
+    "sending": "Gönderiliyor...",
+    "success": "Sıfırlama bağlantısı için e-postanızı kontrol edin",
+    "resendIn": "{{seconds}}s sonra tekrar gönder",
+    "resend": "Bağlantıyı tekrar gönder",
+    "backToLogin": "Giriş sayfasına dön",
     "validationEmailRequired": "E-posta gereklidir",
-    "validationEmailInvalid": "Ge\u00e7erli bir e-posta girin"
+    "validationEmailInvalid": "Geçerli bir e-posta girin"
   },
   "resetPassword": {
-    "title": "Yeni \u015eifre Belirle",
-    "subtitle": "A\u015fa\u011f\u0131ya yeni \u015fifrenizi girin",
-    "newPassword": "Yeni \u015eifre",
-    "confirmPassword": "\u015eifreyi Onayla",
-    "submit": "\u015eifreyi G\u00fcncelle",
-    "updating": "G\u00fcncelleniyor...",
-    "success": "\u015eifre ba\u015far\u0131yla g\u00fcncellendi",
-    "successMessage": "\u015eifreniz g\u00fcncellendi. Art\u0131k yeni \u015fifrenizle giri\u015f yapabilirsiniz.",
-    "goToLogin": "Giri\u015f Sayfas\u0131na Git",
-    "error": "\u015eifre g\u00fcncellenemedi. L\u00fctfen tekrar deneyin.",
-    "errorExpired": "Bu s\u0131f\u0131rlama ba\u011flant\u0131s\u0131n\u0131n s\u00fcresi doldu. L\u00fctfen yeni bir tane isteyin.",
-    "validationRequired": "\u015eifre gereklidir",
-    "validationMinLength": "\u015eifre en az 8 karakter olmal\u0131d\u0131r",
-    "validationUppercase": "\u015eifre b\u00fcy\u00fck harf i\u00e7ermelidir",
-    "validationLowercase": "\u015eifre k\u00fc\u00e7\u00fck harf i\u00e7ermelidir",
-    "validationNumber": "\u015eifre bir rakam i\u00e7ermelidir",
-    "validationMatch": "\u015eifreler e\u015fle\u015fmiyor"
+    "title": "Yeni Şifre Belirle",
+    "subtitle": "Aşağıya yeni şifrenizi girin",
+    "newPassword": "Yeni Şifre",
+    "confirmPassword": "Şifreyi Onayla",
+    "submit": "Şifreyi Güncelle",
+    "updating": "Güncelleniyor...",
+    "success": "Şifre başarıyla güncellendi",
+    "successMessage": "Şifreniz güncellendi. Artık yeni şifrenizle giriş yapabilirsiniz.",
+    "goToLogin": "Giriş Sayfasına Git",
+    "error": "Şifre güncellenemedi. Lütfen tekrar deneyin.",
+    "errorExpired": "Bu sıfırlama bağlantısının süresi doldu. Lütfen yeni bir tane isteyin.",
+    "validationRequired": "Şifre gereklidir",
+    "validationMinLength": "Şifre en az 8 karakter olmalıdır",
+    "validationUppercase": "Şifre büyük harf içermelidir",
+    "validationLowercase": "Şifre küçük harf içermelidir",
+    "validationNumber": "Şifre bir rakam içermelidir",
+    "validationMatch": "Şifreler eşleşmiyor"
   }
 }

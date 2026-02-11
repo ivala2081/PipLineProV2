@@ -1,14 +1,13 @@
 /**
  * SnowUI / ByeWind Design System – Animation Tokens
  *
- * These mirror the CSS @keyframes in index.css.
- * Use them when driving animations from JS (e.g. Framer Motion).
+ * Animations disabled for performance.
  */
 
 export const durations = {
-  fast: 150,
-  normal: 300,
-  slow: 500,
+  fast: 0,
+  normal: 0,
+  slow: 0,
 } as const
 
 export const easings = {

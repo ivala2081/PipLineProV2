@@ -15,7 +15,6 @@ import { useOrganizationDetailQuery } from '@/hooks/queries/useOrganizationDetai
 import { useOrgMembersQuery } from '@/hooks/queries/useOrgMembersQuery'
 import { OverviewTab } from './tabs/OverviewTab'
 import { MembersTab } from './tabs/MembersTab'
-import { InvitationsTab } from './tabs/InvitationsTab'
 import { SettingsTab } from './tabs/SettingsTab'
 
 export function OrganizationDetailPage() {
@@ -88,11 +87,6 @@ export function OrganizationDetailPage() {
             {t('organizations.tabs.members')}
           </TabsTrigger>
           {canManage && (
-            <TabsTrigger value="invitations">
-              {t('organizations.tabs.invitations')}
-            </TabsTrigger>
-          )}
-          {canManage && (
             <TabsTrigger value="settings">
               {t('organizations.tabs.settings')}
             </TabsTrigger>
@@ -105,11 +99,6 @@ export function OrganizationDetailPage() {
         <TabsContent value="members">
           <MembersTab orgId={orgId!} canManage={canManage} />
         </TabsContent>
-        {canManage && (
-          <TabsContent value="invitations">
-            <InvitationsTab orgId={orgId!} />
-          </TabsContent>
-        )}
         {canManage && (
           <TabsContent value="settings">
             <SettingsTab org={org} orgId={orgId!} />

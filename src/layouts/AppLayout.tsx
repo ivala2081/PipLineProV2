@@ -385,7 +385,7 @@ function HeaderOrgSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex h-8 items-center gap-1.5 rounded-md border border-black/10 bg-black/[0.02] px-2.5 text-xs font-medium text-black/70 transition-colors hover:bg-black/8 hover:text-black">
+        <button className="flex h-8 items-center gap-1.5 rounded-md border border-black/10 bg-black/[0.02] px-2.5 text-xs font-medium text-black/70 hover:bg-black/8 hover:text-black">
           <Buildings size={14} />
           <span className="max-w-[120px] truncate">{currentOrg?.name ?? t('layout.noOrganization')}</span>
           <CaretUpDown size={12} className="text-black/40" />
@@ -459,11 +459,9 @@ function HeaderBar() {
 
       {/* Right side controls */}
       <div className="ml-auto flex items-center gap-1">
-        <HeaderOrgSwitcher />
-        <Separator orientation="vertical" className="mx-1 h-4" />
         <button
           onClick={() => changeLocale(nextLocale)}
-          className="flex h-8 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-black/70 transition-colors hover:bg-black/8 hover:text-black"
+          className="flex h-8 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-black/70 hover:bg-black/8 hover:text-black"
           aria-label={t('layout.changeLanguage')}
         >
           <Globe size={16} />
@@ -471,7 +469,7 @@ function HeaderBar() {
         </button>
         <button
           onClick={toggleTheme}
-          className="flex size-8 items-center justify-center rounded-md text-black/70 transition-colors hover:bg-black/8 hover:text-black"
+          className="flex size-8 items-center justify-center rounded-md text-black/70 hover:bg-black/8 hover:text-black"
           aria-label={t('layout.toggleTheme')}
         >
           {resolvedTheme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}

@@ -6,7 +6,6 @@ import {
   Table,
   ClipboardText,
   Users,
-  EnvelopeSimple,
   Buildings,
 } from '@phosphor-icons/react'
 
@@ -40,7 +39,6 @@ export const navGroups: NavGroup[] = [
     titleKey: 'nav.groups.management',
     items: [
       { titleKey: 'nav.members', href: '/members', icon: Users },
-      { titleKey: 'nav.invitations', href: '/invitations', icon: EnvelopeSimple },
     ],
   },
   {

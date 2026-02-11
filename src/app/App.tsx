@@ -15,7 +15,6 @@ import { TransfersPage } from '@/pages/transfers'
 import { Module2Page } from '@/pages/modules/module-2'
 import { Module3Page } from '@/pages/modules/module-3'
 import { MembersPage } from '@/pages/management/members'
-import { InvitationsPage } from '@/pages/management/invitations'
 import { OrganizationsListPage } from '@/pages/organizations'
 import { OrganizationDetailPage } from '@/pages/organizations/OrganizationDetailPage'
 import type { ReactNode } from 'react'
@@ -93,7 +92,6 @@ export function App() {
                         <Route path="/module-2" element={<Module2Page />} />
                         <Route path="/module-3" element={<Module3Page />} />
                         <Route path="/members" element={<MembersPage />} />
-                        <Route path="/invitations" element={<InvitationsPage />} />
                         <Route path="/organizations" element={<OrganizationsListPage />} />
                         <Route path="/organizations/:orgId" element={<OrganizationDetailPage />} />
                         <Route path="*" element={<Navigate to="/" replace />} />

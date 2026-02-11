@@ -13,7 +13,7 @@ export type DialogOverlayProps = ComponentProps<typeof DialogPrimitive.Overlay>
 export const DialogOverlay: FC<DialogOverlayProps> = ({ className, ...props }) => (
   <DialogPrimitive.Overlay
     className={cn(
-      'fixed inset-0 z-50 bg-[rgba(4,8,16,0.72)] data-[state=open]:animate-in data-[state=closed]:animate-out',
+      'fixed inset-0 z-50 bg-[rgba(4,8,16,0.72)]',
       className,
     )}
     {...props}
@@ -34,14 +34,12 @@ export const DialogContent: FC<DialogContentProps> = ({
       <DialogPrimitive.Content
         className={cn(
           'ui-surface fixed left-1/2 top-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 rounded-2xl bg-bg1 p-6 shadow-lg',
-          'data-[state=open]:animate-in data-[state=closed]:animate-out',
-          'data-[state=open]:animate-zoom-in-95 data-[state=closed]:animate-zoom-out-95',
           className,
         )}
         {...props}
       >
         {children}
-        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-black/5 focus:ring-offset-2 disabled:pointer-events-none">
+        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-black/5 focus:ring-offset-2 disabled:pointer-events-none">
           <X size={16} />
           <span className="sr-only">{t('dialog.close')}</span>
         </DialogPrimitive.Close>

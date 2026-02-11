@@ -16,7 +16,7 @@ export const TooltipContent: FC<TooltipContentProps> = ({
     <TooltipPrimitive.Content
       sideOffset={sideOffset}
       className={cn(
-        'z-50 overflow-hidden rounded-lg bg-black px-3 py-1.5 text-xs text-white shadow-md animate-in',
+        'z-50 overflow-hidden rounded-lg bg-black px-3 py-1.5 text-xs text-white shadow-md',
         className,
       )}
       {...props}

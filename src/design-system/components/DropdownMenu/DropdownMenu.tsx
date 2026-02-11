@@ -21,9 +21,6 @@ export const DropdownMenuContent: FC<DropdownMenuContentProps> = ({
       sideOffset={sideOffset}
       className={cn(
         'ui-surface z-50 min-w-[8rem] overflow-hidden rounded-xl bg-bg1 p-1 text-black shadow-md',
-        'data-[state=open]:animate-in data-[state=closed]:animate-out',
-        'data-[side=bottom]:animate-slide-in-from-top data-[side=top]:animate-slide-in-from-bottom',
-        'data-[side=left]:animate-slide-in-from-right data-[side=right]:animate-slide-in-from-left',
         className,
       )}
       {...props}
@@ -42,7 +39,7 @@ export const DropdownMenuItem: FC<DropdownMenuItemProps> = ({
 }) => (
   <DropdownMenuPrimitive.Item
     className={cn(
-      'relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-1.5 text-sm outline-none transition-colors',
+      'relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-1.5 text-sm outline-none',
       'focus:bg-black/5 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       inset && 'pl-8',
       className,
@@ -61,7 +58,7 @@ export const DropdownMenuCheckboxItem: FC<DropdownMenuCheckboxItemProps> = ({
 }) => (
   <DropdownMenuPrimitive.CheckboxItem
     className={cn(
-      'relative flex cursor-pointer select-none items-center rounded-lg py-1.5 pl-8 pr-2 text-sm outline-none transition-colors',
+      'relative flex cursor-pointer select-none items-center rounded-lg py-1.5 pl-8 pr-2 text-sm outline-none',
       'focus:bg-black/5 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       className,
     )}
@@ -86,7 +83,7 @@ export const DropdownMenuRadioItem: FC<DropdownMenuRadioItemProps> = ({
 }) => (
   <DropdownMenuPrimitive.RadioItem
     className={cn(
-      'relative flex cursor-pointer select-none items-center rounded-lg py-1.5 pl-8 pr-2 text-sm outline-none transition-colors',
+      'relative flex cursor-pointer select-none items-center rounded-lg py-1.5 pl-8 pr-2 text-sm outline-none',
       'focus:bg-black/5 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       className,
     )}
@@ -146,7 +143,6 @@ export const DropdownMenuSubContent: FC<DropdownMenuSubContentProps> = ({
   <DropdownMenuPrimitive.SubContent
     className={cn(
       'ui-surface z-50 min-w-[8rem] overflow-hidden rounded-xl bg-bg1 p-1 text-black shadow-lg',
-      'data-[state=open]:animate-in data-[state=closed]:animate-out',
       className,
     )}
     {...props}

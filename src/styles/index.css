@@ -23,28 +23,28 @@
   --color-blue: #92bfff;
   --color-cyan: #aec7ed;
   --color-mint: #96e2d6;
-  --color-green: #94e9b8;
+  --color-green: #16a34a;
   --color-yellow: #ffdb56;
   --color-orange: #ffb55b;
   --color-red: #ff4747;
   --color-bg3: #e6f1fd;
   --color-bg4: #edeefc;
 
-  /* ---- Animations ---- */
-  --animate-accordion-down: accordion-down 0.3s ease-out;
-  --animate-accordion-up: accordion-up 0.3s ease-out;
-  --animate-in: animate-in 0.3s ease-out;
-  --animate-out: animate-out 0.3s ease-out;
-  --animate-slide-in-from-top: slide-in-from-top 0.3s ease-out;
-  --animate-slide-in-from-right: slide-in-from-right 0.3s ease-out;
-  --animate-slide-in-from-left: slide-in-from-left 0.3s ease-out;
-  --animate-slide-in-from-bottom: slide-in-from-bottom 0.3s ease-out;
-  --animate-slide-out-to-top: slide-out-to-top 0.3s ease-out;
-  --animate-slide-out-to-right: slide-out-to-right 0.3s ease-out;
-  --animate-slide-out-to-left: slide-out-to-left 0.3s ease-out;
-  --animate-slide-out-to-bottom: slide-out-to-bottom 0.3s ease-out;
-  --animate-zoom-in-95: zoom-in-95 0.3s ease-out;
-  --animate-zoom-out-95: zoom-out-95 0.3s ease-out;
+  /* ---- Animations (disabled for performance) ---- */
+  --animate-accordion-down: none;
+  --animate-accordion-up: none;
+  --animate-in: none;
+  --animate-out: none;
+  --animate-slide-in-from-top: none;
+  --animate-slide-in-from-right: none;
+  --animate-slide-in-from-left: none;
+  --animate-slide-in-from-bottom: none;
+  --animate-slide-out-to-top: none;
+  --animate-slide-out-to-right: none;
+  --animate-slide-out-to-left: none;
+  --animate-slide-out-to-bottom: none;
+  --animate-zoom-in-95: none;
+  --animate-zoom-out-95: none;
 }
 
 /* ==========================================================================
@@ -60,6 +60,7 @@
     --color-bg1: #0d1119;
     --color-bg2: #141b26;
     --color-bg5: #1b2533;
+    --color-green: #94e9b8;
     color-scheme: dark;
   }
 
@@ -76,6 +77,7 @@
       --color-bg1: #0d1119;
       --color-bg2: #141b26;
       --color-bg5: #1b2533;
+      --color-green: #94e9b8;
       color-scheme: dark;
     }
   }
@@ -95,68 +97,6 @@
   }
 }
 
-/* ==========================================================================
-   Keyframe Animations
-   ========================================================================== */
-
-@layer base {
-  @keyframes accordion-down {
-    from { height: 0; }
-    to { height: var(--radix-accordion-content-height); }
-  }
-  @keyframes accordion-up {
-    from { height: var(--radix-accordion-content-height); }
-    to { height: 0; }
-  }
-  @keyframes animate-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-  @keyframes animate-out {
-    from { opacity: 1; }
-    to { opacity: 0; }
-  }
-  @keyframes slide-in-from-top {
-    from { transform: translateY(-100%); }
-    to { transform: translateY(0); }
-  }
-  @keyframes slide-in-from-right {
-    from { transform: translateX(100%); }
-    to { transform: translateX(0); }
-  }
-  @keyframes slide-in-from-left {
-    from { transform: translateX(-100%); }
-    to { transform: translateX(0); }
-  }
-  @keyframes slide-in-from-bottom {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
-  }
-  @keyframes slide-out-to-top {
-    from { transform: translateY(0); }
-    to { transform: translateY(-100%); }
-  }
-  @keyframes slide-out-to-right {
-    from { transform: translateX(0); }
-    to { transform: translateX(100%); }
-  }
-  @keyframes slide-out-to-left {
-    from { transform: translateX(0); }
-    to { transform: translateX(-100%); }
-  }
-  @keyframes slide-out-to-bottom {
-    from { transform: translateY(0); }
-    to { transform: translateY(100%); }
-  }
-  @keyframes zoom-in-95 {
-    from { transform: scale(0.95); }
-    to { transform: scale(1); }
-  }
-  @keyframes zoom-out-95 {
-    from { transform: scale(1); }
-    to { transform: scale(0.95); }
-  }
-}
 
 /* ==========================================================================
    Utility Overrides
@@ -165,6 +105,32 @@
 @layer utilities {
   .opacity-4 {
     opacity: 0.04;
+  }
+
+  /* Commission amount: solid text in dark mode (no transparency) */
+  [data-theme="dark"] .commission-amount {
+    color: var(--color-black);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .commission-amount {
+      color: var(--color-black);
+    }
+  }
+
+  /* Transfers table: light theme = black text, dark theme = light text (amount & net excluded) */
+  [data-theme="light"] .transfers-table-data,
+  [data-theme="light"] .transfers-table-data * {
+    color: var(--color-black);
+  }
+  [data-theme="dark"] .transfers-table-data,
+  [data-theme="dark"] .transfers-table-data * {
+    color: var(--color-black);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .transfers-table-data,
+    :root:not([data-theme="light"]) .transfers-table-data * {
+      color: var(--color-black);
+    }
   }
 }
 
@@ -191,10 +157,6 @@
     }
   }
 
-  textarea::-webkit-resizer {
-    transition: all 0.15s ease;
-  }
-
   input[type="search"]::-webkit-search-cancel-button {
     -webkit-appearance: none;
     height: 16px;
@@ -202,7 +164,6 @@
     border-radius: 50%;
     opacity: 0;
     pointer-events: none;
-    transition: all 0.15s ease;
   }
 
   input[type="search"]:focus::-webkit-search-cancel-button {

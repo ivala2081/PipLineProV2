@@ -352,6 +352,7 @@ export interface Database {
           crm_id: string | null
           meta_id: string | null
           created_by: string | null
+          updated_by: string | null
           created_at: string
           updated_at: string
         }
@@ -371,6 +372,7 @@ export interface Database {
           crm_id?: string | null
           meta_id?: string | null
           created_by?: string | null
+          updated_by?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -390,6 +392,7 @@ export interface Database {
           crm_id?: string | null
           meta_id?: string | null
           created_by?: string | null
+          updated_by?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -438,6 +441,58 @@ export interface Database {
           },
         ]
       }
+      transfer_audit_log: {
+        Row: {
+          id: string
+          transfer_id: string
+          organization_id: string
+          action: 'created' | 'updated'
+          performed_by: string | null
+          changes: Record<string, { old: unknown; new: unknown }> | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          transfer_id: string
+          organization_id: string
+          action: 'created' | 'updated'
+          performed_by?: string | null
+          changes?: Record<string, { old: unknown; new: unknown }> | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          transfer_id?: string
+          organization_id?: string
+          action?: 'created' | 'updated'
+          performed_by?: string | null
+          changes?: Record<string, { old: unknown; new: unknown }> | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'transfer_audit_log_transfer_id_fkey'
+            columns: ['transfer_id']
+            isOneToOne: false
+            referencedRelation: 'transfers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'transfer_audit_log_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'transfer_audit_log_performed_by_fkey'
+            columns: ['performed_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: {
       [key: string]: {
@@ -446,6 +501,16 @@ export interface Database {
       }
     }
     Functions: {
+      add_organization_member: {
+        Args: {
+          _org_id: string
+          _email: string
+          _password: string
+          _role?: string
+          _display_name?: string | null
+        }
+        Returns: { user_id: string; created: boolean }
+      }
       [key: string]: {
         Args: Record<string, unknown>
         Returns: unknown
@@ -470,3 +535,4 @@ export type TransferCategory = Database['public']['Tables']['transfer_categories
 export type PaymentMethod = Database['public']['Tables']['payment_methods']['Row']
 export type TransferType = Database['public']['Tables']['transfer_types']['Row']
 export type Transfer = Database['public']['Tables']['transfers']['Row']
+export type TransferAuditLog = Database['public']['Tables']['transfer_audit_log']['Row']

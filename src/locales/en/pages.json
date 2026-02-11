@@ -11,7 +11,6 @@
     "module2": "Module 2",
     "module3": "Module 3",
     "members": "Members",
-    "invitations": "Invitations",
     "organizations": "Organizations"
   },
   "layout": {
@@ -56,7 +55,6 @@
       "module2": "Open Module 2 data entry",
       "module3": "Open Module 3 data entry",
       "members": "Manage organization members",
-      "invitations": "Manage invitations",
       "organizations": "Manage organizations"
     }
   },
@@ -83,6 +81,10 @@
       "crmId": "CRM ID",
       "metaId": "META ID",
       "actions": "Actions"
+    },
+    "typeValues": {
+      "Payment": "Payment",
+      "Client": "Client"
     },
     "form": {
       "fullName": "Full Name",
@@ -119,6 +121,9 @@
       "description": "Are you sure you want to delete the transfer for \"{{name}}\"? This action cannot be undone.",
       "confirm": "Delete",
       "cancel": "Cancel"
+    },
+    "detail": {
+      "title": "Transfer Details"
     },
     "empty": {
       "title": "No transfers yet",
@@ -162,6 +167,28 @@
       "lookupCreated": "Item created successfully",
       "lookupUpdated": "Item updated successfully",
       "lookupDeleted": "Item deleted successfully"
+    },
+    "audit": {
+      "title": "Audit History",
+      "button": "Audit",
+      "empty": "No audit records yet.",
+      "unknownUser": "Unknown User",
+      "actionCreated": "Created this transfer",
+      "actionUpdated": "Updated {{count}} field(s)",
+      "fields": {
+        "full_name": "Full Name",
+        "amount": "Amount",
+        "commission": "Commission",
+        "net": "Net",
+        "currency": "Currency",
+        "payment_method_id": "Payment Method",
+        "category_id": "Category",
+        "psp_id": "PSP",
+        "type_id": "Type",
+        "crm_id": "CRM ID",
+        "meta_id": "META ID",
+        "transfer_date": "Date"
+      }
     }
   },
   "module2": {
@@ -174,11 +201,10 @@
   },
   "members": {
     "title": "Members",
-    "subtitle": "Manage organization members."
-  },
-  "invitations": {
-    "title": "Invitations",
-    "subtitle": "Manage organization invitations."
+    "subtitle": "Manage organization members.",
+    "addMember": "Add Member",
+    "noOrg": "Select an organization to view members.",
+    "totalMembers": "members"
   },
   "organizations": {
     "title": "Organizations",
@@ -201,7 +227,6 @@
     "tabs": {
       "overview": "Overview",
       "members": "Members",
-      "invitations": "Invitations",
       "settings": "Settings"
     },
     "overview": {
@@ -225,6 +250,7 @@
     "members": {
       "title": "Members",
       "subtitle": "Manage organization members and their roles.",
+      "addMember": "Add Member",
       "columns": {
         "name": "Name",
         "role": "Role",
@@ -241,39 +267,20 @@
       },
       "empty": "No members in this organization."
     },
-    "invitations": {
-      "title": "Invitations",
-      "subtitle": "Manage pending invitations.",
-      "invite": "Invite Member",
-      "columns": {
-        "email": "Email",
-        "role": "Role",
-        "status": "Status",
-        "createdAt": "Sent",
-        "expiresAt": "Expires"
-      },
-      "statuses": {
-        "pending": "Pending",
-        "accepted": "Accepted",
-        "expired": "Expired"
-      },
-      "revoke": "Revoke",
-      "revokeConfirm": {
-        "title": "Revoke Invitation",
-        "description": "Are you sure you want to revoke the invitation for \"{{email}}\"?"
-      },
-      "empty": "No invitations yet."
-    },
-    "inviteDialog": {
-      "title": "Invite Member",
+    "addMemberDialog": {
+      "title": "Add Member",
       "email": "Email Address",
       "emailPlaceholder": "user@example.com",
+      "password": "Password",
+      "passwordPlaceholder": "At least 6 characters",
+      "displayName": "Display Name",
+      "displayNamePlaceholder": "Enter full name",
       "role": "Role",
       "roleAdmin": "Admin",
       "roleOperation": "Operation",
-      "invite": "Send Invitation",
+      "add": "Add Member",
       "cancel": "Cancel",
-      "sending": "Sending..."
+      "adding": "Adding..."
     },
     "settings": {
       "title": "Organization Settings",
@@ -288,8 +295,7 @@
       "updated": "Organization updated successfully",
       "memberRemoved": "Member removed successfully",
       "roleUpdated": "Member role updated successfully",
-      "invited": "Invitation sent successfully",
-      "invitationRevoked": "Invitation revoked successfully",
+      "memberAdded": "Member added successfully",
       "error": "An error occurred. Please try again."
     }
   },

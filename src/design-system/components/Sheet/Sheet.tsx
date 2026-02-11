@@ -14,7 +14,7 @@ export type SheetOverlayProps = ComponentProps<typeof SheetPrimitive.Overlay>
 export const SheetOverlay: FC<SheetOverlayProps> = ({ className, ...props }) => (
   <SheetPrimitive.Overlay
     className={cn(
-      'fixed inset-0 z-50 bg-[rgba(4,8,16,0.72)] data-[state=open]:animate-in data-[state=closed]:animate-out',
+      'fixed inset-0 z-50 bg-[rgba(4,8,16,0.72)]',
       className,
     )}
     {...props}
@@ -23,16 +23,14 @@ export const SheetOverlay: FC<SheetOverlayProps> = ({ className, ...props }) => 
 SheetOverlay.displayName = 'SheetOverlay'
 
 const sheetContentVariants = cva(
-  'ui-surface fixed z-50 gap-4 bg-bg1 p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out',
+  'ui-surface fixed z-50 gap-4 bg-bg1 p-6 shadow-lg',
   {
     variants: {
       side: {
-        top: 'inset-x-0 top-0 border-b data-[state=open]:animate-slide-in-from-top data-[state=closed]:animate-slide-out-to-top',
-        bottom:
-          'inset-x-0 bottom-0 border-t data-[state=open]:animate-slide-in-from-bottom data-[state=closed]:animate-slide-out-to-bottom',
-        left: 'inset-y-0 left-0 h-full w-3/4 border-r sm:max-w-sm data-[state=open]:animate-slide-in-from-left data-[state=closed]:animate-slide-out-to-left',
-        right:
-          'inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm data-[state=open]:animate-slide-in-from-right data-[state=closed]:animate-slide-out-to-right',
+        top: 'inset-x-0 top-0 border-b',
+        bottom: 'inset-x-0 bottom-0 border-t',
+        left: 'inset-y-0 left-0 h-full w-3/4 border-r sm:max-w-sm',
+        right: 'inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm',
       },
     },
     defaultVariants: {
@@ -55,7 +53,7 @@ export const SheetContent: FC<SheetContentProps> = ({
     <SheetPortal>
       <SheetOverlay />
       <SheetPrimitive.Content className={cn(sheetContentVariants({ side }), className)} {...props}>
-        <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-black/5 focus:ring-offset-2 disabled:pointer-events-none">
+        <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-black/5 focus:ring-offset-2 disabled:pointer-events-none">
           <X size={16} />
           <span className="sr-only">{t('sheet.close')}</span>
         </SheetPrimitive.Close>

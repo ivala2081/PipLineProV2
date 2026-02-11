@@ -19,7 +19,7 @@ export const ToastViewport: FC<ToastViewportProps> = ({ className, ...props }) =
 ToastViewport.displayName = 'ToastViewport'
 
 const toastVariants = cva(
-  'ui-surface group pointer-events-auto relative flex w-full items-center justify-between gap-4 overflow-hidden rounded-xl border border-border p-4 pr-8 shadow-lg transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out',
+  'ui-surface group pointer-events-auto relative flex w-full items-center justify-between gap-4 overflow-hidden rounded-xl border border-border p-4 pr-8 shadow-lg data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)]',
   {
     variants: {
       variant: {
@@ -46,7 +46,7 @@ export type ToastActionProps = ComponentProps<typeof ToastPrimitive.Action>
 export const ToastAction: FC<ToastActionProps> = ({ className, ...props }) => (
   <ToastPrimitive.Action
     className={cn(
-      'inline-flex h-8 shrink-0 items-center justify-center rounded-lg border border-black/10 bg-transparent px-3 text-sm font-medium transition-colors hover:bg-black/5 focus:outline-none focus:ring-2 focus:ring-black/5 disabled:pointer-events-none disabled:opacity-50',
+      'inline-flex h-8 shrink-0 items-center justify-center rounded-lg border border-black/10 bg-transparent px-3 text-sm font-medium hover:bg-black/5 focus:outline-none focus:ring-2 focus:ring-black/5 disabled:pointer-events-none disabled:opacity-50',
       className,
     )}
     {...props}
@@ -58,7 +58,7 @@ export type ToastCloseProps = ComponentProps<typeof ToastPrimitive.Close>
 export const ToastClose: FC<ToastCloseProps> = ({ className, ...props }) => (
   <ToastPrimitive.Close
     className={cn(
-      'absolute right-2 top-2 rounded-md p-1 text-black/40 opacity-0 transition-opacity hover:text-black focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100',
+      'absolute right-2 top-2 rounded-md p-1 text-black/40 opacity-0 hover:text-black focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100',
       className,
     )}
     toast-close=""

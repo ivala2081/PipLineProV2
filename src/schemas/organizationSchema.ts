@@ -18,9 +18,11 @@ export const updateOrganizationSchema = z.object({
 
 export type UpdateOrganizationValues = z.infer<typeof updateOrganizationSchema>
 
-export const inviteMemberSchema = z.object({
+export const addMemberSchema = z.object({
   email: z.string().email('Invalid email').min(1, 'Email is required').trim(),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
   role: z.enum(['admin', 'operation']),
+  display_name: z.string().optional(),
 })
 
-export type InviteMemberValues = z.infer<typeof inviteMemberSchema>
+export type AddMemberValues = z.infer<typeof addMemberSchema>

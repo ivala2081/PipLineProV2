@@ -5,6 +5,8 @@ export const queryKeys = {
     list: (orgId: string, page: number) =>
       [...queryKeys.transfers.lists(), { orgId, page }] as const,
     detail: (id: string) => [...queryKeys.transfers.all, 'detail', id] as const,
+    audit: (transferId: string, page: number) =>
+      [...queryKeys.transfers.all, 'audit', transferId, page] as const,
   },
   lookups: {
     all: ['lookups'] as const,
@@ -23,7 +25,5 @@ export const queryKeys = {
       [...queryKeys.organizations.all, 'detail', id] as const,
     members: (orgId: string) =>
       [...queryKeys.organizations.all, 'members', orgId] as const,
-    invitations: (orgId: string) =>
-      [...queryKeys.organizations.all, 'invitations', orgId] as const,
   },
 } as const

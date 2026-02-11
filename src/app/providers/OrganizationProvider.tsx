@@ -4,6 +4,7 @@ import {
   useEffect,
   useState,
   useCallback,
+  useRef,
   type ReactNode,
 } from 'react'
 import { supabase } from '@/lib/supabase'
@@ -54,16 +55,32 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     isLoading: true,
   })
 
+  // Race condition protection — cancel stale fetches when deps change
+  const fetchIdRef = useRef(0)
+
+  // Keep latest values accessible inside callbacks without causing re-renders
+  const userRef = useRef(user)
+  userRef.current = user
+
+  const isGodRef = useRef(isGod)
+  isGodRef.current = isGod
+
   /* ---- Fetch organizations -------------------------------------- */
   const fetchOrgs = useCallback(async () => {
-    if (!user) {
+    const currentUser = userRef.current
+    const currentIsGod = isGodRef.current
+
+    if (!currentUser) {
       setState({ currentOrg: null, organizations: [], membership: null, isLoading: false })
       return
     }
 
+    // Increment to invalidate any in-flight fetch from a previous cycle
+    const currentFetchId = ++fetchIdRef.current
+
     let orgs: Organization[] = []
 
-    if (isGod) {
+    if (currentIsGod) {
       // Gods can see all organizations
       const { data } = await supabase
         .from('organizations')
@@ -75,12 +92,15 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       const { data } = await supabase
         .from('organization_members')
         .select('organization:organizations(*)')
-        .eq('user_id', user.id)
+        .eq('user_id', currentUser.id)
 
       orgs = ((data ?? [])
         .map((row) => (row as unknown as { organization: Organization }).organization)
         .filter(Boolean)) as Organization[]
     }
+
+    // Bail if a newer fetch cycle started
+    if (fetchIdRef.current !== currentFetchId) return
 
     // Restore previously selected org from localStorage
     const savedOrgId = localStorage.getItem(STORAGE_KEY)
@@ -89,28 +109,45 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 
     // Fetch membership for selected org (null for gods without membership)
     let membership: OrganizationMember | null = null
-    if (currentOrg && !isGod) {
+    if (currentOrg && !currentIsGod) {
       const { data } = await supabase
         .from('organization_members')
         .select('*')
         .eq('organization_id', currentOrg.id)
-        .eq('user_id', user.id)
+        .eq('user_id', currentUser.id)
         .single()
       membership = data as OrganizationMember | null
     }
+
+    // Bail if a newer fetch cycle started (check again after second async op)
+    if (fetchIdRef.current !== currentFetchId) return
 
     if (currentOrg) {
       localStorage.setItem(STORAGE_KEY, currentOrg.id)
     }
 
     setState({ currentOrg, organizations: orgs, membership, isLoading: false })
-  }, [user, isGod])
+  }, []) // No deps — reads from refs to avoid stale closures
 
   /* ---- Load orgs when auth is ready ----------------------------- */
   useEffect(() => {
     if (authLoading) return
+
+    if (!user) {
+      // Explicit sign-out: clear state and cancel any in-flight fetches
+      fetchIdRef.current++
+      setState({ currentOrg: null, organizations: [], membership: null, isLoading: false })
+      return
+    }
+
     fetchOrgs()
-  }, [authLoading, fetchOrgs])
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user?.id, isGod])
+  //    ^^^^^^^^     ^^^^^^^^  ^^^^^
+  //    Tracks user identity (not object ref) and god status.
+  //    This avoids re-fetching on every Supabase token refresh
+  //    which creates a new user object reference.
 
   /* ---- Select a different org ----------------------------------- */
   const selectOrg = useCallback(
@@ -120,13 +157,16 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 
       localStorage.setItem(STORAGE_KEY, orgId)
 
+      const currentUser = userRef.current
+      const currentIsGod = isGodRef.current
+
       // Fetch membership for the new org
-      if (user && !isGod) {
+      if (currentUser && !currentIsGod) {
         supabase
           .from('organization_members')
           .select('*')
           .eq('organization_id', orgId)
-          .eq('user_id', user.id)
+          .eq('user_id', currentUser.id)
           .single()
           .then(({ data }) => {
             setState((prev) => ({
@@ -139,7 +179,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
         setState((prev) => ({ ...prev, currentOrg: org, membership: null }))
       }
     },
-    [state.organizations, user, isGod],
+    [state.organizations],
   )
 
   const refreshOrgs = useCallback(async () => {
