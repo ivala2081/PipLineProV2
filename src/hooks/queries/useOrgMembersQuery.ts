@@ -13,7 +13,7 @@ export function useOrgMembersQuery(orgId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('organization_members')
-        .select('*, profile:profiles(id, display_name, avatar_url, system_role)')
+        .select('*, profile:profiles!organization_members_user_id_profiles_fkey(id, display_name, avatar_url, system_role)')
         .eq('organization_id', orgId)
         .order('created_at')
 

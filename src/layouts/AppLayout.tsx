@@ -459,6 +459,8 @@ function HeaderBar() {
 
       {/* Right side controls */}
       <div className="ml-auto flex items-center gap-1">
+        <HeaderOrgSwitcher />
+        <Separator orientation="vertical" className="mx-1 h-4" />
         <button
           onClick={() => changeLocale(nextLocale)}
           className="flex h-8 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-black/70 hover:bg-black/8 hover:text-black"
