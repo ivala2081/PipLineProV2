@@ -443,15 +443,23 @@ export function TransferDialog({
             <Label className={compactLabelClasses}>
               {t('transfers.form.category')}
             </Label>
-            <SearchableSelectField
-              value={form.watch('category_id')}
-              onValueChange={(value) => form.setValue('category_id', value)}
-              placeholder={t('transfers.form.selectCategory')}
-              options={categoryOptions}
-              triggerClassName={compactControlClasses}
-              searchPlaceholder={t('transfers.form.searchInList')}
-              noResultsText={t('transfers.form.noResults')}
-            />
+            <div className="grid w-full grid-cols-2 gap-2">
+              {categoryOptions.map((option) => {
+                const isSelected = form.watch('category_id') === option.value
+                return (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    variant={isSelected ? 'filled' : 'outline'}
+                    size="sm"
+                    className={cn(compactControlClasses, 'w-full min-w-0')}
+                    onClick={() => form.setValue('category_id', option.value)}
+                  >
+                    {option.label}
+                  </Button>
+                )
+              })}
+            </div>
             {form.formState.errors.category_id && (
               <p className={compactErrorClasses}>
                 {form.formState.errors.category_id.message}
