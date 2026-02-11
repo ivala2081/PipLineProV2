@@ -71,6 +71,7 @@
       "fullName": "Ad Soyad",
       "paymentMethod": "Ödeme Yöntemi",
       "date": "Tarih",
+      "time": "Saat",
       "category": "Kategori",
       "amount": "Tutar",
       "commission": "Komisyon",
@@ -82,6 +83,7 @@
       "metaId": "META ID",
       "actions": "İşlemler"
     },
+    "summary": "Özet",
     "typeValues": {
       "Payment": "Ödeme",
       "Client": "Müşteri"
