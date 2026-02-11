@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Plus, MagnifyingGlass, Buildings } from '@phosphor-icons/react'
+import { Plus, MagnifyingGlass } from '@phosphor-icons/react'
 import {
   Button,
   Input,
@@ -70,41 +70,38 @@ export function OrganizationsListPage() {
         )}
       </div>
 
-      {/* Search + Filter Bar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative max-w-sm flex-1">
+      {/* Search + Filter Bar (minimal) */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-56">
           <MagnifyingGlass
-            size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-black/40"
+            size={14}
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-black/35"
           />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('organizations.searchPlaceholder')}
-            className="pl-9"
+            className="h-8 !rounded-lg !px-2.5 !pl-8 !py-1.5 !text-sm placeholder:!text-black/40"
           />
         </div>
-        <div className="flex items-center gap-3">
-          <Select
-            value={statusFilter}
-            onValueChange={(v) => setStatusFilter(v as StatusFilter)}
-          >
-            <SelectTrigger className="w-36">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('organizations.filterAll')}</SelectItem>
-              <SelectItem value="active">{t('organizations.filterActive')}</SelectItem>
-              <SelectItem value="inactive">{t('organizations.filterInactive')}</SelectItem>
-            </SelectContent>
-          </Select>
-          {!isLoading && organizations.length > 0 && (
-            <div className="flex items-center gap-1.5 text-sm text-black/40">
-              <Buildings size={14} />
-              <span>{t('organizations.orgCount', { count: filtered.length })}</span>
-            </div>
-          )}
-        </div>
+        <Select
+          value={statusFilter}
+          onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+        >
+          <SelectTrigger className="h-8 w-28 !rounded-lg !px-2.5 !py-1.5 !text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('organizations.filterAll')}</SelectItem>
+            <SelectItem value="active">{t('organizations.filterActive')}</SelectItem>
+            <SelectItem value="inactive">{t('organizations.filterInactive')}</SelectItem>
+          </SelectContent>
+        </Select>
+        {!isLoading && organizations.length > 0 && (
+          <span className="text-xs text-black/40">
+            {t('organizations.orgCount', { count: filtered.length })}
+          </span>
+        )}
       </div>
 
       {/* Table */}
