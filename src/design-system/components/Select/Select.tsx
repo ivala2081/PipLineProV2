@@ -49,7 +49,7 @@ export const SelectContent: FC<SelectContentProps> = ({
   <SelectPrimitive.Portal>
     <SelectPrimitive.Content
       className={cn(
-        'ui-surface relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-xl bg-bg1 text-black shadow-md',
+        'ui-surface relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-xl border border-black/15 bg-bg1 text-black shadow-md',
         position === 'popper' &&
           'data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1',
         className,
@@ -82,6 +82,7 @@ export const SelectItem: FC<SelectItemProps> = ({
   <SelectPrimitive.Item
     className={cn(
       'relative flex w-full cursor-pointer select-none items-center rounded-lg py-1.5 pl-8 pr-2 text-sm outline-none',
+      'border-b-2 border-solid !border-[#666666] last:!border-b-0',
       'focus:bg-black/5 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       className,
     )}
