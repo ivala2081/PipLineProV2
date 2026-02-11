@@ -28,12 +28,14 @@ interface UseTransfersQueryReturn {
     data: TransferFormData,
     category: TransferCategory,
     psp: Psp,
+    commissionRate: number,
   ) => Promise<void>
   updateTransfer: (
     id: string,
     data: TransferFormData,
     category: TransferCategory,
     psp: Psp,
+    commissionRate: number,
   ) => Promise<void>
   deleteTransfer: (id: string) => Promise<void>
   isCreating: boolean
@@ -87,18 +89,21 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
     mutationFn: async ({
       data,
       category,
-      psp,
+      commissionRate,
     }: {
       data: TransferFormData
       category: TransferCategory
       psp: Psp
+      commissionRate: number
     }) => {
       if (!currentOrg || !user) throw new Error('No organization selected')
 
-      const { amount, commission, net } = computeTransfer(
+      const { amount, commission, net, amountTry, amountUsd } = computeTransfer(
         data.raw_amount,
         category,
-        psp,
+        commissionRate,
+        data.exchange_rate,
+        data.currency,
       )
 
       const { error } = await supabase.from('transfers').insert({
@@ -116,6 +121,10 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
         crm_id: data.crm_id || null,
         meta_id: data.meta_id || null,
         created_by: user.id,
+        exchange_rate: data.exchange_rate,
+        amount_try: amountTry,
+        amount_usd: amountUsd,
+        commission_rate_snapshot: commissionRate,
       } as never)
 
       if (error) throw error
@@ -132,19 +141,22 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
       id,
       data,
       category,
-      psp,
+      commissionRate,
     }: {
       id: string
       data: TransferFormData
       category: TransferCategory
       psp: Psp
+      commissionRate: number
     }) => {
       if (!currentOrg) throw new Error('No organization selected')
 
-      const { amount, commission, net } = computeTransfer(
+      const { amount, commission, net, amountTry, amountUsd } = computeTransfer(
         data.raw_amount,
         category,
-        psp,
+        commissionRate,
+        data.exchange_rate,
+        data.currency,
       )
 
       const { error } = await supabase
@@ -162,6 +174,10 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
           type_id: data.type_id,
           crm_id: data.crm_id || null,
           meta_id: data.meta_id || null,
+          exchange_rate: data.exchange_rate,
+          amount_try: amountTry,
+          amount_usd: amountUsd,
+          commission_rate_snapshot: commissionRate,
         } as never)
         .eq('id', id)
 
@@ -192,10 +208,10 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
     setPage,
     isLoading,
     error: error?.message ?? null,
-    createTransfer: async (data, category, psp) =>
-      createMutation.mutateAsync({ data, category, psp }),
-    updateTransfer: async (id, data, category, psp) =>
-      updateMutation.mutateAsync({ id, data, category, psp }),
+    createTransfer: async (data, category, psp, commissionRate) =>
+      createMutation.mutateAsync({ data, category, psp, commissionRate }),
+    updateTransfer: async (id, data, category, psp, commissionRate) =>
+      updateMutation.mutateAsync({ id, data, category, psp, commissionRate }),
     deleteTransfer: deleteMutation.mutateAsync,
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,

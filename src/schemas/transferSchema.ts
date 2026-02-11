@@ -9,6 +9,7 @@ export const transferFormSchema = z.object({
   currency: z.enum(['TL', 'USD']),
   psp_id: z.string().min(1, 'PSP is required'),
   type_id: z.string().min(1, 'Type is required'),
+  exchange_rate: z.coerce.number().positive().default(1),
   crm_id: z.string().optional(),
   meta_id: z.string().optional(),
 })

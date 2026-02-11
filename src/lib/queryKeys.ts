@@ -26,4 +26,26 @@ export const queryKeys = {
     members: (orgId: string) =>
       [...queryKeys.organizations.all, 'members', orgId] as const,
   },
+  accounting: {
+    all: ['accounting'] as const,
+    lists: () => [...queryKeys.accounting.all, 'list'] as const,
+    list: (orgId: string, page: number) =>
+      [...queryKeys.accounting.lists(), { orgId, page }] as const,
+    summary: (orgId: string) =>
+      [...queryKeys.accounting.all, 'summary', orgId] as const,
+  },
+  pspRates: {
+    all: ['pspRates'] as const,
+    byPsp: (pspId: string) => [...queryKeys.pspRates.all, 'byPsp', pspId] as const,
+    byOrg: (orgId: string) => [...queryKeys.pspRates.all, 'byOrg', orgId] as const,
+  },
+  wallets: {
+    all: ['wallets'] as const,
+    list: (orgId: string) =>
+      [...queryKeys.wallets.all, 'list', orgId] as const,
+    balances: (walletId: string) =>
+      [...queryKeys.wallets.all, 'balances', walletId] as const,
+    snapshots: (walletId: string) =>
+      [...queryKeys.wallets.all, 'snapshots', walletId] as const,
+  },
 } as const

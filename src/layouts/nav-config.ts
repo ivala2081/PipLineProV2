@@ -3,6 +3,7 @@ import type { IconProps } from '@phosphor-icons/react'
 import {
   House,
   ArrowsLeftRight,
+  BookOpen,
   Table,
   ClipboardText,
   Users,
@@ -31,6 +32,7 @@ export const navGroups: NavGroup[] = [
     titleKey: 'nav.groups.dataEntry',
     items: [
       { titleKey: 'nav.transfers', href: '/transfers', icon: ArrowsLeftRight },
+      { titleKey: 'nav.accounting', href: '/accounting', icon: BookOpen },
       { titleKey: 'nav.module2', href: '/module-2', icon: Table },
       { titleKey: 'nav.module3', href: '/module-3', icon: ClipboardText },
     ],

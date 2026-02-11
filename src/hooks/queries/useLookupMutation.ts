@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { queryKeys } from '@/lib/queryKeys'
 
@@ -34,6 +35,7 @@ interface UseLookupMutationReturn {
 export function useLookupMutation(
   table: LookupTable,
 ): UseLookupMutationReturn {
+  const { user } = useAuth()
   const { currentOrg } = useOrganization()
   const queryClient = useQueryClient()
   const orgId = currentOrg?.id
@@ -90,12 +92,27 @@ export function useLookupMutation(
     mutationFn: async (data: Record<string, unknown>) => {
       if (!orgId) throw new Error('No organization selected')
 
-      const { error } = await supabase.from(table).insert({
-        organization_id: orgId,
-        ...data,
-      } as never)
+      const { data: inserted, error } = await supabase
+        .from(table)
+        .insert({
+          organization_id: orgId,
+          ...data,
+        } as never)
+        .select('id')
+        .single()
 
       if (error) throw error
+
+      // When creating a PSP, also seed the initial rate-history row
+      if (table === 'psps' && inserted && data.commission_rate != null) {
+        await supabase.from('psp_commission_rates').insert({
+          psp_id: (inserted as { id: string }).id,
+          organization_id: orgId,
+          commission_rate: data.commission_rate,
+          effective_from: new Date().toISOString().slice(0, 10),
+          created_by: user?.id,
+        })
+      }
     },
     onSuccess: invalidateQueries, // Automatic sync!
   })

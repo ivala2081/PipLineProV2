@@ -8,6 +8,7 @@
     },
     "dashboard": "Dashboard",
     "transfers": "Transfers",
+    "accounting": "Accounting",
     "module2": "Module 2",
     "module3": "Module 3",
     "members": "Members",
@@ -81,9 +82,32 @@
       "type": "Type",
       "crmId": "CRM ID",
       "metaId": "META ID",
-      "actions": "Actions"
+      "exchangeRate": "Exchange Rate",
+      "tlEquivalent": "TL Equivalent",
+      "usdEquivalent": "USD Equivalent",
+      "actions": "Actions",
+      "commissionRateSnapshot": "Commission Rate"
     },
-    "summary": "Summary",
+    "summary": {
+      "label": "Summary",
+      "deposits": "Deposits",
+      "withdrawals": "Withdrawals",
+      "net": "Net",
+      "commission": "Commission",
+      "count": "{{count}} transfers",
+      "countDetail": "{{deposits}}↑ · {{withdrawals}}↓",
+      "totalBank": "Total Bank",
+      "totalCreditCard": "Total Credit Card",
+      "totalUsd": "Total USD",
+      "dayRate": "Day Rate (USD/TRY)",
+      "netWithComm": "Net Cash (USD)",
+      "netWithoutComm": "Gross Cash (USD)",
+      "afterCommission": "After commission",
+      "beforeCommission": "Before commission",
+      "editRate": "Adjust rate",
+      "resetRate": "Reset to average",
+      "original": "avg"
+    },
     "typeValues": {
       "Payment": "Payment",
       "Client": "Client"
@@ -115,8 +139,17 @@
       "saveAndNew": "Save & New",
       "saving": "Saving...",
       "cancel": "Cancel",
+      "exchangeRate": "Exchange Rate",
+      "exchangeRateHint": "1 USD = {{rate}} TL",
+      "fetchingRate": "Fetching rate...",
+      "refreshRate": "Refresh rate",
       "searchInList": "Search list...",
-      "noResults": "No results found"
+      "noResults": "No results found",
+      "commissionRate": "Commission Rate",
+      "overrideRate": "Override",
+      "overridden": "overridden",
+      "resetRate": "reset",
+      "originalRate": "Saved rate"
     },
     "delete": {
       "title": "Delete Transfer",
@@ -152,7 +185,19 @@
       "noItems": "No items yet. Add one to get started.",
       "deleteConfirm": "Are you sure you want to delete \"{{name}}\"?",
       "save": "Save",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "locked": "Admin Access Only",
+      "lockedDescription": "These settings can only be managed by an admin. Contact your administrator if changes are needed.",
+      "rateHistory": "Rate History",
+      "rateHistoryTitle": "{{name}} — Rate History",
+      "rateHistoryDescription": "Commission rate changes over time. The rate in effect on a transfer's date is used automatically.",
+      "addRate": "Add",
+      "effectiveFrom": "Effective From",
+      "currentRate": "Current",
+      "futureRate": "Scheduled",
+      "noRateHistory": "No rate history yet. Add the first rate period.",
+      "lastRateWarning": "Cannot delete the only active rate. Add a replacement first.",
+      "commissionRateHint": "This sets the initial rate. Use Rate History to manage changes over time."
     },
     "validation": {
       "fullNameRequired": "Full name is required",
@@ -171,7 +216,9 @@
       "error": "An error occurred. Please try again.",
       "lookupCreated": "Item created successfully",
       "lookupUpdated": "Item updated successfully",
-      "lookupDeleted": "Item deleted successfully"
+      "lookupDeleted": "Item deleted successfully",
+      "rateCreated": "Rate period added successfully",
+      "rateDeleted": "Rate period deleted successfully"
     },
     "audit": {
       "title": "Audit History",
@@ -192,8 +239,112 @@
         "type_id": "Type",
         "crm_id": "CRM ID",
         "meta_id": "META ID",
-        "transfer_date": "Date"
+        "transfer_date": "Date",
+        "exchange_rate": "Exchange Rate",
+        "amount_try": "TL Equivalent",
+        "amount_usd": "USD Equivalent",
+        "commission_rate_snapshot": "Commission Rate"
       }
+    }
+  },
+  "accounting": {
+    "title": "Accounting",
+    "subtitle": "Manage company reserves, expenses, and crypto wallets.",
+    "addEntry": "Add Entry",
+    "editEntry": "Edit Entry",
+    "addWallet": "Add Wallet",
+    "in": "In",
+    "out": "Out",
+    "tabs": {
+      "ledger": "Ledger",
+      "wallets": "Wallets"
+    },
+    "columns": {
+      "description": "Description",
+      "type": "Type",
+      "direction": "Direction",
+      "amount": "Amount",
+      "currency": "Currency",
+      "register": "Register",
+      "costPeriod": "Cost Period",
+      "date": "Date"
+    },
+    "entryTypes": {
+      "ODEME": "Payment",
+      "TRANSFER": "Transfer"
+    },
+    "directions": {
+      "in": "In",
+      "out": "Out"
+    },
+    "form": {
+      "description": "Description",
+      "descriptionPlaceholder": "e.g. Salary payment",
+      "entryType": "Entry Type",
+      "direction": "Direction",
+      "amount": "Amount",
+      "currency": "Currency",
+      "register": "Register (Kasa)",
+      "date": "Date",
+      "costPeriod": "Cost Period",
+      "costPeriodPlaceholder": "e.g. Jan26",
+      "paymentPeriod": "Payment Period",
+      "paymentPeriodPlaceholder": "e.g. OCK26",
+      "save": "Save",
+      "saving": "Saving...",
+      "cancel": "Cancel"
+    },
+    "delete": {
+      "title": "Delete Entry",
+      "description": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
+      "confirm": "Delete",
+      "cancel": "Cancel"
+    },
+    "empty": {
+      "title": "No entries yet",
+      "description": "Create your first accounting entry to get started."
+    },
+    "stats": {
+      "totalEntries": "Total Entries",
+      "activeWallets": "Active Wallets",
+      "lastEntry": "Last Entry"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "wallets": {
+      "empty": {
+        "title": "No wallets yet",
+        "description": "Add a crypto wallet to start tracking balances."
+      },
+      "noBalances": "No balances found",
+      "moreTokens": "more tokens",
+      "viewDetail": "Details",
+      "snapshot": "Snapshot",
+      "snapshotting": "Saving...",
+      "balances": "Token Balances",
+      "refresh": "Refresh",
+      "snapshotHistory": "Snapshot History",
+      "snapshotDate": "Date",
+      "tokens": "Balances",
+      "noSnapshots": "No snapshots taken yet.",
+      "form": {
+        "label": "Wallet Name",
+        "labelPlaceholder": "e.g. Main USDT Wallet",
+        "address": "Wallet Address",
+        "addressPlaceholder": "Enter blockchain address",
+        "chain": "Blockchain"
+      }
+    },
+    "toast": {
+      "created": "Entry created successfully",
+      "updated": "Entry updated successfully",
+      "deleted": "Entry deleted successfully",
+      "walletCreated": "Wallet added successfully",
+      "walletDeleted": "Wallet removed successfully",
+      "snapshotTaken": "Balance snapshot saved",
+      "error": "An error occurred. Please try again."
     }
   },
   "module2": {

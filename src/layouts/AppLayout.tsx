@@ -10,6 +10,7 @@ import {
   Moon,
   Sun,
   Globe,
+  Lightning,
 } from '@phosphor-icons/react'
 
 import { useAuth } from '@/app/providers/AuthProvider'
@@ -31,6 +32,7 @@ import {
   SidebarInset,
   SidebarTrigger,
   SidebarRail,
+  useSidebar,
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
@@ -57,64 +59,35 @@ import { useLocale } from '@ds/hooks'
 import { navGroups } from '@/layouts/nav-config'
 
 /* ------------------------------------------------------------------ */
-/*  Org Switcher (sidebar header)                                      */
+/*  Sidebar Brand (logo + org name)                                    */
 /* ------------------------------------------------------------------ */
 
-function OrgSwitcher() {
-  const { t } = useTranslation('pages')
-  const { currentOrg, organizations, selectOrg } = useOrganization()
-
-  if (organizations.length === 0) return null
+function SidebarBrand() {
+  const { currentOrg } = useOrganization()
+  const { state } = useSidebar()
+  const isCollapsed = state === 'collapsed'
 
   return (
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              size="lg"
-              className="data-[state=open]:bg-black/8"
-            >
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-brand text-white text-xs font-bold">
-                {currentOrg?.name?.charAt(0)?.toUpperCase() ?? '?'}
-              </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">
-                  {currentOrg?.name ?? t('layout.noOrganization')}
-                </span>
-                <span className="truncate text-xs text-black/60">
-                  {currentOrg?.slug ?? ''}
-                </span>
-              </div>
-              <CaretUpDown size={16} className="ml-auto text-black/60" />
-            </SidebarMenuButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="w-[--radix-dropdown-menu-trigger-width] min-w-56"
-            align="start"
-            side="bottom"
-            sideOffset={4}
-          >
-            <DropdownMenuLabel>{t('layout.organizations')}</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {organizations.map((org) => (
-              <DropdownMenuItem
-                key={org.id}
-                onSelect={() => selectOrg(org.id)}
-              >
-                <div className="flex aspect-square size-6 items-center justify-center rounded bg-brand/10 text-brand text-xs font-bold">
-                  {org.name.charAt(0).toUpperCase()}
-                </div>
-                <span className="truncate">{org.name}</span>
-                {org.id === currentOrg?.id && (
-                  <Check size={16} className="ml-auto text-brand" />
-                )}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </SidebarMenuItem>
-    </SidebarMenu>
+    <div className="flex items-center gap-2.5 px-2 py-1">
+      {/* Logo mark */}
+      <div className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg bg-brand text-white">
+        <Lightning size={18} weight="fill" />
+      </div>
+
+      {/* Brand text — hidden when sidebar is collapsed */}
+      {!isCollapsed && (
+        <div className="grid flex-1 text-left leading-tight">
+          <span className="truncate text-sm font-bold tracking-tight text-black">
+            PipLinePro
+          </span>
+          {currentOrg && (
+            <span className="truncate text-[11px] text-black/50">
+              {currentOrg.name}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -490,7 +463,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
     <SidebarProvider defaultOpen={true}>
       <Sidebar variant="sidebar" collapsible="icon">
         <SidebarHeader>
-          <OrgSwitcher />
+          <SidebarBrand />
         </SidebarHeader>
         <SidebarContent>
           <SidebarNav />

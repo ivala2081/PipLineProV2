@@ -23,7 +23,10 @@
       "Bash(supabase:*)",
       "Bash(npx supabase:*)",
       "Bash(curl:*)",
-      "Bash(SUPABASE_ACCESS_TOKEN=sbp_d462e2c179f066f7799ca40208a690777a0db503 npx supabase:*)"
+      "Bash(SUPABASE_ACCESS_TOKEN=sbp_d462e2c179f066f7799ca40208a690777a0db503 npx supabase:*)",
+      "WebFetch(domain:api.freecurrencyapi.com)",
+      "WebFetch(domain:docs.tatum.io)",
+      "WebFetch(domain:github.com)"
     ]
   }
 }

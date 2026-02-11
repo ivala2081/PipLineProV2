@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus } from '@phosphor-icons/react'
+import { Plus, Lock } from '@phosphor-icons/react'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { useLookupQueries } from '@/hooks/queries/useLookupQueries'
 import { useTransfersQuery } from '@/hooks/queries/useTransfersQuery'
 import type { TransferRow } from '@/hooks/useTransfers'
-import { Button, Tabs, TabsList, TabsTrigger, TabsContent } from '@ds'
+import { Button, Card, Tabs, TabsList, TabsTrigger, TabsContent } from '@ds'
 import { TransfersTable } from './TransfersTable'
 import { TransferDialog } from './TransferDialog'
 import { DeleteConfirmDialog } from './DeleteConfirmDialog'
@@ -74,24 +74,32 @@ export function TransfersPage() {
         </Button>
       </div>
 
-      {isAdmin ? (
-        <Tabs defaultValue="transfers">
-          <TabsList>
-            <TabsTrigger value="transfers">
-              {t('transfers.tabs.transfers')}
-            </TabsTrigger>
-            <TabsTrigger value="settings">
-              {t('transfers.tabs.settings')}
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="transfers">{tableContent}</TabsContent>
-          <TabsContent value="settings">
+      <Tabs defaultValue="transfers">
+        <TabsList>
+          <TabsTrigger value="transfers">
+            {t('transfers.tabs.transfers')}
+          </TabsTrigger>
+          <TabsTrigger value="settings">
+            {t('transfers.tabs.settings')}
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="transfers">{tableContent}</TabsContent>
+        <TabsContent value="settings">
+          {isAdmin ? (
             <LookupSettings />
-          </TabsContent>
-        </Tabs>
-      ) : (
-        tableContent
-      )}
+          ) : (
+            <Card className="flex flex-col items-center justify-center gap-2 border border-black/5 bg-bg1 px-6 py-12 text-center">
+              <Lock size={32} className="text-black/20" />
+              <h3 className="text-sm font-semibold text-black/60">
+                {t('transfers.settings.locked')}
+              </h3>
+              <p className="text-sm text-black/40">
+                {t('transfers.settings.lockedDescription')}
+              </p>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
 
       <TransferDialog
         open={dialogOpen}

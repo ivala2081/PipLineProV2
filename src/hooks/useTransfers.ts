@@ -23,8 +23,12 @@ export interface TransferRow {
   type_id: string
   crm_id: string | null
   meta_id: string | null
+  exchange_rate: number
+  amount_try: number
+  amount_usd: number
   created_by: string | null
   created_at: string
+  commission_rate_snapshot: number | null
   updated_at: string
   // joined
   psp: { name: string; commission_rate: number } | null
@@ -39,6 +43,7 @@ export interface TransferFormData {
   transfer_date: string
   category_id: string
   raw_amount: number
+  exchange_rate: number
   currency: Currency
   psp_id: string
   type_id: string
@@ -81,14 +86,30 @@ const SELECT_QUERY =
 export function computeTransfer(
   rawAmount: number,
   category: TransferCategory,
-  psp: Psp,
+  commissionRate: number,
+  exchangeRate: number,
+  currency: Currency,
 ) {
   const amount = category.is_deposit ? rawAmount : -rawAmount
   const commission = category.is_deposit
-    ? Math.round(rawAmount * psp.commission_rate * 100) / 100
+    ? Math.round(rawAmount * commissionRate * 100) / 100
     : 0
   const net = Math.round((amount - commission) * 100) / 100
-  return { amount, commission, net }
+
+  let amountTry: number
+  let amountUsd: number
+  if (currency === 'TL') {
+    amountTry = amount
+    amountUsd =
+      exchangeRate > 0
+        ? Math.round((amount / exchangeRate) * 100) / 100
+        : 0
+  } else {
+    amountUsd = amount
+    amountTry = Math.round(amount * exchangeRate * 100) / 100
+  }
+
+  return { amount, commission, net, amountTry, amountUsd }
 }
 
 /* ------------------------------------------------------------------ */
@@ -156,10 +177,12 @@ export function useTransfers(): UseTransfersReturn {
     ): Promise<{ error: string | null }> => {
       if (!currentOrg || !user) return { error: 'No organization selected' }
 
-      const { amount, commission, net } = computeTransfer(
+      const { amount, commission, net, amountTry, amountUsd } = computeTransfer(
         data.raw_amount,
         category,
-        psp,
+        psp.commission_rate,
+        data.exchange_rate,
+        data.currency,
       )
 
       const { error: insertError } = await supabase.from('transfers').insert({
@@ -177,6 +200,9 @@ export function useTransfers(): UseTransfersReturn {
         crm_id: data.crm_id || null,
         meta_id: data.meta_id || null,
         created_by: user.id,
+        exchange_rate: data.exchange_rate,
+        amount_try: amountTry,
+        amount_usd: amountUsd,
       })
 
       if (!insertError) await fetchTransfers()
@@ -194,10 +220,12 @@ export function useTransfers(): UseTransfersReturn {
     ): Promise<{ error: string | null }> => {
       if (!currentOrg) return { error: 'No organization selected' }
 
-      const { amount, commission, net } = computeTransfer(
+      const { amount, commission, net, amountTry, amountUsd } = computeTransfer(
         data.raw_amount,
         category,
-        psp,
+        psp.commission_rate,
+        data.exchange_rate,
+        data.currency,
       )
 
       const { error: updateError } = await supabase
@@ -215,6 +243,9 @@ export function useTransfers(): UseTransfersReturn {
           type_id: data.type_id,
           crm_id: data.crm_id || null,
           meta_id: data.meta_id || null,
+          exchange_rate: data.exchange_rate,
+          amount_try: amountTry,
+          amount_usd: amountUsd,
         })
         .eq('id', id)
 

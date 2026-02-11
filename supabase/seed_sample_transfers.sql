@@ -45,6 +45,9 @@ declare
   _type_id         uuid;
   _psp_id          uuid;
   _comm_rate       numeric;
+  _exchange_rate   numeric;
+  _amount_try      numeric;
+  _amount_usd      numeric;
 begin
   -- ── 1. Resolve org ──────────────────────────────────────────────
   select id into _org_id
@@ -71,6 +74,13 @@ begin
   into _psp_ids, _psp_rates
   from psps
   where organization_id = _org_id and is_active;
+
+  -- Ensure rate-history rows exist for each PSP (idempotent)
+  for _psp_idx in 1..array_length(_psp_ids, 1) loop
+    insert into psp_commission_rates (psp_id, organization_id, commission_rate, effective_from)
+    values (_psp_ids[_psp_idx], _org_id, _psp_rates[_psp_idx], current_date - interval '90 days')
+    on conflict (psp_id, effective_from) do nothing;
+  end loop;
 
   -- Categories (need at least one deposit + one withdrawal)
   if not exists (select 1 from transfer_categories where organization_id = _org_id and is_active) then
@@ -150,6 +160,18 @@ begin
       -- 80% TL, 20% USD
       _currency := case when random() < 0.8 then 'TL'::public.currency else 'USD'::public.currency end;
 
+      -- Exchange rate: always USD/TRY (random 32–36)
+      _exchange_rate := round((32 + random() * 4)::numeric, 4);
+
+      -- Compute dual-currency amounts
+      if _currency = 'TL' then
+        _amount_try := _amount;
+        _amount_usd := round(_amount / _exchange_rate, 2);
+      else
+        _amount_usd := _amount;
+        _amount_try := round(_amount * _exchange_rate, 2);
+      end if;
+
       -- Random time between 08:00–22:00
       _hour   := 8 + floor(random() * 14)::int;
       _minute := floor(random() * 60)::int;
@@ -165,13 +187,17 @@ begin
       insert into transfers (
         organization_id, full_name, payment_method_id, transfer_date,
         category_id, amount, commission, net, currency,
-        psp_id, type_id, crm_id, meta_id
+        psp_id, type_id, crm_id, meta_id,
+        exchange_rate, amount_try, amount_usd,
+        commission_rate_snapshot
       ) values (
         _org_id, _name, _pm_id, _transfer_date,
         _cat_id, _amount, _commission, _net, _currency,
         _psp_id, _type_id,
         case when random() < 0.3 then 'CRM-' || lpad((floor(random() * 99999))::text, 5, '0') else null end,
-        case when random() < 0.2 then 'META-' || lpad((floor(random() * 99999))::text, 5, '0') else null end
+        case when random() < 0.2 then 'META-' || lpad((floor(random() * 99999))::text, 5, '0') else null end,
+        _exchange_rate, _amount_try, _amount_usd,
+        _comm_rate
       );
 
     end loop;

@@ -12,6 +12,7 @@ import { ForgotPasswordPage } from '@/pages/forgot-password'
 import { ResetPasswordPage } from '@/pages/reset-password'
 import { DashboardPage } from '@/pages/dashboard'
 import { TransfersPage } from '@/pages/transfers'
+import { AccountingPage } from '@/pages/accounting'
 import { Module2Page } from '@/pages/modules/module-2'
 import { Module3Page } from '@/pages/modules/module-3'
 import { MembersPage } from '@/pages/management/members'
@@ -89,6 +90,7 @@ export function App() {
                       <Routes>
                         <Route path="/" element={<DashboardPage />} />
                         <Route path="/transfers" element={<TransfersPage />} />
+                        <Route path="/accounting" element={<AccountingPage />} />
                         <Route path="/module-2" element={<Module2Page />} />
                         <Route path="/module-3" element={<Module3Page />} />
                         <Route path="/members" element={<MembersPage />} />

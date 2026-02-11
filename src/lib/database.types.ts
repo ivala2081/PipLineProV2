@@ -227,6 +227,58 @@ export interface Database {
           },
         ]
       }
+      psp_commission_rates: {
+        Row: {
+          id: string
+          psp_id: string
+          organization_id: string
+          commission_rate: number
+          effective_from: string
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          psp_id: string
+          organization_id: string
+          commission_rate: number
+          effective_from: string
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          psp_id?: string
+          organization_id?: string
+          commission_rate?: number
+          effective_from?: string
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'psp_commission_rates_psp_id_fkey'
+            columns: ['psp_id']
+            isOneToOne: false
+            referencedRelation: 'psps'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'psp_commission_rates_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'psp_commission_rates_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       transfer_categories: {
         Row: {
           id: string
@@ -353,6 +405,10 @@ export interface Database {
           meta_id: string | null
           created_by: string | null
           updated_by: string | null
+          exchange_rate: number
+          amount_try: number
+          amount_usd: number
+          commission_rate_snapshot: number | null
           created_at: string
           updated_at: string
         }
@@ -373,6 +429,10 @@ export interface Database {
           meta_id?: string | null
           created_by?: string | null
           updated_by?: string | null
+          exchange_rate?: number
+          amount_try?: number
+          amount_usd?: number
+          commission_rate_snapshot?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -393,6 +453,10 @@ export interface Database {
           meta_id?: string | null
           created_by?: string | null
           updated_by?: string | null
+          exchange_rate?: number
+          amount_try?: number
+          amount_usd?: number
+          commission_rate_snapshot?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -437,6 +501,193 @@ export interface Database {
             columns: ['created_by']
             isOneToOne: false
             referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      exchange_rates: {
+        Row: {
+          id: string
+          organization_id: string
+          currency: string
+          rate_to_tl: number
+          rate_date: string
+          source: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          currency: string
+          rate_to_tl: number
+          rate_date?: string
+          source?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          currency?: string
+          rate_to_tl?: number
+          rate_date?: string
+          source?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'exchange_rates_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      accounting_entries: {
+        Row: {
+          id: string
+          organization_id: string
+          description: string
+          entry_type: 'ODEME' | 'TRANSFER'
+          direction: 'in' | 'out'
+          amount: number
+          currency: string
+          cost_period: string | null
+          entry_date: string
+          payment_period: string | null
+          register: string
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          description: string
+          entry_type: 'ODEME' | 'TRANSFER'
+          direction: 'in' | 'out'
+          amount: number
+          currency: string
+          cost_period?: string | null
+          entry_date?: string
+          payment_period?: string | null
+          register: string
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          description?: string
+          entry_type?: 'ODEME' | 'TRANSFER'
+          direction?: 'in' | 'out'
+          amount?: number
+          currency?: string
+          cost_period?: string | null
+          entry_date?: string
+          payment_period?: string | null
+          register?: string
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'accounting_entries_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'accounting_entries_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      wallets: {
+        Row: {
+          id: string
+          organization_id: string
+          label: string
+          address: string
+          chain: 'tron' | 'ethereum' | 'bsc' | 'bitcoin' | 'solana'
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          label: string
+          address: string
+          chain: 'tron' | 'ethereum' | 'bsc' | 'bitcoin' | 'solana'
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          label?: string
+          address?: string
+          chain?: 'tron' | 'ethereum' | 'bsc' | 'bitcoin' | 'solana'
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'wallets_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      wallet_snapshots: {
+        Row: {
+          id: string
+          wallet_id: string
+          organization_id: string
+          snapshot_date: string
+          balances: { token: string; balance: string; tokenAddress?: string }[]
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          wallet_id: string
+          organization_id: string
+          snapshot_date: string
+          balances: { token: string; balance: string; tokenAddress?: string }[]
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          wallet_id?: string
+          organization_id?: string
+          snapshot_date?: string
+          balances?: { token: string; balance: string; tokenAddress?: string }[]
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'wallet_snapshots_wallet_id_fkey'
+            columns: ['wallet_id']
+            isOneToOne: false
+            referencedRelation: 'wallets'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'wallet_snapshots_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
             referencedColumns: ['id']
           },
         ]
@@ -536,3 +787,8 @@ export type PaymentMethod = Database['public']['Tables']['payment_methods']['Row
 export type TransferType = Database['public']['Tables']['transfer_types']['Row']
 export type Transfer = Database['public']['Tables']['transfers']['Row']
 export type TransferAuditLog = Database['public']['Tables']['transfer_audit_log']['Row']
+export type ExchangeRate = Database['public']['Tables']['exchange_rates']['Row']
+export type AccountingEntry = Database['public']['Tables']['accounting_entries']['Row']
+export type Wallet = Database['public']['Tables']['wallets']['Row']
+export type WalletSnapshot = Database['public']['Tables']['wallet_snapshots']['Row']
+export type PspCommissionRate = Database['public']['Tables']['psp_commission_rates']['Row']

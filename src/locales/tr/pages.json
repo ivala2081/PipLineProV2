@@ -8,6 +8,7 @@
     },
     "dashboard": "Kontrol Paneli",
     "transfers": "Transferler",
+    "accounting": "Muhasebe",
     "module2": "Modül 2",
     "module3": "Modül 3",
     "members": "Üyeler",
@@ -81,9 +82,32 @@
       "type": "Tür",
       "crmId": "CRM ID",
       "metaId": "META ID",
-      "actions": "İşlemler"
+      "exchangeRate": "Döviz Kuru",
+      "tlEquivalent": "TL Karşılığı",
+      "usdEquivalent": "USD Karşılığı",
+      "actions": "İşlemler",
+      "commissionRateSnapshot": "Komisyon Oranı"
     },
-    "summary": "Özet",
+    "summary": {
+      "label": "Özet",
+      "deposits": "Yatırım",
+      "withdrawals": "Çekim",
+      "net": "Net",
+      "commission": "Komisyon",
+      "count": "{{count}} transfer",
+      "countDetail": "{{deposits}}↑ · {{withdrawals}}↓",
+      "totalBank": "Toplam Banka",
+      "totalCreditCard": "Toplam Kredi Kartı",
+      "totalUsd": "Toplam USD",
+      "dayRate": "Günlük Kur (USD/TRY)",
+      "netWithComm": "Net Nakit (USD)",
+      "netWithoutComm": "Brüt Nakit (USD)",
+      "afterCommission": "Komisyon sonrası",
+      "beforeCommission": "Komisyon öncesi",
+      "editRate": "Kuru düzenle",
+      "resetRate": "Ortalamaya sıfırla",
+      "original": "ort"
+    },
     "typeValues": {
       "Payment": "Ödeme",
       "Client": "Müşteri"
@@ -115,8 +139,17 @@
       "saveAndNew": "Kaydet ve Yeni",
       "saving": "Kaydediliyor...",
       "cancel": "İptal",
+      "exchangeRate": "Döviz Kuru",
+      "exchangeRateHint": "1 USD = {{rate}} TL",
+      "fetchingRate": "Kur alınıyor...",
+      "refreshRate": "Kuru yenile",
       "searchInList": "Listede ara...",
-      "noResults": "Sonuç bulunamadı"
+      "noResults": "Sonuç bulunamadı",
+      "commissionRate": "Komisyon Oranı",
+      "overrideRate": "Değiştir",
+      "overridden": "değiştirildi",
+      "resetRate": "sıfırla",
+      "originalRate": "Kayıtlı oran"
     },
     "delete": {
       "title": "Transferi Sil",
@@ -152,7 +185,19 @@
       "cancel": "İptal",
       "deposit": "Yatırım",
       "withdrawal": "Çekim",
-      "nameRequired": "Ad gereklidir"
+      "nameRequired": "Ad gereklidir",
+      "locked": "Yalnızca Yönetici Erişimi",
+      "lockedDescription": "Bu ayarlar yalnızca yöneticiler tarafından düzenlenebilir. Değişiklik gerekiyorsa yöneticinizle iletişime geçin.",
+      "rateHistory": "Oran Geçmişi",
+      "rateHistoryTitle": "{{name}} — Oran Geçmişi",
+      "rateHistoryDescription": "Komisyon oranı zaman içinde değişir. Transferin tarihindeki geçerli oran otomatik kullanılır.",
+      "addRate": "Ekle",
+      "effectiveFrom": "Geçerlilik Başlangıcı",
+      "currentRate": "Güncel",
+      "futureRate": "Planlanmış",
+      "noRateHistory": "Henüz oran geçmişi yok. İlk oran dönemini ekleyin.",
+      "lastRateWarning": "Tek aktif oran silinemez. Önce bir yedek ekleyin.",
+      "commissionRateHint": "Bu başlangıç oranını belirler. Değişiklikleri yönetmek için Oran Geçmişi'ni kullanın."
     },
     "validation": {
       "fullNameRequired": "Ad soyad gereklidir",
@@ -171,7 +216,9 @@
       "error": "Bir hata oluştu. Lütfen tekrar deneyin.",
       "lookupCreated": "Öğe başarıyla oluşturuldu",
       "lookupUpdated": "Öğe başarıyla güncellendi",
-      "lookupDeleted": "Öğe başarıyla silindi"
+      "lookupDeleted": "Öğe başarıyla silindi",
+      "rateCreated": "Oran dönemi başarıyla eklendi",
+      "rateDeleted": "Oran dönemi başarıyla silindi"
     },
     "audit": {
       "title": "Denetim Geçmişi",
@@ -192,8 +239,112 @@
         "type_id": "Tür",
         "crm_id": "CRM ID",
         "meta_id": "META ID",
-        "transfer_date": "Tarih"
+        "transfer_date": "Tarih",
+        "exchange_rate": "Döviz Kuru",
+        "amount_try": "TL Karşılığı",
+        "amount_usd": "USD Karşılığı",
+        "commission_rate_snapshot": "Komisyon Oranı"
       }
+    }
+  },
+  "accounting": {
+    "title": "Muhasebe",
+    "subtitle": "Şirket rezervlerini, giderleri ve kripto cüzdanları yönetin.",
+    "addEntry": "Kayıt Ekle",
+    "editEntry": "Kayıt Düzenle",
+    "addWallet": "Cüzdan Ekle",
+    "in": "Giriş",
+    "out": "Çıkış",
+    "tabs": {
+      "ledger": "Kasa Defteri",
+      "wallets": "Cüzdanlar"
+    },
+    "columns": {
+      "description": "Açıklama",
+      "type": "Tür",
+      "direction": "Yön",
+      "amount": "Tutar",
+      "currency": "Para Birimi",
+      "register": "Kasa",
+      "costPeriod": "Maliyet Dönemi",
+      "date": "Tarih"
+    },
+    "entryTypes": {
+      "ODEME": "Ödeme",
+      "TRANSFER": "Transfer"
+    },
+    "directions": {
+      "in": "Giriş",
+      "out": "Çıkış"
+    },
+    "form": {
+      "description": "Açıklama",
+      "descriptionPlaceholder": "örn. Maaş ödemesi",
+      "entryType": "Kayıt Türü",
+      "direction": "Yön",
+      "amount": "Tutar",
+      "currency": "Para Birimi",
+      "register": "Kasa",
+      "date": "Tarih",
+      "costPeriod": "Maliyet Dönemi",
+      "costPeriodPlaceholder": "örn. Ocak26",
+      "paymentPeriod": "Ödeme Dönemi",
+      "paymentPeriodPlaceholder": "örn. OCK26",
+      "save": "Kaydet",
+      "saving": "Kaydediliyor...",
+      "cancel": "İptal"
+    },
+    "delete": {
+      "title": "Kaydı Sil",
+      "description": "\"{{name}}\" kaydını silmek istediğinize emin misiniz? Bu işlem geri alınamaz.",
+      "confirm": "Sil",
+      "cancel": "İptal"
+    },
+    "empty": {
+      "title": "Henüz kayıt yok",
+      "description": "Başlamak için ilk muhasebe kaydınızı oluşturun."
+    },
+    "stats": {
+      "totalEntries": "Toplam Kayıt",
+      "activeWallets": "Aktif Cüzdanlar",
+      "lastEntry": "Son Kayıt"
+    },
+    "actions": {
+      "edit": "Düzenle",
+      "delete": "Sil"
+    },
+    "wallets": {
+      "empty": {
+        "title": "Henüz cüzdan yok",
+        "description": "Bakiyeleri takip etmek için bir kripto cüzdanı ekleyin."
+      },
+      "noBalances": "Bakiye bulunamadı",
+      "moreTokens": "daha fazla token",
+      "viewDetail": "Detaylar",
+      "snapshot": "Anlık Görüntü",
+      "snapshotting": "Kaydediliyor...",
+      "balances": "Token Bakiyeleri",
+      "refresh": "Yenile",
+      "snapshotHistory": "Anlık Görüntü Geçmişi",
+      "snapshotDate": "Tarih",
+      "tokens": "Bakiyeler",
+      "noSnapshots": "Henüz anlık görüntü alınmamış.",
+      "form": {
+        "label": "Cüzdan Adı",
+        "labelPlaceholder": "örn. Ana USDT Cüzdanı",
+        "address": "Cüzdan Adresi",
+        "addressPlaceholder": "Blockchain adresi girin",
+        "chain": "Blok Zinciri"
+      }
+    },
+    "toast": {
+      "created": "Kayıt başarıyla oluşturuldu",
+      "updated": "Kayıt başarıyla güncellendi",
+      "deleted": "Kayıt başarıyla silindi",
+      "walletCreated": "Cüzdan başarıyla eklendi",
+      "walletDeleted": "Cüzdan başarıyla kaldırıldı",
+      "snapshotTaken": "Bakiye anlık görüntüsü kaydedildi",
+      "error": "Bir hata oluştu. Lütfen tekrar deneyin."
     }
   },
   "module2": {

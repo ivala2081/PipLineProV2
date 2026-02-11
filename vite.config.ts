@@ -11,4 +11,13 @@ export default defineConfig({
       '@ds': path.resolve(__dirname, './src/design-system'),
     },
   },
+  server: {
+    proxy: {
+      '/tatum-api': {
+        target: 'https://api.tatum.io/v4',
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/tatum-api/, ''),
+      },
+    },
+  },
 })

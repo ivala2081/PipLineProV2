@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, PencilSimple, Trash } from '@phosphor-icons/react'
+import { Plus, PencilSimple, Trash, ClockCounterClockwise } from '@phosphor-icons/react'
 import { useLookupMutation } from '@/hooks/queries/useLookupMutation'
 import { useToast } from '@/hooks/useToast'
 import { LookupFormDialog } from './LookupFormDialog'
+import { PspRateHistoryDialog } from './PspRateHistoryDialog'
+import type { Psp } from '@/lib/database.types'
 import {
   Card,
   Button,
@@ -55,6 +57,7 @@ function LookupSection({ config }: { config: SectionConfig }) {
   const [editingItem, setEditingItem] = useState<Record<string, unknown> | null>(
     null,
   )
+  const [rateHistoryPsp, setRateHistoryPsp] = useState<Psp | null>(null)
 
   const openAdd = () => {
     setEditingItem(null)
@@ -131,7 +134,7 @@ function LookupSection({ config }: { config: SectionConfig }) {
               {config.hasIsDeposit && (
                 <TableHead>{t('transfers.settings.isDeposit')}</TableHead>
               )}
-              <TableHead className="w-24" />
+              <TableHead className="w-28" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -139,7 +142,10 @@ function LookupSection({ config }: { config: SectionConfig }) {
               <TableRow key={item.id}>
                 <TableCell className="font-medium">{item.name}</TableCell>
                 {config.hasCommissionRate && (
-                  <TableCell>
+                  <TableCell
+                    className="cursor-pointer font-mono tabular-nums hover:text-blue-600"
+                    onClick={() => setRateHistoryPsp(item as unknown as Psp)}
+                  >
                     {(
                       ((item as Record<string, unknown>).commission_rate as number) *
                       100
@@ -164,6 +170,18 @@ function LookupSection({ config }: { config: SectionConfig }) {
                 )}
                 <TableCell>
                   <div className="flex gap-1">
+                    {config.hasCommissionRate && (
+                      <Button
+                        variant="borderless"
+                        size="sm"
+                        onClick={() =>
+                          setRateHistoryPsp(item as unknown as Psp)
+                        }
+                        title={t('transfers.settings.rateHistory')}
+                      >
+                        <ClockCounterClockwise size={14} />
+                      </Button>
+                    )}
                     <Button
                       variant="borderless"
                       size="sm"
@@ -201,6 +219,14 @@ function LookupSection({ config }: { config: SectionConfig }) {
         }
         isSaving={isCreating || isUpdating}
       />
+
+      {config.hasCommissionRate && (
+        <PspRateHistoryDialog
+          psp={rateHistoryPsp}
+          open={rateHistoryPsp !== null}
+          onClose={() => setRateHistoryPsp(null)}
+        />
+      )}
     </div>
   )
 }

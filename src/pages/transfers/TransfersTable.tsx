@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   DotsThree,
@@ -8,6 +8,14 @@ import {
   Eye,
   ClockCounterClockwise,
   ChartBar,
+  Coins,
+  Bank,
+  CreditCard,
+  CurrencyDollar,
+  CaretLeft,
+  CaretRight,
+  Check,
+  X,
 } from '@phosphor-icons/react'
 import type { TransferRow } from '@/hooks/useTransfers'
 import { TransferAuditDialog } from './TransferAuditDialog'
@@ -33,9 +41,11 @@ import {
   PaginationContent,
   PaginationItem,
   PaginationLink,
-  PaginationPrevious,
-  PaginationNext,
   PaginationEllipsis,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
 } from '@ds'
 
 interface TransfersTableProps {
@@ -106,6 +116,84 @@ function formatNumber(n: number) {
   })
 }
 
+interface DaySummary {
+  deposits: number
+  withdrawals: number
+  net: number
+  commission: number
+  count: number
+  depositCount: number
+  withdrawalCount: number
+  totalBank: number
+  totalCreditCard: number
+  totalUsd: number
+  netWithCommUsd: number
+  netWithoutCommUsd: number
+  dayRate: number
+}
+
+function computeDaySummary(transfers: TransferRow[]): DaySummary {
+  let deposits = 0
+  let withdrawals = 0
+  let commission = 0
+  let depositCount = 0
+  let withdrawalCount = 0
+  let totalBank = 0
+  let totalCreditCard = 0
+  let totalUsd = 0
+  let netWithoutCommUsd = 0
+  let commissionUsd = 0
+  let rateSum = 0
+  let rateCount = 0
+
+  for (const t of transfers) {
+    const tryAmount = Math.abs(t.amount_try ?? 0)
+    const commTry =
+      t.currency === 'USD' ? t.commission * (t.exchange_rate ?? 1) : t.commission
+    const rate = t.exchange_rate ?? 1
+
+    if (t.category?.is_deposit) {
+      deposits += tryAmount
+      depositCount++
+    } else {
+      withdrawals += tryAmount
+      withdrawalCount++
+    }
+    commission += commTry
+
+    const method = t.payment_method?.name?.toLowerCase() ?? ''
+    if (method.includes('bank')) totalBank += tryAmount
+    if (method.includes('credit')) totalCreditCard += tryAmount
+    if (t.currency === 'USD') totalUsd += Math.abs(t.amount ?? 0)
+
+    // USD equivalents for net calculations
+    netWithoutCommUsd += t.amount_usd ?? 0
+    commissionUsd +=
+      t.currency === 'USD' ? t.commission : t.commission / rate
+
+    if (rate > 0) {
+      rateSum += rate
+      rateCount++
+    }
+  }
+
+  return {
+    deposits,
+    withdrawals,
+    net: deposits - withdrawals,
+    commission,
+    count: transfers.length,
+    depositCount,
+    withdrawalCount,
+    totalBank,
+    totalCreditCard,
+    totalUsd,
+    netWithoutCommUsd,
+    netWithCommUsd: netWithoutCommUsd - commissionUsd,
+    dayRate: rateCount > 0 ? rateSum / rateCount : 0,
+  }
+}
+
 function DetailRow({
   label,
   children,
@@ -141,6 +229,17 @@ export function TransfersTable({
   const { t, i18n } = useTranslation('pages')
   const [detailRow, setDetailRow] = useState<TransferRow | null>(null)
   const [auditRow, setAuditRow] = useState<TransferRow | null>(null)
+  const [summaryGroup, setSummaryGroup] = useState<DateGroup | null>(null)
+  const [customRate, setCustomRate] = useState<number | null>(null)
+  const [isEditingRate, setIsEditingRate] = useState(false)
+  const rateInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (isEditingRate && rateInputRef.current) {
+      rateInputRef.current.focus()
+      rateInputRef.current.select()
+    }
+  }, [isEditingRate])
   const totalPages = Math.ceil(total / pageSize)
   const from = (page - 1) * pageSize + 1
   const to = Math.min(page * pageSize, total)
@@ -230,11 +329,11 @@ export function TransfersTable({
               <Button
                 variant="ghost"
                 size="sm"
-                disabled
-                className="h-7 gap-1.5 px-2.5 text-[11px] font-medium text-black/40"
+                className="h-7 gap-1.5 px-2.5 text-[11px] font-medium text-black/40 hover:text-black/70"
+                onClick={() => setSummaryGroup(group)}
               >
                 <ChartBar size={14} />
-                {t('transfers.summary')}
+                {t('transfers.summary.label')}
               </Button>
             </div>
 
@@ -385,19 +484,22 @@ export function TransfersTable({
 
       {/* Pagination footer */}
       {(totalPages > 1 || total > 0) && (
-        <div className="flex items-center justify-between pt-2">
-          <span className="text-xs text-black/40">
+        <div className="flex items-center justify-between rounded-lg border border-black/[0.06] bg-black/[0.015] px-4 py-2">
+          <span className="text-xs tabular-nums text-black/40">
             {from}–{to} / {total}
           </span>
 
           {totalPages > 1 && (
-            <Pagination>
+            <Pagination className="mx-0 w-auto">
               <PaginationContent>
                 <PaginationItem>
-                  <PaginationPrevious
+                  <PaginationLink
                     onClick={() => onPageChange(Math.max(1, page - 1))}
                     disabled={page <= 1}
-                  />
+                    aria-label="Previous page"
+                  >
+                    <CaretLeft size={14} weight="bold" />
+                  </PaginationLink>
                 </PaginationItem>
 
                 {getPageNumbers().map((p, i) =>
@@ -418,18 +520,256 @@ export function TransfersTable({
                 )}
 
                 <PaginationItem>
-                  <PaginationNext
+                  <PaginationLink
                     onClick={() =>
                       onPageChange(Math.min(totalPages, page + 1))
                     }
                     disabled={page >= totalPages}
-                  />
+                    aria-label="Next page"
+                  >
+                    <CaretRight size={14} weight="bold" />
+                  </PaginationLink>
                 </PaginationItem>
               </PaginationContent>
             </Pagination>
           )}
         </div>
       )}
+
+      {/* Daily Summary Dialog */}
+      <Dialog
+        open={summaryGroup !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSummaryGroup(null)
+            setCustomRate(null)
+            setIsEditingRate(false)
+          }
+        }}
+      >
+        <DialogContent className="max-h-[85vh] gap-0 overflow-y-auto p-0 sm:max-w-md">
+          {summaryGroup && (() => {
+            const s = computeDaySummary(summaryGroup.transfers)
+            const vol = s.deposits + s.withdrawals
+            const depositPct = vol > 0 ? (s.deposits / vol) * 100 : 50
+
+            return (
+              <>
+                {/* ── Hero zone ────────────────────── */}
+                <div className={`px-6 pt-6 pb-5 ${s.net >= 0 ? 'bg-green/[0.03]' : 'bg-red/[0.03]'}`}>
+                  <DialogHeader>
+                    <DialogTitle className="text-[15px] font-semibold">{summaryGroup.label}</DialogTitle>
+                  </DialogHeader>
+                  <p className="mt-0.5 text-[12px] text-black/40">
+                    {t('transfers.summary.count', { count: s.count })}
+                    {' · '}
+                    {t('transfers.summary.countDetail', {
+                      deposits: s.depositCount,
+                      withdrawals: s.withdrawalCount,
+                    })}
+                  </p>
+
+                  <p
+                    className={`mt-4 font-mono text-[32px] font-bold leading-none tabular-nums ${s.net >= 0 ? 'text-green' : 'text-red'}`}
+                  >
+                    {s.net >= 0 ? '+' : '−'}{formatNumber(Math.abs(s.net))}
+                    <span className="ml-1.5 text-[15px] opacity-40">₺</span>
+                  </p>
+                  <p className="mt-1 text-[12px] text-black/30">{t('transfers.summary.net')}</p>
+                </div>
+
+                {/* ── Deposit / Withdrawal ────────── */}
+                <div className="grid grid-cols-2">
+                  <div className="border-r border-b border-black/[0.06] px-6 py-4">
+                    <div className="flex items-center gap-1.5">
+                      <div className="size-1.5 rounded-full bg-green" />
+                      <span className="text-[12px] text-black/45">{t('transfers.summary.deposits')}</span>
+                    </div>
+                    <p className="mt-1.5 font-mono text-[18px] font-bold tabular-nums text-black/80">
+                      {formatNumber(s.deposits)}
+                      <span className="ml-1 text-[12px] font-medium text-black/25">₺</span>
+                    </p>
+                    <p className="mt-0.5 text-[11px] tabular-nums text-black/25">
+                      {s.depositCount} {t('transfers.summary.deposits').toLowerCase()}
+                    </p>
+                  </div>
+                  <div className="border-b border-black/[0.06] px-6 py-4">
+                    <div className="flex items-center gap-1.5">
+                      <div className="size-1.5 rounded-full bg-red" />
+                      <span className="text-[12px] text-black/45">{t('transfers.summary.withdrawals')}</span>
+                    </div>
+                    <p className="mt-1.5 font-mono text-[18px] font-bold tabular-nums text-black/80">
+                      {formatNumber(s.withdrawals)}
+                      <span className="ml-1 text-[12px] font-medium text-black/25">₺</span>
+                    </p>
+                    <p className="mt-0.5 text-[11px] tabular-nums text-black/25">
+                      {s.withdrawalCount} {t('transfers.summary.withdrawals').toLowerCase()}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Proportion bar */}
+                <div className="flex h-1">
+                  <div className="bg-green/60" style={{ width: `${depositPct}%` }} />
+                  <div className="bg-red/60" style={{ width: `${100 - depositPct}%` }} />
+                </div>
+
+                {/* ── Breakdown rows ──────────────── */}
+                <div className="px-6 py-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <Bank size={16} className="text-black/30" />
+                        <span className="text-[13px] text-black/60">{t('transfers.summary.totalBank')}</span>
+                      </div>
+                      <span className="font-mono text-[13px] font-semibold tabular-nums text-black/70">
+                        {formatNumber(s.totalBank)} ₺
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <CreditCard size={16} className="text-black/30" />
+                        <span className="text-[13px] text-black/60">{t('transfers.summary.totalCreditCard')}</span>
+                      </div>
+                      <span className="font-mono text-[13px] font-semibold tabular-nums text-black/70">
+                        {formatNumber(s.totalCreditCard)} ₺
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <CurrencyDollar size={16} className="text-black/30" />
+                        <span className="text-[13px] text-black/60">{t('transfers.summary.totalUsd')}</span>
+                      </div>
+                      <span className="font-mono text-[13px] font-semibold tabular-nums text-black/70">
+                        {formatNumber(s.totalUsd)} $
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <Coins size={16} className="text-black/30" />
+                        <span className="text-[13px] text-black/60">{t('transfers.summary.commission')}</span>
+                      </div>
+                      <span className="font-mono text-[13px] font-semibold tabular-nums text-black/70">
+                        {formatNumber(s.commission)} ₺
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── USD section ─────────────────── */}
+                {(() => {
+                  const effectiveRate = customRate ?? s.dayRate
+                  const overrideActive = customRate !== null
+                  const adjNetWithoutCommUsd = effectiveRate > 0 ? s.net / effectiveRate : 0
+                  const adjNetWithCommUsd = effectiveRate > 0 ? (s.net - s.commission) / effectiveRate : 0
+
+                  return (
+                    <div className="border-t border-black/[0.06] bg-black/[0.02] px-6 py-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[12px] font-medium text-black/40">
+                          {t('transfers.summary.dayRate')}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          {isEditingRate ? (
+                            <>
+                              <input
+                                ref={rateInputRef}
+                                type="number"
+                                step="0.0001"
+                                defaultValue={(customRate ?? s.dayRate).toFixed(4)}
+                                className="h-7 w-24 rounded border border-black/10 bg-white px-2 text-right font-mono text-[13px] font-bold tabular-nums text-black/70 outline-none focus:border-black/25"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    const val = parseFloat(rateInputRef.current?.value ?? '')
+                                    if (!isNaN(val) && val > 0) {
+                                      setCustomRate(val)
+                                    }
+                                    setIsEditingRate(false)
+                                  } else if (e.key === 'Escape') {
+                                    setIsEditingRate(false)
+                                  }
+                                }}
+                              />
+                              <button
+                                className="flex size-6 items-center justify-center rounded text-green hover:bg-green/10"
+                                onClick={() => {
+                                  const val = parseFloat(rateInputRef.current?.value ?? '')
+                                  if (!isNaN(val) && val > 0) {
+                                    setCustomRate(val)
+                                  }
+                                  setIsEditingRate(false)
+                                }}
+                              >
+                                <Check size={14} weight="bold" />
+                              </button>
+                              <button
+                                className="flex size-6 items-center justify-center rounded text-red hover:bg-red/10"
+                                onClick={() => setIsEditingRate(false)}
+                              >
+                                <X size={14} weight="bold" />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <span className={`font-mono text-[13px] font-bold tabular-nums ${overrideActive ? 'text-orange' : 'text-black/60'}`}>
+                                {effectiveRate.toFixed(4)}
+                              </span>
+                              {overrideActive && (
+                                <span className="text-[10px] text-black/25">
+                                  ({t('transfers.summary.original')}: {s.dayRate.toFixed(4)})
+                                </span>
+                              )}
+                              <button
+                                className="flex size-6 items-center justify-center rounded text-black/30 hover:bg-black/5 hover:text-black/60"
+                                onClick={() => setIsEditingRate(true)}
+                                title={t('transfers.summary.editRate')}
+                              >
+                                <PencilSimple size={13} />
+                              </button>
+                              {overrideActive && (
+                                <button
+                                  className="flex size-6 items-center justify-center rounded text-black/25 hover:bg-black/5 hover:text-black/50"
+                                  onClick={() => setCustomRate(null)}
+                                  title={t('transfers.summary.resetRate')}
+                                >
+                                  <X size={12} />
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-[11px] text-black/35">{t('transfers.summary.netWithComm')}</p>
+                          <p
+                            className={`mt-1 font-mono text-[18px] font-bold tabular-nums ${adjNetWithCommUsd >= 0 ? 'text-green' : 'text-red'}`}
+                          >
+                            {adjNetWithCommUsd >= 0 ? '+' : '−'}{formatNumber(Math.abs(adjNetWithCommUsd))}
+                            <span className="ml-0.5 text-[11px] opacity-40">$</span>
+                          </p>
+                          <p className="mt-0.5 text-[10px] text-black/20">{t('transfers.summary.afterCommission')}</p>
+                        </div>
+                        <div>
+                          <p className="text-[11px] text-black/35">{t('transfers.summary.netWithoutComm')}</p>
+                          <p
+                            className={`mt-1 font-mono text-[18px] font-bold tabular-nums ${adjNetWithoutCommUsd >= 0 ? 'text-green' : 'text-red'}`}
+                          >
+                            {adjNetWithoutCommUsd >= 0 ? '+' : '−'}{formatNumber(Math.abs(adjNetWithoutCommUsd))}
+                            <span className="ml-0.5 text-[11px] opacity-40">$</span>
+                          </p>
+                          <p className="mt-0.5 text-[10px] text-black/20">{t('transfers.summary.beforeCommission')}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })()}
+              </>
+            )
+          })()}
+        </DialogContent>
+      </Dialog>
 
       {/* Detail Sheet */}
       <Sheet
@@ -478,6 +818,13 @@ export function TransfersTable({
                   {formatNumber(detailRow.commission)}
                 </span>
               </DetailRow>
+              <DetailRow label={t('transfers.columns.commissionRateSnapshot')}>
+                <span className="font-mono tabular-nums text-black/50">
+                  {detailRow.commission_rate_snapshot != null
+                    ? `${(detailRow.commission_rate_snapshot * 100).toFixed(1)}%`
+                    : '—'}
+                </span>
+              </DetailRow>
               <DetailRow label={t('transfers.columns.net')}>
                 <span
                   className={`font-mono font-semibold tabular-nums ${detailRow.net >= 0 ? 'text-green' : 'text-red'}`}
@@ -487,6 +834,21 @@ export function TransfersTable({
               </DetailRow>
               <DetailRow label={t('transfers.columns.currency')}>
                 <Tag variant="default">{detailRow.currency}</Tag>
+              </DetailRow>
+              <DetailRow label={t('transfers.columns.exchangeRate')}>
+                <span className="font-mono tabular-nums">
+                  {detailRow.exchange_rate?.toFixed(4) ?? '—'}
+                </span>
+              </DetailRow>
+              <DetailRow label={t('transfers.columns.tlEquivalent')}>
+                <span className="font-mono tabular-nums text-blue-600">
+                  {formatNumber(Math.abs(detailRow.amount_try ?? 0))} TL
+                </span>
+              </DetailRow>
+              <DetailRow label={t('transfers.columns.usdEquivalent')}>
+                <span className="font-mono tabular-nums text-green-600">
+                  {formatNumber(Math.abs(detailRow.amount_usd ?? 0))} USD
+                </span>
               </DetailRow>
               <DetailRow label={t('transfers.columns.psp')}>
                 {detailRow.psp?.name ?? '—'}

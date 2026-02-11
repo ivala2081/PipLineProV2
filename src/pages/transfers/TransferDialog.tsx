@@ -2,10 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
+import { ArrowsClockwise, SpinnerGap } from '@phosphor-icons/react'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import type { TransferRow } from '@/hooks/useTransfers'
 import type { useLookupQueries } from '@/hooks/queries/useLookupQueries'
 import type { useTransfersQuery } from '@/hooks/queries/useTransfersQuery'
+import { useExchangeRateQuery } from '@/hooks/queries/useExchangeRateQuery'
+import { useOrgPspRates, resolveRateForDate } from '@/hooks/queries/usePspRatesQuery'
 import { useToast } from '@/hooks/useToast'
 import { transferFormSchema, type TransferFormValues } from '@/schemas/transferSchema'
 import { basicInputClasses, disabledInputClasses, focusInputClasses } from '@ds/components/Input'
@@ -67,6 +70,7 @@ function getDefaultFormValues(): TransferFormValues {
     currency: 'TL',
     psp_id: '',
     type_id: '',
+    exchange_rate: 1,
     crm_id: '',
     meta_id: '',
   }
@@ -186,6 +190,13 @@ export function TransferDialog({
   const isEdit = !!transfer
   const submitModeRef = useRef<'close' | 'new'>('close')
 
+  // Rate history for all PSPs in this org
+  const { ratesByPsp } = useOrgPspRates()
+
+  // Rate override state (user can manually override the auto-resolved rate)
+  const [rateOverride, setRateOverride] = useState<number | null>(null)
+  const [showRateOverride, setShowRateOverride] = useState(false)
+
   const form = useForm<TransferFormValues>({
     resolver: zodResolver(transferFormSchema),
     defaultValues: getDefaultFormValues(),
@@ -194,6 +205,8 @@ export function TransferDialog({
   // Reset form when dialog opens/closes or transfer changes
   useEffect(() => {
     if (open) {
+      setRateOverride(null)
+      setShowRateOverride(false)
       if (transfer) {
         form.reset({
           full_name: transfer.full_name,
@@ -206,6 +219,7 @@ export function TransferDialog({
           currency: transfer.currency,
           psp_id: transfer.psp_id,
           type_id: transfer.type_id,
+          exchange_rate: transfer.exchange_rate ?? 1,
           crm_id: transfer.crm_id ?? '',
           meta_id: transfer.meta_id ?? '',
         })
@@ -221,8 +235,33 @@ export function TransferDialog({
     }
   }, [open, transfer, form, currentOrg?.id])
 
-  // Watch category/psp for submission computation
-  const [categoryId, pspId] = form.watch(['category_id', 'psp_id'])
+  // Watch category/psp/currency for submission computation
+  const [categoryId, pspId, currency, rawAmount, exchangeRateValue, transferDate] =
+    form.watch([
+      'category_id',
+      'psp_id',
+      'currency',
+      'raw_amount',
+      'exchange_rate',
+      'transfer_date',
+    ])
+
+  // Reset rate override when PSP or date changes
+  useEffect(() => {
+    setRateOverride(null)
+    setShowRateOverride(false)
+  }, [pspId, transferDate])
+
+  // Exchange rate auto-fetch (always USD/TRY)
+  const { rate: fetchedRate, isLoading: rateLoading, refetch: refetchRate } =
+    useExchangeRateQuery()
+
+  // Auto-fill exchange_rate when rate is fetched (only for new transfers)
+  useEffect(() => {
+    if (!isEdit && fetchedRate > 1) {
+      form.setValue('exchange_rate', Math.round(fetchedRate * 10000) / 10000)
+    }
+  }, [fetchedRate, form, isEdit])
 
   const selectedCategory = useMemo(
     () => lookupData.categories.find((c) => c.id === categoryId),
@@ -232,6 +271,19 @@ export function TransferDialog({
     () => lookupData.psps.find((p) => p.id === pspId),
     [lookupData.psps, pspId],
   )
+
+  // Resolve the commission rate for the selected PSP + date
+  const resolvedRate = useMemo(() => {
+    if (!pspId || !transferDate) return null
+    const dateStr = transferDate.slice(0, 10) // 'YYYY-MM-DD' from datetime-local
+    const pspRates = ratesByPsp.get(pspId)
+    if (!pspRates || pspRates.length === 0) return null
+    return resolveRateForDate(pspRates, dateStr)
+  }, [pspId, transferDate, ratesByPsp])
+
+  // Effective rate: override > resolved from history > PSP fallback
+  const effectiveRate =
+    rateOverride ?? resolvedRate ?? selectedPsp?.commission_rate ?? 0
 
   const paymentMethodOptions = useMemo<SelectOption[]>(
     () =>
@@ -296,13 +348,19 @@ export function TransferDialog({
           formData,
           selectedCategory,
           selectedPsp,
+          effectiveRate,
         )
         toast({
           title: t('transfers.toast.updated'),
           variant: 'success',
         })
       } else {
-        await onSubmit.createTransfer(formData, selectedCategory, selectedPsp)
+        await onSubmit.createTransfer(
+          formData,
+          selectedCategory,
+          selectedPsp,
+          effectiveRate,
+        )
         toast({
           title: t('transfers.toast.created'),
           variant: 'success',
@@ -317,6 +375,8 @@ export function TransferDialog({
           ...remembered,
           transfer_date: defaults.transfer_date,
         })
+        setRateOverride(null)
+        setShowRateOverride(false)
         return
       }
 
@@ -438,6 +498,47 @@ export function TransferDialog({
             </div>
           </div>
 
+          {/* Exchange Rate (USD/TRY — always visible) */}
+          <div className="sm:col-span-2">
+            <Label className={compactLabelClasses}>
+              {t('transfers.form.exchangeRate')}
+            </Label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                min="0"
+                step="0.0001"
+                {...form.register('exchange_rate')}
+                className={cn(compactControlClasses, 'flex-1')}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="!h-10 !w-10 shrink-0 !p-0"
+                onClick={() => refetchRate()}
+                disabled={rateLoading}
+                title={t('transfers.form.refreshRate')}
+              >
+                {rateLoading ? (
+                  <SpinnerGap className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ArrowsClockwise className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            <p className={compactHintClasses}>
+              {t('transfers.form.exchangeRateHint', {
+                rate: exchangeRateValue,
+              })}
+            </p>
+            {form.formState.errors.exchange_rate && (
+              <p className={compactErrorClasses}>
+                {form.formState.errors.exchange_rate.message}
+              </p>
+            )}
+          </div>
+
           {/* Category */}
           <div className="sm:col-span-2">
             <Label className={compactLabelClasses}>
@@ -483,6 +584,19 @@ export function TransferDialog({
             <p className={compactHintClasses}>
               {t('transfers.form.amountHint')}
             </p>
+            {rawAmount > 0 && exchangeRateValue > 0 && (
+              <p className="mt-1 text-xs font-medium text-blue-600">
+                {currency === 'TL'
+                  ? `≈ ${(rawAmount / exchangeRateValue).toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })} USD`
+                  : `≈ ${(rawAmount * exchangeRateValue).toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })} TL`}
+              </p>
+            )}
             {form.formState.errors.raw_amount && (
               <p className={compactErrorClasses}>
                 {form.formState.errors.raw_amount.message}
@@ -508,6 +622,107 @@ export function TransferDialog({
               <p className={compactErrorClasses}>
                 {form.formState.errors.psp_id.message}
               </p>
+            )}
+
+            {/* Commission rate info */}
+            {selectedPsp && (
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <p className={compactHintClasses}>
+                  {t('transfers.form.commissionRate')}:{' '}
+                  <span className="font-mono font-medium tabular-nums">
+                    {(effectiveRate * 100).toFixed(1)}%
+                  </span>
+                  {rateOverride !== null && (
+                    <span className="ml-1 text-amber-600">
+                      ({t('transfers.form.overridden')})
+                      <button
+                        type="button"
+                        className="ml-1 text-[11px] underline"
+                        onClick={() => {
+                          setRateOverride(null)
+                          setShowRateOverride(false)
+                        }}
+                      >
+                        {t('transfers.form.resetRate')}
+                      </button>
+                    </span>
+                  )}
+                </p>
+
+                {!showRateOverride && rateOverride === null && (
+                  <button
+                    type="button"
+                    className="text-[11px] text-blue-600 underline"
+                    onClick={() => setShowRateOverride(true)}
+                  >
+                    {t('transfers.form.overrideRate')}
+                  </button>
+                )}
+
+                {/* Snapshot info when editing */}
+                {isEdit && transfer?.commission_rate_snapshot != null && (
+                  <p className={compactHintClasses}>
+                    {t('transfers.form.originalRate')}:{' '}
+                    <span className="font-mono tabular-nums">
+                      {(transfer.commission_rate_snapshot * 100).toFixed(1)}%
+                    </span>
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Rate override input */}
+            {showRateOverride && (
+              <div className="mt-2 flex items-center gap-2">
+                <Input
+                  type="number"
+                  min="0"
+                  max="99.99"
+                  step="0.1"
+                  placeholder="%"
+                  className="!h-8 !w-24 !rounded-lg !px-2 !py-1 !text-xs"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      const val = parseFloat(
+                        (e.target as HTMLInputElement).value,
+                      )
+                      if (!isNaN(val) && val >= 0 && val < 100) {
+                        setRateOverride(val / 100)
+                        setShowRateOverride(false)
+                      }
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="!h-8 !px-2 !text-xs"
+                  onClick={(e) => {
+                    const input = (
+                      e.currentTarget.previousElementSibling as HTMLInputElement
+                    )
+                    const val = parseFloat(input?.value ?? '')
+                    if (!isNaN(val) && val >= 0 && val < 100) {
+                      setRateOverride(val / 100)
+                      setShowRateOverride(false)
+                    }
+                  }}
+                >
+                  OK
+                </Button>
+                <Button
+                  type="button"
+                  variant="borderless"
+                  size="sm"
+                  className="!h-8 !px-2 !text-xs"
+                  onClick={() => setShowRateOverride(false)}
+                >
+                  {t('transfers.form.cancel')}
+                </Button>
+              </div>
             )}
           </div>
 
