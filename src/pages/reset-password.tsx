@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Eye,
@@ -141,12 +141,12 @@ export function ResetPasswordPage() {
           </div>
           <FormMessage error>{t('resetPassword.errorExpired')}</FormMessage>
           <div className="text-center">
-            <a
-              href="/forgot-password"
+            <Link
+              to="/forgot-password"
               className="text-sm text-brand underline-offset-4 transition-colors hover:underline"
             >
               {t('forgotPassword.submit')}
-            </a>
+            </Link>
           </div>
         </Card>
       </div>
@@ -244,7 +244,6 @@ export function ResetPasswordPage() {
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-black/40 hover:text-black/80 transition-colors"
-                tabIndex={-1}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
@@ -301,7 +300,6 @@ export function ResetPasswordPage() {
                 type="button"
                 onClick={() => setShowConfirm(!showConfirm)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-black/40 hover:text-black/80 transition-colors"
-                tabIndex={-1}
                 aria-label={showConfirm ? 'Hide password' : 'Show password'}
               >
                 {showConfirm ? <EyeSlash size={20} /> : <Eye size={20} />}
@@ -331,12 +329,12 @@ export function ResetPasswordPage() {
 
         {/* Back to login */}
         <div className="text-center">
-          <a
-            href="/login"
+          <Link
+            to="/login"
             className="text-sm text-brand underline-offset-4 transition-colors hover:underline"
           >
             {t('forgotPassword.backToLogin')}
-          </a>
+          </Link>
         </div>
       </Card>
     </div>

@@ -22,8 +22,8 @@ import type { IconProps } from '@phosphor-icons/react'
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <Card className="flex flex-col gap-3 border border-black/20 bg-bg5/95 p-5">
-      <span className="text-xs font-medium text-black/65 uppercase tracking-wider">
+    <Card className="flex flex-col gap-3 border border-black/5 bg-bg1 p-5">
+      <span className="text-xs font-medium text-black/40 uppercase tracking-wider">
         {label}
       </span>
       <div className="flex items-end justify-between gap-2">
@@ -57,16 +57,16 @@ function QuickAction({
       to={href}
       className="ui-surface group flex items-center gap-4 rounded-xl border border-black/10 bg-bg2/70 p-4 transition-all hover:bg-bg5"
     >
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-black/12 text-black/80 transition-colors group-hover:bg-brand/15 group-hover:text-brand">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-black/10 text-black/80 transition-colors group-hover:bg-brand/15 group-hover:text-brand">
         <Icon size={20} />
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-black">{label}</p>
-        <p className="truncate text-xs text-black/65">{description}</p>
+        <p className="truncate text-xs text-black/60">{description}</p>
       </div>
       <ArrowRight
         size={16}
-        className="shrink-0 text-black/40 transition-colors group-hover:text-black/75"
+        className="shrink-0 text-black/40 transition-colors group-hover:text-black/80"
       />
     </Link>
   )
@@ -99,7 +99,7 @@ export function DashboardPage() {
           <h1 className="text-2xl font-semibold text-black">
             {t('dashboard.welcome', { name: displayName })}
           </h1>
-          <p className="mt-1 text-sm text-black/75">
+          <p className="mt-1 text-sm text-black/60">
             {currentOrg
               ? t('dashboard.orgContext', { org: currentOrg.name })
               : t('dashboard.subtitle')}
@@ -125,7 +125,7 @@ export function DashboardPage() {
 
       {/* Quick actions */}
       <div>
-        <h2 className="mb-3 text-sm font-semibold text-black/75 uppercase tracking-wider">
+        <h2 className="mb-3 text-sm font-semibold text-black/60 uppercase tracking-wider">
           {t('dashboard.quickActions')}
         </h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

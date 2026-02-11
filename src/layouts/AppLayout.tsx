@@ -241,7 +241,7 @@ function EditProfileDialog({
               placeholder={t('layout.profile.displayNamePlaceholder')}
               autoFocus
             />
-            {error && <p className="text-xs text-red-500">{error}</p>}
+            {error && <p className="text-xs text-red">{error}</p>}
           </div>
           <DialogFooter>
             <Button

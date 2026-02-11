@@ -101,7 +101,7 @@ export function LookupFormDialog({
               placeholder={t('transfers.settings.namePlaceholder')}
             />
             {form.formState.errors.name && (
-              <p className="mt-1 text-xs text-red-500">Name is required</p>
+              <p className="mt-1 text-xs text-red">{t('transfers.settings.nameRequired')}</p>
             )}
           </div>
 

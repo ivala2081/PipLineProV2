@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Eye, EyeSlash, CircleNotch, Sun, Moon, Globe } from '@phosphor-icons/react'
 import { useAuth } from '@/app/providers/AuthProvider'
@@ -209,7 +209,6 @@ export function LoginPage() {
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-black/40 hover:text-black/80 transition-colors"
-                tabIndex={-1}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
@@ -256,12 +255,12 @@ export function LoginPage() {
 
         {/* Forgot password */}
         <div className="text-center">
-          <a
-            href="/forgot-password"
+          <Link
+            to="/forgot-password"
             className="text-sm text-brand underline-offset-4 transition-colors hover:underline"
           >
             {t('login.forgotPassword')}
-          </a>
+          </Link>
         </div>
       </Card>
     </div>

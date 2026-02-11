@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { DotsThree, PencilSimple, Trash } from '@phosphor-icons/react'
 import type { TransferRow } from '@/hooks/useTransfers'
+import { useLocale } from '@ds/hooks'
 import {
   Table,
   TableHeader,
@@ -10,6 +11,7 @@ import {
   TableCell,
   Tag,
   Skeleton,
+  Card,
   Pagination,
   PaginationContent,
   PaginationItem,
@@ -34,24 +36,6 @@ interface TransfersTableProps {
   onDelete: (transfer: TransferRow) => void
 }
 
-function formatDate(dateStr: string) {
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('tr-TR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-function formatNumber(n: number) {
-  return n.toLocaleString('tr-TR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
-}
-
 export function TransfersTable({
   transfers,
   isLoading,
@@ -63,7 +47,27 @@ export function TransfersTable({
   onDelete,
 }: TransfersTableProps) {
   const { t } = useTranslation('pages')
+  const { locale } = useLocale()
   const totalPages = Math.ceil(total / pageSize)
+  const localeTag = locale === 'tr' ? 'tr-TR' : 'en-US'
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr)
+    return d.toLocaleDateString(localeTag, {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
+  const formatNumber = (n: number) => {
+    return n.toLocaleString(localeTag, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+  }
 
   if (isLoading) {
     return (
@@ -77,7 +81,7 @@ export function TransfersTable({
 
   if (transfers.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-black/5 bg-bg1 py-20">
+      <Card className="flex flex-col items-center justify-center gap-4 border border-black/5 bg-bg1 py-20">
         <div className="text-center">
           <p className="text-sm font-medium text-black/60">
             {t('transfers.empty.title')}
@@ -86,7 +90,7 @@ export function TransfersTable({
             {t('transfers.empty.description')}
           </p>
         </div>
-      </div>
+      </Card>
     )
   }
 
@@ -126,7 +130,7 @@ export function TransfersTable({
                   </Tag>
                 </TableCell>
                 <TableCell
-                  className={`text-right font-mono ${row.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                  className={`text-right font-mono ${row.amount >= 0 ? 'text-green' : 'text-red'}`}
                 >
                   {formatNumber(row.amount)}
                 </TableCell>
@@ -134,7 +138,7 @@ export function TransfersTable({
                   {formatNumber(row.commission)}
                 </TableCell>
                 <TableCell
-                  className={`text-right font-mono ${row.net >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                  className={`text-right font-mono ${row.net >= 0 ? 'text-green' : 'text-red'}`}
                 >
                   {formatNumber(row.net)}
                 </TableCell>
@@ -149,7 +153,7 @@ export function TransfersTable({
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
-                        variant="ghost"
+                        variant="borderless"
                         className="h-8 w-8 p-0"
                       >
                         <DotsThree size={16} weight="bold" />
@@ -161,7 +165,7 @@ export function TransfersTable({
                         {t('transfers.settings.editItem')}
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        className="text-red-600"
+                        className="text-red"
                         onClick={() => onDelete(row)}
                       >
                         <Trash size={14} />
@@ -185,20 +189,27 @@ export function TransfersTable({
                 className={page <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
               />
             </PaginationItem>
-            {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
-              const pageNum = i + 1
-              return (
-                <PaginationItem key={pageNum}>
-                  <PaginationLink
-                    onClick={() => onPageChange(pageNum)}
-                    isActive={page === pageNum}
-                    className="cursor-pointer"
-                  >
-                    {pageNum}
-                  </PaginationLink>
-                </PaginationItem>
-              )
-            })}
+            {(() => {
+              const maxVisible = 5
+              let start = Math.max(1, page - Math.floor(maxVisible / 2))
+              const end = Math.min(totalPages, start + maxVisible - 1)
+              start = Math.max(1, end - maxVisible + 1)
+
+              return Array.from({ length: end - start + 1 }).map((_, i) => {
+                const pageNum = start + i
+                return (
+                  <PaginationItem key={pageNum}>
+                    <PaginationLink
+                      onClick={() => onPageChange(pageNum)}
+                      isActive={page === pageNum}
+                      className="cursor-pointer"
+                    >
+                      {pageNum}
+                    </PaginationLink>
+                  </PaginationItem>
+                )
+              })
+            })()}
             <PaginationItem>
               <PaginationNext
                 onClick={() => onPageChange(Math.min(totalPages, page + 1))}

@@ -1,6 +1,12 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus } from '@phosphor-icons/react'
+import {
+  Plus,
+  EnvelopeSimple,
+  Clock,
+  CheckCircle,
+  XCircle,
+} from '@phosphor-icons/react'
 import {
   Table,
   TableHeader,
@@ -11,7 +17,9 @@ import {
   Tag,
   Skeleton,
   Button,
+  Card,
 } from '@ds'
+import { useLocale } from '@ds/hooks'
 import { useToast } from '@/hooks/useToast'
 import { useOrgInvitationsQuery } from '@/hooks/queries/useOrgInvitationsQuery'
 import { useRevokeInvitation } from '@/hooks/queries/useOrgMemberMutations'
@@ -22,23 +30,46 @@ interface InvitationsTabProps {
   orgId: string
 }
 
+type StatusFilter = 'all' | 'pending' | 'accepted' | 'expired'
+
 const statusVariant: Record<string, 'default' | 'green' | 'red'> = {
   pending: 'default',
   accepted: 'green',
   expired: 'red',
 }
 
+const statusIcon: Record<string, React.ReactNode> = {
+  pending: <Clock size={12} weight="bold" />,
+  accepted: <CheckCircle size={12} weight="bold" />,
+  expired: <XCircle size={12} weight="bold" />,
+}
+
 export function InvitationsTab({ orgId }: InvitationsTabProps) {
   const { t } = useTranslation('pages')
   const { toast } = useToast()
+  const { locale } = useLocale()
   const { data: invitations = [], isLoading } = useOrgInvitationsQuery(orgId)
   const revokeInvitation = useRevokeInvitation(orgId)
 
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [revokeTarget, setRevokeTarget] = useState<{
     id: string
     email: string
   } | null>(null)
+
+  const filtered = useMemo(() => {
+    if (statusFilter === 'all') return invitations
+    return invitations.filter((inv) => inv.status === statusFilter)
+  }, [invitations, statusFilter])
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString(locale === 'tr' ? 'tr-TR' : 'en-US', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })
+  }
 
   const handleRevoke = async () => {
     if (!revokeTarget) return
@@ -54,11 +85,18 @@ export function InvitationsTab({ orgId }: InvitationsTabProps) {
     }
   }
 
+  const filterButtons: { key: StatusFilter; label: string }[] = [
+    { key: 'all', label: t('organizations.invitations.filterAll') },
+    { key: 'pending', label: t('organizations.invitations.filterPending') },
+    { key: 'accepted', label: t('organizations.invitations.filterAccepted') },
+    { key: 'expired', label: t('organizations.invitations.filterExpired') },
+  ]
+
   if (isLoading) {
     return (
       <div className="space-y-3 pt-4">
         {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} className="h-12 w-full rounded-lg" />
+          <Skeleton key={i} className="h-14 w-full rounded-lg" />
         ))}
       </div>
     )
@@ -67,7 +105,8 @@ export function InvitationsTab({ orgId }: InvitationsTabProps) {
   return (
     <>
       <div className="space-y-4 pt-4">
-        <div className="flex items-center justify-between">
+        {/* Header */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-lg font-semibold">
               {t('organizations.invitations.title')}
@@ -76,21 +115,55 @@ export function InvitationsTab({ orgId }: InvitationsTabProps) {
               {t('organizations.invitations.subtitle')}
             </p>
           </div>
-          <Button
-            variant="filled"
-            onClick={() => setInviteDialogOpen(true)}
-          >
-            <Plus size={16} weight="bold" />
-            {t('organizations.invitations.invite')}
-          </Button>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-black/40">
+              {t('organizations.invitations.count', { count: invitations.length })}
+            </span>
+            <Button
+              variant="filled"
+              onClick={() => setInviteDialogOpen(true)}
+            >
+              <Plus size={16} weight="bold" />
+              {t('organizations.invitations.invite')}
+            </Button>
+          </div>
         </div>
 
+        {/* Filter buttons */}
+        <div className="flex gap-1.5">
+          {filterButtons.map(({ key, label }) => (
+            <Button
+              key={key}
+              variant={statusFilter === key ? 'filled' : 'gray'}
+              size="sm"
+              onClick={() => setStatusFilter(key)}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+
+        {/* Content */}
         {invitations.length === 0 ? (
-          <div className="py-16 text-center">
-            <p className="text-sm text-black/60">
+          <Card className="flex flex-col items-center justify-center gap-4 border border-black/5 bg-bg1 py-20">
+            <div className="flex size-14 items-center justify-center rounded-2xl bg-black/5">
+              <EnvelopeSimple size={28} className="text-black/40" />
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-medium text-black/60">
+                {t('organizations.invitations.empty')}
+              </p>
+              <p className="mt-1 text-xs text-black/40">
+                {t('organizations.invitations.emptyDescription')}
+              </p>
+            </div>
+          </Card>
+        ) : filtered.length === 0 ? (
+          <Card className="flex flex-col items-center justify-center gap-4 border border-black/5 bg-bg1 py-16">
+            <p className="text-sm text-black/40">
               {t('organizations.invitations.empty')}
             </p>
-          </div>
+          </Card>
         ) : (
           <div className="rounded-lg border border-black/5 bg-bg1">
             <Table>
@@ -115,35 +188,34 @@ export function InvitationsTab({ orgId }: InvitationsTabProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invitations.map((inv) => (
+                {filtered.map((inv) => (
                   <TableRow key={inv.id}>
                     <TableCell className="font-medium">{inv.email}</TableCell>
                     <TableCell>
-                      <Tag
-                        variant={inv.role === 'admin' ? 'green' : 'blue'}
-                      >
-                        {inv.role === 'admin' ? 'Admin' : 'Operation'}
+                      <Tag variant={inv.role === 'admin' ? 'green' : 'blue'}>
+                        {t(`organizations.members.roles.${inv.role}`)}
                       </Tag>
                     </TableCell>
                     <TableCell>
                       <Tag variant={statusVariant[inv.status] ?? 'default'}>
-                        {t(
-                          `organizations.invitations.statuses.${inv.status}`,
-                        )}
+                        <span className="flex items-center gap-1">
+                          {statusIcon[inv.status]}
+                          {t(`organizations.invitations.statuses.${inv.status}`)}
+                        </span>
                       </Tag>
                     </TableCell>
                     <TableCell className="text-sm text-black/60">
-                      {new Date(inv.created_at).toLocaleDateString()}
+                      {formatDate(inv.created_at)}
                     </TableCell>
                     <TableCell className="text-sm text-black/60">
-                      {new Date(inv.expires_at).toLocaleDateString()}
+                      {formatDate(inv.expires_at)}
                     </TableCell>
                     <TableCell>
                       {inv.status === 'pending' && (
                         <Button
-                          variant="borderless"
+                          variant="outline"
                           size="sm"
-                          className="text-red-600"
+                          className="text-red hover:bg-red/5"
                           onClick={() =>
                             setRevokeTarget({ id: inv.id, email: inv.email })
                           }

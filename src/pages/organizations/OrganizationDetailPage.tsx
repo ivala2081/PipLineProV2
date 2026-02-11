@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft } from '@phosphor-icons/react'
+import { ArrowLeft, Buildings, ChartLineUp, Diamond } from '@phosphor-icons/react'
 import {
   Tabs,
   TabsList,
@@ -8,8 +8,10 @@ import {
   TabsContent,
   Button,
   Tag,
+  Card,
   Skeleton,
 } from '@ds'
+import { useLocale } from '@ds/hooks'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganizationDetailQuery } from '@/hooks/queries/useOrganizationDetailQuery'
 import { useOrgMembersQuery } from '@/hooks/queries/useOrgMembersQuery'
@@ -18,24 +20,76 @@ import { MembersTab } from './tabs/MembersTab'
 import { InvitationsTab } from './tabs/InvitationsTab'
 import { SettingsTab } from './tabs/SettingsTab'
 
+const ORG_ICONS: Record<string, { icon: React.ReactNode }> = {
+  orderinvest: {
+    icon: <ChartLineUp size={28} weight="bold" className="text-black/60" />,
+  },
+  vestaprime: {
+    icon: <Diamond size={28} weight="bold" className="text-black/60" />,
+  },
+}
+
+function OrgDetailAvatar({ name, slug }: { name: string; slug: string }) {
+  const custom = ORG_ICONS[slug.toLowerCase()]
+
+  if (custom) {
+    return (
+      <div className="flex size-14 items-center justify-center rounded-xl bg-black/5">
+        {custom.icon}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex size-14 items-center justify-center rounded-xl bg-brand text-xl font-bold text-white">
+      {name.charAt(0).toUpperCase()}
+    </div>
+  )
+}
+
 export function OrganizationDetailPage() {
   const { orgId } = useParams<{ orgId: string }>()
   const navigate = useNavigate()
   const { t } = useTranslation('pages')
   const { isGod, user } = useAuth()
+  const { locale } = useLocale()
 
   const { data: org, isLoading } = useOrganizationDetailQuery(orgId ?? '')
   const { data: members = [] } = useOrgMembersQuery(orgId ?? '')
 
-  // Determine if current user can manage this org
   const currentUserMember = members.find((m) => m.user_id === user?.id)
   const canManage = isGod || currentUserMember?.role === 'admin'
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString(locale === 'tr' ? 'tr-TR' : 'en-US', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
+  }
+
+  const currentRole = isGod
+    ? 'God'
+    : currentUserMember?.role === 'admin'
+      ? t('organizations.members.roles.admin')
+      : currentUserMember?.role === 'operation'
+        ? t('organizations.members.roles.operation')
+        : null
 
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-8 w-32" />
+        <Card className="border border-black/5 bg-bg1 p-6">
+          <div className="flex items-center gap-4">
+            <Skeleton className="size-14 rounded-xl" />
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-48" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+          </div>
+        </Card>
+        <Skeleton className="h-10 w-64" />
         <Skeleton className="h-64 w-full rounded-lg" />
       </div>
     )
@@ -44,7 +98,17 @@ export function OrganizationDetailPage() {
   if (!org) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20">
-        <p className="text-sm text-black/60">Organization not found</p>
+        <div className="flex size-14 items-center justify-center rounded-2xl bg-black/5">
+          <Buildings size={28} className="text-black/40" />
+        </div>
+        <div className="text-center">
+          <p className="text-sm font-medium text-black/60">
+            {t('organizations.notFound')}
+          </p>
+          <p className="mt-1 text-xs text-black/40">
+            {t('organizations.notFoundDescription')}
+          </p>
+        </div>
         <Button variant="outline" onClick={() => navigate('/organizations')}>
           <ArrowLeft size={16} />
           {t('organizations.backToList')}
@@ -65,18 +129,35 @@ export function OrganizationDetailPage() {
         {t('organizations.backToList')}
       </Button>
 
-      {/* Org header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{org.name}</h1>
-          <p className="mt-1 font-mono text-sm text-black/60">{org.slug}</p>
+      {/* Org header card */}
+      <Card className="border border-black/5 bg-bg1 p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <OrgDetailAvatar name={org.name} slug={org.slug} />
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-semibold">{org.name}</h1>
+                <Tag variant={org.is_active ? 'green' : 'red'}>
+                  {org.is_active
+                    ? t('organizations.active')
+                    : t('organizations.inactive')}
+                </Tag>
+              </div>
+              <div className="mt-1 flex items-center gap-3">
+                <span className="font-mono text-sm text-black/60">{org.slug}</span>
+                <span className="text-black/20">·</span>
+                <span className="text-sm text-black/40">{formatDate(org.created_at)}</span>
+                {currentRole && (
+                  <>
+                    <span className="text-black/20">·</span>
+                    <Tag variant="blue">{currentRole}</Tag>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
-        <Tag variant={org.is_active ? 'green' : 'red'}>
-          {org.is_active
-            ? t('organizations.active')
-            : t('organizations.inactive')}
-        </Tag>
-      </div>
+      </Card>
 
       {/* Tabs */}
       <Tabs defaultValue="overview">

@@ -157,8 +157,8 @@ function LookupSection({ config }: { config: SectionConfig }) {
                       }
                     >
                       {(item as Record<string, unknown>).is_deposit
-                        ? 'Deposit'
-                        : 'Withdrawal'}
+                        ? t('transfers.settings.deposit')
+                        : t('transfers.settings.withdrawal')}
                     </Tag>
                   </TableCell>
                 )}
@@ -174,7 +174,7 @@ function LookupSection({ config }: { config: SectionConfig }) {
                     <Button
                       variant="borderless"
                       size="sm"
-                      className="text-red-600"
+                      className="text-red"
                       onClick={() => handleDelete(item.id)}
                     >
                       <Trash size={14} />

@@ -91,7 +91,7 @@
   ::before,
   ::backdrop,
   ::file-selector-button {
-    border-color: var(--color-gray-200, currentColor);
+    border-color: color-mix(in srgb, var(--color-black) 10%, transparent);
   }
 }
 
@@ -178,14 +178,12 @@
   }
 
   [data-theme="dark"] .ui-surface {
-    border-color: transparent !important;
     background-color: color-mix(in srgb, var(--color-bg5) 90%, var(--color-bg2) 10%);
     box-shadow: 0 10px 26px rgba(2, 8, 20, 0.28);
   }
 
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) .ui-surface {
-      border-color: transparent !important;
       background-color: color-mix(in srgb, var(--color-bg5) 90%, var(--color-bg2) 10%);
       box-shadow: 0 10px 26px rgba(2, 8, 20, 0.28);
     }

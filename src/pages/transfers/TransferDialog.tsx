@@ -320,7 +320,7 @@ export function TransferDialog({
   const compactLabelClasses = 'mb-1 text-xs font-medium tracking-wide text-black/75'
   const compactControlClasses = '!h-10 !rounded-xl !px-3 !py-2 !text-sm'
   const compactHintClasses = 'mt-1 text-[11px] text-black/55'
-  const compactErrorClasses = 'mt-1 text-[11px] text-red-500'
+  const compactErrorClasses = 'mt-1 text-[11px] text-red'
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>

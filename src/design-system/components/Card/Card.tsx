@@ -3,7 +3,7 @@ import type { ComponentProps, FC } from 'react'
 import { cn } from '@ds/utils'
 
 const cardStyles = cva(
-  'ui-surface rounded-2xl border border-black/10 bg-bg5 text-black p-6 shadow-[0_1px_2px_rgba(0,0,0,0.16)]',
+  'ui-surface rounded-2xl border border-black/10 bg-bg5 text-black p-6',
   {
   variants: {
     bordered: {
