@@ -81,14 +81,15 @@ export function OrganizationsListPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('organizations.searchPlaceholder')}
-            className="h-8 !rounded-lg !px-2.5 !pl-8 !py-1.5 !text-sm placeholder:!text-black/40"
+            inputSize="sm"
+            className="pl-8"
           />
         </div>
         <Select
           value={statusFilter}
           onValueChange={(v) => setStatusFilter(v as StatusFilter)}
         >
-          <SelectTrigger className="h-8 w-28 !rounded-lg !px-2.5 !py-1.5 !text-sm">
+          <SelectTrigger selectSize="sm" className="w-28">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

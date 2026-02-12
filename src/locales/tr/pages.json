@@ -197,7 +197,12 @@
       "futureRate": "Planlanmış",
       "noRateHistory": "Henüz oran geçmişi yok. İlk oran dönemini ekleyin.",
       "lastRateWarning": "Tek aktif oran silinemez. Önce bir yedek ekleyin.",
-      "commissionRateHint": "Bu başlangıç oranını belirler. Değişiklikleri yönetmek için Oran Geçmişi'ni kullanın."
+      "commissionRateHint": "Bu başlangıç oranını belirler. Değişiklikleri yönetmek için Oran Geçmişi'ni kullanın.",
+      "pinDialogTitle": "Yönetici PIN Gerekli",
+      "settingsChangeWarning": "Bu ayarları değiştirmenin sayıların gerçekçi olmayan değerlere dönüşmesine neden olabileceğini unutmayın. Devam etmek için yönetici PIN'ini girin.",
+      "managerPin": "Yönetici PIN",
+      "pinConfirm": "Onayla",
+      "pinInvalid": "Geçersiz PIN. Lütfen tekrar deneyin."
     },
     "validation": {
       "fullNameRequired": "Ad soyad gereklidir",
@@ -330,6 +335,7 @@
       "tokens": "Bakiyeler",
       "noSnapshots": "Henüz anlık görüntü alınmamış.",
       "balanceHistory": "Bakiye Geçmişi",
+      "totalValue": "Toplam Değer",
       "form": {
         "label": "Cüzdan Adı",
         "labelPlaceholder": "örn. Ana USDT Cüzdanı",
@@ -338,6 +344,24 @@
         "chain": "Blok Zinciri"
       }
     },
+    "portfolio": {
+      "totalValue": "Portföy Değeri",
+      "activeWallets": "Aktif Cüzdanlar",
+      "lastSnapshot": "Son Görüntü",
+      "tokenAllocation": "Token Dağılımı",
+      "chainAllocation": "Zincir Dağılımı"
+    },
+    "transactions": {
+      "title": "İşlemler",
+      "date": "Tarih",
+      "direction": "Yön",
+      "amount": "Tutar",
+      "counterparty": "Karşı Taraf",
+      "hash": "İşlem Hash",
+      "empty": "İşlem bulunamadı",
+      "loadMore": "Daha fazla yükle",
+      "loading": "Yükleniyor..."
+    },
     "toast": {
       "created": "Kayıt başarıyla oluşturuldu",
       "updated": "Kayıt başarıyla güncellendi",
@@ -345,6 +369,7 @@
       "walletCreated": "Cüzdan başarıyla eklendi",
       "walletDeleted": "Cüzdan başarıyla kaldırıldı",
       "snapshotTaken": "Bakiye anlık görüntüsü kaydedildi",
+      "snapshotDeleted": "Anlık görüntü kaldırıldı",
       "error": "Bir hata oluştu. Lütfen tekrar deneyin."
     }
   },
@@ -428,6 +453,7 @@
       "addMember": "Üye Ekle",
       "columns": {
         "name": "Ad",
+        "status": "Durum",
         "role": "Rol",
         "joined": "Katılma"
       },
@@ -467,6 +493,15 @@
     "settings": {
       "title": "Genel",
       "subtitle": "Organizasyon bilgilerini güncelleyin.",
+      "logoTitle": "Organizasyon Logosu",
+      "logoSubtitle": "Organizasyon logonuzu yükleyin. Önerilen boyut: 512x512px",
+      "uploadLogo": "Logo Yükle",
+      "removeLogo": "Logo Kaldır",
+      "cropLogo": "Organizasyon Logosunu Kırp",
+      "uploading": "Yükleniyor...",
+      "logoUploaded": "Logo başarıyla yüklendi",
+      "logoRemoved": "Logo başarıyla kaldırıldı",
+      "logoFormats": "JPG, PNG, GIF veya WebP. Maks 5MB.",
       "name": "Organizasyon Adı",
       "slug": "Organizasyon Slug",
       "slugDescription": "Bu organizasyonun URL uyumlu tanımlayıcısı.",
@@ -495,14 +530,30 @@
     "password": "Şifre",
     "submit": "Giriş Yap",
     "signingIn": "Giriş yapılıyor...",
+    "success": "Tekrar hoş geldiniz!",
     "forgotPassword": "Şifrenizi mi unuttunuz?",
     "rememberMe": "Beni hatırla",
+    "trustDevice": "Bu cihaza 30 gün güven",
+    "showPasswordTooltip": "Şifre görünürlüğünü değiştir",
     "error": "Geçersiz e-posta veya şifre",
     "errorNetwork": "Ağ hatası. Lütfen tekrar deneyin.",
     "errorRateLimit": "Çok fazla deneme. {{seconds}} saniye sonra tekrar deneyin.",
+    "captchaRequired": "Lütfen güvenlik kontrolünü tamamlayın",
+    "captchaVerifying": "Doğrulanıyor...",
+    "emailSuggestion": "@{{domain}} mı demek istediniz?",
     "validationEmailRequired": "E-posta gereklidir",
     "validationEmailInvalid": "Geçerli bir e-posta girin",
-    "validationPasswordRequired": "Şifre gereklidir"
+    "validationPasswordRequired": "Şifre gereklidir",
+    "errors": {
+      "invalidCredentials": "E-posta veya şifre hatalı",
+      "emailNotConfirmed": "Lütfen e-posta adresinizi doğrulayın",
+      "userNotFound": "Bu e-posta ile kayıtlı hesap bulunamadı",
+      "invalidEmail": "Lütfen geçerli bir e-posta adresi girin",
+      "passwordTooWeak": "Şifre gereksinimleri karşılanmıyor",
+      "network": "Ağ hatası. Lütfen bağlantınızı kontrol edin.",
+      "tooManyRequests": "Çok fazla giriş denemesi. Lütfen daha sonra tekrar deneyin.",
+      "unknown": "Bir hata oluştu. Lütfen tekrar deneyin."
+    }
   },
   "forgotPassword": {
     "title": "Şifre Sıfırla",
@@ -535,5 +586,45 @@
     "validationLowercase": "Şifre küçük harf içermelidir",
     "validationNumber": "Şifre bir rakam içermelidir",
     "validationMatch": "Şifreler eşleşmiyor"
+  },
+  "memberProfile": {
+    "title": "Üye Profili",
+    "backToMembers": "Üyelere Dön",
+    "notFound": "Üye bulunamadı",
+    "notFoundDescription": "Bu üye mevcut değil veya profilini görüntüleme yetkiniz yok.",
+    "edit": "Profili Düzenle",
+    "save": "Değişiklikleri Kaydet",
+    "saving": "Kaydediliyor...",
+    "cancel": "İptal",
+    "sections": {
+      "contactInfo": "İletişim Bilgileri",
+      "bio": "Biyografi",
+      "notes": "Dahili Notlar",
+      "organizations": "Organizasyonlar",
+      "details": "Profil Detayları"
+    },
+    "fields": {
+      "displayName": "Görüntülenen Ad",
+      "displayNamePlaceholder": "Görüntülenecek adı girin",
+      "phone": "Telefon",
+      "phonePlaceholder": "Telefon numarası girin",
+      "bio": "Biyografi",
+      "bioPlaceholder": "Kısa bir biyografi yazın...",
+      "department": "Departman",
+      "departmentPlaceholder": "Departman girin",
+      "notes": "Notlar",
+      "notesPlaceholder": "Bu üye hakkında dahili notlar...",
+      "memberSince": "Üyelik Başlangıcı",
+      "role": "Rol",
+      "noPhone": "Telefon numarası yok",
+      "noBio": "Henüz biyografi eklenmemiş",
+      "noDepartment": "Departman yok",
+      "noNotes": "Not yok"
+    },
+    "toast": {
+      "updated": "Profil başarıyla güncellendi",
+      "error": "Profil güncellenemedi. Lütfen tekrar deneyin."
+    },
+    "notesHint": "Yalnızca yöneticiler görebilir"
   }
 }

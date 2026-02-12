@@ -17,5 +17,32 @@
   },
   "breadcrumb": {
     "more": "More"
+  },
+  "imageCropper": {
+    "title": "Crop Image",
+    "zoom": "Zoom",
+    "hint": "Drag to reposition, use the slider or mouse wheel to zoom, then click Crop to apply.",
+    "cancel": "Cancel",
+    "crop": "Crop Image",
+    "processing": "Processing..."
+  },
+  "presence": {
+    "online": "Online",
+    "offline": "Offline",
+    "lastSeen": "Last seen",
+    "onlineMembers": "Online members in organization"
+  },
+  "passwordStrength": {
+    "label": "Password strength",
+    "veryWeak": "Very Weak",
+    "weak": "Weak",
+    "medium": "Medium",
+    "strong": "Strong",
+    "veryStrong": "Very Strong",
+    "minLength": "At least 8 characters",
+    "uppercase": "One uppercase letter",
+    "lowercase": "One lowercase letter",
+    "number": "One number",
+    "special": "One special character"
   }
 }

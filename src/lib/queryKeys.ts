@@ -39,6 +39,10 @@ export const queryKeys = {
     byPsp: (pspId: string) => [...queryKeys.pspRates.all, 'byPsp', pspId] as const,
     byOrg: (orgId: string) => [...queryKeys.pspRates.all, 'byOrg', orgId] as const,
   },
+  profiles: {
+    all: ['profiles'] as const,
+    detail: (userId: string) => [...queryKeys.profiles.all, 'detail', userId] as const,
+  },
   wallets: {
     all: ['wallets'] as const,
     list: (orgId: string) =>
@@ -49,5 +53,14 @@ export const queryKeys = {
       [...queryKeys.wallets.all, 'snapshots', walletId] as const,
     chart: (walletId: string) =>
       [...queryKeys.wallets.all, 'chart', walletId] as const,
+    transactions: (walletId: string, cursor?: string) =>
+      [...queryKeys.wallets.all, 'transactions', walletId, cursor ?? ''] as const,
+  },
+  presence: {
+    all: ['presence'] as const,
+    onlineCount: (orgId: string | undefined) =>
+      [...queryKeys.presence.all, 'onlineCount', orgId ?? ''] as const,
+    portfolio: (orgId: string) =>
+      [...queryKeys.presence.all, 'portfolio', orgId] as const,
   },
 } as const

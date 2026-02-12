@@ -28,6 +28,11 @@ export interface Database {
           system_role: SystemRole
           display_name: string | null
           avatar_url: string | null
+          phone: string | null
+          bio: string | null
+          department: string | null
+          notes: string | null
+          last_seen_at: string | null
           created_at: string
           updated_at: string
         }
@@ -36,6 +41,11 @@ export interface Database {
           system_role?: SystemRole
           display_name?: string | null
           avatar_url?: string | null
+          phone?: string | null
+          bio?: string | null
+          department?: string | null
+          notes?: string | null
+          last_seen_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -44,6 +54,11 @@ export interface Database {
           system_role?: SystemRole
           display_name?: string | null
           avatar_url?: string | null
+          phone?: string | null
+          bio?: string | null
+          department?: string | null
+          notes?: string | null
+          last_seen_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -62,6 +77,7 @@ export interface Database {
           id: string
           name: string
           slug: string
+          logo_url: string | null
           is_active: boolean
           created_by: string | null
           created_at: string
@@ -71,6 +87,7 @@ export interface Database {
           id?: string
           name: string
           slug: string
+          logo_url?: string | null
           is_active?: boolean
           created_by?: string | null
           created_at?: string
@@ -80,6 +97,7 @@ export interface Database {
           id?: string
           name?: string
           slug?: string
+          logo_url?: string | null
           is_active?: boolean
           created_by?: string | null
           created_at?: string
@@ -747,6 +765,114 @@ export interface Database {
           },
         ]
       }
+      trusted_devices: {
+        Row: {
+          id: string
+          user_id: string
+          device_id: string
+          label: string | null
+          last_used_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          device_id: string
+          label?: string | null
+          last_used_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          device_id?: string
+          label?: string | null
+          last_used_at?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'trusted_devices_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      login_attempts: {
+        Row: {
+          id: string
+          user_id: string | null
+          device_id: string
+          ip_address: string | null
+          success: boolean
+          error_message: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          device_id: string
+          ip_address?: string | null
+          success: boolean
+          error_message?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          device_id?: string
+          ip_address?: string | null
+          success?: boolean
+          error_message?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'login_attempts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      captcha_challenges: {
+        Row: {
+          id: string
+          user_id: string | null
+          device_id: string
+          challenge_id: string
+          solved: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          device_id: string
+          challenge_id: string
+          solved?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          device_id?: string
+          challenge_id?: string
+          solved?: boolean
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'captcha_challenges_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: {
       [key: string]: {
@@ -795,3 +921,6 @@ export type AccountingEntry = Database['public']['Tables']['accounting_entries']
 export type Wallet = Database['public']['Tables']['wallets']['Row']
 export type WalletSnapshot = Database['public']['Tables']['wallet_snapshots']['Row']
 export type PspCommissionRate = Database['public']['Tables']['psp_commission_rates']['Row']
+export type TrustedDevice = Database['public']['Tables']['trusted_devices']['Row']
+export type LoginAttempt = Database['public']['Tables']['login_attempts']['Row']
+export type CaptchaChallenge = Database['public']['Tables']['captcha_challenges']['Row']

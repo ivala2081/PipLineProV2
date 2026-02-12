@@ -8,16 +8,26 @@ import {
   basicInputClasses,
   disabledInputClasses,
   focusInputClasses,
+  type InputSize,
 } from '../Input'
 
 export const Select = SelectPrimitive.Root
 export const SelectGroup = SelectPrimitive.Group
 export const SelectValue = SelectPrimitive.Value
 
-export type SelectTriggerProps = ComponentProps<typeof SelectPrimitive.Trigger>
+const selectSizeClasses: Record<InputSize, string> = {
+  sm: 'h-9 rounded-xl px-3 py-1.5 text-sm',
+  md: 'h-10 rounded-xl px-4 py-2 text-sm',
+  lg: 'rounded-2xl px-5 py-4 text-lg',
+}
+
+export type SelectTriggerProps = ComponentProps<typeof SelectPrimitive.Trigger> & {
+  selectSize?: InputSize
+}
 export const SelectTrigger: FC<SelectTriggerProps> = ({
   className,
   children,
+  selectSize = 'md',
   ...props
 }) => (
   <SelectPrimitive.Trigger
@@ -26,6 +36,7 @@ export const SelectTrigger: FC<SelectTriggerProps> = ({
       basicInputClasses,
       focusInputClasses,
       disabledInputClasses,
+      selectSizeClasses[selectSize],
       'data-[placeholder]:text-black/45',
       className,
     )}

@@ -21,7 +21,7 @@ interface LookupFormValues {
 interface LookupFormDialogProps {
   open: boolean
   onClose: () => void
-  onSave: (data: Record<string, unknown>) => Promise<void>
+  onSave: (data: Record<string, unknown>) => Promise<void | boolean>
   editingItem: Record<string, unknown> | null
   hasCommissionRate?: boolean
   hasIsDeposit?: boolean
@@ -80,13 +80,13 @@ export function LookupFormDialog({
       payload.is_deposit = data.is_deposit
     }
 
-    await onSave(payload)
-    onClose()
+    const result = await onSave(payload)
+    if (result !== false) onClose()
   })
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-sm">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>

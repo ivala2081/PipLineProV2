@@ -46,6 +46,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  EmptyState,
 } from '@ds'
 
 interface TransfersTableProps {
@@ -203,8 +204,8 @@ function DetailRow({
 }) {
   return (
     <div className="flex items-center justify-between py-2.5">
-      <span className="text-[13px] text-black/45">{label}</span>
-      <span className="text-[13px] font-medium text-black/90">{children}</span>
+      <span className="text-sm text-black/45">{label}</span>
+      <span className="text-sm font-medium text-black/90">{children}</span>
     </div>
   )
 }
@@ -212,7 +213,7 @@ function DetailRow({
 /* ── Column header class ─────────────────────────────── */
 
 const TH_CLASS =
-  'h-10 whitespace-nowrap px-4 text-[11px] font-semibold uppercase tracking-wider text-black/40'
+  'whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-black/40'
 
 /* ── Component ───────────────────────────────────────── */
 
@@ -251,7 +252,7 @@ export function TransfersTable({
         {Array.from({ length: 2 }).map((_, g) => (
           <div
             key={g}
-            className="overflow-hidden rounded-xl border border-black/[0.06]"
+            className="overflow-hidden rounded-xl border border-black/10"
           >
             <div className="flex items-center justify-between bg-black/[0.02] px-4 py-2.5">
               <Skeleton className="h-4 w-48 rounded-md" />
@@ -279,19 +280,11 @@ export function TransfersTable({
   /* ── Empty state ────────────────────────────────── */
   if (transfers.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-black/[0.06] bg-bg1 py-20">
-        <div className="flex size-12 items-center justify-center rounded-full bg-black/[0.04]">
-          <ArrowUp size={20} className="text-black/30" />
-        </div>
-        <div className="text-center">
-          <p className="text-sm font-medium text-black/60">
-            {t('transfers.empty.title')}
-          </p>
-          <p className="mt-1 text-xs text-black/40">
-            {t('transfers.empty.description')}
-          </p>
-        </div>
-      </div>
+      <EmptyState
+        icon={ArrowUp}
+        title={t('transfers.empty.title')}
+        description={t('transfers.empty.description')}
+      />
     )
   }
 
@@ -319,17 +312,17 @@ export function TransfersTable({
         {groups.map((group) => (
           <div
             key={group.dateKey}
-            className="overflow-hidden rounded-xl border border-black/[0.06]"
+            className="overflow-hidden rounded-xl border border-black/10"
           >
             {/* Date header */}
             <div className="flex items-center justify-between bg-black/[0.02] px-4 py-2.5">
-              <span className="text-[13px] font-semibold text-black/70">
+              <span className="text-sm font-semibold text-black/70">
                 {group.label}
               </span>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 gap-1.5 px-2.5 text-[11px] font-medium text-black/40 hover:text-black/70"
+                className="h-7 gap-1.5 px-2.5 text-xs font-medium text-black/40 hover:text-black/70"
                 onClick={() => setSummaryGroup(group)}
               >
                 <ChartBar size={14} />
@@ -372,7 +365,7 @@ export function TransfersTable({
                     <TableHead className={TH_CLASS}>
                       {t('transfers.columns.type')}
                     </TableHead>
-                    <TableHead className="h-10 w-20 px-2" />
+                    <TableHead className="w-20 px-2" />
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y divide-black/[0.04]">
@@ -384,55 +377,55 @@ export function TransfersTable({
                         key={row.id}
                         className="hover:bg-black/[0.015]"
                       >
-                        <TableCell className="whitespace-nowrap px-4 py-3">
-                          <span className="text-[13px] font-medium text-black/90">
+                        <TableCell className="whitespace-nowrap">
+                          <span className="text-sm font-medium text-black/90">
                             {row.full_name}
                           </span>
                         </TableCell>
-                        <TableCell className="whitespace-nowrap px-4 py-3 text-[13px] text-black/60">
+                        <TableCell className="whitespace-nowrap text-sm text-black/60">
                           {row.payment_method?.name ?? '—'}
                         </TableCell>
-                        <TableCell className="whitespace-nowrap px-4 py-3">
-                          <span className="text-[13px] text-black/80">
+                        <TableCell className="whitespace-nowrap">
+                          <span className="text-sm text-black/80">
                             {time}
                           </span>
                         </TableCell>
-                        <TableCell className="whitespace-nowrap px-4 py-3">
+                        <TableCell className="whitespace-nowrap">
                           <Tag variant={isDeposit ? 'default' : 'red'}>
                             {row.category?.name ?? '—'}
                           </Tag>
                         </TableCell>
-                        <TableCell className="whitespace-nowrap px-4 py-3 text-right">
+                        <TableCell className="whitespace-nowrap text-right">
                           <span
-                            className={`font-mono text-[13px] font-medium tabular-nums ${row.amount >= 0 ? 'text-green' : 'text-red'}`}
+                            className={`font-mono text-sm font-medium tabular-nums ${row.amount >= 0 ? 'text-green' : 'text-red'}`}
                           >
                             {formatNumber(Math.abs(row.amount))}
                           </span>
                         </TableCell>
-                        <TableCell className="whitespace-nowrap px-4 py-3 text-right font-mono text-[13px] tabular-nums text-black/50">
+                        <TableCell className="whitespace-nowrap text-right font-mono text-sm tabular-nums text-black/50">
                           {formatNumber(row.commission)}
                         </TableCell>
-                        <TableCell className="whitespace-nowrap px-4 py-3 text-right">
+                        <TableCell className="whitespace-nowrap text-right">
                           <span
-                            className={`font-mono text-[13px] font-semibold tabular-nums ${row.net >= 0 ? 'text-green' : 'text-red'}`}
+                            className={`font-mono text-sm font-semibold tabular-nums ${row.net >= 0 ? 'text-green' : 'text-red'}`}
                           >
                             {formatNumber(row.net)}
                           </span>
                         </TableCell>
-                        <TableCell className="whitespace-nowrap px-4 py-3">
+                        <TableCell className="whitespace-nowrap">
                           <Tag variant="default">{row.currency}</Tag>
                         </TableCell>
-                        <TableCell className="whitespace-nowrap px-4 py-3 text-[13px] text-black/60">
+                        <TableCell className="whitespace-nowrap text-sm text-black/60">
                           {row.psp?.name ?? '—'}
                         </TableCell>
-                        <TableCell className="whitespace-nowrap px-4 py-3 text-[13px] text-black/60">
+                        <TableCell className="whitespace-nowrap text-sm text-black/60">
                           {row.type?.name
                             ? t(`transfers.typeValues.${row.type.name}`, {
                                 defaultValue: row.type.name,
                               })
                             : '—'}
                         </TableCell>
-                        <TableCell className="whitespace-nowrap px-2 py-3">
+                        <TableCell className="whitespace-nowrap px-2">
                           <div className="flex items-center justify-end gap-0.5">
                             <Button
                               variant="ghost"
@@ -462,7 +455,7 @@ export function TransfersTable({
                                   {t('transfers.audit.button')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                  className="text-red-600"
+                                  className="text-red"
                                   onClick={() => onDelete(row)}
                                 >
                                   <Trash size={14} />
@@ -484,7 +477,7 @@ export function TransfersTable({
 
       {/* Pagination footer */}
       {(totalPages > 1 || total > 0) && (
-        <div className="flex items-center justify-between rounded-lg border border-black/[0.06] bg-black/[0.015] px-4 py-2">
+        <div className="flex items-center justify-between rounded-lg border border-black/10 bg-black/[0.015] px-4 py-2">
           <span className="text-xs tabular-nums text-black/40">
             {from}–{to} / {total}
           </span>
@@ -547,7 +540,7 @@ export function TransfersTable({
           }
         }}
       >
-        <DialogContent className="max-h-[85vh] gap-0 overflow-y-auto p-0 sm:max-w-md">
+        <DialogContent size="md" className="max-h-[85vh] gap-0 overflow-y-auto p-0">
           {summaryGroup && (() => {
             const s = computeDaySummary(summaryGroup.transfers)
             const vol = s.deposits + s.withdrawals
@@ -558,7 +551,7 @@ export function TransfersTable({
                 {/* ── Hero zone ────────────────────── */}
                 <div className={`px-6 pt-6 pb-5 ${s.net >= 0 ? 'bg-green/[0.03]' : 'bg-red/[0.03]'}`}>
                   <DialogHeader>
-                    <DialogTitle className="text-[15px] font-semibold">{summaryGroup.label}</DialogTitle>
+                    <DialogTitle className="text-sm font-semibold">{summaryGroup.label}</DialogTitle>
                   </DialogHeader>
                   <p className="mt-0.5 text-[12px] text-black/40">
                     {t('transfers.summary.count', { count: s.count })}
@@ -570,39 +563,39 @@ export function TransfersTable({
                   </p>
 
                   <p
-                    className={`mt-4 font-mono text-[32px] font-bold leading-none tabular-nums ${s.net >= 0 ? 'text-green' : 'text-red'}`}
+                    className={`mt-4 font-mono text-[2rem] font-bold leading-none tabular-nums ${s.net >= 0 ? 'text-green' : 'text-red'}`}
                   >
                     {s.net >= 0 ? '+' : '−'}{formatNumber(Math.abs(s.net))}
-                    <span className="ml-1.5 text-[15px] opacity-40">₺</span>
+                    <span className="ml-1.5 text-sm opacity-40">₺</span>
                   </p>
                   <p className="mt-1 text-[12px] text-black/30">{t('transfers.summary.net')}</p>
                 </div>
 
                 {/* ── Deposit / Withdrawal ────────── */}
                 <div className="grid grid-cols-2">
-                  <div className="border-r border-b border-black/[0.06] px-6 py-4">
+                  <div className="border-r border-b border-black/10 px-6 py-4">
                     <div className="flex items-center gap-1.5">
                       <div className="size-1.5 rounded-full bg-green" />
                       <span className="text-[12px] text-black/45">{t('transfers.summary.deposits')}</span>
                     </div>
-                    <p className="mt-1.5 font-mono text-[18px] font-bold tabular-nums text-black/80">
+                    <p className="mt-1.5 font-mono text-lg font-bold tabular-nums text-black/80">
                       {formatNumber(s.deposits)}
                       <span className="ml-1 text-[12px] font-medium text-black/25">₺</span>
                     </p>
-                    <p className="mt-0.5 text-[11px] tabular-nums text-black/25">
+                    <p className="mt-0.5 text-xs tabular-nums text-black/25">
                       {s.depositCount} {t('transfers.summary.deposits').toLowerCase()}
                     </p>
                   </div>
-                  <div className="border-b border-black/[0.06] px-6 py-4">
+                  <div className="border-b border-black/10 px-6 py-4">
                     <div className="flex items-center gap-1.5">
                       <div className="size-1.5 rounded-full bg-red" />
                       <span className="text-[12px] text-black/45">{t('transfers.summary.withdrawals')}</span>
                     </div>
-                    <p className="mt-1.5 font-mono text-[18px] font-bold tabular-nums text-black/80">
+                    <p className="mt-1.5 font-mono text-lg font-bold tabular-nums text-black/80">
                       {formatNumber(s.withdrawals)}
                       <span className="ml-1 text-[12px] font-medium text-black/25">₺</span>
                     </p>
-                    <p className="mt-0.5 text-[11px] tabular-nums text-black/25">
+                    <p className="mt-0.5 text-xs tabular-nums text-black/25">
                       {s.withdrawalCount} {t('transfers.summary.withdrawals').toLowerCase()}
                     </p>
                   </div>
@@ -620,36 +613,36 @@ export function TransfersTable({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
                         <Bank size={16} className="text-black/30" />
-                        <span className="text-[13px] text-black/60">{t('transfers.summary.totalBank')}</span>
+                        <span className="text-sm text-black/60">{t('transfers.summary.totalBank')}</span>
                       </div>
-                      <span className="font-mono text-[13px] font-semibold tabular-nums text-black/70">
+                      <span className="font-mono text-sm font-semibold tabular-nums text-black/70">
                         {formatNumber(s.totalBank)} ₺
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
                         <CreditCard size={16} className="text-black/30" />
-                        <span className="text-[13px] text-black/60">{t('transfers.summary.totalCreditCard')}</span>
+                        <span className="text-sm text-black/60">{t('transfers.summary.totalCreditCard')}</span>
                       </div>
-                      <span className="font-mono text-[13px] font-semibold tabular-nums text-black/70">
+                      <span className="font-mono text-sm font-semibold tabular-nums text-black/70">
                         {formatNumber(s.totalCreditCard)} ₺
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
                         <CurrencyDollar size={16} className="text-black/30" />
-                        <span className="text-[13px] text-black/60">{t('transfers.summary.totalUsd')}</span>
+                        <span className="text-sm text-black/60">{t('transfers.summary.totalUsd')}</span>
                       </div>
-                      <span className="font-mono text-[13px] font-semibold tabular-nums text-black/70">
+                      <span className="font-mono text-sm font-semibold tabular-nums text-black/70">
                         {formatNumber(s.totalUsd)} $
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
                         <Coins size={16} className="text-black/30" />
-                        <span className="text-[13px] text-black/60">{t('transfers.summary.commission')}</span>
+                        <span className="text-sm text-black/60">{t('transfers.summary.commission')}</span>
                       </div>
-                      <span className="font-mono text-[13px] font-semibold tabular-nums text-black/70">
+                      <span className="font-mono text-sm font-semibold tabular-nums text-black/70">
                         {formatNumber(s.commission)} ₺
                       </span>
                     </div>
@@ -664,7 +657,7 @@ export function TransfersTable({
                   const adjNetWithCommUsd = effectiveRate > 0 ? (s.net - s.commission) / effectiveRate : 0
 
                   return (
-                    <div className="border-t border-black/[0.06] bg-black/[0.02] px-6 py-4">
+                    <div className="border-t border-black/10 bg-black/[0.02] px-6 py-4">
                       <div className="flex items-center justify-between">
                         <span className="text-[12px] font-medium text-black/40">
                           {t('transfers.summary.dayRate')}
@@ -677,7 +670,7 @@ export function TransfersTable({
                                 type="number"
                                 step="0.0001"
                                 defaultValue={(customRate ?? s.dayRate).toFixed(4)}
-                                className="h-7 w-24 rounded border border-black/10 bg-white px-2 text-right font-mono text-[13px] font-bold tabular-nums text-black/70 outline-none focus:border-black/25"
+                                className="h-7 w-24 rounded border border-black/10 bg-white px-2 text-right font-mono text-sm font-bold tabular-nums text-black/70 outline-none focus:border-black/25"
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter') {
                                     const val = parseFloat(rateInputRef.current?.value ?? '')
@@ -711,11 +704,11 @@ export function TransfersTable({
                             </>
                           ) : (
                             <>
-                              <span className={`font-mono text-[13px] font-bold tabular-nums ${overrideActive ? 'text-orange' : 'text-black/60'}`}>
+                              <span className={`font-mono text-sm font-bold tabular-nums ${overrideActive ? 'text-orange' : 'text-black/60'}`}>
                                 {effectiveRate.toFixed(4)}
                               </span>
                               {overrideActive && (
-                                <span className="text-[10px] text-black/25">
+                                <span className="text-xs text-black/25">
                                   ({t('transfers.summary.original')}: {s.dayRate.toFixed(4)})
                                 </span>
                               )}
@@ -742,24 +735,24 @@ export function TransfersTable({
 
                       <div className="mt-4 grid grid-cols-2 gap-4">
                         <div>
-                          <p className="text-[11px] text-black/35">{t('transfers.summary.netWithComm')}</p>
+                          <p className="text-xs text-black/35">{t('transfers.summary.netWithComm')}</p>
                           <p
-                            className={`mt-1 font-mono text-[18px] font-bold tabular-nums ${adjNetWithCommUsd >= 0 ? 'text-green' : 'text-red'}`}
+                            className={`mt-1 font-mono text-lg font-bold tabular-nums ${adjNetWithCommUsd >= 0 ? 'text-green' : 'text-red'}`}
                           >
                             {adjNetWithCommUsd >= 0 ? '+' : '−'}{formatNumber(Math.abs(adjNetWithCommUsd))}
-                            <span className="ml-0.5 text-[11px] opacity-40">$</span>
+                            <span className="ml-0.5 text-xs opacity-40">$</span>
                           </p>
-                          <p className="mt-0.5 text-[10px] text-black/20">{t('transfers.summary.afterCommission')}</p>
+                          <p className="mt-0.5 text-xs text-black/20">{t('transfers.summary.afterCommission')}</p>
                         </div>
                         <div>
-                          <p className="text-[11px] text-black/35">{t('transfers.summary.netWithoutComm')}</p>
+                          <p className="text-xs text-black/35">{t('transfers.summary.netWithoutComm')}</p>
                           <p
-                            className={`mt-1 font-mono text-[18px] font-bold tabular-nums ${adjNetWithoutCommUsd >= 0 ? 'text-green' : 'text-red'}`}
+                            className={`mt-1 font-mono text-lg font-bold tabular-nums ${adjNetWithoutCommUsd >= 0 ? 'text-green' : 'text-red'}`}
                           >
                             {adjNetWithoutCommUsd >= 0 ? '+' : '−'}{formatNumber(Math.abs(adjNetWithoutCommUsd))}
-                            <span className="ml-0.5 text-[11px] opacity-40">$</span>
+                            <span className="ml-0.5 text-xs opacity-40">$</span>
                           </p>
-                          <p className="mt-0.5 text-[10px] text-black/20">{t('transfers.summary.beforeCommission')}</p>
+                          <p className="mt-0.5 text-xs text-black/20">{t('transfers.summary.beforeCommission')}</p>
                         </div>
                       </div>
                     </div>
@@ -841,12 +834,12 @@ export function TransfersTable({
                 </span>
               </DetailRow>
               <DetailRow label={t('transfers.columns.tlEquivalent')}>
-                <span className="font-mono tabular-nums text-blue-600">
+                <span className="font-mono tabular-nums text-blue">
                   {formatNumber(Math.abs(detailRow.amount_try ?? 0))} TL
                 </span>
               </DetailRow>
               <DetailRow label={t('transfers.columns.usdEquivalent')}>
-                <span className="font-mono tabular-nums text-green-600">
+                <span className="font-mono tabular-nums text-green">
                   {formatNumber(Math.abs(detailRow.amount_usd ?? 0))} USD
                 </span>
               </DetailRow>

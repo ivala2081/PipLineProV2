@@ -197,7 +197,12 @@
       "futureRate": "Scheduled",
       "noRateHistory": "No rate history yet. Add the first rate period.",
       "lastRateWarning": "Cannot delete the only active rate. Add a replacement first.",
-      "commissionRateHint": "This sets the initial rate. Use Rate History to manage changes over time."
+      "commissionRateHint": "This sets the initial rate. Use Rate History to manage changes over time.",
+      "pinDialogTitle": "Manager PIN Required",
+      "settingsChangeWarning": "Be aware that changing these settings may cause numbers to become unrealistic. Enter your manager PIN to continue.",
+      "managerPin": "Manager PIN",
+      "pinConfirm": "Confirm",
+      "pinInvalid": "Invalid PIN. Please try again."
     },
     "validation": {
       "fullNameRequired": "Full name is required",
@@ -330,6 +335,7 @@
       "tokens": "Balances",
       "noSnapshots": "No snapshots taken yet.",
       "balanceHistory": "Balance History",
+      "totalValue": "Total Value",
       "form": {
         "label": "Wallet Name",
         "labelPlaceholder": "e.g. Main USDT Wallet",
@@ -338,6 +344,24 @@
         "chain": "Blockchain"
       }
     },
+    "portfolio": {
+      "totalValue": "Portfolio Value",
+      "activeWallets": "Active Wallets",
+      "lastSnapshot": "Last Snapshot",
+      "tokenAllocation": "Token Allocation",
+      "chainAllocation": "Chain Allocation"
+    },
+    "transactions": {
+      "title": "Transactions",
+      "date": "Date",
+      "direction": "Dir",
+      "amount": "Amount",
+      "counterparty": "Counterparty",
+      "hash": "Tx Hash",
+      "empty": "No transactions found",
+      "loadMore": "Load more",
+      "loading": "Loading..."
+    },
     "toast": {
       "created": "Entry created successfully",
       "updated": "Entry updated successfully",
@@ -345,6 +369,7 @@
       "walletCreated": "Wallet added successfully",
       "walletDeleted": "Wallet removed successfully",
       "snapshotTaken": "Balance snapshot saved",
+      "snapshotDeleted": "Snapshot removed",
       "error": "An error occurred. Please try again."
     }
   },
@@ -428,6 +453,7 @@
       "addMember": "Add Member",
       "columns": {
         "name": "Name",
+        "status": "Status",
         "role": "Role",
         "joined": "Joined"
       },
@@ -467,6 +493,15 @@
     "settings": {
       "title": "General",
       "subtitle": "Update organization details.",
+      "logoTitle": "Organization Logo",
+      "logoSubtitle": "Upload your organization logo. Recommended size: 512x512px",
+      "uploadLogo": "Upload Logo",
+      "removeLogo": "Remove Logo",
+      "cropLogo": "Crop Organization Logo",
+      "uploading": "Uploading...",
+      "logoUploaded": "Logo uploaded successfully",
+      "logoRemoved": "Logo removed successfully",
+      "logoFormats": "JPG, PNG, GIF or WebP. Max 5MB.",
       "name": "Organization Name",
       "slug": "Organization Slug",
       "slugDescription": "The URL-safe identifier for this organization.",
@@ -495,14 +530,30 @@
     "password": "Password",
     "submit": "Sign In",
     "signingIn": "Signing in...",
+    "success": "Welcome back!",
     "forgotPassword": "Forgot password?",
     "rememberMe": "Remember me",
+    "trustDevice": "Trust this device for 30 days",
+    "showPasswordTooltip": "Toggle password visibility",
     "error": "Invalid email or password",
     "errorNetwork": "Network error. Please try again.",
     "errorRateLimit": "Too many attempts. Try again in {{seconds}} seconds.",
+    "captchaRequired": "Please complete the security check",
+    "captchaVerifying": "Verifying...",
+    "emailSuggestion": "Did you mean @{{domain}}?",
     "validationEmailRequired": "Email is required",
     "validationEmailInvalid": "Please enter a valid email",
-    "validationPasswordRequired": "Password is required"
+    "validationPasswordRequired": "Password is required",
+    "errors": {
+      "invalidCredentials": "Email or password is incorrect",
+      "emailNotConfirmed": "Please verify your email address",
+      "userNotFound": "No account found with this email",
+      "invalidEmail": "Please enter a valid email address",
+      "passwordTooWeak": "Password does not meet requirements",
+      "network": "Network error. Please check your connection.",
+      "tooManyRequests": "Too many login attempts. Please try again later.",
+      "unknown": "An error occurred. Please try again."
+    }
   },
   "forgotPassword": {
     "title": "Reset Password",
@@ -535,5 +586,45 @@
     "validationLowercase": "Password must contain a lowercase letter",
     "validationNumber": "Password must contain a number",
     "validationMatch": "Passwords do not match"
+  },
+  "memberProfile": {
+    "title": "Member Profile",
+    "backToMembers": "Back to Members",
+    "notFound": "Member not found",
+    "notFoundDescription": "This member does not exist or you do not have access to view their profile.",
+    "edit": "Edit Profile",
+    "save": "Save Changes",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "sections": {
+      "contactInfo": "Contact Information",
+      "bio": "Bio",
+      "notes": "Internal Notes",
+      "organizations": "Organizations",
+      "details": "Profile Details"
+    },
+    "fields": {
+      "displayName": "Display Name",
+      "displayNamePlaceholder": "Enter display name",
+      "phone": "Phone",
+      "phonePlaceholder": "Enter phone number",
+      "bio": "Bio",
+      "bioPlaceholder": "Write a short bio...",
+      "department": "Department",
+      "departmentPlaceholder": "Enter department",
+      "notes": "Notes",
+      "notesPlaceholder": "Internal notes about this member...",
+      "memberSince": "Member Since",
+      "role": "Role",
+      "noPhone": "No phone number",
+      "noBio": "No bio added yet",
+      "noDepartment": "No department",
+      "noNotes": "No notes"
+    },
+    "toast": {
+      "updated": "Profile updated successfully",
+      "error": "Failed to update profile. Please try again."
+    },
+    "notesHint": "Only visible to admins"
   }
 }

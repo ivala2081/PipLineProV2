@@ -7,34 +7,14 @@ import {
   Users,
   Buildings,
   ArrowRight,
-  TrendUp,
+  ChartBar,
+  CalendarBlank,
 } from '@phosphor-icons/react'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
-import { Card, Tag } from '@ds'
+import { Tag, StatCard } from '@ds'
 import type { ComponentType } from 'react'
 import type { IconProps } from '@phosphor-icons/react'
-
-/* ------------------------------------------------------------------ */
-/*  Stat Card                                                          */
-/* ------------------------------------------------------------------ */
-
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <Card className="flex flex-col gap-3 border border-black/5 bg-bg1 p-5">
-      <span className="text-xs font-medium text-black/40 uppercase tracking-wider">
-        {label}
-      </span>
-      <div className="flex items-end justify-between gap-2">
-        <span className="text-2xl font-semibold text-black">{value}</span>
-        <Tag variant="green" className="text-[10px]">
-          <TrendUp size={12} />
-          —
-        </Tag>
-      </div>
-    </Card>
-  )
-}
 
 /* ------------------------------------------------------------------ */
 /*  Quick Action                                                       */
@@ -113,10 +93,13 @@ export function DashboardPage() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label={t('dashboard.stats.totalRecords')} value="—" />
-        <StatCard label={t('dashboard.stats.thisWeek')} value="—" />
-        <StatCard label={t('dashboard.stats.members')} value="—" />
+        <StatCard icon={ChartBar} label={t('dashboard.stats.totalRecords')} value="—" />
+        <StatCard icon={CalendarBlank} label={t('dashboard.stats.thisWeek')} value="—" />
+        <StatCard icon={Users} iconBg="bg-blue/10" iconColor="text-blue" label={t('dashboard.stats.members')} value="—" />
         <StatCard
+          icon={Buildings}
+          iconBg="bg-purple/10"
+          iconColor="text-purple"
           label={t('dashboard.stats.organizations')}
           value={String(organizations.length)}
         />

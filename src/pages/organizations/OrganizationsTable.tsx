@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Buildings, Users, WarningCircle } from '@phosphor-icons/react'
+import { Buildings, Users, WarningCircle, Image } from '@phosphor-icons/react'
 import {
   Table,
   TableHeader,
@@ -43,7 +43,7 @@ export function OrganizationsTable({
 
   if (error) {
     return (
-      <Card className="flex flex-col items-center justify-center gap-4 border border-black/5 bg-bg1 py-20">
+      <Card padding="none" className="flex flex-col items-center justify-center gap-4 border border-black/5 bg-bg1 py-20">
         <div className="flex size-14 items-center justify-center rounded-2xl bg-red/10">
           <WarningCircle size={28} className="text-red" />
         </div>
@@ -93,7 +93,7 @@ export function OrganizationsTable({
 
   if (organizations.length === 0) {
     return (
-      <Card className="flex flex-col items-center justify-center gap-4 border border-black/5 bg-bg1 py-20">
+      <Card padding="none" className="flex flex-col items-center justify-center gap-4 border border-black/5 bg-bg1 py-20">
         <div className="flex size-14 items-center justify-center rounded-2xl bg-black/5">
           <Buildings size={28} className="text-black/40" />
         </div>
@@ -130,7 +130,24 @@ export function OrganizationsTable({
               className="cursor-pointer transition-colors hover:bg-black/4"
               onClick={() => onRowClick(org)}
             >
-              <TableCell className="font-medium">{org.name}</TableCell>
+              <TableCell>
+                <div className="flex items-center gap-3">
+                  {org.logo_url ? (
+                    <div className="flex size-8 items-center justify-center overflow-hidden rounded-md border border-black/10 bg-black/5">
+                      <img
+                        src={org.logo_url}
+                        alt={`${org.name} logo`}
+                        className="size-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex size-8 items-center justify-center rounded-md bg-brand text-xs font-bold text-white">
+                      {org.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <span className="font-medium">{org.name}</span>
+                </div>
+              </TableCell>
               <TableCell className="font-mono text-sm text-black/60">
                 {org.slug}
               </TableCell>

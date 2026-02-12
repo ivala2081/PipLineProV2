@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { DotsThree, Plus } from '@phosphor-icons/react'
+import { DotsThree, Plus, Users } from '@phosphor-icons/react'
 import {
   Table,
   TableHeader,
@@ -15,9 +16,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
+  EmptyState,
 } from '@ds'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useToast } from '@/hooks/useToast'
@@ -31,6 +30,9 @@ import {
 } from '@/hooks/queries/useOrgMemberMutations'
 import { ConfirmDialog } from '../ConfirmDialog'
 import { AddMemberDialog } from '../AddMemberDialog'
+import { UserAvatar } from '@/components/UserAvatar'
+import { LastSeen } from '@/components/LastSeen'
+import { usePresenceSubscription } from '@/hooks/usePresenceSubscription'
 
 interface MembersTabProps {
   orgId: string
@@ -38,6 +40,7 @@ interface MembersTabProps {
 }
 
 export function MembersTab({ orgId, canManage }: MembersTabProps) {
+  const navigate = useNavigate()
   const { t } = useTranslation('pages')
   const { toast } = useToast()
   const { user } = useAuth()
@@ -49,6 +52,9 @@ export function MembersTab({ orgId, canManage }: MembersTabProps) {
     null,
   )
   const [addDialogOpen, setAddDialogOpen] = useState(false)
+
+  // Subscribe to real-time presence updates
+  usePresenceSubscription()
 
   const handleToggleRole = async (member: MemberWithProfile) => {
     const newRole = member.role === 'admin' ? 'operation' : 'admin'
@@ -69,16 +75,6 @@ export function MembersTab({ orgId, canManage }: MembersTabProps) {
     } catch (err) {
       toast({ title: (err as Error).message, variant: 'error' })
     }
-  }
-
-  const getInitials = (name: string | null) => {
-    if (!name) return '?'
-    return name
-      .split(' ')
-      .map((w) => w[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2)
   }
 
   if (isLoading) {
@@ -115,11 +111,10 @@ export function MembersTab({ orgId, canManage }: MembersTabProps) {
         )}
 
         {members.length === 0 ? (
-          <div className="py-20 text-center">
-            <p className="text-sm text-black/60">
-              {t('organizations.members.empty')}
-            </p>
-          </div>
+          <EmptyState
+            icon={Users}
+            title={t('organizations.members.empty')}
+          />
         ) : (
           <div className="rounded-lg border border-black/5 bg-bg1">
             <Table>
@@ -127,6 +122,9 @@ export function MembersTab({ orgId, canManage }: MembersTabProps) {
                 <TableRow>
                   <TableHead>
                     {t('organizations.members.columns.name')}
+                  </TableHead>
+                  <TableHead>
+                    {t('organizations.members.columns.status')}
                   </TableHead>
                   <TableHead>
                     {t('organizations.members.columns.role')}
@@ -144,21 +142,25 @@ export function MembersTab({ orgId, canManage }: MembersTabProps) {
                     member.profile?.display_name ?? member.user_id
 
                   return (
-                    <TableRow key={member.user_id}>
+                    <TableRow
+                      key={member.user_id}
+                      className="cursor-pointer"
+                      onClick={() => navigate(`/members/${member.user_id}`)}
+                    >
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <Avatar className="size-8">
-                            {member.profile?.avatar_url && (
-                              <AvatarImage src={member.profile.avatar_url} />
-                            )}
-                            <AvatarFallback className="text-xs">
-                              {getInitials(
-                                member.profile?.display_name ?? null,
-                              )}
-                            </AvatarFallback>
-                          </Avatar>
+                          <UserAvatar
+                            src={member.profile?.avatar_url}
+                            name={member.profile?.display_name ?? undefined}
+                            size="sm"
+                            showPresence
+                            lastSeenAt={member.profile?.last_seen_at}
+                          />
                           <span className="font-medium">{displayName}</span>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <LastSeen lastSeenAt={member.profile?.last_seen_at} />
                       </TableCell>
                       <TableCell>
                         <Tag
@@ -177,7 +179,7 @@ export function MembersTab({ orgId, canManage }: MembersTabProps) {
                           {!isSelf && (
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="borderless" size="sm">
+                                <Button variant="borderless" size="sm" onClick={(e) => e.stopPropagation()}>
                                   <DotsThree size={18} weight="bold" />
                                 </Button>
                               </DropdownMenuTrigger>
@@ -194,7 +196,7 @@ export function MembersTab({ orgId, canManage }: MembersTabProps) {
                                       )}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
-                                  className="text-red-600"
+                                  className="text-red"
                                   onClick={() => setRemoveTarget(member)}
                                 >
                                   {t('organizations.members.actions.remove')}

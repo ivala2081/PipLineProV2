@@ -34,9 +34,18 @@ export function useUpdateOrganization(orgId: string) {
 
   return useMutation({
     mutationFn: async (data: UpdateOrganizationValues) => {
+      const updateData: { name: string; is_active: boolean; logo_url?: string | null } = {
+        name: data.name,
+        is_active: data.is_active,
+      }
+
+      if (data.logo_url !== undefined) {
+        updateData.logo_url = data.logo_url
+      }
+
       const { error } = await supabase
         .from('organizations')
-        .update({ name: data.name, is_active: data.is_active })
+        .update(updateData)
         .eq('id', orgId)
 
       if (error) throw error

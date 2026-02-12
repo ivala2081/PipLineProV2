@@ -6,11 +6,11 @@ import { useWalletSnapshotsQuery } from '@/hooks/queries/useWalletSnapshotsQuery
 import { Card, Button, Skeleton } from '@ds'
 
 const CHAIN_META: Record<string, { label: string; color: string }> = {
-  tron: { label: 'TRON', color: 'bg-red-500/10 text-red-600' },
-  ethereum: { label: 'ETH', color: 'bg-blue-500/10 text-blue-600' },
-  bsc: { label: 'BSC', color: 'bg-yellow-500/10 text-yellow-700' },
-  bitcoin: { label: 'BTC', color: 'bg-orange-500/10 text-orange-600' },
-  solana: { label: 'SOL', color: 'bg-purple-500/10 text-purple-600' },
+  tron: { label: 'TRON', color: 'bg-red/10 text-red' },
+  ethereum: { label: 'ETH', color: 'bg-blue/10 text-blue' },
+  bsc: { label: 'BSC', color: 'bg-yellow/10 text-yellow' },
+  bitcoin: { label: 'BTC', color: 'bg-orange/10 text-orange' },
+  solana: { label: 'SOL', color: 'bg-purple/10 text-purple' },
 }
 
 function truncateAddress(addr: string) {
@@ -57,7 +57,7 @@ export function WalletCard({ wallet, onViewDetail, onDelete }: WalletCardProps) 
   const sortedAssets = [...assets].sort((a, b) => b.usdValue - a.usdValue)
 
   return (
-    <Card className="group flex flex-col overflow-hidden border border-black/[0.06] bg-bg1">
+    <Card padding="none" className="group flex flex-col overflow-hidden border border-black/10 bg-bg1">
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-4 pb-2">
         <div className="flex items-center gap-2.5">
@@ -65,14 +65,14 @@ export function WalletCard({ wallet, onViewDetail, onDelete }: WalletCardProps) 
             {wallet.label}
           </span>
           <span
-            className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${chainInfo.color}`}
+            className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-bold tracking-wide ${chainInfo.color}`}
           >
             {chainInfo.label}
           </span>
         </div>
         <Button
           variant="ghost"
-          className="size-7 p-0 text-black/20 opacity-0 transition group-hover:opacity-100 hover:text-red-500"
+          className="size-7 p-0 text-black/20 opacity-0 transition group-hover:opacity-100 hover:text-red"
           onClick={onDelete}
         >
           <Trash size={14} />
@@ -81,7 +81,7 @@ export function WalletCard({ wallet, onViewDetail, onDelete }: WalletCardProps) 
 
       {/* Address */}
       <div className="flex items-center gap-1.5 px-5 pb-3">
-        <code className="text-[11px] text-black/40">
+        <code className="text-xs text-black/40">
           {truncateAddress(wallet.address)}
         </code>
         <button
@@ -93,12 +93,12 @@ export function WalletCard({ wallet, onViewDetail, onDelete }: WalletCardProps) 
       </div>
 
       {/* Total USD Value */}
-      <div className="border-t border-black/[0.04] bg-black/[0.015] px-5 py-3">
+      <div className="border-t border-black/5 bg-black/[0.015] px-5 py-3">
         {isBalanceLoading ? (
           <Skeleton className="h-7 w-28 rounded" />
         ) : (
           <div>
-            <p className="text-[10px] font-medium uppercase tracking-wider text-black/35">
+            <p className="text-xs font-medium uppercase tracking-wider text-black/35">
               {t('accounting.wallets.totalValue', 'Total Value')}
             </p>
             <p className="mt-0.5 text-xl font-bold tabular-nums text-black/85">
@@ -141,7 +141,7 @@ export function WalletCard({ wallet, onViewDetail, onDelete }: WalletCardProps) 
                       {bal.toLocaleString('en-US', { maximumFractionDigits: 4 })}
                     </span>
                     {asset.usdValue > 0 && (
-                      <span className="ml-1.5 font-mono text-[10px] tabular-nums text-black/35">
+                      <span className="ml-1.5 font-mono text-xs tabular-nums text-black/35">
                         ${formatUsd(asset.usdValue)}
                       </span>
                     )}
@@ -150,7 +150,7 @@ export function WalletCard({ wallet, onViewDetail, onDelete }: WalletCardProps) 
               )
             })}
             {sortedAssets.length > 4 && (
-              <p className="text-[10px] text-black/35">
+              <p className="text-xs text-black/35">
                 +{sortedAssets.length - 4} {t('accounting.wallets.moreTokens')}
               </p>
             )}
@@ -159,10 +159,10 @@ export function WalletCard({ wallet, onViewDetail, onDelete }: WalletCardProps) 
       </div>
 
       {/* Actions */}
-      <div className="flex border-t border-black/[0.04]">
+      <div className="flex border-t border-black/5">
         <button
           onClick={onViewDetail}
-          className="flex flex-1 items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-black/45 transition hover:bg-black/[0.02] hover:text-black/70"
+          className="flex flex-1 items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-black/45 transition hover:bg-black/[0.02] hover:text-black/70"
         >
           <Eye size={13} />
           {t('accounting.wallets.viewDetail')}
@@ -171,7 +171,7 @@ export function WalletCard({ wallet, onViewDetail, onDelete }: WalletCardProps) 
         <button
           onClick={() => takeSnapshot()}
           disabled={isTakingSnapshot}
-          className="flex flex-1 items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-black/45 transition hover:bg-black/[0.02] hover:text-black/70 disabled:opacity-40"
+          className="flex flex-1 items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-black/45 transition hover:bg-black/[0.02] hover:text-black/70 disabled:opacity-40"
         >
           {isTakingSnapshot ? (
             <ArrowsClockwise size={13} className="animate-spin" />

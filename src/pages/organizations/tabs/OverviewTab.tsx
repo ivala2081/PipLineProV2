@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Users,
@@ -16,6 +17,7 @@ import {
   Avatar,
   AvatarImage,
   AvatarFallback,
+  StatCard,
 } from '@ds'
 import { useLocale } from '@ds/hooks'
 import {
@@ -27,38 +29,6 @@ import type { Organization } from '@/lib/database.types'
 interface OverviewTabProps {
   org: Organization
   orgId: string
-}
-
-/* ------------------------------------------------------------------ */
-/*  Metric Card                                                        */
-/* ------------------------------------------------------------------ */
-
-function MetricCard({
-  icon,
-  iconBg,
-  label,
-  value,
-}: {
-  icon: React.ReactNode
-  iconBg: string
-  label: string
-  value: number
-}) {
-  return (
-    <Card className="flex items-center gap-4 border border-black/10 bg-bg1 p-5">
-      <div
-        className={`flex size-10 items-center justify-center rounded-lg ${iconBg}`}
-      >
-        {icon}
-      </div>
-      <div>
-        <p className="text-xs font-medium uppercase tracking-wider text-black/40">
-          {label}
-        </p>
-        <p className="mt-0.5 text-2xl font-semibold">{value}</p>
-      </div>
-    </Card>
-  )
 }
 
 /* ------------------------------------------------------------------ */
@@ -92,9 +62,11 @@ function DetailRow({
 function MemberRow({
   member,
   formatDate,
+  onClick,
 }: {
   member: MemberWithProfile
   formatDate: (d: string) => string
+  onClick?: () => void
 }) {
   const { t } = useTranslation('pages')
   const name = member.profile?.display_name ?? member.user_id
@@ -106,7 +78,10 @@ function MemberRow({
     .slice(0, 2)
 
   return (
-    <div className="flex items-center gap-3 py-3">
+    <div
+      className="flex cursor-pointer items-center gap-3 rounded-lg px-2 -mx-2 py-3 transition-colors hover:bg-black/[0.02]"
+      onClick={onClick}
+    >
       <Avatar className="size-8">
         {member.profile?.avatar_url && (
           <AvatarImage src={member.profile.avatar_url} />
@@ -131,6 +106,7 @@ function MemberRow({
 /* ------------------------------------------------------------------ */
 
 export function OverviewTab({ org, orgId }: OverviewTabProps) {
+  const navigate = useNavigate()
   const { t } = useTranslation('pages')
   const { locale } = useLocale()
   const { data: members = [] } = useOrgMembersQuery(orgId)
@@ -161,21 +137,24 @@ export function OverviewTab({ org, orgId }: OverviewTabProps) {
     <div className="space-y-4 pt-4">
       {/* Metrics */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <MetricCard
-          icon={<Users size={20} className="text-blue" />}
+        <StatCard
+          icon={Users}
           iconBg="bg-blue/10"
+          iconColor="text-blue"
           label={t('organizations.overview.members')}
           value={members.length}
         />
-        <MetricCard
-          icon={<ShieldCheck size={20} className="text-green" />}
+        <StatCard
+          icon={ShieldCheck}
           iconBg="bg-green/10"
+          iconColor="text-green"
           label={t('organizations.overview.admins')}
           value={admins}
         />
-        <MetricCard
-          icon={<User size={20} className="text-indigo" />}
+        <StatCard
+          icon={User}
           iconBg="bg-indigo/10"
+          iconColor="text-indigo"
           label={t('organizations.overview.operations')}
           value={operations}
         />
@@ -183,7 +162,7 @@ export function OverviewTab({ org, orgId }: OverviewTabProps) {
 
       {/* Team Members Preview */}
       {previewMembers.length > 0 && (
-        <Card className="border border-black/10 bg-bg1 p-5">
+        <Card padding="default" className="border border-black/10 bg-bg1">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold">
               {t('organizations.overview.teamPreview')}
@@ -199,6 +178,7 @@ export function OverviewTab({ org, orgId }: OverviewTabProps) {
                 key={member.user_id}
                 member={member}
                 formatDate={formatDate}
+                onClick={() => navigate(`/members/${member.user_id}`)}
               />
             ))}
           </div>
@@ -213,7 +193,7 @@ export function OverviewTab({ org, orgId }: OverviewTabProps) {
       )}
 
       {/* Organization Details */}
-      <Card className="border border-black/10 bg-bg1 p-5">
+      <Card padding="default" className="border border-black/10 bg-bg1">
         <h3 className="text-sm font-semibold">
           {t('organizations.overview.details')}
         </h3>

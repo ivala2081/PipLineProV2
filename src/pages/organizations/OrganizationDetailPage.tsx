@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Buildings, ChartLineUp, Diamond } from '@phosphor-icons/react'
+import { ArrowLeft, Buildings, ChartLineUp, Diamond, Image } from '@phosphor-icons/react'
 import {
   Tabs,
   TabsList,
@@ -28,7 +28,20 @@ const ORG_ICONS: Record<string, { icon: React.ReactNode }> = {
   },
 }
 
-function OrgDetailAvatar({ name, slug }: { name: string; slug: string }) {
+function OrgDetailAvatar({ name, slug, logoUrl }: { name: string; slug: string; logoUrl?: string | null }) {
+  // Priority: logoUrl > custom icon > fallback to initials
+  if (logoUrl) {
+    return (
+      <div className="flex size-14 items-center justify-center overflow-hidden rounded-xl border-2 border-black/10 bg-black/5">
+        <img
+          src={logoUrl}
+          alt={`${name} logo`}
+          className="size-full object-cover"
+        />
+      </div>
+    )
+  }
+
   const custom = ORG_ICONS[slug.toLowerCase()]
 
   if (custom) {
@@ -79,7 +92,7 @@ export function OrganizationDetailPage() {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-32" />
-        <Card className="border border-black/5 bg-bg1 p-6">
+        <Card padding="spacious" className="border border-black/5 bg-bg1">
           <div className="flex items-center gap-4">
             <Skeleton className="size-14 rounded-xl" />
             <div className="space-y-2">
@@ -129,10 +142,10 @@ export function OrganizationDetailPage() {
       </Button>
 
       {/* Org header card */}
-      <Card className="border border-black/5 bg-bg1 p-6">
+      <Card padding="spacious" className="border border-black/5 bg-bg1">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <OrgDetailAvatar name={org.name} slug={org.slug} />
+            <OrgDetailAvatar name={org.name} slug={org.slug} logoUrl={org.logo_url} />
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="text-2xl font-semibold">{org.name}</h1>

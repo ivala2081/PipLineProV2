@@ -11,6 +11,8 @@ interface UseWalletSnapshotsReturn {
   error: string | null
   takeSnapshot: () => Promise<void>
   isTakingSnapshot: boolean
+  deleteSnapshot: (snapshotId: string) => Promise<void>
+  isDeleting: boolean
 }
 
 export function useWalletSnapshotsQuery(
@@ -67,11 +69,26 @@ export function useWalletSnapshotsQuery(
     },
   })
 
+  const deleteMutation = useMutation({
+    mutationFn: async (snapshotId: string) => {
+      const { error } = await supabase
+        .from('wallet_snapshots')
+        .delete()
+        .eq('id', snapshotId)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.wallets.snapshots(walletId) })
+    },
+  })
+
   return {
     snapshots: data ?? [],
     isLoading,
     error: error?.message ?? null,
     takeSnapshot: snapshotMutation.mutateAsync,
     isTakingSnapshot: snapshotMutation.isPending,
+    deleteSnapshot: deleteMutation.mutateAsync,
+    isDeleting: deleteMutation.isPending,
   }
 }

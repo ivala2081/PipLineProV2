@@ -27,6 +27,7 @@ import {
   PaginationItem,
   PaginationLink,
   PaginationEllipsis,
+  EmptyState,
 } from '@ds'
 
 interface LedgerTableProps {
@@ -83,7 +84,7 @@ const REGISTER_LABELS: Record<string, string> = {
 }
 
 const TH_CLASS =
-  'h-10 whitespace-nowrap px-4 text-[11px] font-semibold uppercase tracking-wider text-black/40'
+  'whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-black/40'
 
 /* ── Component ───────────────────────────────────────── */
 
@@ -108,7 +109,7 @@ export function LedgerTable({
         {Array.from({ length: 2 }).map((_, g) => (
           <div
             key={g}
-            className="overflow-hidden rounded-xl border border-black/[0.06]"
+            className="overflow-hidden rounded-xl border border-black/10"
           >
             <div className="flex items-center justify-between bg-black/[0.02] px-4 py-2.5">
               <Skeleton className="h-4 w-48 rounded-md" />
@@ -132,19 +133,11 @@ export function LedgerTable({
 
   if (entries.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-black/[0.06] bg-bg1 py-20">
-        <div className="flex size-12 items-center justify-center rounded-full bg-black/[0.04]">
-          <ArrowUp size={20} className="text-black/30" />
-        </div>
-        <div className="text-center">
-          <p className="text-sm font-medium text-black/60">
-            {t('accounting.empty.title')}
-          </p>
-          <p className="mt-1 text-xs text-black/40">
-            {t('accounting.empty.description')}
-          </p>
-        </div>
-      </div>
+      <EmptyState
+        icon={ArrowUp}
+        title={t('accounting.empty.title')}
+        description={t('accounting.empty.description')}
+      />
     )
   }
 
@@ -165,10 +158,10 @@ export function LedgerTable({
         {groups.map((group) => (
           <div
             key={group.dateKey}
-            className="overflow-hidden rounded-xl border border-black/[0.06]"
+            className="overflow-hidden rounded-xl border border-black/10"
           >
             <div className="flex items-center justify-between bg-black/[0.02] px-4 py-2.5">
-              <span className="text-[13px] font-semibold text-black/70">
+              <span className="text-sm font-semibold text-black/70">
                 {group.label}
               </span>
             </div>
@@ -198,49 +191,49 @@ export function LedgerTable({
                     <TableHead className={TH_CLASS}>
                       {t('accounting.columns.costPeriod')}
                     </TableHead>
-                    <TableHead className="h-10 w-16 px-2" />
+                    <TableHead className="w-16 px-2" />
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y divide-black/[0.04]">
                   {group.entries.map((row) => (
                     <TableRow key={row.id} className="hover:bg-black/[0.015]">
-                      <TableCell className="whitespace-nowrap px-4 py-3">
-                        <span className="text-[13px] font-medium text-black/90">
+                      <TableCell className="whitespace-nowrap">
+                        <span className="text-sm font-medium text-black/90">
                           {row.description}
                         </span>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap px-4 py-3">
+                      <TableCell className="whitespace-nowrap">
                         <Tag variant="default">
                           {row.entry_type === 'ODEME'
                             ? t('accounting.entryTypes.ODEME')
                             : t('accounting.entryTypes.TRANSFER')}
                         </Tag>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap px-4 py-3">
+                      <TableCell className="whitespace-nowrap">
                         <Tag variant={row.direction === 'in' ? 'default' : 'red'}>
                           {row.direction === 'in'
                             ? t('accounting.directions.in')
                             : t('accounting.directions.out')}
                         </Tag>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap px-4 py-3 text-right">
+                      <TableCell className="whitespace-nowrap text-right">
                         <span
-                          className={`font-mono text-[13px] font-medium tabular-nums ${row.direction === 'in' ? 'text-green' : 'text-red'}`}
+                          className={`font-mono text-sm font-medium tabular-nums ${row.direction === 'in' ? 'text-green' : 'text-red'}`}
                         >
                           {row.direction === 'in' ? '+' : '-'}
                           {formatNumber(row.amount)}
                         </span>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap px-4 py-3">
+                      <TableCell className="whitespace-nowrap">
                         <Tag variant="default">{row.currency}</Tag>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap px-4 py-3 text-[13px] text-black/60">
+                      <TableCell className="whitespace-nowrap text-sm text-black/60">
                         {REGISTER_LABELS[row.register] || row.register}
                       </TableCell>
-                      <TableCell className="whitespace-nowrap px-4 py-3 text-[13px] text-black/50">
+                      <TableCell className="whitespace-nowrap text-sm text-black/50">
                         {row.cost_period || '—'}
                       </TableCell>
-                      <TableCell className="whitespace-nowrap px-2 py-3">
+                      <TableCell className="whitespace-nowrap px-2">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
@@ -256,7 +249,7 @@ export function LedgerTable({
                               {t('accounting.actions.edit')}
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              className="text-red-600"
+                              className="text-red"
                               onClick={() => onDelete(row)}
                             >
                               <Trash size={14} />
@@ -276,7 +269,7 @@ export function LedgerTable({
 
       {/* Pagination */}
       {(totalPages > 1 || total > 0) && (
-        <div className="flex items-center justify-between rounded-lg border border-black/[0.06] bg-black/[0.015] px-4 py-2">
+        <div className="flex items-center justify-between rounded-lg border border-black/10 bg-black/[0.015] px-4 py-2">
           <span className="text-xs tabular-nums text-black/40">
             {from}–{to} / {total}
           </span>

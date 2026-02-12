@@ -17,5 +17,32 @@
   },
   "breadcrumb": {
     "more": "Daha fazla"
+  },
+  "imageCropper": {
+    "title": "Resmi Kırp",
+    "zoom": "Yakınlaştır",
+    "hint": "Yeniden konumlandırmak için sürükleyin, yakınlaştırmak için kaydırıcıyı veya fare tekerleğini kullanın, ardından uygulamak için Kırp'a tıklayın.",
+    "cancel": "İptal",
+    "crop": "Resmi Kırp",
+    "processing": "İşleniyor..."
+  },
+  "presence": {
+    "online": "Çevrimiçi",
+    "offline": "Çevrimdışı",
+    "lastSeen": "Son görülme",
+    "onlineMembers": "Organizasyonda çevrimiçi üyeler"
+  },
+  "passwordStrength": {
+    "label": "Şifre gücü",
+    "veryWeak": "Çok Zayıf",
+    "weak": "Zayıf",
+    "medium": "Orta",
+    "strong": "Güçlü",
+    "veryStrong": "Çok Güçlü",
+    "minLength": "En az 8 karakter",
+    "uppercase": "Bir büyük harf",
+    "lowercase": "Bir küçük harf",
+    "number": "Bir rakam",
+    "special": "Bir özel karakter"
   }
 }

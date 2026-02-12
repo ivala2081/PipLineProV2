@@ -62,24 +62,24 @@ export function WalletDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>{t('accounting.addWallet')}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={onFormSubmit} className="space-y-4">
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label>{t('accounting.wallets.form.label')}</Label>
             <Input
               {...register('label')}
               placeholder={t('accounting.wallets.form.labelPlaceholder')}
             />
             {errors.label && (
-              <p className="text-xs text-red-500">{errors.label.message}</p>
+              <p className="text-xs text-red">{errors.label.message}</p>
             )}
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label>{t('accounting.wallets.form.address')}</Label>
             <Input
               {...register('address')}
@@ -87,11 +87,11 @@ export function WalletDialog({
               className="font-mono text-sm"
             />
             {errors.address && (
-              <p className="text-xs text-red-500">{errors.address.message}</p>
+              <p className="text-xs text-red">{errors.address.message}</p>
             )}
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label>{t('accounting.wallets.form.chain')}</Label>
             <Select
               value={watch('chain')}

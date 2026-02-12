@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { DotsThree, Plus, Users } from '@phosphor-icons/react'
 import {
@@ -15,9 +16,6 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
 } from '@ds'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
@@ -32,8 +30,12 @@ import {
 } from '@/hooks/queries/useOrgMemberMutations'
 import { ConfirmDialog } from '@/pages/organizations/ConfirmDialog'
 import { AddMemberDialog } from '@/pages/organizations/AddMemberDialog'
+import { UserAvatar } from '@/components/UserAvatar'
+import { LastSeen } from '@/components/LastSeen'
+import { usePresenceSubscription } from '@/hooks/usePresenceSubscription'
 
 export function MembersPage() {
+  const navigate = useNavigate()
   const { t } = useTranslation('pages')
   const { toast } = useToast()
   const { user, isGod } = useAuth()
@@ -48,6 +50,9 @@ export function MembersPage() {
 
   const [removeTarget, setRemoveTarget] = useState<MemberWithProfile | null>(null)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
+
+  // Subscribe to real-time presence updates
+  usePresenceSubscription()
 
   const handleToggleRole = async (member: MemberWithProfile) => {
     const newRole = member.role === 'admin' ? 'operation' : 'admin'
@@ -70,16 +75,6 @@ export function MembersPage() {
     }
   }
 
-  const getInitials = (name: string | null) => {
-    if (!name) return '?'
-    return name
-      .split(' ')
-      .map((w) => w[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2)
-  }
-
   if (!currentOrg) {
     return (
       <div className="space-y-6">
@@ -87,7 +82,7 @@ export function MembersPage() {
           <h1 className="text-2xl font-semibold">{t('members.title')}</h1>
           <p className="mt-1 text-sm text-black/60">{t('members.subtitle')}</p>
         </div>
-        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-black/[0.06] bg-bg1 py-20">
+        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-black/10 bg-bg1 py-20">
           <div className="flex size-12 items-center justify-center rounded-full bg-black/[0.04]">
             <Users size={20} className="text-black/30" />
           </div>
@@ -113,7 +108,7 @@ export function MembersPage() {
       </div>
 
       {isLoading ? (
-        <div className="overflow-hidden rounded-xl border border-black/[0.06]">
+        <div className="overflow-hidden rounded-xl border border-black/10">
           <div className="bg-black/[0.015] px-4 py-3">
             <Skeleton className="h-4 w-48 rounded-md" />
           </div>
@@ -128,24 +123,27 @@ export function MembersPage() {
           </div>
         </div>
       ) : members.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-black/[0.06] bg-bg1 py-20">
+        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-black/10 bg-bg1 py-20">
           <div className="flex size-12 items-center justify-center rounded-full bg-black/[0.04]">
             <Users size={20} className="text-black/30" />
           </div>
           <p className="text-sm text-black/60">{t('organizations.members.empty')}</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-black/[0.06]">
+        <div className="overflow-hidden rounded-xl border border-black/10">
           <Table>
             <TableHeader>
               <TableRow className="bg-black/[0.015] hover:bg-black/[0.015]">
-                <TableHead className="h-10 px-4 text-[11px] font-semibold uppercase tracking-wider text-black/40">
+                <TableHead className="h-10 px-4 text-xs font-semibold uppercase tracking-wider text-black/40">
                   {t('organizations.members.columns.name')}
                 </TableHead>
-                <TableHead className="h-10 px-4 text-[11px] font-semibold uppercase tracking-wider text-black/40">
+                <TableHead className="h-10 px-4 text-xs font-semibold uppercase tracking-wider text-black/40">
+                  {t('organizations.members.columns.status')}
+                </TableHead>
+                <TableHead className="h-10 px-4 text-xs font-semibold uppercase tracking-wider text-black/40">
                   {t('organizations.members.columns.role')}
                 </TableHead>
-                <TableHead className="h-10 px-4 text-[11px] font-semibold uppercase tracking-wider text-black/40">
+                <TableHead className="h-10 px-4 text-xs font-semibold uppercase tracking-wider text-black/40">
                   {t('organizations.members.columns.joined')}
                 </TableHead>
                 {canManage && <TableHead className="h-10 w-12 px-2" />}
@@ -160,29 +158,32 @@ export function MembersPage() {
                 return (
                   <TableRow
                     key={member.user_id}
-                    className="hover:bg-black/[0.015]"
+                    className="cursor-pointer hover:bg-black/[0.015]"
+                    onClick={() => navigate(`/members/${member.user_id}`)}
                   >
                     <TableCell className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <Avatar className="size-8">
-                          {member.profile?.avatar_url && (
-                            <AvatarImage src={member.profile.avatar_url} />
-                          )}
-                          <AvatarFallback className="text-xs">
-                            {getInitials(member.profile?.display_name ?? null)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-[13px] font-medium text-black/90">
+                        <UserAvatar
+                          src={member.profile?.avatar_url}
+                          name={member.profile?.display_name ?? undefined}
+                          size="sm"
+                          showPresence
+                          lastSeenAt={member.profile?.last_seen_at}
+                        />
+                        <span className="text-sm font-medium text-black/90">
                           {displayName}
                         </span>
                       </div>
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
+                      <LastSeen lastSeenAt={member.profile?.last_seen_at} />
                     </TableCell>
                     <TableCell className="px-4 py-3">
                       <Tag variant={member.role === 'admin' ? 'green' : 'blue'}>
                         {member.role === 'admin' ? 'Admin' : 'Operation'}
                       </Tag>
                     </TableCell>
-                    <TableCell className="px-4 py-3 text-[13px] text-black/50">
+                    <TableCell className="px-4 py-3 text-sm text-black/50">
                       {new Date(member.created_at).toLocaleDateString('tr-TR')}
                     </TableCell>
                     {canManage && (
@@ -193,6 +194,7 @@ export function MembersPage() {
                               <Button
                                 variant="ghost"
                                 className="size-7 p-0 text-black/40 hover:text-black/70"
+                                onClick={(e) => e.stopPropagation()}
                               >
                                 <DotsThree size={16} weight="bold" />
                               </Button>
@@ -206,7 +208,7 @@ export function MembersPage() {
                                   : t('organizations.members.actions.promoteToAdmin')}
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                className="text-red-600"
+                                className="text-red"
                                 onClick={() => setRemoveTarget(member)}
                               >
                                 {t('organizations.members.actions.remove')}
@@ -223,7 +225,7 @@ export function MembersPage() {
           </Table>
 
           {/* Footer with count */}
-          <div className="border-t border-black/[0.06] bg-black/[0.015] px-4 py-2.5">
+          <div className="border-t border-black/10 bg-black/[0.015] px-4 py-2.5">
             <span className="text-xs text-black/40">
               {members.length} {t('members.totalMembers')}
             </span>

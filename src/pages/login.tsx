@@ -1,19 +1,23 @@
 import { useState, useRef, useEffect, type FormEvent } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Eye, EyeSlash, CircleNotch, Sun, Moon, Globe } from '@phosphor-icons/react'
+import { Eye, EyeSlash, Sun, Moon, Globe } from '@phosphor-icons/react'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useToast } from '@/hooks/useToast'
-import { Button, Card, Input, FormMessage } from '@ds'
+import { Button, Card, Input, FormMessage, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@ds'
 import { useTheme, useLocale } from '@ds/hooks'
+import { HCaptchaWidget } from '@/components/HCaptchaWidget'
+import { SuccessCheckmark } from '@/components/SuccessCheckmark'
+import { validateEmail } from '@/lib/validationUtils'
+import { parseAuthError } from '@/lib/errorMessages'
+import haptics from '@/lib/haptics'
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
 /* ------------------------------------------------------------------ */
 
-const MAX_ATTEMPTS = 5
+const MAX_ATTEMPTS = 3 // Show CAPTCHA after 3 failed attempts
 const LOCKOUT_SECONDS = 30
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 /* ------------------------------------------------------------------ */
 /*  Page                                                               */
@@ -33,14 +37,20 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(true)
   const [loading, setLoading] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
 
   // Validation state
   const [emailError, setEmailError] = useState('')
   const [passwordError, setPasswordError] = useState('')
   const [serverError, setServerError] = useState('')
+  const [emailSuggestion, setEmailSuggestion] = useState('')
+
+  // CAPTCHA state
+  const [failedAttempts, setFailedAttempts] = useState(0)
+  const [showCaptcha, setShowCaptcha] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
 
   // Rate limiting
-  const [failedAttempts, setFailedAttempts] = useState(0)
   const [lockoutEnd, setLockoutEnd] = useState(0)
   const [lockoutRemaining, setLockoutRemaining] = useState(0)
   const lockoutTimer = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -67,15 +77,41 @@ export function LoginPage() {
   }, [lockoutEnd])
 
   // Validation
-  const validateEmail = (value: string): string => {
-    if (!value.trim()) return t('login.validationEmailRequired')
-    if (!EMAIL_REGEX.test(value)) return t('login.validationEmailInvalid')
+  const handleEmailValidation = (value: string): string => {
+    const result = validateEmail(value, locale)
+
+    // Check for typo suggestions
+    if (result.isValid && result.suggestion) {
+      const suggestedDomain = result.suggestion.split('@')[1]
+      setEmailSuggestion(suggestedDomain)
+    } else {
+      setEmailSuggestion('')
+    }
+
+    // Map validation error keys to translation keys
+    if (!result.isValid && result.error) {
+      const errorKeyMap: Record<string, string> = {
+        emailRequired: 'validationEmailRequired',
+        emailInvalid: 'validationEmailInvalid',
+      }
+      return t(`login.${errorKeyMap[result.error] || result.error}`)
+    }
     return ''
   }
 
-  const validatePassword = (value: string): string => {
+  const handlePasswordValidation = (value: string): string => {
     if (!value) return t('login.validationPasswordRequired')
     return ''
+  }
+
+  // CAPTCHA handlers
+  const handleCaptchaVerify = (token: string) => {
+    setCaptchaToken(token)
+    haptics.success()
+  }
+
+  const handleCaptchaExpire = () => {
+    setCaptchaToken(null)
   }
 
   // Submit
@@ -85,14 +121,24 @@ export function LoginPage() {
     // Check lockout
     if (lockoutRemaining > 0) return
 
+    // Check CAPTCHA if required
+    if (showCaptcha && !captchaToken) {
+      setServerError(t('login.captchaRequired'))
+      haptics.warning()
+      return
+    }
+
     // Validate
-    const eErr = validateEmail(email)
-    const pErr = validatePassword(password)
+    const eErr = handleEmailValidation(email)
+    const pErr = handlePasswordValidation(password)
     setEmailError(eErr)
     setPasswordError(pErr)
     setServerError('')
 
-    if (eErr || pErr) return
+    if (eErr || pErr) {
+      haptics.error()
+      return
+    }
 
     setLoading(true)
 
@@ -102,19 +148,33 @@ export function LoginPage() {
       const attempts = failedAttempts + 1
       setFailedAttempts(attempts)
 
-      if (attempts >= MAX_ATTEMPTS) {
+      // Parse error for better messaging
+      const parsedError = parseAuthError(error)
+      setServerError(t(parsedError.messageKey))
+
+      // Show CAPTCHA after MAX_ATTEMPTS
+      if (attempts >= MAX_ATTEMPTS && !showCaptcha) {
+        setShowCaptcha(true)
+        setCaptchaToken(null)
+        haptics.warning()
+      }
+
+      // Rate limit after 5 total failed attempts
+      if (attempts >= 5) {
         const end = Date.now() + LOCKOUT_SECONDS * 1000
         setLockoutEnd(end)
         setServerError(t('login.errorRateLimit', { seconds: LOCKOUT_SECONDS }))
         setFailedAttempts(0)
-      } else if (error.message?.includes('fetch') || error.message?.includes('network')) {
-        setServerError(t('login.errorNetwork'))
-      } else {
-        setServerError(t('login.error'))
+        setShowCaptcha(false)
       }
 
+      haptics.error()
       setLoading(false)
     } else {
+      // Success!
+      haptics.success()
+      setShowSuccess(true)
+
       // Handle "remember me"
       if (!rememberMe) {
         sessionStorage.setItem('piplinepro-session-only', 'true')
@@ -122,16 +182,29 @@ export function LoginPage() {
         sessionStorage.removeItem('piplinepro-session-only')
       }
 
-      toast({ title: t('login.title'), variant: 'success' })
-      navigate('/', { replace: true })
+      // Show success animation then redirect
+      setTimeout(() => {
+        toast({ title: t('login.success'), variant: 'success' })
+        navigate('/', { replace: true })
+      }, 800)
     }
   }
 
   const isLocked = lockoutRemaining > 0
   const nextLocale = locale === 'en' ? 'tr' : 'en'
 
+  // Show success animation overlay
+  if (showSuccess) {
+    return (
+      <div className="relative flex min-h-screen items-center justify-center bg-bg1 login-background">
+        <SuccessCheckmark size={64} />
+      </div>
+    )
+  }
+
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-bg1 px-4">
+    <TooltipProvider>
+      <div className="relative flex min-h-screen items-center justify-center login-background px-4">
       {/* Top-right controls */}
       <div className="absolute right-4 top-4 flex items-center gap-2">
         <Button
@@ -153,7 +226,7 @@ export function LoginPage() {
       </div>
 
       {/* Login card */}
-      <Card className="w-full max-w-md space-y-6 bg-bg1 border border-black/10">
+      <Card className="w-full max-w-md space-y-6 bg-bg1 border border-black/10 shadow-lg">
         {/* Header */}
         <div className="space-y-2">
           <p className="text-sm font-semibold tracking-widest text-brand uppercase">
@@ -170,20 +243,29 @@ export function LoginPage() {
             <Input
               id="email"
               type="email"
-              title={t('login.email')}
-              placeholder=" "
+              inputMode="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              placeholder={t('login.email')}
               value={email}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                 setEmail(e.target.value)
-                if (emailError) setEmailError(validateEmail(e.target.value))
+                if (emailError) setEmailError(handleEmailValidation(e.target.value))
               }}
-              onBlur={() => setEmailError(validateEmail(email))}
+              onBlur={() => setEmailError(handleEmailValidation(email))}
               required
               autoComplete="email"
               aria-invalid={!!emailError}
+              disabled={loading}
+              inputSize="lg"
               className="bg-black/5"
             />
             {emailError && <FormMessage error>{emailError}</FormMessage>}
+            {emailSuggestion && !emailError && (
+              <p className="text-xs text-blue">
+                {t('login.emailSuggestion', { domain: emailSuggestion })}
+              </p>
+            )}
           </div>
 
           {/* Password */}
@@ -192,41 +274,65 @@ export function LoginPage() {
               <Input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                title={t('login.password')}
-                placeholder=" "
+                inputMode="text"
+                autoCapitalize="none"
+                autoCorrect="off"
+                placeholder={t('login.password')}
                 value={password}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setPassword(e.target.value)
-                  if (passwordError) setPasswordError(validatePassword(e.target.value))
+                  if (passwordError) setPasswordError(handlePasswordValidation(e.target.value))
                 }}
-                onBlur={() => setPasswordError(validatePassword(password))}
+                onBlur={() => setPasswordError(handlePasswordValidation(password))}
                 required
                 autoComplete="current-password"
+                inputSize="lg"
                 className="bg-black/5 pr-12"
                 aria-invalid={!!passwordError}
+                disabled={loading}
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-black/40 hover:text-black/80 transition-colors"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-black/40 hover:text-black/80 transition-colors"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    disabled={loading}
+                  >
+                    {showPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {t('login.showPasswordTooltip')}
+                </TooltipContent>
+              </Tooltip>
             </div>
             {passwordError && <FormMessage error>{passwordError}</FormMessage>}
           </div>
 
           {/* Remember me */}
-          <label className="flex items-center gap-2 cursor-pointer select-none">
+          <label className="flex items-center gap-2 cursor-pointer select-none min-h-[44px]">
             <input
               type="checkbox"
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
               className="h-4 w-4 rounded border-black/20 accent-brand"
+              disabled={loading}
             />
             <span className="text-sm text-black/60">{t('login.rememberMe')}</span>
           </label>
+
+          {/* CAPTCHA */}
+          {showCaptcha && (
+            <div className="flex justify-center">
+              <HCaptchaWidget
+                onVerify={handleCaptchaVerify}
+                onExpire={handleCaptchaExpire}
+                size="normal"
+              />
+            </div>
+          )}
 
           {/* Server error / rate limit */}
           {serverError && (
@@ -243,10 +349,10 @@ export function LoginPage() {
             variant="filled"
             size="lg"
             disabled={loading || isLocked}
-            className="w-full"
+            className="w-full transition-all hover:scale-[1.02]"
           >
             {loading ? (
-              <CircleNotch size={20} className="animate-spin" />
+              <span className="font-semibold">{t('login.signingIn')}</span>
             ) : (
               <span className="font-semibold">{t('login.submit')}</span>
             )}
@@ -257,12 +363,13 @@ export function LoginPage() {
         <div className="text-center">
           <Link
             to="/forgot-password"
-            className="text-sm text-brand underline-offset-4 transition-colors hover:underline"
+            className="text-sm text-brand underline-offset-4 transition-colors hover:underline min-h-[44px] inline-flex items-center"
           >
             {t('login.forgotPassword')}
           </Link>
         </div>
       </Card>
-    </div>
+      </div>
+    </TooltipProvider>
   )
 }

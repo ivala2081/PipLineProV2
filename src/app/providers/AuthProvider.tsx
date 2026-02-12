@@ -10,6 +10,7 @@ import {
 import type { User, Session, AuthError } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import type { Profile } from '@/lib/database.types'
+import { getDeviceId } from '@/lib/deviceFingerprinting'
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -151,7 +152,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   /* No signUp — users are created by God admins via Supabase dashboard. */
 
   const signIn = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const deviceId = getDeviceId()
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+
+    // Log login attempt (fire and forget)
+    try {
+      const userId = data?.user?.id || null
+      await supabase.rpc('log_login_attempt', {
+        p_user_id: userId,
+        p_device_id: deviceId,
+        p_ip_address: null, // IP tracking would need server-side implementation
+        p_success: !error,
+        p_error_message: error?.message || null,
+      })
+    } catch (logError) {
+      // Don't fail login if logging fails
+      console.warn('[AuthProvider] Failed to log login attempt:', logError)
+    }
+
+    // On successful login, clear session-only flag (handled in login page)
+    if (!error && data?.session) {
+      if (import.meta.env.DEV) {
+        console.debug('[AuthProvider] Login successful, session established')
+      }
+    }
+
     return { error }
   }, [])
 

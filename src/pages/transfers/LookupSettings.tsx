@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Plus, PencilSimple, Trash, ClockCounterClockwise } from '@phosphor-icons/react'
 import { useLookupMutation } from '@/hooks/queries/useLookupMutation'
 import { useToast } from '@/hooks/useToast'
+import { ManagerPinDialog } from '@ds'
 import { LookupFormDialog } from './LookupFormDialog'
 import { PspRateHistoryDialog } from './PspRateHistoryDialog'
 import type { Psp } from '@/lib/database.types'
@@ -58,6 +59,9 @@ function LookupSection({ config }: { config: SectionConfig }) {
     null,
   )
   const [rateHistoryPsp, setRateHistoryPsp] = useState<Psp | null>(null)
+  const [pinDialogOpen, setPinDialogOpen] = useState(false)
+  const [pendingSaveData, setPendingSaveData] = useState<Record<string, unknown> | null>(null)
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
   const openAdd = () => {
     setEditingItem(null)
@@ -69,7 +73,7 @@ function LookupSection({ config }: { config: SectionConfig }) {
     setDialogOpen(true)
   }
 
-  const handleSave = async (data: Record<string, unknown>) => {
+  const executeSave = async (data: Record<string, unknown>) => {
     try {
       if (editingItem) {
         await updateItem(editingItem.id as string, data)
@@ -84,7 +88,6 @@ function LookupSection({ config }: { config: SectionConfig }) {
           variant: 'success',
         })
       }
-      // No manual refresh needed - useLookupMutation handles it!
     } catch (error) {
       toast({
         title: (error as Error).message || t('transfers.toast.error'),
@@ -93,20 +96,47 @@ function LookupSection({ config }: { config: SectionConfig }) {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    try {
-      await deleteItem(id)
-      toast({
-        title: t('transfers.toast.lookupDeleted'),
-        variant: 'success',
-      })
-      // No manual refresh needed!
-    } catch (error) {
-      toast({
-        title: (error as Error).message || t('transfers.toast.error'),
-        variant: 'error',
-      })
+  const handleSave = async (data: Record<string, unknown>) => {
+    setPendingSaveData(data)
+    setPendingDeleteId(null)
+    setPinDialogOpen(true)
+    return false
+  }
+
+  const handlePinConfirm = async () => {
+    const dataToSave = pendingSaveData
+    const idToDelete = pendingDeleteId
+    handlePinClose()
+
+    if (dataToSave) {
+      await executeSave(dataToSave)
+      setDialogOpen(false)
+    } else if (idToDelete) {
+      try {
+        await deleteItem(idToDelete)
+        toast({
+          title: t('transfers.toast.lookupDeleted'),
+          variant: 'success',
+        })
+      } catch (error) {
+        toast({
+          title: (error as Error).message || t('transfers.toast.error'),
+          variant: 'error',
+        })
+      }
     }
+  }
+
+  const handleDelete = (id: string) => {
+    setPendingDeleteId(id)
+    setPendingSaveData(null)
+    setPinDialogOpen(true)
+  }
+
+  const handlePinClose = () => {
+    setPinDialogOpen(false)
+    setPendingSaveData(null)
+    setPendingDeleteId(null)
   }
 
   return (
@@ -143,7 +173,7 @@ function LookupSection({ config }: { config: SectionConfig }) {
                 <TableCell className="font-medium">{item.name}</TableCell>
                 {config.hasCommissionRate && (
                   <TableCell
-                    className="cursor-pointer font-mono tabular-nums hover:text-blue-600"
+                    className="cursor-pointer font-mono tabular-nums hover:text-blue"
                     onClick={() => setRateHistoryPsp(item as unknown as Psp)}
                   >
                     {(
@@ -227,6 +257,12 @@ function LookupSection({ config }: { config: SectionConfig }) {
           onClose={() => setRateHistoryPsp(null)}
         />
       )}
+
+      <ManagerPinDialog
+        open={pinDialogOpen}
+        onClose={handlePinClose}
+        onConfirm={handlePinConfirm}
+      />
     </div>
   )
 }
@@ -235,7 +271,7 @@ export function LookupSettings() {
   const { t } = useTranslation('pages')
 
   return (
-    <Card className="space-y-6 border border-black/5 bg-bg1 p-6">
+    <Card padding="spacious" className="space-y-6 border border-black/5 bg-bg1">
       <div>
         <h2 className="text-lg font-semibold">{t('transfers.settings.title')}</h2>
         <p className="mt-1 text-sm text-black/40">

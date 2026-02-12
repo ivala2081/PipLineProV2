@@ -9,47 +9,13 @@ import {
 import { useAccountingQuery } from '@/hooks/queries/useAccountingQuery'
 import { useWalletsQuery } from '@/hooks/queries/useWalletsQuery'
 import type { AccountingEntry } from '@/lib/database.types'
-import { Button, Tabs, TabsList, TabsTrigger, TabsContent, Skeleton } from '@ds'
+import { Button, Tabs, TabsList, TabsTrigger, TabsContent, StatCard } from '@ds'
 import { LedgerSummary } from './LedgerSummary'
 import { LedgerTab } from './LedgerTab'
 import { WalletsTab } from './WalletsTab'
 import { EntryDialog } from './EntryDialog'
 import { DeleteEntryDialog } from './DeleteEntryDialog'
 import { WalletDialog } from './WalletDialog'
-
-/* ── Quick stat chip ──────────────────────────────────── */
-
-function QuickStat({
-  icon: Icon,
-  label,
-  value,
-  isLoading,
-}: {
-  icon: typeof Receipt
-  label: string
-  value: string
-  isLoading: boolean
-}) {
-  return (
-    <div className="flex items-center gap-3 rounded-lg border border-black/[0.06] bg-bg1 px-4 py-3">
-      <div className="flex size-8 items-center justify-center rounded-lg bg-black/[0.04]">
-        <Icon size={16} className="text-black/40" />
-      </div>
-      <div>
-        <p className="text-[11px] font-medium uppercase tracking-wider text-black/40">
-          {label}
-        </p>
-        {isLoading ? (
-          <Skeleton className="mt-1 h-5 w-12 rounded" />
-        ) : (
-          <p className="text-sm font-semibold tabular-nums text-black/80">
-            {value}
-          </p>
-        )}
-      </div>
-    </div>
-  )
-}
 
 /* ── Main Page ────────────────────────────────────────── */
 
@@ -95,12 +61,13 @@ export function AccountingPage() {
           <h1 className="text-2xl font-semibold">{t('accounting.title')}</h1>
           <p className="mt-1 text-sm text-black/60">{t('accounting.subtitle')}</p>
         </div>
-        {activeTab === 'ledger' ? (
+        {activeTab === 'ledger' && (
           <Button variant="filled" onClick={handleAddEntry}>
             <Plus size={16} weight="bold" />
             {t('accounting.addEntry')}
           </Button>
-        ) : (
+        )}
+        {activeTab === 'wallets' && (
           <Button variant="filled" onClick={() => setWalletDialogOpen(true)}>
             <Plus size={16} weight="bold" />
             {t('accounting.addWallet')}
@@ -116,19 +83,19 @@ export function AccountingPage() {
 
       {/* Quick stats row */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <QuickStat
+        <StatCard
           icon={Receipt}
           label={t('accounting.stats.totalEntries')}
           value={String(accounting.total)}
           isLoading={accounting.isLoading}
         />
-        <QuickStat
+        <StatCard
           icon={Wallet}
           label={t('accounting.stats.activeWallets')}
           value={String(wallets.wallets.length)}
           isLoading={wallets.isLoading}
         />
-        <QuickStat
+        <StatCard
           icon={CalendarBlank}
           label={t('accounting.stats.lastEntry')}
           value={lastDateLabel}

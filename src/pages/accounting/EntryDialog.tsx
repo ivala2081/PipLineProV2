@@ -98,7 +98,7 @@ export function EntryDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>
             {isEditing
@@ -109,20 +109,20 @@ export function EntryDialog({
 
         <form onSubmit={onFormSubmit} className="space-y-4">
           {/* Description */}
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label>{t('accounting.form.description')}</Label>
             <Input
               {...register('description')}
               placeholder={t('accounting.form.descriptionPlaceholder')}
             />
             {errors.description && (
-              <p className="text-xs text-red-500">{errors.description.message}</p>
+              <p className="text-xs text-red">{errors.description.message}</p>
             )}
           </div>
 
           {/* Entry Type & Direction row */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
               <Label>{t('accounting.form.entryType')}</Label>
               <Select
                 value={watch('entry_type')}
@@ -137,7 +137,7 @@ export function EntryDialog({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label>{t('accounting.form.direction')}</Label>
               <div className="flex gap-1">
                 <Button
@@ -163,8 +163,8 @@ export function EntryDialog({
           </div>
 
           {/* Amount & Currency row */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
               <Label>{t('accounting.form.amount')}</Label>
               <Input
                 type="number"
@@ -172,10 +172,10 @@ export function EntryDialog({
                 {...register('amount')}
               />
               {errors.amount && (
-                <p className="text-xs text-red-500">{errors.amount.message}</p>
+                <p className="text-xs text-red">{errors.amount.message}</p>
               )}
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label>{t('accounting.form.currency')}</Label>
               <Select
                 value={watch('currency')}
@@ -194,7 +194,7 @@ export function EntryDialog({
           </div>
 
           {/* Register */}
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label>{t('accounting.form.register')}</Label>
             <Select
               value={watch('register')}
@@ -212,24 +212,24 @@ export function EntryDialog({
           </div>
 
           {/* Date */}
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label>{t('accounting.form.date')}</Label>
             <Input type="date" {...register('entry_date')} />
             {errors.entry_date && (
-              <p className="text-xs text-red-500">{errors.entry_date.message}</p>
+              <p className="text-xs text-red">{errors.entry_date.message}</p>
             )}
           </div>
 
           {/* Cost Period & Payment Period */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
               <Label>{t('accounting.form.costPeriod')}</Label>
               <Input
                 {...register('cost_period')}
                 placeholder={t('accounting.form.costPeriodPlaceholder')}
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label>{t('accounting.form.paymentPeriod')}</Label>
               <Input
                 {...register('payment_period')}

@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/app/providers/ThemeProvider'
 import { AuthProvider, useAuth } from '@/app/providers/AuthProvider'
 import { OrganizationProvider } from '@/app/providers/OrganizationProvider'
 import { AppToastProvider } from '@/hooks/useToast'
+import { usePresence } from '@/hooks/usePresence'
 import { AppLayout } from '@/layouts/AppLayout'
 import { LoginPage } from '@/pages/login'
 import { ForgotPasswordPage } from '@/pages/forgot-password'
@@ -16,6 +17,7 @@ import { AccountingPage } from '@/pages/accounting'
 import { Module2Page } from '@/pages/modules/module-2'
 import { Module3Page } from '@/pages/modules/module-3'
 import { MembersPage } from '@/pages/management/members'
+import { MemberProfilePage } from '@/pages/members/MemberProfilePage'
 import { OrganizationsListPage } from '@/pages/organizations'
 import { OrganizationDetailPage } from '@/pages/organizations/OrganizationDetailPage'
 import type { ReactNode } from 'react'
@@ -35,6 +37,9 @@ function PublicRoute({ children }: { children: ReactNode }) {
 
 function PrivateRoute({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth()
+
+  // Enable presence tracking for authenticated users
+  usePresence()
 
   if (isLoading) return <LoadingScreen />
   if (!user) return <Navigate to="/login" replace />
@@ -94,6 +99,7 @@ export function App() {
                         <Route path="/module-2" element={<Module2Page />} />
                         <Route path="/module-3" element={<Module3Page />} />
                         <Route path="/members" element={<MembersPage />} />
+                        <Route path="/members/:userId" element={<MemberProfilePage />} />
                         <Route path="/organizations" element={<OrganizationsListPage />} />
                         <Route path="/organizations/:orgId" element={<OrganizationDetailPage />} />
                         <Route path="*" element={<Navigate to="/" replace />} />

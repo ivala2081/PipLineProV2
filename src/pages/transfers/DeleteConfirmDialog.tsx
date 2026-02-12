@@ -40,7 +40,7 @@ export function DeleteConfirmDialog({
 
   return (
     <Dialog open={!!transfer} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>{t('transfers.delete.title')}</DialogTitle>
           <DialogDescription>

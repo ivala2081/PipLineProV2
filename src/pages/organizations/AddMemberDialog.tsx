@@ -55,7 +55,7 @@ export function AddMemberDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>{t('organizations.addMemberDialog.title')}</DialogTitle>
         </DialogHeader>
@@ -77,7 +77,7 @@ export function AddMemberDialog({
               placeholder={t('organizations.addMemberDialog.emailPlaceholder')}
             />
             {form.formState.errors.email && (
-              <p className="text-xs text-red-500">
+              <p className="text-xs text-red">
                 {form.formState.errors.email.message}
               </p>
             )}
@@ -91,7 +91,7 @@ export function AddMemberDialog({
               placeholder={t('organizations.addMemberDialog.passwordPlaceholder')}
             />
             {form.formState.errors.password && (
-              <p className="text-xs text-red-500">
+              <p className="text-xs text-red">
                 {form.formState.errors.password.message}
               </p>
             )}

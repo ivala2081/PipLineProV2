@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Plus, Trash, SpinnerGap } from '@phosphor-icons/react'
 import { usePspRates, usePspRateMutations } from '@/hooks/queries/usePspRatesQuery'
 import { useToast } from '@/hooks/useToast'
+import { ManagerPinDialog } from '@ds'
 import type { Psp } from '@/lib/database.types'
 import {
   Dialog,
@@ -44,6 +45,9 @@ export function PspRateHistoryDialog({
 
   const [effectiveFrom, setEffectiveFrom] = useState('')
   const [ratePercent, setRatePercent] = useState('')
+  const [pinDialogOpen, setPinDialogOpen] = useState(false)
+  const [pendingAdd, setPendingAdd] = useState<{ rate: number; effectiveFrom: string } | null>(null)
+  const [pendingDeleteRateId, setPendingDeleteRateId] = useState<string | null>(null)
 
   const handleOpenChange = (v: boolean) => {
     if (!v) {
@@ -53,33 +57,56 @@ export function PspRateHistoryDialog({
     }
   }
 
-  const handleAdd = async () => {
+  const handleAddClick = () => {
     if (!psp || !effectiveFrom || !ratePercent) return
 
     const rate = parseFloat(ratePercent) / 100
     if (isNaN(rate) || rate < 0 || rate >= 1) return
 
-    try {
-      await createRate({
-        pspId: psp.id,
-        commissionRate: rate,
-        effectiveFrom: effectiveFrom,
-      })
-      toast({ title: t('transfers.toast.rateCreated'), variant: 'success' })
-      setEffectiveFrom('')
-      setRatePercent('')
-    } catch (error) {
-      toast({
-        title: (error as Error).message || t('transfers.toast.error'),
-        variant: 'error',
-      })
+    setPendingAdd({ rate, effectiveFrom })
+    setPendingDeleteRateId(null)
+    setPinDialogOpen(true)
+  }
+
+  const handlePinConfirm = async () => {
+    const addData = pendingAdd
+    const deleteId = pendingDeleteRateId
+    setPinDialogOpen(false)
+    setPendingAdd(null)
+    setPendingDeleteRateId(null)
+
+    if (addData && psp) {
+      try {
+        await createRate({
+          pspId: psp.id,
+          commissionRate: addData.rate,
+          effectiveFrom: addData.effectiveFrom,
+        })
+        toast({ title: t('transfers.toast.rateCreated'), variant: 'success' })
+        setEffectiveFrom('')
+        setRatePercent('')
+      } catch (error) {
+        toast({
+          title: (error as Error).message || t('transfers.toast.error'),
+          variant: 'error',
+        })
+      }
+    } else if (deleteId && psp) {
+      try {
+        await deleteRate({ id: deleteId, pspId: psp.id })
+        toast({ title: t('transfers.toast.rateDeleted'), variant: 'success' })
+      } catch (error) {
+        toast({
+          title: (error as Error).message || t('transfers.toast.error'),
+          variant: 'error',
+        })
+      }
     }
   }
 
-  const handleDelete = async (rateId: string) => {
+  const handleDeleteClick = (rateId: string) => {
     if (!psp) return
 
-    // Guard: don't delete the only non-future rate
     const todayStr = today()
     const nonFutureRates = rates.filter((r) => r.effective_from <= todayStr)
     const targetFrom =
@@ -93,15 +120,9 @@ export function PspRateHistoryDialog({
       return
     }
 
-    try {
-      await deleteRate({ id: rateId, pspId: psp.id })
-      toast({ title: t('transfers.toast.rateDeleted'), variant: 'success' })
-    } catch (error) {
-      toast({
-        title: (error as Error).message || t('transfers.toast.error'),
-        variant: 'error',
-      })
-    }
+    setPendingDeleteRateId(rateId)
+    setPendingAdd(null)
+    setPinDialogOpen(true)
   }
 
   const todayStr = today()
@@ -113,7 +134,7 @@ export function PspRateHistoryDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>
             {psp
@@ -153,7 +174,7 @@ export function PspRateHistoryDialog({
           </div>
           <Button
             size="sm"
-            onClick={handleAdd}
+            onClick={handleAddClick}
             disabled={
               isCreating || !effectiveFrom || !ratePercent
             }
@@ -218,7 +239,7 @@ export function PspRateHistoryDialog({
                           variant="borderless"
                           size="sm"
                           className="text-red"
-                          onClick={() => handleDelete(rate.id)}
+                          onClick={() => handleDeleteClick(rate.id)}
                           disabled={isDeleting}
                         >
                           <Trash size={14} />
@@ -231,6 +252,16 @@ export function PspRateHistoryDialog({
             </Table>
           )}
         </div>
+
+        <ManagerPinDialog
+          open={pinDialogOpen}
+          onClose={() => {
+            setPinDialogOpen(false)
+            setPendingAdd(null)
+            setPendingDeleteRateId(null)
+          }}
+          onConfirm={handlePinConfirm}
+        />
       </DialogContent>
     </Dialog>
   )

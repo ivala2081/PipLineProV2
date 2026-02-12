@@ -35,7 +35,13 @@
       "Bash(for addr in THxYWbzAgzQgQaYi9G4mjeL1tq1hdrZe55 TUazYXMe7p9Yi1Kc8vQhovQbFp5UxipHHA TWxt3jw2qm7kocH7agXtVqL7AJTPkC29rR TGKBroumSbjwsPyyJ3J5X2H8dSKiajBCrd)",
       "Bash(do echo \"=== Contract: $addr ===\")",
       "Bash(export SUPABASE_ACCESS_TOKEN=\"sbp_d462b50dbbf44f87803b5fd1f2a1bc3db503\")",
-      "Bash(xxd:*)"
+      "Bash(xxd:*)",
+      "Bash(npx vite:*)",
+      "WebFetch(domain:apidoc.tatum.io)",
+      "WebFetch(domain:glama.ai)",
+      "Bash(powershell \"\\(Get-Content ''c:\\\\Users\\\\ACER\\\\Desktop\\\\PipLineProV2\\\\ocak.csv''\\).Count\")",
+      "Bash(powershell:*)",
+      "Bash(npx tsx:*)"
     ]
   }
 }

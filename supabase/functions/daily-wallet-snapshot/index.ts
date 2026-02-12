@@ -7,15 +7,15 @@ import { createAdminClient } from '../_shared/supabase-admin.ts'
 const TATUM_API_KEY = Deno.env.get('TATUM_API_KEY') ?? ''
 const TATUM_BASE_V4 = 'https://api.tatum.io/v4'
 const TATUM_BASE_V3 = 'https://api.tatum.io/v3'
-const V4_CHAINS = new Set(['ethereum', 'bsc', 'solana', 'polygon', 'celo', 'tezos', 'chiliz'])
+const V4_CHAINS = new Set(['ethereum', 'bsc', 'solana', 'polygon', 'celo', 'tezos', 'chiliz', 'tron', 'bitcoin'])
 const STABLECOINS = new Set(['USDT', 'USDC', 'TUSD', 'DAI', 'BUSD', 'USDJ', 'USDD'])
 const NATIVE_SYMBOL: Record<string, string> = {
   ethereum: 'ETH', bsc: 'BNB', solana: 'SOL', polygon: 'MATIC',
-  celo: 'CELO', tezos: 'XTZ', chiliz: 'CHZ',
+  celo: 'CELO', tezos: 'XTZ', chiliz: 'CHZ', tron: 'TRX', bitcoin: 'BTC',
 }
 const RATE_SYMBOL: Record<string, string> = {
   TRX: 'TRON', ETH: 'ETH', BTC: 'BTC', BNB: 'BNB',
-  SOL: 'SOL', MATIC: 'MATIC', CELO: 'CELO', XTZ: 'XTZ',
+  SOL: 'SOL', MATIC: 'MATIC', CELO: 'CELO', CHZ: 'CHZ', XTZ: 'XTZ',
 }
 const TRC20_KNOWN: Record<string, { symbol: string; decimals: number }> = {
   TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t: { symbol: 'USDT', decimals: 6 },
@@ -34,6 +34,51 @@ const TRC20_KNOWN: Record<string, { symbol: string; decimals: number }> = {
   TKkeiboTkxXKJpbmVFbv4a8ov5rAfRDMf9: { symbol: 'SUNDOG', decimals: 18 },
 }
 
+/** Tatum V4 API requires "-mainnet" suffix */
+const V4_CHAIN_MAP: Record<string, string> = {
+  ethereum: 'ethereum-mainnet',
+  bsc: 'bsc-mainnet',
+  solana: 'solana-mainnet',
+  polygon: 'polygon-mainnet',
+  celo: 'celo-mainnet',
+  tezos: 'tezos-mainnet',
+  chiliz: 'chiliz-mainnet',
+  tron: 'tron-mainnet',
+  bitcoin: 'bitcoin-mainnet',
+}
+
+function toV4Chain(chain: string): string {
+  return V4_CHAIN_MAP[chain] ?? chain
+}
+
+/** Well-known EVM token addresses for symbol resolution */
+const EVM_KNOWN_TOKENS: Record<string, Record<string, string>> = {
+  ethereum: {
+    '0xdac17f958d2ee523a2206206994597c13d831ec7': 'USDT',
+    '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48': 'USDC',
+    '0x6b175474e89094c44da98b954eedeac495271d0f': 'DAI',
+    '0x4fabb145d64652a948d72533023f6e7a623c7c53': 'BUSD',
+    '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599': 'WBTC',
+  },
+  bsc: {
+    '0x55d398326f99059ff775485246999027b3197955': 'USDT',
+    '0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d': 'USDC',
+    '0xe9e7cea3dedca5984780bafc599bd69add087d56': 'BUSD',
+  },
+  solana: {},
+  polygon: {
+    '0xc2132d05d31c914a87c6611c10748aeb04b58e8f': 'USDT',
+    '0x2791bca1f2de4661ed88a30c99a7a9449aa84174': 'USDC',
+  },
+}
+
+function resolveTokenSymbol(chain: string, tokenAddress?: string): string | undefined {
+  if (!tokenAddress) return undefined
+  const map = EVM_KNOWN_TOKENS[chain]
+  if (!map) return undefined
+  return map[tokenAddress.toLowerCase()]
+}
+
 /* ── Tatum helpers ──────────────────────────────────────────── */
 
 interface Asset { symbol?: string; type: string; balance: string; tokenAddress?: string }
@@ -48,10 +93,17 @@ async function tatumFetch<T>(base: string, path: string, params: Record<string, 
   return res.json()
 }
 
+interface V4PortfolioResponse {
+  result: Array<{ chain: string; address: string; balance: string; decimals: number; tokenAddress?: string; type: string; symbol?: string; name?: string }>
+  prevPage?: string
+  nextPage?: string
+}
+
 async function fetchV4Portfolio(chain: string, address: string): Promise<Asset[]> {
+  const v4Chain = toV4Chain(chain)
   const [nativeRes, fungibleRes] = await Promise.allSettled([
-    tatumFetch<{ result: Asset[] }>(TATUM_BASE_V4, '/data/wallet/portfolio', { chain, addresses: address, tokenTypes: 'native' }),
-    tatumFetch<{ result: Asset[] }>(TATUM_BASE_V4, '/data/wallet/portfolio', { chain, addresses: address, tokenTypes: 'fungible' }),
+    tatumFetch<V4PortfolioResponse>(TATUM_BASE_V4, '/data/wallet/portfolio', { chain: v4Chain, addresses: address, tokenTypes: 'native' }),
+    tatumFetch<V4PortfolioResponse>(TATUM_BASE_V4, '/data/wallet/portfolio', { chain: v4Chain, addresses: address, tokenTypes: 'fungible' }),
   ])
   const assets: Asset[] = []
   if (nativeRes.status === 'fulfilled') {
@@ -60,7 +112,10 @@ async function fetchV4Portfolio(chain: string, address: string): Promise<Asset[]
     }
   }
   if (fungibleRes.status === 'fulfilled') {
-    for (const item of fungibleRes.value.result ?? []) assets.push(item)
+    for (const item of fungibleRes.value.result ?? []) {
+      const knownSymbol = resolveTokenSymbol(chain, item.tokenAddress)
+      assets.push({ ...item, symbol: item.symbol || knownSymbol })
+    }
   }
   if (assets.length === 0 && nativeRes.status === 'rejected' && fungibleRes.status === 'rejected') {
     throw nativeRes.reason
@@ -110,9 +165,16 @@ async function fetchBitcoinBalance(address: string): Promise<Asset[]> {
 }
 
 async function getAssets(chain: string, address: string): Promise<Asset[]> {
-  if (V4_CHAINS.has(chain)) return fetchV4Portfolio(chain, address)
-  if (chain === 'tron') return fetchTronBalance(address)
-  if (chain === 'bitcoin') return fetchBitcoinBalance(address)
+  if (V4_CHAINS.has(chain)) {
+    try {
+      return await fetchV4Portfolio(chain, address)
+    } catch (v4Error) {
+      // V3 fallback for TRON and Bitcoin
+      if (chain === 'tron') return fetchTronBalance(address)
+      if (chain === 'bitcoin') return fetchBitcoinBalance(address)
+      throw v4Error
+    }
+  }
   throw new Error(`Unsupported chain: ${chain}`)
 }
 
@@ -122,7 +184,11 @@ async function getUsdRate(symbol: string): Promise<number> {
   const rateSymbol = RATE_SYMBOL[symbol]
   if (!rateSymbol) return 0
   try {
-    const data = await tatumFetch<{ value: string }>(TATUM_BASE_V3, `/tatum/rate/${rateSymbol}`, { basePair: 'USD' })
+    const data = await tatumFetch<{ value: string }>(
+      TATUM_BASE_V4,
+      '/data/rate/symbol',
+      { symbol: rateSymbol, basePair: 'USD' },
+    )
     return parseFloat(data.value) || 0
   } catch { return 0 }
 }

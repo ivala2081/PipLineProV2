@@ -11,6 +11,7 @@ import {
   Sun,
   Globe,
   Lightning,
+  Image as ImageIcon,
 } from '@phosphor-icons/react'
 
 import { useAuth } from '@/app/providers/AuthProvider'
@@ -57,6 +58,8 @@ import {
 import { useLocale } from '@ds/hooks'
 
 import { navGroups } from '@/layouts/nav-config'
+import { AvatarUpload } from '@/components/AvatarUpload'
+import { OnlineCount } from '@/components/OnlineCount'
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar Brand (logo + org name)                                    */
@@ -69,16 +72,26 @@ function SidebarBrand() {
 
   return (
     <div className="flex items-center gap-2.5 px-2 py-1">
-      {/* Logo mark */}
-      <div className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg bg-brand text-white">
-        <Lightning size={18} weight="fill" />
-      </div>
+      {/* Logo mark - show org logo if available, otherwise app logo */}
+      {currentOrg?.logo_url ? (
+        <div className="flex aspect-square size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-black/10 bg-black/5">
+          <img
+            src={currentOrg.logo_url}
+            alt={currentOrg.name}
+            className="size-full object-cover"
+          />
+        </div>
+      ) : (
+        <div className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg bg-brand text-white">
+          <Lightning size={18} weight="fill" />
+        </div>
+      )}
 
       {/* Brand text — hidden when sidebar is collapsed */}
       {!isCollapsed && (
         <div className="grid flex-1 text-left leading-tight">
           <span className="truncate text-sm font-bold tracking-tight text-black">
-            PipLinePro
+            PipLinePro-V2
           </span>
           {currentOrg && (
             <span className="truncate text-[11px] text-black/50">
@@ -162,6 +175,24 @@ function EditProfileDialog({
     }
   }, [open, profile?.display_name])
 
+  const getInitials = (name: string | null) => {
+    if (!name) return '?'
+    return name
+      .split(' ')
+      .map((w) => w[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
+  }
+
+  const handleAvatarUpload = async () => {
+    await refreshProfile()
+  }
+
+  const handleAvatarRemove = async () => {
+    await refreshProfile()
+  }
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (!user) return
@@ -193,11 +224,24 @@ function EditProfileDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-sm">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle>{t('layout.profile.editTitle')}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Avatar Upload */}
+          <div className="flex justify-center">
+            <AvatarUpload
+              userId={user?.id ?? ''}
+              currentAvatarUrl={profile?.avatar_url ?? null}
+              fallbackText={getInitials(profile?.display_name ?? null)}
+              onUploadSuccess={handleAvatarUpload}
+              onRemoveSuccess={handleAvatarRemove}
+              size="lg"
+              editable={true}
+            />
+          </div>
+
           <div className="space-y-2">
             <Label>{t('layout.profile.email')}</Label>
             <Input
@@ -353,13 +397,26 @@ function HeaderOrgSwitcher() {
   const { t } = useTranslation('pages')
   const { currentOrg, organizations, selectOrg } = useOrganization()
 
+  // Debug: log organizations to see if logo_url is present
+  console.log('Organizations in switcher:', organizations.map(o => ({ name: o.name, logo_url: o.logo_url })))
+
   if (organizations.length === 0) return null
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="flex h-8 items-center gap-1.5 rounded-md border border-black/10 bg-black/[0.02] px-2.5 text-xs font-medium text-black/70 hover:bg-black/8 hover:text-black">
-          <Buildings size={14} />
+          {currentOrg?.logo_url ? (
+            <div className="flex size-4 items-center justify-center overflow-hidden rounded border border-black/10 bg-black/5">
+              <img
+                src={currentOrg.logo_url}
+                alt={currentOrg.name}
+                className="size-full object-cover"
+              />
+            </div>
+          ) : (
+            <Buildings size={14} />
+          )}
           <span className="max-w-[120px] truncate">{currentOrg?.name ?? t('layout.noOrganization')}</span>
           <CaretUpDown size={12} className="text-black/40" />
         </button>
@@ -372,9 +429,19 @@ function HeaderOrgSwitcher() {
             key={org.id}
             onSelect={() => selectOrg(org.id)}
           >
-            <div className="flex aspect-square size-5 items-center justify-center rounded bg-brand/10 text-brand text-[10px] font-bold">
-              {org.name.charAt(0).toUpperCase()}
-            </div>
+            {org.logo_url ? (
+              <div className="flex size-5 items-center justify-center overflow-hidden rounded border border-black/10 bg-black/5">
+                <img
+                  src={org.logo_url}
+                  alt={org.name}
+                  className="size-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="flex aspect-square size-5 items-center justify-center rounded bg-brand/10 text-brand text-[10px] font-bold">
+                {org.name.charAt(0).toUpperCase()}
+              </div>
+            )}
             <span className="truncate">{org.name}</span>
             {org.id === currentOrg?.id && (
               <Check size={14} className="ml-auto text-brand" />
@@ -432,6 +499,8 @@ function HeaderBar() {
 
       {/* Right side controls */}
       <div className="ml-auto flex items-center gap-1">
+        <OnlineCount />
+        <Separator orientation="vertical" className="mx-1 h-4" />
         <HeaderOrgSwitcher />
         <Separator orientation="vertical" className="mx-1 h-4" />
         <button

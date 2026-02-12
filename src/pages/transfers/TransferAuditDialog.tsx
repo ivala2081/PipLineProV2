@@ -61,8 +61,8 @@ function AuditEntry({
       <div
         className={`mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full ${
           isCreated
-            ? 'bg-emerald-50 text-emerald-600'
-            : 'bg-amber-50 text-amber-600'
+            ? 'bg-green/10 text-green'
+            : 'bg-orange/10 text-orange'
         }`}
       >
         {isCreated ? <Plus size={14} weight="bold" /> : <PencilSimple size={14} />}
@@ -70,7 +70,7 @@ function AuditEntry({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <UserCircle size={14} className="shrink-0 text-black/40" />
-          <span className="text-[13px] font-medium text-black/80">
+          <span className="text-sm font-medium text-black/80">
             {performerName}
           </span>
         </div>
@@ -84,7 +84,7 @@ function AuditEntry({
             {Object.entries(entry.changes).map(([field, change]) => (
               <div
                 key={field}
-                className="rounded-md bg-black/[0.02] px-2.5 py-1.5 text-[11px]"
+                className="rounded-md bg-black/[0.02] px-2.5 py-1.5 text-xs"
               >
                 <span className="font-medium text-black/50">
                   {t(`transfers.audit.fields.${field}`, { defaultValue: field })}
@@ -101,7 +101,7 @@ function AuditEntry({
             ))}
           </div>
         )}
-        <p className="mt-1.5 text-[11px] text-black/35">
+        <p className="mt-1.5 text-xs text-black/35">
           {date} {time}
         </p>
       </div>
@@ -135,7 +135,7 @@ export function TransferAuditDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>{t('transfers.audit.title')}</DialogTitle>
           {transferName && (
@@ -174,7 +174,7 @@ export function TransferAuditDialog({
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-black/[0.06] pt-3">
+          <div className="flex items-center justify-between border-t border-black/10 pt-3">
             <span className="text-xs text-black/40">
               {from}–{to} / {total}
             </span>

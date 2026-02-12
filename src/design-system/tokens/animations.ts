@@ -1,13 +1,11 @@
 /**
  * SnowUI / ByeWind Design System – Animation Tokens
- *
- * Animations disabled for performance.
  */
 
 export const durations = {
-  fast: 0,
-  normal: 0,
-  slow: 0,
+  fast: 150,
+  normal: 200,
+  slow: 300,
 } as const
 
 export const easings = {

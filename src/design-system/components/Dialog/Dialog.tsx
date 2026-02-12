@@ -21,10 +21,22 @@ export const DialogOverlay: FC<DialogOverlayProps> = ({ className, ...props }) =
 )
 DialogOverlay.displayName = 'DialogOverlay'
 
-export type DialogContentProps = ComponentProps<typeof DialogPrimitive.Content>
+export type DialogSize = 'sm' | 'md' | 'lg' | 'xl'
+
+const dialogSizeClasses: Record<DialogSize, string> = {
+  sm: 'max-w-sm',
+  md: 'max-w-md',
+  lg: 'max-w-lg',
+  xl: 'max-w-xl',
+}
+
+export type DialogContentProps = ComponentProps<typeof DialogPrimitive.Content> & {
+  size?: DialogSize
+}
 export const DialogContent: FC<DialogContentProps> = ({
   className,
   children,
+  size = 'md',
   ...props
 }) => {
   const { t } = useTranslation('components')
@@ -33,7 +45,8 @@ export const DialogContent: FC<DialogContentProps> = ({
       <DialogOverlay />
       <DialogPrimitive.Content
         className={cn(
-          'ui-surface fixed left-1/2 top-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 rounded-2xl bg-bg1 p-6 shadow-lg',
+          'ui-surface fixed left-1/2 top-1/2 z-50 grid w-full -translate-x-1/2 -translate-y-1/2 gap-4 rounded-2xl bg-bg1 p-5 shadow-lg sm:p-6',
+          dialogSizeClasses[size],
           className,
         )}
         {...props}

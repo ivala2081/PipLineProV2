@@ -49,7 +49,7 @@ export function WalletBalanceChart({ walletId }: WalletBalanceChartProps) {
       <h3 className="mb-3 text-sm font-semibold text-black/70">
         {t('accounting.wallets.balanceHistory', 'Balance History')}
       </h3>
-      <div className="rounded-xl border border-black/[0.06] bg-black/[0.015] p-4">
+      <div className="rounded-xl border border-black/10 bg-black/[0.015] p-4">
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />

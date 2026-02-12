@@ -1,8 +1,11 @@
 import { useTranslation } from 'react-i18next'
-import { Copy, Camera, ArrowsClockwise } from '@phosphor-icons/react'
+import { Copy, Camera, ArrowsClockwise, Trash } from '@phosphor-icons/react'
 import type { Wallet } from '@/lib/database.types'
 import { useWalletBalanceQuery } from '@/hooks/queries/useWalletBalanceQuery'
 import { useWalletSnapshotsQuery } from '@/hooks/queries/useWalletSnapshotsQuery'
+import { useWalletTransactionsQuery } from '@/hooks/queries/useWalletTransactionsQuery'
+import { WalletTransactionsTable } from './WalletTransactionsTable'
+import { useToast } from '@/hooks/useToast'
 import {
   Sheet,
   SheetContent,
@@ -49,12 +52,20 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
     !!wallet,
   )
 
-  const { snapshots, isLoading: isSnapshotsLoading, takeSnapshot, isTakingSnapshot } =
+  const { toast } = useToast()
+  const { snapshots, isLoading: isSnapshotsLoading, takeSnapshot, isTakingSnapshot, deleteSnapshot, isDeleting } =
     useWalletSnapshotsQuery(
       wallet?.id ?? '',
       wallet?.chain ?? '',
       wallet?.address ?? '',
     )
+
+  const txQuery = useWalletTransactionsQuery(
+    wallet?.id ?? '',
+    wallet?.chain ?? '',
+    wallet?.address ?? '',
+    !!wallet,
+  )
 
   const handleCopy = () => {
     if (wallet) navigator.clipboard.writeText(wallet.address)
@@ -92,8 +103,8 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
             </div>
 
             {/* Total Value */}
-            <div className="rounded-xl border border-black/[0.06] bg-black/[0.015] px-4 py-3">
-              <p className="text-[10px] font-medium uppercase tracking-wider text-black/35">
+            <div className="rounded-xl border border-black/10 bg-black/[0.015] px-5 py-4">
+              <p className="text-xs font-medium uppercase tracking-wider text-black/35">
                 {t('accounting.wallets.totalValue', 'Total Value')}
               </p>
               {isBalanceLoading ? (
@@ -114,7 +125,7 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 gap-1 text-xs"
+                  className="gap-1 text-xs"
                   onClick={() => refetch()}
                 >
                   <ArrowsClockwise size={12} />
@@ -132,7 +143,7 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
                   {t('accounting.wallets.noBalances')}
                 </p>
               ) : (
-                <div className="divide-y divide-black/[0.04] rounded-xl border border-black/[0.06]">
+                <div className="divide-y divide-black/5 rounded-xl border border-black/10">
                   {sortedAssets.map((asset, i) => {
                     const label =
                       asset.symbol ||
@@ -146,21 +157,21 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
                         className="flex items-center justify-between px-4 py-3"
                       >
                         <div>
-                          <span className="text-[13px] font-semibold text-black/80">
+                          <span className="text-sm font-semibold text-black/80">
                             {label}
                           </span>
                           {asset.tokenAddress && (
-                            <p className="text-[10px] text-black/25">
+                            <p className="text-xs text-black/25">
                               {asset.tokenAddress.slice(0, 12)}…{asset.tokenAddress.slice(-4)}
                             </p>
                           )}
                         </div>
                         <div className="text-right">
-                          <p className="font-mono text-[13px] font-semibold tabular-nums text-black/85">
+                          <p className="font-mono text-sm font-semibold tabular-nums text-black/85">
                             {bal.toLocaleString('en-US', { maximumFractionDigits: 6 })}
                           </p>
                           {asset.usdValue > 0 && (
-                            <p className="font-mono text-[11px] tabular-nums text-black/40">
+                            <p className="font-mono text-xs tabular-nums text-black/40">
                               ${formatUsd(asset.usdValue)}
                             </p>
                           )}
@@ -172,6 +183,31 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
               )}
             </div>
 
+            {/* Transaction History */}
+            <div>
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-black/70">
+                  {t('accounting.transactions.title', 'Transactions')}
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1 text-xs"
+                  onClick={() => txQuery.refetch()}
+                >
+                  <ArrowsClockwise size={12} />
+                  {t('accounting.wallets.refresh')}
+                </Button>
+              </div>
+              <WalletTransactionsTable
+                transactions={txQuery.transactions}
+                isLoading={txQuery.isLoading}
+                hasMore={txQuery.hasMore}
+                onLoadMore={txQuery.loadMore}
+                chain={wallet.chain}
+              />
+            </div>
+
             {/* Snapshot History */}
             <div>
               <div className="mb-3 flex items-center justify-between">
@@ -181,7 +217,7 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-7 gap-1.5 text-xs"
+                  className="gap-1.5 text-xs"
                   onClick={() => takeSnapshot()}
                   disabled={isTakingSnapshot}
                 >
@@ -207,36 +243,37 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
                   {t('accounting.wallets.noSnapshots')}
                 </p>
               ) : (
-                <div className="overflow-x-auto rounded-xl border border-black/[0.06]">
+                <div className="overflow-x-auto rounded-xl border border-black/10">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-black/[0.015]">
-                        <TableHead className="h-9 px-3 text-[11px] font-semibold uppercase tracking-wider text-black/40">
+                        <TableHead className="text-xs font-semibold uppercase tracking-wider text-black/40">
                           {t('accounting.wallets.snapshotDate')}
                         </TableHead>
-                        <TableHead className="h-9 px-3 text-right text-[11px] font-semibold uppercase tracking-wider text-black/40">
+                        <TableHead className="text-right text-xs font-semibold uppercase tracking-wider text-black/40">
                           USD
                         </TableHead>
-                        <TableHead className="h-9 px-3 text-[11px] font-semibold uppercase tracking-wider text-black/40">
+                        <TableHead className="text-xs font-semibold uppercase tracking-wider text-black/40">
                           {t('accounting.wallets.tokens')}
                         </TableHead>
+                        <TableHead className="w-10" />
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {snapshots.map((snap) => (
                         <TableRow key={snap.id}>
-                          <TableCell className="px-3 py-2 text-[13px] text-black/70">
+                          <TableCell className="text-sm text-black/70">
                             {new Date(snap.snapshot_date + 'T00:00:00').toLocaleDateString(
                               'tr-TR',
                               { day: 'numeric', month: 'short', year: 'numeric' },
                             )}
                           </TableCell>
-                          <TableCell className="px-3 py-2 text-right font-mono text-[13px] font-semibold tabular-nums text-black/80">
+                          <TableCell className="text-right font-mono text-sm font-semibold tabular-nums text-black/80">
                             {snap.total_usd > 0
                               ? `$${formatUsd(snap.total_usd)}`
                               : '—'}
                           </TableCell>
-                          <TableCell className="px-3 py-2">
+                          <TableCell>
                             <div className="space-y-0.5">
                               {snap.balances.map((b, i) => (
                                 <div
@@ -252,6 +289,24 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
                                 </div>
                               ))}
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="borderless"
+                              size="sm"
+                              className="size-7 p-0 text-black/30 hover:text-red"
+                              disabled={isDeleting}
+                              onClick={async () => {
+                                try {
+                                  await deleteSnapshot(snap.id)
+                                  toast({ title: t('accounting.toast.snapshotDeleted'), variant: 'success' })
+                                } catch (err) {
+                                  toast({ title: (err as Error).message, variant: 'error' })
+                                }
+                              }}
+                            >
+                              <Trash size={14} />
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}

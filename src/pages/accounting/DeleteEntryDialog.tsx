@@ -24,7 +24,7 @@ export function DeleteEntryDialog({
 
   return (
     <Dialog open={entry !== null} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>{t('accounting.delete.title')}</DialogTitle>
         </DialogHeader>
@@ -39,7 +39,7 @@ export function DeleteEntryDialog({
           </Button>
           <Button
             variant="filled"
-            className="bg-red-600 hover:bg-red-700"
+            className="bg-red hover:bg-red/90"
             onClick={onConfirm}
           >
             {t('accounting.delete.confirm')}

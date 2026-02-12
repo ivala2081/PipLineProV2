@@ -29,23 +29,23 @@ const REGISTER_CONFIG: Record<
   USDT: {
     label: 'USDT',
     icon: CurrencyDollar,
-    accent: 'text-emerald-600',
-    iconBg: 'bg-emerald-50',
-    iconColor: 'text-emerald-600',
+    accent: 'text-green',
+    iconBg: 'bg-green/10',
+    iconColor: 'text-green',
   },
   NAKIT_TL: {
     label: 'Cash TL',
     icon: Money,
-    accent: 'text-blue-600',
-    iconBg: 'bg-blue-50',
-    iconColor: 'text-blue-600',
+    accent: 'text-blue',
+    iconBg: 'bg-blue/10',
+    iconColor: 'text-blue',
   },
   NAKIT_USD: {
     label: 'Cash USD',
     icon: Coins,
-    accent: 'text-amber-600',
-    iconBg: 'bg-amber-50',
-    iconColor: 'text-amber-600',
+    accent: 'text-orange',
+    iconBg: 'bg-orange/10',
+    iconColor: 'text-orange',
   },
 }
 
@@ -61,7 +61,7 @@ export function LedgerSummary({ summary, isLoading }: LedgerSummaryProps) {
     return (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <Card key={i} className="border border-black/[0.06] bg-bg1 p-5">
+          <Card key={i} padding="default" className="border border-black/10 bg-bg1">
             <div className="mb-4 flex items-center gap-3">
               <Skeleton className="size-10 rounded-xl" />
               <Skeleton className="h-4 w-20 rounded" />
@@ -99,7 +99,8 @@ export function LedgerSummary({ summary, isLoading }: LedgerSummaryProps) {
         return (
           <Card
             key={c.register}
-            className="group border border-black/[0.06] bg-bg1 p-5 transition-shadow hover:shadow-sm"
+            padding="default"
+            className="group border border-black/10 bg-bg1 transition-shadow hover:shadow-sm"
           >
             {/* Header: icon + label */}
             <div className="mb-4 flex items-center gap-3">
@@ -125,11 +126,11 @@ export function LedgerSummary({ summary, isLoading }: LedgerSummaryProps) {
             <div className="mt-4 mb-3">
               <div className="flex h-1.5 overflow-hidden rounded-full bg-black/[0.04]">
                 <div
-                  className="rounded-full bg-emerald-400 transition-all"
+                  className="rounded-full bg-green transition-all"
                   style={{ width: `${inRatio}%` }}
                 />
                 <div
-                  className="rounded-full bg-red-300 transition-all"
+                  className="rounded-full bg-red transition-all"
                   style={{ width: `${100 - inRatio}%` }}
                 />
               </div>
@@ -138,14 +139,14 @@ export function LedgerSummary({ summary, isLoading }: LedgerSummaryProps) {
             {/* In/Out labels */}
             <div className="flex items-center justify-between text-xs text-black/50">
               <span className="flex items-center gap-1.5">
-                <ArrowDown size={11} weight="bold" className="text-emerald-500" />
+                <ArrowDown size={11} weight="bold" className="text-green" />
                 {t('accounting.in')}{' '}
                 <span className="font-mono font-medium tabular-nums text-black/70">
                   {formatNumber(c.totalIn)}
                 </span>
               </span>
               <span className="flex items-center gap-1.5">
-                <ArrowUp size={11} weight="bold" className="text-red-400" />
+                <ArrowUp size={11} weight="bold" className="text-red" />
                 {t('accounting.out')}{' '}
                 <span className="font-mono font-medium tabular-nums text-black/70">
                   {formatNumber(c.totalOut)}

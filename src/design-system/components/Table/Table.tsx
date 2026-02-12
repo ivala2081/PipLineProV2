@@ -33,7 +33,7 @@ export type TableHeadProps = ComponentProps<'th'>
 export const TableHead: FC<TableHeadProps> = ({ className, ...props }) => (
   <th
     className={cn(
-      'h-12 px-4 text-left align-middle font-medium text-black/40 [&:has([role=checkbox])]:pr-0',
+      'h-10 px-4 text-left align-middle font-medium text-black/40 [&:has([role=checkbox])]:pr-0',
       className,
     )}
     {...props}
@@ -43,7 +43,7 @@ TableHead.displayName = 'TableHead'
 
 export type TableCellProps = ComponentProps<'td'>
 export const TableCell: FC<TableCellProps> = ({ className, ...props }) => (
-  <td className={cn('p-4 align-middle [&:has([role=checkbox])]:pr-0', className)} {...props} />
+  <td className={cn('px-4 py-3 align-middle [&:has([role=checkbox])]:pr-0', className)} {...props} />
 )
 TableCell.displayName = 'TableCell'
 

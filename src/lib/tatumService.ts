@@ -3,8 +3,9 @@ const BASE_V4 = import.meta.env.DEV ? '/tatum-api/v4' : 'https://api.tatum.io/v4
 const BASE_V3 = import.meta.env.DEV ? '/tatum-api/v3' : 'https://api.tatum.io/v3'
 const TIMEOUT_MS = 15_000
 
-/* ── Chains supported by the v4 /data/wallet/portfolio endpoint ──── */
+/* ── V4 chain name mapping ──────────────────────────────────────── */
 
+/** Our internal chain names (stored in DB) — all routed through V4 Data API */
 const V4_CHAINS = new Set([
   'ethereum',
   'bsc',
@@ -13,7 +14,26 @@ const V4_CHAINS = new Set([
   'celo',
   'tezos',
   'chiliz',
+  'tron',
+  'bitcoin',
 ])
+
+/** Tatum V4 API requires "-mainnet" suffix */
+const V4_CHAIN_MAP: Record<string, string> = {
+  ethereum: 'ethereum-mainnet',
+  bsc: 'bsc-mainnet',
+  solana: 'solana-mainnet',
+  polygon: 'polygon-mainnet',
+  celo: 'celo-mainnet',
+  tezos: 'tezos-mainnet',
+  chiliz: 'chiliz-mainnet',
+  tron: 'tron-mainnet',
+  bitcoin: 'bitcoin-mainnet',
+}
+
+function toV4Chain(chain: string): string {
+  return V4_CHAIN_MAP[chain] ?? chain
+}
 
 /* ── Types ──────────────────────────────────────────────────────── */
 
@@ -39,6 +59,30 @@ export interface TatumTransaction {
   counterAddress?: string
   transactionType: string
   transactionSubtype: string
+  transactionIndex?: number
+  tokenId?: string
+}
+
+/** Unified transaction shape across all chains */
+export interface NormalizedTransaction {
+  hash: string
+  chain: string
+  timestamp: number
+  direction: 'in' | 'out'
+  amount: string
+  symbol: string
+  tokenAddress?: string
+  counterAddress?: string
+  blockNumber?: number
+}
+
+/** Block explorer URLs per chain */
+export const EXPLORER_TX_URL: Record<string, string> = {
+  tron: 'https://tronscan.org/#/transaction/',
+  ethereum: 'https://etherscan.io/tx/',
+  bsc: 'https://bscscan.com/tx/',
+  bitcoin: 'https://mempool.space/tx/',
+  solana: 'https://solscan.io/tx/',
 }
 
 /* ── Helpers ─────────────────────────────────────────────────────── */
@@ -77,12 +121,63 @@ async function tatumFetch<T>(
   return res.json()
 }
 
+/* ── Well-known token symbols (EVM chains) ──────────────────────── */
+
+/** ERC-20 / BEP-20 token address → symbol for common tokens */
+const EVM_KNOWN_TOKENS: Record<string, Record<string, string>> = {
+  ethereum: {
+    '0xdac17f958d2ee523a2206206994597c13d831ec7': 'USDT',
+    '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48': 'USDC',
+    '0x6b175474e89094c44da98b954eedeac495271d0f': 'DAI',
+    '0x4fabb145d64652a948d72533023f6e7a623c7c53': 'BUSD',
+    '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599': 'WBTC',
+    '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2': 'WETH',
+  },
+  bsc: {
+    '0x55d398326f99059ff775485246999027b3197955': 'USDT',
+    '0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d': 'USDC',
+    '0xe9e7cea3dedca5984780bafc599bd69add087d56': 'BUSD',
+    '0x1af3f329e8be154074d8769d1ffa4ee058b1dbc3': 'DAI',
+    '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c': 'WBNB',
+  },
+  solana: {},
+  polygon: {
+    '0xc2132d05d31c914a87c6611c10748aeb04b58e8f': 'USDT',
+    '0x2791bca1f2de4661ed88a30c99a7a9449aa84174': 'USDC',
+    '0x8f3cf7ad23cd3cadbd9735aff958023239c6a063': 'DAI',
+  },
+  tron: {
+    'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t': 'USDT',
+    'TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8': 'USDC',
+    'TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR': 'WTRX',
+    'TSSMHYeV2uE9qYH95DqyoCuNCzEL1NvU3S': 'SUN',
+    'TAFjULxiVgT4qWk6UZwjqwZXTSaGaqnVp4': 'BTT',
+    'TUpMhErZL2fhh4sVNULAbNKLokS4GjC1F4': 'TUSD',
+  },
+  bitcoin: {},
+}
+
+function resolveTokenSymbol(chain: string, tokenAddress?: string): string | undefined {
+  if (!tokenAddress) return undefined
+  const map = EVM_KNOWN_TOKENS[chain]
+  if (!map) return undefined
+  // TRON uses base58 (case-sensitive), EVM uses hex (case-insensitive)
+  return map[tokenAddress] ?? map[tokenAddress.toLowerCase()]
+}
+
 /* ── v4 portfolio (EVM + Solana + others) ─────────────────────────── */
+
+interface V4PortfolioResponse {
+  result: V4PortfolioItem[]
+  prevPage?: string
+  nextPage?: string
+}
 
 interface V4PortfolioItem {
   chain: string
   address: string
   balance: string
+  denominatedBalance?: string
   decimals: number
   tokenAddress?: string
   type: string
@@ -98,17 +193,21 @@ const NATIVE_SYMBOL: Record<string, string> = {
   celo: 'CELO',
   tezos: 'XTZ',
   chiliz: 'CHZ',
+  tron: 'TRX',
+  bitcoin: 'BTC',
 }
 
 async function fetchV4Portfolio(chain: string, address: string): Promise<PortfolioAsset[]> {
+  const v4Chain = toV4Chain(chain)
+
   const [nativeRes, fungibleRes] = await Promise.allSettled([
-    tatumFetch<{ result: V4PortfolioItem[] }>(BASE_V4, '/data/wallet/portfolio', {
-      chain,
+    tatumFetch<V4PortfolioResponse>(BASE_V4, '/data/wallet/portfolio', {
+      chain: v4Chain,
       addresses: address,
       tokenTypes: 'native',
     }),
-    tatumFetch<{ result: V4PortfolioItem[] }>(BASE_V4, '/data/wallet/portfolio', {
-      chain,
+    tatumFetch<V4PortfolioResponse>(BASE_V4, '/data/wallet/portfolio', {
+      chain: v4Chain,
       addresses: address,
       tokenTypes: 'fungible',
     }),
@@ -118,16 +217,22 @@ async function fetchV4Portfolio(chain: string, address: string): Promise<Portfol
 
   if (nativeRes.status === 'fulfilled') {
     for (const item of nativeRes.value.result ?? []) {
-      assets.push({ ...item, symbol: item.symbol || NATIVE_SYMBOL[chain] || chain.toUpperCase() })
+      assets.push({
+        ...item,
+        symbol: item.symbol || NATIVE_SYMBOL[chain] || chain.toUpperCase(),
+      })
     }
   }
   if (fungibleRes.status === 'fulfilled') {
     for (const item of fungibleRes.value.result ?? []) {
-      assets.push(item)
+      const knownSymbol = resolveTokenSymbol(chain, item.tokenAddress)
+      assets.push({
+        ...item,
+        symbol: item.symbol || knownSymbol,
+      })
     }
   }
 
-  // If both calls failed, surface the error
   if (assets.length === 0 && nativeRes.status === 'rejected' && fungibleRes.status === 'rejected') {
     throw nativeRes.reason
   }
@@ -178,7 +283,7 @@ async function fetchTronBalance(address: string): Promise<PortfolioAsset[]> {
   // Native TRX (returned in sun → 1 TRX = 1_000_000 sun)
   if (data.balance != null) {
     assets.push({
-      chain: 'tron-mainnet',
+      chain: 'tron',
       address,
       balance: (data.balance / 1_000_000).toString(),
       decimals: 6,
@@ -195,7 +300,7 @@ async function fetchTronBalance(address: string): Promise<PortfolioAsset[]> {
         const known = TRC20_KNOWN[tokenAddress]
         const decimals = known?.decimals ?? 0
         assets.push({
-          chain: 'tron-mainnet',
+          chain: 'tron',
           address,
           balance: formatTrc20Balance(rawBalance, decimals),
           decimals,
@@ -224,7 +329,7 @@ async function fetchBitcoinBalance(address: string): Promise<PortfolioAsset[]> {
 
   return [
     {
-      chain: 'bitcoin-mainnet',
+      chain: 'bitcoin',
       address,
       balance,
       decimals: 8,
@@ -235,35 +340,305 @@ async function fetchBitcoinBalance(address: string): Promise<PortfolioAsset[]> {
   ]
 }
 
+/* ── v3 TRON transaction history ─────────────────────────────────── */
+
+interface TronRawTx {
+  txID: string
+  blockNumber?: number
+  rawData?: {
+    contract?: Array<{
+      parameter?: {
+        value?: {
+          amount?: number
+          owner_address?: string
+          ownerAddressBase58?: string
+          to_address?: string
+          toAddressBase58?: string
+          contract_address?: string
+        }
+      }
+      type?: string
+    }>
+    timestamp?: number
+  }
+  ret?: Array<{ contractRet?: string }>
+}
+
+interface TronTrc20Tx {
+  transaction_id: string
+  token_info?: { symbol?: string; address?: string; decimals?: number; name?: string }
+  block_timestamp?: number
+  from: string
+  to: string
+  type?: string
+  value?: string
+}
+
+async function fetchTronTransactions(
+  address: string,
+  pageSize = 50,
+  next?: string,
+): Promise<{ txs: NormalizedTransaction[]; next?: string }> {
+  const addr = address.toLowerCase()
+
+  const params: Record<string, string> = {}
+  if (next) params.next = next
+
+  const [nativeRes, trc20Res] = await Promise.allSettled([
+    tatumFetch<{ transactions?: TronRawTx[]; next?: string }>(
+      BASE_V3,
+      `/tron/transaction/account/${address}`,
+      params,
+    ),
+    tatumFetch<{ transactions?: TronTrc20Tx[]; next?: string }>(
+      BASE_V3,
+      `/tron/transaction/trc20`,
+      { address, ...params },
+    ),
+  ])
+
+  const txs: NormalizedTransaction[] = []
+
+  // Native TRX + TRC-10
+  if (nativeRes.status === 'fulfilled') {
+    for (const tx of nativeRes.value.transactions ?? []) {
+      const contract = tx.rawData?.contract?.[0]
+      const val = contract?.parameter?.value
+      if (!val || !tx.txID) continue
+
+      const from = (val.ownerAddressBase58 ?? val.owner_address ?? '').toLowerCase()
+      const to = (val.toAddressBase58 ?? val.to_address ?? '').toLowerCase()
+      const direction = from === addr ? 'out' : 'in'
+      const amount = val.amount != null ? (val.amount / 1_000_000).toString() : '0'
+
+      txs.push({
+        hash: tx.txID,
+        chain: 'tron',
+        timestamp: tx.rawData?.timestamp ?? 0,
+        direction,
+        amount,
+        symbol: 'TRX',
+        counterAddress: direction === 'out' ? (val.toAddressBase58 ?? val.to_address) : (val.ownerAddressBase58 ?? val.owner_address),
+        blockNumber: tx.blockNumber,
+      })
+    }
+  }
+
+  // TRC-20 token transactions
+  if (trc20Res.status === 'fulfilled') {
+    for (const tx of trc20Res.value.transactions ?? []) {
+      if (!tx.transaction_id) continue
+      const from = tx.from?.toLowerCase() ?? ''
+      const to = tx.to?.toLowerCase() ?? ''
+      const direction = from === addr ? 'out' : 'in'
+      const decimals = tx.token_info?.decimals ?? 0
+      const amount = tx.value ? formatTrc20Balance(tx.value, decimals) : '0'
+
+      txs.push({
+        hash: tx.transaction_id,
+        chain: 'tron',
+        timestamp: tx.block_timestamp ?? 0,
+        direction,
+        amount,
+        symbol: tx.token_info?.symbol ?? 'UNKNOWN',
+        tokenAddress: tx.token_info?.address,
+        counterAddress: direction === 'out' ? tx.to : tx.from,
+      })
+    }
+  }
+
+  // Sort by timestamp descending (newest first)
+  txs.sort((a, b) => b.timestamp - a.timestamp)
+
+  const nextCursor =
+    (nativeRes.status === 'fulfilled' ? nativeRes.value.next : undefined) ??
+    (trc20Res.status === 'fulfilled' ? trc20Res.value.next : undefined)
+
+  return { txs: txs.slice(0, pageSize), next: nextCursor }
+}
+
+/* ── v3 Bitcoin transaction history ─────────────────────────────── */
+
+interface BtcTx {
+  hash: string
+  blockNumber?: number
+  time?: number
+  inputs?: Array<{ coin?: { address?: string; value?: number } }>
+  outputs?: Array<{ address?: string; value?: number }>
+  fee?: string
+}
+
+async function fetchBitcoinTransactions(
+  address: string,
+  pageSize = 50,
+  offset = 0,
+): Promise<{ txs: NormalizedTransaction[]; hasMore: boolean }> {
+  const data = await tatumFetch<BtcTx[]>(
+    BASE_V3,
+    `/bitcoin/transaction/address/${address}`,
+    { pageSize: String(pageSize), offset: String(offset) },
+  )
+
+  const txs: NormalizedTransaction[] = []
+
+  for (const tx of data ?? []) {
+    if (!tx.hash) continue
+
+    const isInput = tx.inputs?.some((inp) => inp.coin?.address === address)
+    const direction: 'in' | 'out' = isInput ? 'out' : 'in'
+
+    let amount = 0
+    if (direction === 'out') {
+      for (const out of tx.outputs ?? []) {
+        if (out.address !== address && out.value) amount += out.value
+      }
+    } else {
+      for (const out of tx.outputs ?? []) {
+        if (out.address === address && out.value) amount += out.value
+      }
+    }
+
+    let counterAddress: string | undefined
+    if (direction === 'out') {
+      counterAddress = tx.outputs?.find((o) => o.address !== address)?.address
+    } else {
+      counterAddress = tx.inputs?.[0]?.coin?.address
+    }
+
+    txs.push({
+      hash: tx.hash,
+      chain: 'bitcoin',
+      timestamp: (tx.time ?? 0) * 1000, // BTC V3 returns seconds
+      direction,
+      amount: amount.toString(),
+      symbol: 'BTC',
+      counterAddress,
+      blockNumber: tx.blockNumber,
+    })
+  }
+
+  return { txs, hasMore: data?.length === pageSize }
+}
+
+/* ── v4 transaction history (EVM + Solana) ──────────────────────── */
+
+function normalizeV4Transactions(
+  v4Txs: TatumTransaction[],
+  chain: string,
+  address: string,
+): NormalizedTransaction[] {
+  return v4Txs.map((tx) => {
+    // V4 uses transactionSubtype: 'incoming' | 'outgoing' | 'zero-transfer'
+    const direction: 'in' | 'out' =
+      tx.transactionSubtype === 'outgoing' ? 'out' : 'in'
+
+    // Amount can be negative for outgoing — normalize to absolute value
+    const rawAmount = parseFloat(tx.amount) || 0
+    const absAmount = Math.abs(rawAmount).toString()
+
+    // Resolve symbol: V4 response may not include symbol
+    let symbol = ''
+    if (tx.transactionType === 'native') {
+      symbol = NATIVE_SYMBOL[chain] ?? chain.toUpperCase()
+    } else if (tx.tokenAddress) {
+      symbol = resolveTokenSymbol(chain, tx.tokenAddress) ?? `${tx.tokenAddress.slice(0, 6)}…`
+    } else {
+      symbol = tx.transactionType
+    }
+
+    return {
+      hash: tx.hash,
+      chain,
+      // V4 timestamps are already in milliseconds
+      timestamp: tx.timestamp,
+      direction,
+      amount: absAmount,
+      symbol,
+      tokenAddress: tx.tokenAddress,
+      counterAddress: tx.counterAddress,
+      blockNumber: tx.blockNumber,
+    }
+  })
+}
+
 /* ── Public API ──────────────────────────────────────────────────── */
 
 export async function getWalletPortfolio(
   chain: string,
   address: string,
 ): Promise<PortfolioAsset[]> {
-  if (V4_CHAINS.has(chain)) return fetchV4Portfolio(chain, address)
-  if (chain === 'tron') return fetchTronBalance(address)
-  if (chain === 'bitcoin') return fetchBitcoinBalance(address)
+  if (V4_CHAINS.has(chain)) {
+    try {
+      return await fetchV4Portfolio(chain, address)
+    } catch (v4Error) {
+      // V3 fallback for TRON and Bitcoin if V4 fails
+      if (chain === 'tron') return fetchTronBalance(address)
+      if (chain === 'bitcoin') return fetchBitcoinBalance(address)
+      throw v4Error
+    }
+  }
 
   throw new Error(`Unsupported chain: ${chain}`)
+}
+
+export interface TransactionHistoryResult {
+  transactions: NormalizedTransaction[]
+  nextCursor?: string
+  hasMore: boolean
 }
 
 export async function getTransactionHistory(
   chain: string,
   address: string,
-  pageSize = 20,
-): Promise<TatumTransaction[]> {
-  if (!V4_CHAINS.has(chain)) {
-    throw new Error(`Transaction history not available for chain: ${chain}`)
+  pageSize = 50,
+  cursor?: string,
+): Promise<TransactionHistoryResult> {
+  if (V4_CHAINS.has(chain)) {
+    try {
+      const v4Chain = toV4Chain(chain)
+      const offset = parseInt(cursor ?? '0') || 0
+
+      const params: Record<string, string> = {
+        chain: v4Chain,
+        addresses: address,
+        pageSize: String(pageSize),
+        offset: String(offset),
+        transactionDirection: 'all',
+      }
+
+      // V4 response can be a flat array or { result: [...] }
+      const raw = await tatumFetch<TatumTransaction[] | { result: TatumTransaction[] }>(
+        BASE_V4,
+        '/data/transactions',
+        params,
+      )
+
+      const txs = Array.isArray(raw) ? raw : (raw.result ?? [])
+      return {
+        transactions: normalizeV4Transactions(txs, chain, address),
+        nextCursor: txs.length === pageSize ? String(offset + pageSize) : undefined,
+        hasMore: txs.length === pageSize,
+      }
+    } catch (v4Error) {
+      // V3 fallback for TRON and Bitcoin if V4 fails
+      if (chain === 'tron') {
+        const { txs, next } = await fetchTronTransactions(address, pageSize, cursor)
+        return { transactions: txs, nextCursor: next, hasMore: !!next }
+      }
+      if (chain === 'bitcoin') {
+        const offset = parseInt(cursor ?? '0') || 0
+        const { txs, hasMore } = await fetchBitcoinTransactions(address, pageSize, offset)
+        return {
+          transactions: txs,
+          nextCursor: hasMore ? String(offset + pageSize) : undefined,
+          hasMore,
+        }
+      }
+      throw v4Error
+    }
   }
 
-  const data = await tatumFetch<{ result: TatumTransaction[] }>(
-    BASE_V4,
-    '/data/transactions',
-    { chain, addresses: address, pageSize: String(pageSize), transactionDirection: 'all' },
-  )
-
-  return data.result ?? []
+  throw new Error(`Unsupported chain for transactions: ${chain}`)
 }
 
 export async function getTokenRate(
@@ -271,9 +646,9 @@ export async function getTokenRate(
   basePair = 'USD',
 ): Promise<number> {
   const data = await tatumFetch<{ value: string }>(
-    BASE_V3,
-    '/tatum/rate/' + symbol,
-    { basePair },
+    BASE_V4,
+    '/data/rate/symbol',
+    { symbol, basePair },
   )
 
   return parseFloat(data.value) || 0
@@ -293,6 +668,7 @@ const RATE_SYMBOL: Record<string, string> = {
   SOL: 'SOL',
   MATIC: 'MATIC',
   CELO: 'CELO',
+  CHZ: 'CHZ',
   XTZ: 'XTZ',
 }
 
@@ -351,7 +727,6 @@ export async function getWalletPortfolioWithUsd(
     } else if (a.type === 'native' && a.symbol) {
       usdValue = bal * (rates.get(a.symbol) ?? 0)
     }
-    // Unknown fungible tokens without a known symbol → 0 USD
 
     totalUsd += usdValue
     return { ...a, usdValue }

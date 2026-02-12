@@ -112,7 +112,6 @@ function SearchableSelectField({
   onValueChange,
   placeholder,
   options,
-  triggerClassName,
   searchPlaceholder,
   noResultsText,
 }: {
@@ -120,7 +119,6 @@ function SearchableSelectField({
   onValueChange: (next: string) => void
   placeholder: string
   options: SelectOption[]
-  triggerClassName?: string
   searchPlaceholder: string
   noResultsText: string
 }) {
@@ -145,7 +143,7 @@ function SearchableSelectField({
         if (!isOpen) setQuery('')
       }}
     >
-      <SelectTrigger className={triggerClassName}>
+      <SelectTrigger>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
@@ -159,7 +157,7 @@ function SearchableSelectField({
               basicInputClasses,
               disabledInputClasses,
               focusInputClasses,
-              '!h-9 w-full !rounded-lg !px-3 !py-1.5 !text-xs',
+              'h-9 w-full rounded-lg px-3 py-1.5 text-xs',
             )}
           />
         </div>
@@ -405,15 +403,14 @@ export function TransferDialog({
   })
 
   const isSubmitting = onSubmit.isCreating || onSubmit.isUpdating
-  const compactLabelClasses = 'mb-1 text-xs font-medium tracking-wide text-black/75'
-  const compactControlClasses = '!h-10 !rounded-xl !px-3 !py-2 !text-sm'
-  const compactHintClasses = 'mt-1 text-[11px] text-black/55'
-  const compactErrorClasses = 'mt-1 text-[11px] text-red'
+  const compactHintClasses = 'mt-1 text-xs text-black/55'
+  const compactErrorClasses = 'mt-1 text-xs text-red'
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent
-        className="max-h-[85vh] max-w-xl overflow-y-auto p-4 sm:p-5"
+        size="xl"
+        className="max-h-[85vh] overflow-y-auto"
         onInteractOutside={(event) => event.preventDefault()}
       >
         <DialogHeader>
@@ -434,13 +431,12 @@ export function TransferDialog({
         >
           {/* Full Name */}
           <div className="sm:col-span-2">
-            <Label className={compactLabelClasses}>
+            <Label className="mb-1 text-xs font-medium tracking-wide text-black/75">
               {t('transfers.form.fullName')}
             </Label>
             <Input
               {...form.register('full_name')}
               placeholder={t('transfers.form.fullNamePlaceholder')}
-              className={compactControlClasses}
             />
             {form.formState.errors.full_name && (
               <p className={compactErrorClasses}>
@@ -451,7 +447,7 @@ export function TransferDialog({
 
           {/* Payment Method */}
           <div className="sm:col-span-2">
-            <Label className={compactLabelClasses}>
+            <Label className="mb-1 text-xs font-medium tracking-wide text-black/75">
               {t('transfers.form.paymentMethod')}
             </Label>
             <SearchableSelectField
@@ -459,7 +455,6 @@ export function TransferDialog({
               onValueChange={(value) => form.setValue('payment_method_id', value)}
               placeholder={t('transfers.form.selectPaymentMethod')}
               options={paymentMethodOptions}
-              triggerClassName={compactControlClasses}
               searchPlaceholder={t('transfers.form.searchInList')}
               noResultsText={t('transfers.form.noResults')}
             />
@@ -473,7 +468,7 @@ export function TransferDialog({
           {/* Date & Time */}
           <div className="sm:col-span-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-            <Label className={compactLabelClasses}>
+            <Label className="mb-1 text-xs font-medium tracking-wide text-black/75">
               {t('transfers.form.date')}
             </Label>
             <input
@@ -483,8 +478,7 @@ export function TransferDialog({
                 basicInputClasses,
                 disabledInputClasses,
                 focusInputClasses,
-                compactControlClasses,
-                'w-full',
+                'h-10 rounded-xl px-4 py-2 text-sm w-full',
               )}
             />
             {form.formState.errors.transfer_date && (
@@ -496,7 +490,7 @@ export function TransferDialog({
 
             {/* Currency */}
             <div>
-            <Label className={compactLabelClasses}>
+            <Label className="mb-1 text-xs font-medium tracking-wide text-black/75">
               {t('transfers.form.currency')}
             </Label>
             <Select
@@ -505,7 +499,7 @@ export function TransferDialog({
                 form.setValue('currency', value as 'TL' | 'USD')
               }
             >
-              <SelectTrigger className={compactControlClasses}>
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -518,7 +512,7 @@ export function TransferDialog({
 
           {/* Exchange Rate (USD/TRY — always visible) */}
           <div className="sm:col-span-2">
-            <Label className={compactLabelClasses}>
+            <Label className="mb-1 text-xs font-medium tracking-wide text-black/75">
               {t('transfers.form.exchangeRate')}
             </Label>
             <div className="flex items-center gap-2">
@@ -527,13 +521,13 @@ export function TransferDialog({
                 min="0"
                 step="0.0001"
                 {...form.register('exchange_rate')}
-                className={cn(compactControlClasses, 'flex-1')}
+                className="flex-1"
               />
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
-                className="!h-10 !w-10 shrink-0 !p-0"
+                size="md"
+                className="size-10 shrink-0 p-0"
                 onClick={() => refetchRate()}
                 disabled={rateLoading}
                 title={t('transfers.form.refreshRate')}
@@ -546,7 +540,7 @@ export function TransferDialog({
               </Button>
             </div>
             {rateError ? (
-              <p className="mt-1 text-[11px] text-amber-600">
+              <p className="mt-1 text-xs text-orange">
                 {t(
                   'transfers.form.exchangeRateWarning',
                   'Could not fetch rate automatically. Enter manually or retry.',
@@ -568,7 +562,7 @@ export function TransferDialog({
 
           {/* Category */}
           <div className="sm:col-span-2">
-            <Label className={compactLabelClasses}>
+            <Label className="mb-1 text-xs font-medium tracking-wide text-black/75">
               {t('transfers.form.category')}
             </Label>
             <div className="grid w-full grid-cols-2 gap-2">
@@ -580,7 +574,7 @@ export function TransferDialog({
                     type="button"
                     variant={isSelected ? 'filled' : 'outline'}
                     size="sm"
-                    className={cn(compactControlClasses, 'w-full min-w-0')}
+                    className="w-full min-w-0"
                     onClick={() => form.setValue('category_id', option.value)}
                   >
                     {option.label}
@@ -597,7 +591,7 @@ export function TransferDialog({
 
           {/* Amount */}
           <div className="sm:col-span-2">
-            <Label className={compactLabelClasses}>
+            <Label className="mb-1 text-xs font-medium tracking-wide text-black/75">
               {t('transfers.form.amount')}
             </Label>
             <Input
@@ -606,13 +600,12 @@ export function TransferDialog({
               step="0.01"
               {...form.register('raw_amount')}
               placeholder="0.00"
-              className={compactControlClasses}
             />
             <p className={compactHintClasses}>
               {t('transfers.form.amountHint')}
             </p>
             {rawAmount > 0 && exchangeRateValue > 0 && (
-              <p className="mt-1 text-xs font-medium text-blue-600">
+              <p className="mt-1 text-xs font-medium text-blue">
                 {currency === 'TL'
                   ? `≈ ${(rawAmount / exchangeRateValue).toLocaleString(undefined, {
                       minimumFractionDigits: 2,
@@ -633,7 +626,7 @@ export function TransferDialog({
 
           {/* PSP */}
           <div className="sm:col-span-2">
-            <Label className={compactLabelClasses}>
+            <Label className="mb-1 text-xs font-medium tracking-wide text-black/75">
               {t('transfers.form.psp')}
             </Label>
             <SearchableSelectField
@@ -641,7 +634,6 @@ export function TransferDialog({
               onValueChange={(value) => form.setValue('psp_id', value)}
               placeholder={t('transfers.form.selectPsp')}
               options={pspOptions}
-              triggerClassName={compactControlClasses}
               searchPlaceholder={t('transfers.form.searchInList')}
               noResultsText={t('transfers.form.noResults')}
             />
@@ -660,11 +652,11 @@ export function TransferDialog({
                     {(effectiveRate * 100).toFixed(1)}%
                   </span>
                   {rateOverride !== null && (
-                    <span className="ml-1 text-amber-600">
+                    <span className="ml-1 text-orange">
                       ({t('transfers.form.overridden')})
                       <button
                         type="button"
-                        className="ml-1 text-[11px] underline"
+                        className="ml-1 text-xs underline"
                         onClick={() => {
                           setRateOverride(null)
                           setShowRateOverride(false)
@@ -679,7 +671,7 @@ export function TransferDialog({
                 {!showRateOverride && rateOverride === null && (
                   <button
                     type="button"
-                    className="text-[11px] text-blue-600 underline"
+                    className="text-xs text-blue underline"
                     onClick={() => setShowRateOverride(true)}
                   >
                     {t('transfers.form.overrideRate')}
@@ -707,7 +699,8 @@ export function TransferDialog({
                   max="99.99"
                   step="0.1"
                   placeholder="%"
-                  className="!h-8 !w-24 !rounded-lg !px-2 !py-1 !text-xs"
+                  inputSize="sm"
+                  className="w-24"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -726,7 +719,6 @@ export function TransferDialog({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="!h-8 !px-2 !text-xs"
                   onClick={(e) => {
                     const input = (
                       e.currentTarget.previousElementSibling as HTMLInputElement
@@ -744,7 +736,6 @@ export function TransferDialog({
                   type="button"
                   variant="borderless"
                   size="sm"
-                  className="!h-8 !px-2 !text-xs"
                   onClick={() => setShowRateOverride(false)}
                 >
                   {t('transfers.form.cancel')}
@@ -755,7 +746,7 @@ export function TransferDialog({
 
           {/* Type */}
           <div className="sm:col-span-2">
-            <Label className={compactLabelClasses}>
+            <Label className="mb-1 text-xs font-medium tracking-wide text-black/75">
               {t('transfers.form.type')}
             </Label>
             <SearchableSelectField
@@ -763,7 +754,6 @@ export function TransferDialog({
               onValueChange={(value) => form.setValue('type_id', value)}
               placeholder={t('transfers.form.selectType')}
               options={transferTypeOptions}
-              triggerClassName={compactControlClasses}
               searchPlaceholder={t('transfers.form.searchInList')}
               noResultsText={t('transfers.form.noResults')}
             />
@@ -777,23 +767,21 @@ export function TransferDialog({
           {/* CRM + META */}
           <div className="sm:col-span-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <Label className={compactLabelClasses}>
+              <Label className="mb-1 text-xs font-medium tracking-wide text-black/75">
                 {t('transfers.form.crmId')}
               </Label>
               <Input
                 {...form.register('crm_id')}
                 placeholder={t('transfers.form.crmIdPlaceholder')}
-                className={compactControlClasses}
               />
             </div>
             <div>
-              <Label className={compactLabelClasses}>
+              <Label className="mb-1 text-xs font-medium tracking-wide text-black/75">
                 {t('transfers.form.metaId')}
               </Label>
               <Input
                 {...form.register('meta_id')}
                 placeholder={t('transfers.form.metaIdPlaceholder')}
-                className={compactControlClasses}
               />
             </div>
           </div>
