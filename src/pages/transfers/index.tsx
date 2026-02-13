@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, Lock } from '@phosphor-icons/react'
+import { Plus, Lock, X, CalendarBlank } from '@phosphor-icons/react'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { useLookupQueries } from '@/hooks/queries/useLookupQueries'
 import { useTransfersQuery } from '@/hooks/queries/useTransfersQuery'
 import type { TransferRow } from '@/hooks/useTransfers'
-import { Button, Card, Tabs, TabsList, TabsTrigger, TabsContent } from '@ds'
+import { Button, Card, Tabs, TabsList, TabsTrigger, TabsContent, Input } from '@ds'
 import { TransfersTable } from './TransfersTable'
 import { TransferDialog } from './TransferDialog'
 import { DeleteConfirmDialog } from './DeleteConfirmDialog'
@@ -55,6 +55,8 @@ export function TransfersPage() {
       page={transfers.page}
       pageSize={transfers.pageSize}
       total={transfers.total}
+      dateCounts={transfers.dateCounts}
+      fetchTransfersByDate={transfers.fetchTransfersByDate}
       onPageChange={transfers.setPage}
       onEdit={handleEdit}
       onDelete={handleDelete}
@@ -68,10 +70,37 @@ export function TransfersPage() {
           <h1 className="text-2xl font-semibold">{t('transfers.title')}</h1>
           <p className="mt-1 text-sm text-black/60">{t('transfers.subtitle')}</p>
         </div>
-        <Button variant="filled" onClick={handleAdd}>
-          <Plus size={16} weight="bold" />
-          {t('transfers.addTransfer')}
-        </Button>
+        <div className="flex items-center gap-3">
+          {/* Date Filter */}
+          <div className="relative">
+            <div className="relative flex items-center">
+              <CalendarBlank
+                size={16}
+                className="absolute left-3 text-black/40"
+              />
+              <Input
+                type="date"
+                value={transfers.filterDate ?? ''}
+                onChange={(e) => transfers.setFilterDate(e.target.value || null)}
+                className="h-9 w-[180px] pl-9 pr-8 text-sm"
+                placeholder="Filter by date"
+              />
+              {transfers.filterDate && (
+                <button
+                  onClick={() => transfers.setFilterDate(null)}
+                  className="absolute right-2 flex size-5 items-center justify-center rounded-full text-black/30 hover:bg-black/5 hover:text-black/60"
+                  title="Clear filter"
+                >
+                  <X size={12} weight="bold" />
+                </button>
+              )}
+            </div>
+          </div>
+          <Button variant="filled" onClick={handleAdd}>
+            <Plus size={16} weight="bold" />
+            {t('transfers.addTransfer')}
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="transfers">

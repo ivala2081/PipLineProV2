@@ -96,6 +96,7 @@
       "commission": "Komisyon",
       "count": "{{count}} transfer",
       "countDetail": "{{deposits}}↑ · {{withdrawals}}↓",
+      "transfersLabel": "transfer",
       "totalBank": "Toplam Banka",
       "totalCreditCard": "Toplam Kredi Kartı",
       "totalUsd": "Toplam USD",
