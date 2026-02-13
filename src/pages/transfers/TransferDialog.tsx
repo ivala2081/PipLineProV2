@@ -243,16 +243,15 @@ export function TransferDialog({
     }
   }, [open, transfer, form, currentOrg?.id, normalizedFetchedRate])
 
-  // Watch category/psp/currency for submission computation
-  const [categoryId, pspId, currency, watchedRawAmount, watchedExchangeRate, transferDate] =
-    form.watch([
-      'category_id',
-      'psp_id',
-      'currency',
-      'raw_amount',
-      'exchange_rate',
-      'transfer_date',
-    ])
+  // Watch individual fields for submission computation
+  const categoryId = form.watch('category_id')
+  const pspId = form.watch('psp_id')
+  const currency = form.watch('currency')
+  const watchedRawAmount = form.watch('raw_amount')
+  const watchedExchangeRate = form.watch('exchange_rate')
+  const transferDate = form.watch('transfer_date')
+  const paymentMethodId = form.watch('payment_method_id')
+  const typeId = form.watch('type_id')
 
   // Ensure watched numeric values are always numbers (register can return strings)
   const rawAmount = Number(watchedRawAmount) || 0
@@ -460,7 +459,7 @@ export function TransferDialog({
               {t('transfers.form.paymentMethod')}
             </Label>
             <SearchableSelectField
-              value={form.watch('payment_method_id')}
+              value={paymentMethodId}
               onValueChange={(value) => form.setValue('payment_method_id', value)}
               placeholder={t('transfers.form.selectPaymentMethod')}
               options={paymentMethodOptions}
@@ -503,7 +502,7 @@ export function TransferDialog({
               {t('transfers.form.currency')}
             </Label>
             <Select
-              value={form.watch('currency')}
+              value={currency}
               onValueChange={(value) =>
                 form.setValue('currency', value as 'TL' | 'USD')
               }
@@ -526,7 +525,7 @@ export function TransferDialog({
             </Label>
             <div className="grid w-full grid-cols-2 gap-2">
               {categoryOptions.map((option) => {
-                const isSelected = form.watch('category_id') === option.value
+                const isSelected = categoryId === option.value
                 return (
                   <Button
                     key={option.value}
@@ -598,7 +597,7 @@ export function TransferDialog({
               {t('transfers.form.psp')}
             </Label>
             <SearchableSelectField
-              value={form.watch('psp_id')}
+              value={pspId}
               onValueChange={(value) => form.setValue('psp_id', value)}
               placeholder={t('transfers.form.selectPsp')}
               options={pspOptions}
@@ -718,7 +717,7 @@ export function TransferDialog({
               {t('transfers.form.type')}
             </Label>
             <SearchableSelectField
-              value={form.watch('type_id')}
+              value={typeId}
               onValueChange={(value) => form.setValue('type_id', value)}
               placeholder={t('transfers.form.selectType')}
               options={transferTypeOptions}

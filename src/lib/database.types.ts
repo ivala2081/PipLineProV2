@@ -297,6 +297,67 @@ export interface Database {
           },
         ]
       }
+      psp_settlements: {
+        Row: {
+          id: string
+          psp_id: string
+          organization_id: string
+          settlement_date: string
+          amount: number
+          currency: string
+          notes: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          psp_id: string
+          organization_id: string
+          settlement_date: string
+          amount: number
+          currency: string
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          psp_id?: string
+          organization_id?: string
+          settlement_date?: string
+          amount?: number
+          currency?: string
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'psp_settlements_psp_id_fkey'
+            columns: ['psp_id']
+            isOneToOne: false
+            referencedRelation: 'psps'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'psp_settlements_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'psp_settlements_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       transfer_categories: {
         Row: {
           id: string
@@ -921,6 +982,7 @@ export type AccountingEntry = Database['public']['Tables']['accounting_entries']
 export type Wallet = Database['public']['Tables']['wallets']['Row']
 export type WalletSnapshot = Database['public']['Tables']['wallet_snapshots']['Row']
 export type PspCommissionRate = Database['public']['Tables']['psp_commission_rates']['Row']
+export type PspSettlement = Database['public']['Tables']['psp_settlements']['Row']
 export type TrustedDevice = Database['public']['Tables']['trusted_devices']['Row']
 export type LoginAttempt = Database['public']['Tables']['login_attempts']['Row']
 export type CaptchaChallenge = Database['public']['Tables']['captcha_challenges']['Row']

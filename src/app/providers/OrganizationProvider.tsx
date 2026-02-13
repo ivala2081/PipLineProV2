@@ -22,10 +22,10 @@ interface OrganizationState {
   isLoading: boolean
 }
 
-interface OrganizationContextValue extends OrganizationState {
-  /** Switch to a different organization by ID */
+interface OrganizationDataContextValue extends OrganizationState {}
+
+interface OrganizationActionsContextValue {
   selectOrg: (orgId: string) => void
-  /** Re-fetch organizations from the database */
   refreshOrgs: () => Promise<void>
 }
 
@@ -36,10 +36,11 @@ interface OrganizationContextValue extends OrganizationState {
 const STORAGE_KEY = 'piplinepro-org'
 
 /* ------------------------------------------------------------------ */
-/*  Context                                                            */
+/*  Contexts                                                           */
 /* ------------------------------------------------------------------ */
 
-const OrganizationContext = createContext<OrganizationContextValue | undefined>(undefined)
+const OrganizationDataContext = createContext<OrganizationDataContextValue | undefined>(undefined)
+const OrganizationActionsContext = createContext<OrganizationActionsContextValue | undefined>(undefined)
 
 /* ------------------------------------------------------------------ */
 /*  Provider                                                           */
@@ -64,6 +65,10 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 
   const isGodRef = useRef(isGod)
   isGodRef.current = isGod
+
+  // Ref for orgs so selectOrg stays stable
+  const orgsRef = useRef(state.organizations)
+  orgsRef.current = state.organizations
 
   /* ---- Fetch organizations -------------------------------------- */
   const fetchOrgs = useCallback(async () => {
@@ -152,7 +157,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   /* ---- Select a different org ----------------------------------- */
   const selectOrg = useCallback(
     (orgId: string) => {
-      const org = state.organizations.find((o) => o.id === orgId)
+      const org = orgsRef.current.find((o) => o.id === orgId)
       if (!org) return
 
       localStorage.setItem(STORAGE_KEY, orgId)
@@ -179,7 +184,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
         setState((prev) => ({ ...prev, currentOrg: org, membership: null }))
       }
     },
-    [state.organizations],
+    [], // Stable — reads from orgsRef
   )
 
   const refreshOrgs = useCallback(async () => {
@@ -188,23 +193,41 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 
   /* ---- Render --------------------------------------------------- */
 
-  const value: OrganizationContextValue = {
-    ...state,
+  const actions: OrganizationActionsContextValue = {
     selectOrg,
     refreshOrgs,
   }
 
-  return <OrganizationContext.Provider value={value}>{children}</OrganizationContext.Provider>
+  return (
+    <OrganizationDataContext.Provider value={state}>
+      <OrganizationActionsContext.Provider value={actions}>
+        {children}
+      </OrganizationActionsContext.Provider>
+    </OrganizationDataContext.Provider>
+  )
 }
 
 /* ------------------------------------------------------------------ */
-/*  Hook                                                               */
+/*  Hooks                                                              */
 /* ------------------------------------------------------------------ */
 
-export function useOrganization() {
-  const context = useContext(OrganizationContext)
+export function useOrgData() {
+  const context = useContext(OrganizationDataContext)
   if (context === undefined) {
-    throw new Error('useOrganization must be used within an OrganizationProvider')
+    throw new Error('useOrgData must be used within an OrganizationProvider')
   }
   return context
+}
+
+export function useOrgActions() {
+  const context = useContext(OrganizationActionsContext)
+  if (context === undefined) {
+    throw new Error('useOrgActions must be used within an OrganizationProvider')
+  }
+  return context
+}
+
+/** Backward-compatible hook — returns both data and actions */
+export function useOrganization() {
+  return { ...useOrgData(), ...useOrgActions() }
 }

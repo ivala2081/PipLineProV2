@@ -7,6 +7,8 @@ export const queryKeys = {
     detail: (id: string) => [...queryKeys.transfers.all, 'detail', id] as const,
     audit: (transferId: string, page: number) =>
       [...queryKeys.transfers.all, 'audit', transferId, page] as const,
+    monthlySummary: (orgId: string, year: number, month: number) =>
+      [...queryKeys.transfers.all, 'monthlySummary', orgId, year, month] as const,
   },
   lookups: {
     all: ['lookups'] as const,
@@ -38,6 +40,18 @@ export const queryKeys = {
     all: ['pspRates'] as const,
     byPsp: (pspId: string) => [...queryKeys.pspRates.all, 'byPsp', pspId] as const,
     byOrg: (orgId: string) => [...queryKeys.pspRates.all, 'byOrg', orgId] as const,
+  },
+  pspSettlements: {
+    all: ['pspSettlements'] as const,
+    byPsp: (pspId: string) =>
+      [...queryKeys.pspSettlements.all, 'byPsp', pspId] as const,
+  },
+  pspDashboard: {
+    all: ['pspDashboard'] as const,
+    summary: (orgId: string) =>
+      [...queryKeys.pspDashboard.all, 'summary', orgId] as const,
+    ledger: (pspId: string) =>
+      [...queryKeys.pspDashboard.all, 'ledger', pspId] as const,
   },
   profiles: {
     all: ['profiles'] as const,

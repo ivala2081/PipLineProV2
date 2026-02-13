@@ -4,13 +4,14 @@
       "main": "Ana Menü",
       "dataEntry": "Veri Girişi",
       "management": "Yönetim",
-      "system": "Sistem"
+      "system": "Sistem",
+      "ai": "Yapay Zeka"
     },
     "dashboard": "Kontrol Paneli",
     "transfers": "Transferler",
     "accounting": "Muhasebe",
-    "module2": "Modül 2",
-    "module3": "Modül 3",
+    "psps": "Kasalar",
+    "future": "Gelecek",
     "members": "Üyeler",
     "organizations": "Organizasyonlar"
   },
@@ -53,8 +54,8 @@
     },
     "actions": {
       "transfers": "Transfer veri girişini aç",
-      "module2": "Modül 2 veri girişini aç",
-      "module3": "Modül 3 veri girişini aç",
+      "psps": "Kasa yönetimini aç",
+      "future": "Yapay zeka asistanıyla sohbet et",
       "members": "Organizasyon üyelerini yönet",
       "organizations": "Organizasyonları yönet"
     }
@@ -66,6 +67,7 @@
     "editTransfer": "Transfer Düzenle",
     "tabs": {
       "transfers": "Transferler",
+      "monthly": "Aylık",
       "settings": "Ayarlar"
     },
     "columns": {
@@ -165,9 +167,40 @@
     "detail": {
       "title": "Transfer Detayı"
     },
+    "pin": {
+      "title": "Güvenlik PIN Gerekli",
+      "description": "Döviz kurunu değiştirmek için PIN'inizi girin",
+      "placeholder": "PIN girin",
+      "error": "Yanlış PIN",
+      "verify": "Doğrula",
+      "cancel": "İptal",
+      "loading": "Özet yükleniyor..."
+    },
     "empty": {
       "title": "Henüz transfer yok",
       "description": "Başlamak için ilk transferinizi oluşturun."
+    },
+    "monthly": {
+      "totalDeposits": "Toplam Yatırım",
+      "totalWithdrawals": "Toplam Çekim",
+      "net": "Net",
+      "bankVolume": "Banka Hacmi",
+      "creditCardVolume": "Kredi Kartı Hacmi",
+      "usdtVolume": "USDT Hacmi",
+      "commission": "Toplam Komisyon",
+      "transferCount": "Transfer Sayısı",
+      "deposits": "Yatırım",
+      "withdrawals": "Çekim",
+      "dailyVolume": "Günlük Hacim",
+      "dailyNet": "Günlük Net",
+      "pspBreakdown": "Kasaya Göre Hacim",
+      "paymentMethodBreakdown": "Ödeme Yöntemine Göre Hacim",
+      "categoryBreakdown": "Kategori Dağılımı",
+      "currencySplit": "Para Birimi Dağılımı",
+      "commissionByPsp": "Kasaya Göre Komisyon",
+      "topCustomers": "En Çok İşlem Yapan Müşteriler",
+      "typeBreakdown": "Transfer Türü Dağılımı",
+      "noData": "Bu ay için transfer bulunamadı."
     },
     "settings": {
       "title": "Arama Ayarları",
@@ -384,13 +417,89 @@
       "error": "Bir hata oluştu. Lütfen tekrar deneyin."
     }
   },
-  "module2": {
-    "title": "Modül 2",
-    "subtitle": "Bu bölüm geliştirme aşamasındadır."
+  "psps": {
+    "title": "Kasalar",
+    "subtitle": "Ödeme hizmet sağlayıcıları yönetimi.",
+    "addPsp": "Kasa Ekle",
+    "backToList": "Kasalara Dön",
+    "noPsps": "Henüz kasa yok",
+    "noPspsDesc": "Başlamak için bir ödeme hizmet sağlayıcısı ekleyin.",
+    "stats": {
+      "outstanding": "Devir Bakiye",
+      "settlements": "Toplam Tahsilat",
+      "deposits": "Toplam Yatırım",
+      "commission": "Toplam Komisyon"
+    },
+    "card": {
+      "commission": "Komisyon",
+      "outstanding": "Devir",
+      "lastSettlement": "Son Tahsilat",
+      "noSettlement": "Henüz tahsilat yok",
+      "active": "Aktif",
+      "inactive": "Pasif"
+    },
+    "detail": {
+      "addSettlement": "Tahsilat Ekle",
+      "noData": "Henüz işlem yok",
+      "noDataDesc": "Bu kasanın transferleri ve tahsilatları burada görünecek.",
+      "notFound": "Kasa bulunamadı",
+      "notFoundDesc": "Aradığınız kasa mevcut değil.",
+      "withdrawals": "Çekimler",
+      "tabs": {
+        "ledger": "Hesap Defteri",
+        "settlements": "Tahsilatlar"
+      }
+    },
+    "columns": {
+      "date": "Tarih",
+      "deposit": "Yatırım",
+      "withdrawal": "Çekme",
+      "commission": "Komisyon",
+      "net": "Net",
+      "settlement": "Tahsilat",
+      "balance": "Bakiye",
+      "type": "Tür",
+      "notes": "Not",
+      "name": "Ad"
+    },
+    "settlement": {
+      "title": "Yeni Tahsilat",
+      "editTitle": "Tahsilat Düzenle",
+      "date": "Tarih",
+      "amount": "Tutar",
+      "currency": "Para Birimi",
+      "notes": "Not",
+      "notesPlaceholder": "Bu tahsilat hakkında isteğe bağlı not...",
+      "save": "Kaydet",
+      "saving": "Kaydediliyor...",
+      "cancel": "İptal"
+    },
+    "deleteSettlement": {
+      "title": "Tahsilatı Sil",
+      "description": "{{amount}} {{currency}} tutarındaki bu tahsilatı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.",
+      "confirm": "Sil",
+      "cancel": "İptal"
+    },
+    "toast": {
+      "settlementCreated": "Tahsilat başarıyla eklendi",
+      "settlementUpdated": "Tahsilat başarıyla güncellendi",
+      "settlementDeleted": "Tahsilat başarıyla silindi",
+      "pspCreated": "Kasa başarıyla eklendi",
+      "error": "Bir hata oluştu. Lütfen tekrar deneyin."
+    },
+    "rowType": {
+      "transfer": "Transfer",
+      "settlement": "Tahsilat"
+    }
   },
-  "module3": {
-    "title": "Modül 3",
-    "subtitle": "Bu bölüm geliştirme aşamasındadır."
+  "future": {
+    "title": "Gelecek",
+    "subtitle": "PipLinePro için yapay zeka destekli asistan.",
+    "placeholder": "Bir mesaj yazın...",
+    "send": "Gönder",
+    "welcome": "Merhaba! Ben PipLinePro yapay zeka asistanınızım. Sistem hakkında her şeyi sorabilirsiniz.",
+    "error": "Yanıt alınamadı. Lütfen tekrar deneyin.",
+    "thinking": "Düşünüyor..."
   },
   "members": {
     "title": "Üyeler",

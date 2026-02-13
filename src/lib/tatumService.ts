@@ -819,7 +819,10 @@ const RATE_SYMBOL: Record<string, string> = {
 
 /** In-memory rate cache: symbol → { usdPrice, fetchedAt } */
 const rateCache = new Map<string, { usdPrice: number; fetchedAt: number }>()
-const RATE_TTL = 5 * 60_000 // 5 minutes
+const RATE_TTL = 60_000 // 1 minute
+
+/** In-flight request dedup: prevents duplicate API calls for the same symbol */
+const inflightRates = new Map<string, Promise<number>>()
 
 async function getUsdRate(symbol: string): Promise<number> {
   if (!symbol) return 0
@@ -831,23 +834,39 @@ async function getUsdRate(symbol: string): Promise<number> {
   const cached = rateCache.get(rateSymbol)
   if (cached && Date.now() - cached.fetchedAt < RATE_TTL) return cached.usdPrice
 
-  try {
-    const price = await getTokenRate(rateSymbol, 'USD')
-    rateCache.set(rateSymbol, { usdPrice: price, fetchedAt: Date.now() })
-    return price
-  } catch {
-    return cached?.usdPrice ?? 0
-  }
+  // Dedup: if a request for this symbol is already in-flight, reuse it
+  const inflight = inflightRates.get(rateSymbol)
+  if (inflight) return inflight
+
+  const request = getTokenRate(rateSymbol, 'USD')
+    .then((price) => {
+      rateCache.set(rateSymbol, { usdPrice: price, fetchedAt: Date.now() })
+      return price
+    })
+    .catch(() => cached?.usdPrice ?? 0)
+    .finally(() => {
+      inflightRates.delete(rateSymbol)
+    })
+
+  inflightRates.set(rateSymbol, request)
+  return request
 }
 
 export interface PortfolioAssetWithUsd extends PortfolioAsset {
   usdValue: number
 }
 
+export interface PortfolioResult {
+  assets: PortfolioAssetWithUsd[]
+  totalUsd: number
+  warnings: string[]
+}
+
 export async function getWalletPortfolioWithUsd(
   chain: string,
   address: string,
-): Promise<{ assets: PortfolioAssetWithUsd[]; totalUsd: number }> {
+): Promise<PortfolioResult> {
+  const warnings: string[] = []
   const rawAssets = await getWalletPortfolio(chain, address)
 
   // Collect unique native symbols to fetch rates for
@@ -858,7 +877,11 @@ export async function getWalletPortfolioWithUsd(
 
   // Fetch rates in parallel
   const rateEntries = await Promise.all(
-    [...nativeSymbols].map(async (s) => [s, await getUsdRate(s)] as const),
+    [...nativeSymbols].map(async (s) => {
+      const rate = await getUsdRate(s)
+      if (rate === 0) warnings.push(`Could not fetch USD rate for ${s}`)
+      return [s, rate] as const
+    }),
   )
   const rates = new Map(rateEntries)
 
@@ -877,5 +900,5 @@ export async function getWalletPortfolioWithUsd(
     return { ...a, usdValue }
   })
 
-  return { assets, totalUsd }
+  return { assets, totalUsd, warnings }
 }

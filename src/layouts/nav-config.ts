@@ -4,10 +4,10 @@ import {
   House,
   ArrowsLeftRight,
   BookOpen,
-  Table,
-  ClipboardText,
+  CreditCard,
   Users,
   Buildings,
+  Brain,
 } from '@phosphor-icons/react'
 
 export type NavItem = {
@@ -33,20 +33,25 @@ export const navGroups: NavGroup[] = [
     items: [
       { titleKey: 'nav.transfers', href: '/transfers', icon: ArrowsLeftRight },
       { titleKey: 'nav.accounting', href: '/accounting', icon: BookOpen },
-      { titleKey: 'nav.module2', href: '/module-2', icon: Table },
-      { titleKey: 'nav.module3', href: '/module-3', icon: ClipboardText },
     ],
   },
   {
     titleKey: 'nav.groups.management',
     items: [
       { titleKey: 'nav.members', href: '/members', icon: Users },
+      { titleKey: 'nav.psps', href: '/psps', icon: CreditCard },
     ],
   },
   {
     titleKey: 'nav.groups.system',
     items: [
       { titleKey: 'nav.organizations', href: '/organizations', icon: Buildings },
+    ],
+  },
+  {
+    titleKey: 'nav.groups.ai',
+    items: [
+      { titleKey: 'nav.future', href: '/future', icon: Brain },
     ],
   },
 ]

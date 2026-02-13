@@ -44,7 +44,10 @@
       "Bash(npx tsx:*)",
       "WebFetch(domain:tatumio.github.io)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "WebFetch(domain:docs.tronscan.org)"
+      "WebFetch(domain:docs.tronscan.org)",
+      "Bash(dir:*)",
+      "Bash(xargs:*)",
+      "WebFetch(domain:ai.google.dev)"
     ]
   }
 }
