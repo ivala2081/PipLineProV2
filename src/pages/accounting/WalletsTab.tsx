@@ -54,8 +54,8 @@ export function WalletsTab({ wallets }: WalletsTabProps) {
         isLoading={portfolio.isLoading}
       />
 
-      {/* Wallet cards grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Wallet cards */}
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
         {wallets.wallets.map((wallet) => (
           <WalletCard
             key={wallet.id}

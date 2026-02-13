@@ -1,9 +1,26 @@
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Copy, Eye, Trash, Camera, ArrowsClockwise } from '@phosphor-icons/react'
 import type { Wallet } from '@/lib/database.types'
 import { useWalletBalanceQuery } from '@/hooks/queries/useWalletBalanceQuery'
 import { useWalletSnapshotsQuery } from '@/hooks/queries/useWalletSnapshotsQuery'
+import { useWalletTransfersQuery } from '@/hooks/queries/useWalletTransfersQuery'
 import { Card, Button, Skeleton } from '@ds'
+
+/* Spam token filter – matches WalletDailyClosing */
+const KNOWN_TOKENS = new Set([
+  'TRX', 'USDT', 'USDD', 'USDC', 'TUSD', 'USDJ',
+  'BTT', 'JST', 'SUN', 'WIN', 'NFT', 'APENFT',
+  'WTRX', 'stUSDT',
+])
+function isLegitToken(sym: string): boolean {
+  if (!sym) return false
+  if (KNOWN_TOKENS.has(sym)) return true
+  if (/[\s.]|www|\.com|\.net|\.org|http/i.test(sym)) return false
+  if (/^fungible$/i.test(sym)) return false
+  if (sym.length > 10) return false
+  return true
+}
 
 const CHAIN_META: Record<string, { label: string; color: string }> = {
   tron: { label: 'TRON', color: 'bg-red/10 text-red' },
@@ -13,15 +30,15 @@ const CHAIN_META: Record<string, { label: string; color: string }> = {
   solana: { label: 'SOL', color: 'bg-purple/10 text-purple' },
 }
 
-function truncateAddress(addr: string) {
+function truncAddr(addr: string) {
   if (addr.length <= 16) return addr
   return `${addr.slice(0, 6)}...${addr.slice(-4)}`
 }
 
-function formatUsd(value: number): string {
+function fmt(value: number, decimals = 2): string {
   return value.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
   })
 }
 
@@ -43,142 +60,199 @@ export function WalletCard({ wallet, onViewDetail, onDelete }: WalletCardProps) 
     wallet.chain,
     wallet.address,
   )
+  const txQuery = useWalletTransfersQuery(
+    wallet.id,
+    wallet.chain,
+    wallet.address,
+  )
+
+  const todaySummary = useMemo(() => {
+    const now = new Date()
+    const todayKey = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`
+
+    const inByToken: Record<string, number> = {}
+    const outByToken: Record<string, number> = {}
+
+    for (const tx of txQuery.transfers) {
+      if (tx.timestamp <= 0) continue
+      const d = new Date(tx.timestamp)
+      const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
+      if (key !== todayKey) continue
+
+      const sym = tx.symbol || 'UNKNOWN'
+      if (!isLegitToken(sym)) continue
+      const amount = parseFloat(tx.amount) || 0
+      if (tx.direction === 'in') {
+        inByToken[sym] = (inByToken[sym] ?? 0) + amount
+      } else {
+        outByToken[sym] = (outByToken[sym] ?? 0) + amount
+      }
+    }
+
+    const allSymbols = new Set([...Object.keys(inByToken), ...Object.keys(outByToken)])
+    const netByToken: Record<string, number> = {}
+    for (const sym of allSymbols) {
+      netByToken[sym] = (inByToken[sym] ?? 0) - (outByToken[sym] ?? 0)
+    }
+
+    return { inByToken, outByToken, netByToken }
+  }, [txQuery.transfers])
+
+  const hasTodayData =
+    Object.keys(todaySummary.inByToken).length > 0 ||
+    Object.keys(todaySummary.outByToken).length > 0
 
   const chainInfo = CHAIN_META[wallet.chain] ?? {
     label: wallet.chain.toUpperCase(),
     color: 'bg-black/5 text-black/60',
   }
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(wallet.address)
-  }
+  const handleCopy = () => navigator.clipboard.writeText(wallet.address)
 
-  // Only show tokens with a USD value, sorted highest first
   const sortedAssets = [...assets]
     .filter((a) => a.usdValue > 0)
     .sort((a, b) => b.usdValue - a.usdValue)
 
+  /* helper: render token amounts inline */
+  const renderTokenAmounts = (
+    byToken: Record<string, number>,
+    sign: '+' | '-' | 'auto',
+    colorClass: string,
+  ) => {
+    const entries = Object.entries(byToken).sort(([, a], [, b]) => Math.abs(b) - Math.abs(a))
+    if (entries.length === 0) return <span className="text-black/15">—</span>
+    return entries.map(([sym, amount]) => {
+      const c = sign === 'auto' ? (amount >= 0 ? 'text-green' : 'text-red') : colorClass
+      const prefix = sign === 'auto' ? (amount >= 0 ? '+' : '') : sign
+      return (
+        <span key={sym} className={`font-mono text-[13px] font-semibold tabular-nums ${c}`}>
+          {prefix}{fmt(sign === '-' ? -Math.abs(amount) : amount)}
+          <span className="ml-0.5 text-[10px] font-medium opacity-50">{sym}</span>
+        </span>
+      )
+    })
+  }
+
   return (
-    <Card padding="none" className="group flex flex-col overflow-hidden border border-black/10 bg-bg1">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-4 pb-2">
-        <div className="flex items-center gap-2.5">
-          <span className="text-sm font-semibold text-black/90">
-            {wallet.label}
-          </span>
-          <span
-            className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-bold tracking-wide ${chainInfo.color}`}
-          >
-            {chainInfo.label}
-          </span>
+    <Card padding="none" className="group overflow-hidden border border-black/[0.06] bg-bg1">
+      {/* ── Main Row ── */}
+      <div className="flex items-stretch">
+        {/* Left: Identity */}
+        <div className="flex min-w-0 flex-1 flex-col justify-center px-5 py-4">
+          <div className="flex items-center gap-2">
+            <span className="truncate text-[15px] font-semibold text-black/90">
+              {wallet.label}
+            </span>
+            <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${chainInfo.color}`}>
+              {chainInfo.label}
+            </span>
+            <Button
+              variant="ghost"
+              className="ml-auto size-6 shrink-0 p-0 text-black/15 opacity-0 transition group-hover:opacity-100 hover:text-red"
+              onClick={onDelete}
+            >
+              <Trash size={13} />
+            </Button>
+          </div>
+          <div className="mt-1 flex items-center gap-1.5">
+            <code className="text-[11px] text-black/30">{truncAddr(wallet.address)}</code>
+            <button onClick={handleCopy} className="text-black/15 transition hover:text-black/40">
+              <Copy size={10} />
+            </button>
+          </div>
         </div>
-        <Button
-          variant="ghost"
-          className="size-7 p-0 text-black/20 opacity-0 transition group-hover:opacity-100 hover:text-red"
-          onClick={onDelete}
-        >
-          <Trash size={14} />
-        </Button>
-      </div>
 
-      {/* Address */}
-      <div className="flex items-center gap-1.5 px-5 pb-3">
-        <code className="text-xs text-black/40">
-          {truncateAddress(wallet.address)}
-        </code>
-        <button
-          onClick={handleCopy}
-          className="text-black/20 transition hover:text-black/50"
-        >
-          <Copy size={11} />
-        </button>
-      </div>
+        {/* Divider */}
+        <div className="w-px self-stretch bg-black/[0.04]" />
 
-      {/* Total USD Value */}
-      <div className="border-t border-black/5 bg-black/[0.015] px-5 py-3">
-        {isBalanceLoading ? (
-          <Skeleton className="h-7 w-28 rounded" />
-        ) : (
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-black/35">
-              {t('accounting.wallets.totalValue', 'Total Value')}
-            </p>
-            <p className="mt-0.5 text-xl font-bold tabular-nums text-black/85">
-              ${formatUsd(totalUsd)}
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Token List */}
-      <div className="flex-1 px-5 py-3">
-        {isBalanceLoading ? (
-          <div className="space-y-2.5">
-            <Skeleton className="h-4 w-full rounded" />
-            <Skeleton className="h-4 w-3/4 rounded" />
-          </div>
-        ) : sortedAssets.length === 0 ? (
-          <p className="text-xs text-black/35">
-            {t('accounting.wallets.noBalances')}
+        {/* Center: Balance */}
+        <div className="flex min-w-[180px] flex-col justify-center px-5 py-4">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-black/25">
+            {t('accounting.wallets.totalValue', 'Total Value')}
           </p>
-        ) : (
-          <div className="space-y-2">
-            {sortedAssets.slice(0, 4).map((asset, i) => {
-              const label =
-                asset.symbol ||
-                (asset.tokenAddress
-                  ? `${asset.tokenAddress.slice(0, 6)}…`
-                  : asset.type)
-              const bal = parseFloat(asset.balance)
-              return (
-                <div
-                  key={i}
-                  className="flex items-center justify-between"
-                >
-                  <span className="text-xs font-medium text-black/55">
-                    {label}
-                  </span>
-                  <div className="text-right">
-                    <span className="font-mono text-xs font-semibold tabular-nums text-black/80">
-                      {bal.toLocaleString('en-US', { maximumFractionDigits: 4 })}
+          {isBalanceLoading ? (
+            <Skeleton className="mt-1 h-6 w-24 rounded" />
+          ) : (
+            <p className="mt-0.5 font-mono text-lg font-bold tabular-nums text-black/85">
+              ${fmt(totalUsd)}
+            </p>
+          )}
+          {!isBalanceLoading && sortedAssets.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
+              {sortedAssets.slice(0, 3).map((asset, i) => {
+                const label = asset.symbol || (asset.tokenAddress ? `${asset.tokenAddress.slice(0, 6)}…` : asset.type)
+                const bal = parseFloat(asset.balance)
+                return (
+                  <span key={i} className="text-[11px] text-black/40">
+                    <span className="font-mono font-medium tabular-nums text-black/55">
+                      {bal.toLocaleString('en-US', { maximumFractionDigits: 2 })}
                     </span>
-                    {asset.usdValue > 0 && (
-                      <span className="ml-1.5 font-mono text-xs tabular-nums text-black/35">
-                        ${formatUsd(asset.usdValue)}
-                      </span>
-                    )}
-                  </div>
+                    {' '}{label}
+                  </span>
+                )
+              })}
+              {sortedAssets.length > 3 && (
+                <span className="text-[10px] text-black/20">+{sortedAssets.length - 3}</span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Divider */}
+        {hasTodayData && <div className="w-px self-stretch bg-black/[0.04]" />}
+
+        {/* Right: Today's flow */}
+        {hasTodayData && (
+          <div className="flex min-w-[240px] flex-col justify-center px-5 py-4">
+            <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-black/25">
+              {t('accounting.wallets.today', 'Today')}
+            </p>
+            <div className="space-y-1">
+              {/* IN row */}
+              <div className="flex items-center gap-2">
+                <span className="w-7 text-[10px] font-bold uppercase text-green/60">IN</span>
+                <div className="flex flex-wrap gap-x-3">
+                  {renderTokenAmounts(todaySummary.inByToken, '+', 'text-green')}
                 </div>
-              )
-            })}
-            {sortedAssets.length > 4 && (
-              <p className="text-xs text-black/35">
-                +{sortedAssets.length - 4} {t('accounting.wallets.moreTokens')}
-              </p>
-            )}
+              </div>
+              {/* OUT row */}
+              <div className="flex items-center gap-2">
+                <span className="w-7 text-[10px] font-bold uppercase text-red/60">OUT</span>
+                <div className="flex flex-wrap gap-x-3">
+                  {renderTokenAmounts(todaySummary.outByToken, '-', 'text-red')}
+                </div>
+              </div>
+              {/* NET row */}
+              <div className="mt-0.5 flex items-center gap-2 border-t border-black/[0.04] pt-1.5">
+                <span className="w-7 text-[10px] font-bold uppercase text-black/30">NET</span>
+                <div className="flex flex-wrap gap-x-3">
+                  {renderTokenAmounts(todaySummary.netByToken, 'auto', '')}
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
 
-      {/* Actions */}
-      <div className="flex border-t border-black/5">
+      {/* ── Actions ── */}
+      <div className="flex border-t border-black/[0.04]">
         <button
           onClick={onViewDetail}
-          className="flex flex-1 items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-black/45 transition hover:bg-black/[0.02] hover:text-black/70"
+          className="flex flex-1 items-center justify-center gap-1.5 py-2 text-[11px] font-medium text-black/35 transition hover:bg-black/[0.02] hover:text-black/60"
         >
-          <Eye size={13} />
+          <Eye size={12} />
           {t('accounting.wallets.viewDetail')}
         </button>
         <div className="w-px bg-black/[0.04]" />
         <button
           onClick={() => takeSnapshot()}
           disabled={isTakingSnapshot}
-          className="flex flex-1 items-center justify-center gap-1.5 py-2.5 text-xs font-medium text-black/45 transition hover:bg-black/[0.02] hover:text-black/70 disabled:opacity-40"
+          className="flex flex-1 items-center justify-center gap-1.5 py-2 text-[11px] font-medium text-black/35 transition hover:bg-black/[0.02] hover:text-black/60 disabled:opacity-40"
         >
           {isTakingSnapshot ? (
-            <ArrowsClockwise size={13} className="animate-spin" />
+            <ArrowsClockwise size={12} className="animate-spin" />
           ) : (
-            <Camera size={13} />
+            <Camera size={12} />
           )}
           {isTakingSnapshot
             ? t('accounting.wallets.snapshotting')
