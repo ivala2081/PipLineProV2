@@ -38,7 +38,9 @@ export const Badge: FC<BadgeProps> = ({
 }) => (
   <div className={cn('relative inline-flex', className)} {...props}>
     {children}
-    <BadgeComponent content={content} />
+    {content != null && content !== '' ? (
+      <BadgeComponent content={content} />
+    ) : null}
   </div>
 )
 
