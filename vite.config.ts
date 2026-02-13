@@ -12,6 +12,8 @@ export default defineConfig({
     },
   },
   server: {
+    host: true,
+    allowedHosts: true,
     proxy: {
       '/tatum-api': {
         target: 'https://api.tatum.io',
