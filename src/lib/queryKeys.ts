@@ -41,6 +41,18 @@ export const queryKeys = {
     byPsp: (pspId: string) => [...queryKeys.pspRates.all, 'byPsp', pspId] as const,
     byOrg: (orgId: string) => [...queryKeys.pspRates.all, 'byOrg', orgId] as const,
   },
+  pspSettlements: {
+    all: ['pspSettlements'] as const,
+    byPsp: (pspId: string) =>
+      [...queryKeys.pspSettlements.all, 'byPsp', pspId] as const,
+  },
+  pspDashboard: {
+    all: ['pspDashboard'] as const,
+    summary: (orgId: string) =>
+      [...queryKeys.pspDashboard.all, 'summary', orgId] as const,
+    ledger: (pspId: string) =>
+      [...queryKeys.pspDashboard.all, 'ledger', pspId] as const,
+  },
   profiles: {
     all: ['profiles'] as const,
     detail: (userId: string) => [...queryKeys.profiles.all, 'detail', userId] as const,

@@ -7,7 +7,7 @@ import {
   CreditCard,
   Users,
   Buildings,
-  Robot,
+  Brain,
 } from '@phosphor-icons/react'
 
 export type NavItem = {
@@ -51,7 +51,7 @@ export const navGroups: NavGroup[] = [
   {
     titleKey: 'nav.groups.ai',
     items: [
-      { titleKey: 'nav.future', href: '/future', icon: Robot },
+      { titleKey: 'nav.future', href: '/future', icon: Brain },
     ],
   },
 ]

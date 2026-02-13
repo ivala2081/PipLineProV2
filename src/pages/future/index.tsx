@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PaperPlaneRight, Robot, User, CircleNotch } from '@phosphor-icons/react'
+import { PaperPlaneRight, Brain, User, CircleNotch, CaretDown } from '@phosphor-icons/react'
 import { Button, Card } from '@ds'
-import { sendMessage, type ChatMessage } from '@/lib/geminiService'
+import { sendMessage, GEMINI_MODELS, DEFAULT_MODEL, type ChatMessage } from '@/lib/geminiService'
+
+const STORAGE_KEY = 'piplinepro-gemini-model'
 
 interface DisplayMessage {
   id: string
@@ -16,8 +18,16 @@ export function FuturePage() {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [selectedModel, setSelectedModel] = useState(() =>
+    localStorage.getItem(STORAGE_KEY) ?? DEFAULT_MODEL,
+  )
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+
+  const handleModelChange = (modelId: string) => {
+    setSelectedModel(modelId)
+    localStorage.setItem(STORAGE_KEY, modelId)
+  }
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -52,7 +62,7 @@ export function FuturePage() {
         text: m.text,
       }))
 
-      const response = await sendMessage(history)
+      const response = await sendMessage(history, selectedModel)
 
       const assistantMsg: DisplayMessage = {
         id: crypto.randomUUID(),
@@ -79,9 +89,29 @@ export function FuturePage() {
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col gap-4">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold">{t('future.title')}</h1>
-        <p className="mt-1 text-sm text-black/60">{t('future.subtitle')}</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">{t('future.title')}</h1>
+          <p className="mt-1 text-sm text-black/60">{t('future.subtitle')}</p>
+        </div>
+        <div className="relative shrink-0">
+          <select
+            value={selectedModel}
+            onChange={(e) => handleModelChange(e.target.value)}
+            disabled={isLoading}
+            className="appearance-none rounded-lg border border-black/10 bg-bg1 py-1.5 pl-3 pr-8 text-xs font-medium text-black/70 transition hover:border-black/20 focus:outline-none focus:ring-2 focus:ring-brand/20 disabled:opacity-50"
+          >
+            {GEMINI_MODELS.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+          <CaretDown
+            size={12}
+            className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-black/40"
+          />
+        </div>
       </div>
 
       {/* Chat area */}
@@ -91,7 +121,7 @@ export function FuturePage() {
           {messages.length === 0 && (
             <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
               <div className="flex size-14 items-center justify-center rounded-2xl bg-brand/10 text-brand">
-                <Robot size={28} />
+                <Brain size={28} weight="duotone" />
               </div>
               <p className="max-w-md text-sm text-black/50">
                 {t('future.welcome')}
@@ -112,7 +142,7 @@ export function FuturePage() {
                       : 'bg-black/5 text-black/50'
                   }`}
                 >
-                  {msg.role === 'user' ? <User size={16} /> : <Robot size={16} />}
+                  {msg.role === 'user' ? <User size={16} /> : <Brain size={16} weight="duotone" />}
                 </div>
                 <div
                   className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
@@ -129,7 +159,7 @@ export function FuturePage() {
             {isLoading && (
               <div className="flex gap-3">
                 <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-black/5 text-black/50">
-                  <Robot size={16} />
+                  <Brain size={16} weight="duotone" />
                 </div>
                 <div className="flex items-center gap-2 rounded-2xl bg-black/[0.04] px-4 py-2.5 text-sm text-black/50">
                   <CircleNotch size={14} className="animate-spin" />

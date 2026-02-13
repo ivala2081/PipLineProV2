@@ -3,6 +3,20 @@ export interface ChatMessage {
   text: string
 }
 
+export interface GeminiModel {
+  id: string
+  label: string
+}
+
+export const GEMINI_MODELS: GeminiModel[] = [
+  { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+  { id: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite' },
+  { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+  { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+]
+
+export const DEFAULT_MODEL = GEMINI_MODELS[0].id
+
 const SYSTEM_INSTRUCTION = `You are the AI assistant for PipLinePro V2, a multi-tenant financial operations platform.
 
 Key features of PipLinePro:
@@ -16,9 +30,9 @@ Tech stack: React 19, TypeScript, Vite, Tailwind CSS, Radix UI, Supabase (auth +
 
 Answer questions about the system clearly and helpfully. If you don't know something specific about the implementation, say so honestly. You can help with understanding features, troubleshooting, and general guidance about the platform.`
 
-const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
+const API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
 
-export async function sendMessage(messages: ChatMessage[]): Promise<string> {
+export async function sendMessage(messages: ChatMessage[], modelId: string = DEFAULT_MODEL): Promise<string> {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY
 
   if (!apiKey) {
@@ -30,7 +44,7 @@ export async function sendMessage(messages: ChatMessage[]): Promise<string> {
     parts: [{ text: msg.text }],
   }))
 
-  const response = await fetch(`${API_URL}?key=${apiKey}`, {
+  const response = await fetch(`${API_BASE}/${modelId}:generateContent?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

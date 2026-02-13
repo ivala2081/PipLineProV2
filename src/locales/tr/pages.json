@@ -419,7 +419,78 @@
   },
   "psps": {
     "title": "Kasalar",
-    "subtitle": "Ödeme hizmet sağlayıcıları yönetimi."
+    "subtitle": "Ödeme hizmet sağlayıcıları yönetimi.",
+    "addPsp": "Kasa Ekle",
+    "backToList": "Kasalara Dön",
+    "noPsps": "Henüz kasa yok",
+    "noPspsDesc": "Başlamak için bir ödeme hizmet sağlayıcısı ekleyin.",
+    "stats": {
+      "outstanding": "Devir Bakiye",
+      "settlements": "Toplam Tahsilat",
+      "deposits": "Toplam Yatırım",
+      "commission": "Toplam Komisyon"
+    },
+    "card": {
+      "commission": "Komisyon",
+      "outstanding": "Devir",
+      "lastSettlement": "Son Tahsilat",
+      "noSettlement": "Henüz tahsilat yok",
+      "active": "Aktif",
+      "inactive": "Pasif"
+    },
+    "detail": {
+      "addSettlement": "Tahsilat Ekle",
+      "noData": "Henüz işlem yok",
+      "noDataDesc": "Bu kasanın transferleri ve tahsilatları burada görünecek.",
+      "notFound": "Kasa bulunamadı",
+      "notFoundDesc": "Aradığınız kasa mevcut değil.",
+      "withdrawals": "Çekimler",
+      "tabs": {
+        "ledger": "Hesap Defteri",
+        "settlements": "Tahsilatlar"
+      }
+    },
+    "columns": {
+      "date": "Tarih",
+      "deposit": "Yatırım",
+      "withdrawal": "Çekme",
+      "commission": "Komisyon",
+      "net": "Net",
+      "settlement": "Tahsilat",
+      "balance": "Bakiye",
+      "type": "Tür",
+      "notes": "Not",
+      "name": "Ad"
+    },
+    "settlement": {
+      "title": "Yeni Tahsilat",
+      "editTitle": "Tahsilat Düzenle",
+      "date": "Tarih",
+      "amount": "Tutar",
+      "currency": "Para Birimi",
+      "notes": "Not",
+      "notesPlaceholder": "Bu tahsilat hakkında isteğe bağlı not...",
+      "save": "Kaydet",
+      "saving": "Kaydediliyor...",
+      "cancel": "İptal"
+    },
+    "deleteSettlement": {
+      "title": "Tahsilatı Sil",
+      "description": "{{amount}} {{currency}} tutarındaki bu tahsilatı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.",
+      "confirm": "Sil",
+      "cancel": "İptal"
+    },
+    "toast": {
+      "settlementCreated": "Tahsilat başarıyla eklendi",
+      "settlementUpdated": "Tahsilat başarıyla güncellendi",
+      "settlementDeleted": "Tahsilat başarıyla silindi",
+      "pspCreated": "Kasa başarıyla eklendi",
+      "error": "Bir hata oluştu. Lütfen tekrar deneyin."
+    },
+    "rowType": {
+      "transfer": "Transfer",
+      "settlement": "Tahsilat"
+    }
   },
   "future": {
     "title": "Gelecek",

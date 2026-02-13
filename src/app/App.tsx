@@ -24,6 +24,7 @@ const TransfersPage = lazy(() => import('@/pages/transfers').then((m) => ({ defa
 const AccountingPage = lazy(() => import('@/pages/accounting').then((m) => ({ default: m.AccountingPage })))
 const WalletTransactionsPage = lazy(() => import('@/pages/accounting/WalletTransactionsPage').then((m) => ({ default: m.WalletTransactionsPage })))
 const PspsPage = lazy(() => import('@/pages/psps').then((m) => ({ default: m.PspsPage })))
+const PspDetailPage = lazy(() => import('@/pages/psps/PspDetailPage').then((m) => ({ default: m.PspDetailPage })))
 const FuturePage = lazy(() => import('@/pages/future').then((m) => ({ default: m.FuturePage })))
 const MembersPage = lazy(() => import('@/pages/management/members').then((m) => ({ default: m.MembersPage })))
 const MemberProfilePage = lazy(() => import('@/pages/members/MemberProfilePage').then((m) => ({ default: m.MemberProfilePage })))
@@ -120,6 +121,7 @@ export function App() {
                         <Route path="/accounting" element={<PageSuspense><AccountingPage /></PageSuspense>} />
                         <Route path="/accounting/wallet/:walletId/transactions" element={<PageSuspense><WalletTransactionsPage /></PageSuspense>} />
                         <Route path="/psps" element={<PageSuspense><PspsPage /></PageSuspense>} />
+                        <Route path="/psps/:pspId" element={<PageSuspense><PspDetailPage /></PageSuspense>} />
                         <Route path="/future" element={<PageSuspense><FuturePage /></PageSuspense>} />
                         <Route path="/members" element={<PageSuspense><MembersPage /></PageSuspense>} />
                         <Route path="/members/:userId" element={<PageSuspense><MemberProfilePage /></PageSuspense>} />
