@@ -1,5 +1,6 @@
 const CACHE_KEY = 'piplinepro:exchange-rates'
 const TIMEOUT_MS = 5_000
+const API_KEY = 'b8042fdeb5c8caf372397081'
 
 /* ── Timeout helper (AbortSignal.timeout fallback) ────────────────── */
 
@@ -11,35 +12,20 @@ function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
   )
 }
 
-/* ── Provider 1: freecurrencyapi.com ─────────────────────────────── */
+/* ── Provider: ExchangeRate-API (pair conversion) ─────────────────── */
 
-async function fetchFromFreeCurrencyApi(currency: string): Promise<number> {
-  const apiKey = import.meta.env.VITE_EXCHANGE_RATE_API_KEY as string
-  if (!apiKey) throw new Error('VITE_EXCHANGE_RATE_API_KEY is not configured')
+async function fetchFromExchangeRateApi(currency: string): Promise<number> {
   const res = await fetchWithTimeout(
-    `https://api.freecurrencyapi.com/v1/latest?apikey=${apiKey}&base_currency=${currency}&currencies=TRY`,
+    `https://v6.exchangerate-api.com/v6/${API_KEY}/pair/${currency}/TRY`,
     TIMEOUT_MS,
   )
-  if (!res.ok) throw new Error(`freecurrencyapi: ${res.status}`)
+  if (!res.ok) throw new Error(`exchangerate-api: ${res.status}`)
   const json = await res.json()
-  const rate = json?.data?.TRY
+  if (json?.result !== 'success')
+    throw new Error(`exchangerate-api error: ${json?.['error-type'] ?? 'unknown'}`)
+  const rate = json?.conversion_rate
   if (typeof rate !== 'number' || rate <= 0)
-    throw new Error('Invalid rate from freecurrencyapi')
-  return rate
-}
-
-/* ── Provider 2: frankfurter.app (ECB data, no key needed) ───────── */
-
-async function fetchFromFrankfurter(currency: string): Promise<number> {
-  const res = await fetchWithTimeout(
-    `https://api.frankfurter.app/latest?from=${currency}&to=TRY`,
-    TIMEOUT_MS,
-  )
-  if (!res.ok) throw new Error(`frankfurter: ${res.status}`)
-  const json = await res.json()
-  const rate = json?.rates?.TRY
-  if (typeof rate !== 'number' || rate <= 0)
-    throw new Error('Invalid rate from frankfurter')
+    throw new Error('Invalid rate from exchangerate-api')
   return rate
 }
 
@@ -81,21 +67,17 @@ function setCachedRate(currency: string, rate: number): void {
 export async function fetchExchangeRate(currency: string): Promise<number> {
   if (currency === 'TL') return 1
 
-  const providers = [fetchFromFreeCurrencyApi, fetchFromFrankfurter]
-
-  for (const provider of providers) {
-    try {
-      const rate = await provider(currency)
-      setCachedRate(currency, rate)
-      return rate
-    } catch {
-      // Try next provider
-    }
+  try {
+    const rate = await fetchFromExchangeRateApi(currency)
+    setCachedRate(currency, rate)
+    return rate
+  } catch {
+    // Fall back to cache when live request fails
   }
 
-  // All live providers failed — use cached rate
+  // Live provider failed — use cached rate
   const cached = getCachedRate(currency)
   if (cached !== null) return cached
 
-  throw new Error('All exchange rate providers failed')
+  throw new Error('Exchange rate request failed')
 }

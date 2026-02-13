@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { fetchExchangeRate } from '@/lib/exchangeRateService'
 
 /**
@@ -6,8 +6,6 @@ import { fetchExchangeRate } from '@/lib/exchangeRateService'
  * The rate is used for both TL and USD transfers to compute dual-currency amounts.
  */
 export function useExchangeRateQuery() {
-  const queryClient = useQueryClient()
-
   const query = useQuery({
     queryKey: ['exchangeRate', 'USD'],
     queryFn: () => fetchExchangeRate('USD'),
@@ -17,9 +15,7 @@ export function useExchangeRateQuery() {
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10_000),
   })
 
-  const refetch = () => {
-    queryClient.invalidateQueries({ queryKey: ['exchangeRate', 'USD'] })
-  }
+  const refetch = () => query.refetch()
 
   return {
     rate: query.data ?? null,

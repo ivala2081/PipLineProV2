@@ -1,6 +1,6 @@
 'use client'
 
-import { type ComponentProps, type FC, useState } from 'react'
+import { forwardRef, type ComponentProps } from 'react'
 import { cn } from '@ds/utils'
 import { Label } from '../Label'
 
@@ -28,26 +28,19 @@ export type InputProps = ComponentProps<'input'> & {
   inputSize?: InputSize
 }
 
-export const Input: FC<InputProps> = ({
-  className,
-  value: clientValue,
-  defaultValue,
-  id,
-  title,
-  placeholder,
-  onChange,
+export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
+  {
+    className,
+    value,
+    defaultValue,
+    id,
+    title,
+    placeholder,
+    inputSize = 'md',
+    ...props
+  },
   ref,
-  inputSize = 'md',
-  ...props
-}) => {
-  const [value, setInputValue] = useState(clientValue)
-  const changeHandler = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(event.target.value)
-    if (onChange) {
-      onChange(event)
-    }
-  }
-
+) {
   return (
     <div className="relative w-full">
       <input
@@ -64,7 +57,6 @@ export const Input: FC<InputProps> = ({
         value={value}
         defaultValue={defaultValue}
         placeholder={placeholder}
-        onChange={changeHandler}
         {...props}
       />
       {title && (
@@ -77,6 +69,6 @@ export const Input: FC<InputProps> = ({
       )}
     </div>
   )
-}
+})
 
 Input.displayName = 'Input'

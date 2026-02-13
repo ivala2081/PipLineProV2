@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
-import { ArrowsClockwise, SpinnerGap } from '@phosphor-icons/react'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import type { TransferRow } from '@/hooks/useTransfers'
 import type { useLookupQueries } from '@/hooks/queries/useLookupQueries'
@@ -200,6 +199,16 @@ export function TransferDialog({
     defaultValues: getDefaultFormValues(),
   })
 
+  // Exchange rate auto-fetch (always USD/TRY)
+  const {
+    rate: fetchedRate,
+    isError: rateError,
+  } = useExchangeRateQuery()
+  const normalizedFetchedRate = useMemo(() => {
+    if (fetchedRate == null || fetchedRate <= 1) return null
+    return Math.round(fetchedRate * 10000) / 10000
+  }, [fetchedRate])
+
   // Reset form when dialog opens/closes or transfer changes
   useEffect(() => {
     if (open) {
@@ -227,14 +236,15 @@ export function TransferDialog({
         form.reset({
           ...defaults,
           ...remembered,
+          exchange_rate: normalizedFetchedRate ?? defaults.exchange_rate,
           transfer_date: defaults.transfer_date,
         })
       }
     }
-  }, [open, transfer, form, currentOrg?.id])
+  }, [open, transfer, form, currentOrg?.id, normalizedFetchedRate])
 
   // Watch category/psp/currency for submission computation
-  const [categoryId, pspId, currency, rawAmount, exchangeRateValue, transferDate] =
+  const [categoryId, pspId, currency, watchedRawAmount, watchedExchangeRate, transferDate] =
     form.watch([
       'category_id',
       'psp_id',
@@ -244,26 +254,22 @@ export function TransferDialog({
       'transfer_date',
     ])
 
+  // Ensure watched numeric values are always numbers (register can return strings)
+  const rawAmount = Number(watchedRawAmount) || 0
+  const exchangeRateValue = Number(watchedExchangeRate) || 0
+
   // Reset rate override when PSP or date changes
   useEffect(() => {
     setRateOverride(null)
     setShowRateOverride(false)
   }, [pspId, transferDate])
 
-  // Exchange rate auto-fetch (always USD/TRY)
-  const {
-    rate: fetchedRate,
-    isLoading: rateLoading,
-    isError: rateError,
-    refetch: refetchRate,
-  } = useExchangeRateQuery()
-
   // Auto-fill exchange_rate when rate is fetched (only for new transfers)
   useEffect(() => {
-    if (!isEdit && fetchedRate != null && fetchedRate > 1) {
-      form.setValue('exchange_rate', Math.round(fetchedRate * 10000) / 10000)
+    if (open && !isEdit && normalizedFetchedRate != null) {
+      form.setValue('exchange_rate', normalizedFetchedRate)
     }
-  }, [fetchedRate, form, isEdit])
+  }, [open, normalizedFetchedRate, form, isEdit, currentOrg?.id])
 
   // Show toast when exchange rate fetch fails
   useEffect(() => {
@@ -389,6 +395,7 @@ export function TransferDialog({
         form.reset({
           ...defaults,
           ...remembered,
+          exchange_rate: normalizedFetchedRate ?? defaults.exchange_rate,
           transfer_date: defaults.transfer_date,
         })
         setRateOverride(null)
@@ -510,56 +517,6 @@ export function TransferDialog({
             </div>
           </div>
 
-          {/* Exchange Rate (USD/TRY — always visible) */}
-          <div className="sm:col-span-2">
-            <Label className="mb-1 text-xs font-medium tracking-wide text-black/75">
-              {t('transfers.form.exchangeRate')}
-            </Label>
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                min="0"
-                step="0.0001"
-                {...form.register('exchange_rate')}
-                className="flex-1"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="md"
-                className="size-10 shrink-0 p-0"
-                onClick={() => refetchRate()}
-                disabled={rateLoading}
-                title={t('transfers.form.refreshRate')}
-              >
-                {rateLoading ? (
-                  <SpinnerGap className="h-4 w-4 animate-spin" />
-                ) : (
-                  <ArrowsClockwise className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-            {rateError ? (
-              <p className="mt-1 text-xs text-orange">
-                {t(
-                  'transfers.form.exchangeRateWarning',
-                  'Could not fetch rate automatically. Enter manually or retry.',
-                )}
-              </p>
-            ) : (
-              <p className={compactHintClasses}>
-                {t('transfers.form.exchangeRateHint', {
-                  rate: exchangeRateValue,
-                })}
-              </p>
-            )}
-            {form.formState.errors.exchange_rate && (
-              <p className={compactErrorClasses}>
-                {form.formState.errors.exchange_rate.message}
-              </p>
-            )}
-          </div>
-
           {/* Category */}
           <div className="sm:col-span-2">
             <Label className="mb-1 text-xs font-medium tracking-wide text-black/75">
@@ -592,35 +549,44 @@ export function TransferDialog({
           {/* Amount */}
           <div className="sm:col-span-2">
             <Label className="mb-1 text-xs font-medium tracking-wide text-black/75">
-              {t('transfers.form.amount')}
+              {t('transfers.form.amount')} ({currency})
             </Label>
             <Input
               type="number"
               min="0"
               step="0.01"
-              {...form.register('raw_amount')}
+              {...form.register('raw_amount', { valueAsNumber: true })}
               placeholder="0.00"
             />
-            <p className={compactHintClasses}>
-              {t('transfers.form.amountHint')}
-            </p>
-            {rawAmount > 0 && exchangeRateValue > 0 && (
-              <p className="mt-1 text-xs font-medium text-blue">
-                {currency === 'TL'
-                  ? `≈ ${(rawAmount / exchangeRateValue).toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })} USD`
-                  : `≈ ${(rawAmount * exchangeRateValue).toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })} TL`}
-              </p>
-            )}
             {form.formState.errors.raw_amount && (
               <p className={compactErrorClasses}>
                 {form.formState.errors.raw_amount.message}
               </p>
+            )}
+
+
+            {/* Live conversion preview */}
+            {rawAmount > 0 && exchangeRateValue > 0 && (
+              <div className="mt-2 flex items-center gap-2 rounded-lg bg-blue/[0.06] px-3 py-2">
+                <span className="text-xs font-semibold text-blue">
+                  {rawAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}
+                </span>
+                <span className="text-xs text-black/30">=</span>
+                <span className="text-xs font-semibold text-blue">
+                  {currency === 'TL'
+                    ? `${(rawAmount / exchangeRateValue).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })} USD`
+                    : `${(rawAmount * exchangeRateValue).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })} TL`}
+                </span>
+                <span className="ml-auto text-[10px] tabular-nums text-black/30">
+                  1 USD = {exchangeRateValue.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })} TL
+                </span>
+              </div>
             )}
           </div>
 
