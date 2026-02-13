@@ -320,9 +320,11 @@ export function TransferDialog({
     () =>
       lookupData.categories.map((cat) => ({
         value: cat.id,
-        label: cat.name,
+        label: cat.is_deposit
+          ? t('transfers.categoryValues.deposit')
+          : t('transfers.categoryValues.withdrawal'),
       })),
-    [lookupData.categories],
+    [lookupData.categories, t],
   )
 
   const pspOptions = useMemo<SelectOption[]>(

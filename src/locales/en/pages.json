@@ -112,6 +112,10 @@
       "Payment": "Payment",
       "Client": "Client"
     },
+    "categoryValues": {
+      "deposit": "Deposit",
+      "withdrawal": "Withdrawal"
+    },
     "form": {
       "fullName": "Full Name",
       "fullNamePlaceholder": "Enter full name",
@@ -360,7 +364,13 @@
       "hash": "Tx Hash",
       "empty": "No transactions found",
       "loadMore": "Load more",
-      "loading": "Loading..."
+      "loading": "Loading...",
+      "viewAll": "View All Transactions",
+      "fetchingProgress": "{{count}} fetched...",
+      "pageInfo": "Page {{current}} of {{total}}",
+      "perPage": "Per page",
+      "walletNotFound": "Wallet not found",
+      "backToAccounting": "Back to Accounting"
     },
     "toast": {
       "created": "Entry created successfully",

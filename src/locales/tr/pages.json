@@ -112,6 +112,10 @@
       "Payment": "Ödeme",
       "Client": "Müşteri"
     },
+    "categoryValues": {
+      "deposit": "Yatırım",
+      "withdrawal": "Çekim"
+    },
     "form": {
       "fullName": "Ad Soyad",
       "fullNamePlaceholder": "Ad soyad girin",
@@ -360,7 +364,13 @@
       "hash": "İşlem Hash",
       "empty": "İşlem bulunamadı",
       "loadMore": "Daha fazla yükle",
-      "loading": "Yükleniyor..."
+      "loading": "Yükleniyor...",
+      "viewAll": "Tüm İşlemleri Gör",
+      "fetchingProgress": "{{count}} işlem yüklendi...",
+      "pageInfo": "Sayfa {{current}} / {{total}}",
+      "perPage": "Sayfa başına",
+      "walletNotFound": "Cüzdan bulunamadı",
+      "backToAccounting": "Muhasebeye Dön"
     },
     "toast": {
       "created": "Kayıt başarıyla oluşturuldu",

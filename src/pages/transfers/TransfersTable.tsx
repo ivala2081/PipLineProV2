@@ -392,7 +392,11 @@ export function TransfersTable({
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
                           <Tag variant={isDeposit ? 'default' : 'red'}>
-                            {row.category?.name ?? '—'}
+                            {row.category
+                              ? (row.category.is_deposit
+                                  ? t('transfers.categoryValues.deposit')
+                                  : t('transfers.categoryValues.withdrawal'))
+                              : '—'}
                           </Tag>
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-right">
@@ -796,7 +800,11 @@ export function TransfersTable({
                     (detailRow.category?.is_deposit ?? true) ? 'default' : 'red'
                   }
                 >
-                  {detailRow.category?.name ?? '—'}
+                  {detailRow.category
+                    ? (detailRow.category.is_deposit
+                        ? t('transfers.categoryValues.deposit')
+                        : t('transfers.categoryValues.withdrawal'))
+                    : '—'}
                 </Tag>
               </DetailRow>
               <DetailRow label={t('transfers.columns.amount')}>

@@ -41,7 +41,9 @@
       "WebFetch(domain:glama.ai)",
       "Bash(powershell \"\\(Get-Content ''c:\\\\Users\\\\ACER\\\\Desktop\\\\PipLineProV2\\\\ocak.csv''\\).Count\")",
       "Bash(powershell:*)",
-      "Bash(npx tsx:*)"
+      "Bash(npx tsx:*)",
+      "WebFetch(domain:tatumio.github.io)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   }
 }

@@ -1,7 +1,7 @@
 const API_KEY = import.meta.env.VITE_TATUM_API_KEY as string
 const BASE_V4 = import.meta.env.DEV ? '/tatum-api/v4' : 'https://api.tatum.io/v4'
 const BASE_V3 = import.meta.env.DEV ? '/tatum-api/v3' : 'https://api.tatum.io/v3'
-const TIMEOUT_MS = 15_000
+const TIMEOUT_MS = 30_000
 
 /* ── V4 chain name mapping ──────────────────────────────────────── */
 
@@ -374,87 +374,133 @@ interface TronTrc20Tx {
   value?: string
 }
 
+/* ── helpers to normalize raw TRON responses ──────────────────────── */
+
+function normalizeTronNativeTxs(
+  rawTxs: TronRawTx[],
+  address: string,
+): NormalizedTransaction[] {
+  const txs: NormalizedTransaction[] = []
+  for (const tx of rawTxs) {
+    const contract = tx.rawData?.contract?.[0]
+    const val = contract?.parameter?.value
+    if (!val || !tx.txID) continue
+
+    const from = val.ownerAddressBase58 ?? val.owner_address ?? ''
+    const to = val.toAddressBase58 ?? val.to_address ?? ''
+    const direction: 'in' | 'out' = from === address ? 'out' : 'in'
+    const amount = val.amount != null ? (val.amount / 1_000_000).toString() : '0'
+
+    txs.push({
+      hash: tx.txID,
+      chain: 'tron',
+      timestamp: tx.rawData?.timestamp ?? 0,
+      direction,
+      amount,
+      symbol: 'TRX',
+      counterAddress: direction === 'out' ? to : from,
+      blockNumber: tx.blockNumber,
+    })
+  }
+  return txs
+}
+
+function normalizeTronTrc20Txs(
+  rawTxs: TronTrc20Tx[],
+  address: string,
+): NormalizedTransaction[] {
+  const txs: NormalizedTransaction[] = []
+  for (const tx of rawTxs) {
+    if (!tx.transaction_id) continue
+    const from = tx.from ?? ''
+    const to = tx.to ?? ''
+    const direction: 'in' | 'out' = from === address ? 'out' : 'in'
+    const decimals = tx.token_info?.decimals ?? 0
+    const amount = tx.value ? formatTrc20Balance(tx.value, decimals) : '0'
+
+    txs.push({
+      hash: tx.transaction_id,
+      chain: 'tron',
+      timestamp: tx.block_timestamp ?? 0,
+      direction,
+      amount,
+      symbol: tx.token_info?.symbol ?? 'UNKNOWN',
+      tokenAddress: tx.token_info?.address,
+      counterAddress: direction === 'out' ? to : from,
+    })
+  }
+  return txs
+}
+
+/* ── TRON cursor encoding ─────────────────────────────────────────── */
+
+/** Encode native + trc20 cursors into a single string */
+function encodeTronCursor(nativeNext?: string, trc20Next?: string): string | undefined {
+  if (!nativeNext && !trc20Next) return undefined
+  return btoa(JSON.stringify({ n: nativeNext ?? '', t: trc20Next ?? '' }))
+}
+
+function decodeTronCursor(cursor?: string): { nativeNext?: string; trc20Next?: string } {
+  if (!cursor) return {}
+  try {
+    const { n, t } = JSON.parse(atob(cursor))
+    return { nativeNext: n || undefined, trc20Next: t || undefined }
+  } catch {
+    return {}
+  }
+}
+
+/* ── Paginated TRON fetch (native + TRC-20 in parallel) ──────────── */
+
 async function fetchTronTransactions(
   address: string,
-  pageSize = 50,
-  next?: string,
-): Promise<{ txs: NormalizedTransaction[]; next?: string }> {
-  const addr = address.toLowerCase()
+  cursor?: string,
+): Promise<{ txs: NormalizedTransaction[]; nextCursor?: string }> {
+  const { nativeNext, trc20Next } = decodeTronCursor(cursor)
 
-  const params: Record<string, string> = {}
-  if (next) params.next = next
+  // On first call (!cursor) fetch both; on subsequent calls only fetch endpoints that still have pages
+  const isFirstCall = !cursor
+  const shouldFetchNative = isFirstCall || !!nativeNext
+  const shouldFetchTrc20 = isFirstCall || !!trc20Next
+
+  const nativeParams: Record<string, string> = {}
+  if (nativeNext) nativeParams.next = nativeNext
+
+  const trc20Params: Record<string, string> = {}
+  if (trc20Next) trc20Params.next = trc20Next
 
   const [nativeRes, trc20Res] = await Promise.allSettled([
-    tatumFetch<{ transactions?: TronRawTx[]; next?: string }>(
-      BASE_V3,
-      `/tron/transaction/account/${address}`,
-      params,
-    ),
-    tatumFetch<{ transactions?: TronTrc20Tx[]; next?: string }>(
-      BASE_V3,
-      `/tron/transaction/trc20`,
-      { address, ...params },
-    ),
+    shouldFetchNative
+      ? tatumFetch<{ transactions?: TronRawTx[]; next?: string }>(
+          BASE_V3,
+          `/tron/transaction/account/${address}`,
+          nativeParams,
+        )
+      : Promise.resolve({ transactions: [] as TronRawTx[], next: undefined }),
+    shouldFetchTrc20
+      ? tatumFetch<{ transactions?: TronTrc20Tx[]; next?: string }>(
+          BASE_V3,
+          `/tron/transaction/account/${address}/trc20`,
+          trc20Params,
+        )
+      : Promise.resolve({ transactions: [] as TronTrc20Tx[], next: undefined }),
   ])
 
   const txs: NormalizedTransaction[] = []
 
-  // Native TRX + TRC-10
+  const newNativeNext = nativeRes.status === 'fulfilled' ? nativeRes.value.next : undefined
+  const newTrc20Next = trc20Res.status === 'fulfilled' ? trc20Res.value.next : undefined
+
   if (nativeRes.status === 'fulfilled') {
-    for (const tx of nativeRes.value.transactions ?? []) {
-      const contract = tx.rawData?.contract?.[0]
-      const val = contract?.parameter?.value
-      if (!val || !tx.txID) continue
-
-      const from = (val.ownerAddressBase58 ?? val.owner_address ?? '').toLowerCase()
-      const to = (val.toAddressBase58 ?? val.to_address ?? '').toLowerCase()
-      const direction = from === addr ? 'out' : 'in'
-      const amount = val.amount != null ? (val.amount / 1_000_000).toString() : '0'
-
-      txs.push({
-        hash: tx.txID,
-        chain: 'tron',
-        timestamp: tx.rawData?.timestamp ?? 0,
-        direction,
-        amount,
-        symbol: 'TRX',
-        counterAddress: direction === 'out' ? (val.toAddressBase58 ?? val.to_address) : (val.ownerAddressBase58 ?? val.owner_address),
-        blockNumber: tx.blockNumber,
-      })
-    }
+    txs.push(...normalizeTronNativeTxs(nativeRes.value.transactions ?? [], address))
   }
-
-  // TRC-20 token transactions
   if (trc20Res.status === 'fulfilled') {
-    for (const tx of trc20Res.value.transactions ?? []) {
-      if (!tx.transaction_id) continue
-      const from = tx.from?.toLowerCase() ?? ''
-      const to = tx.to?.toLowerCase() ?? ''
-      const direction = from === addr ? 'out' : 'in'
-      const decimals = tx.token_info?.decimals ?? 0
-      const amount = tx.value ? formatTrc20Balance(tx.value, decimals) : '0'
-
-      txs.push({
-        hash: tx.transaction_id,
-        chain: 'tron',
-        timestamp: tx.block_timestamp ?? 0,
-        direction,
-        amount,
-        symbol: tx.token_info?.symbol ?? 'UNKNOWN',
-        tokenAddress: tx.token_info?.address,
-        counterAddress: direction === 'out' ? tx.to : tx.from,
-      })
-    }
+    txs.push(...normalizeTronTrc20Txs(trc20Res.value.transactions ?? [], address))
   }
 
-  // Sort by timestamp descending (newest first)
   txs.sort((a, b) => b.timestamp - a.timestamp)
 
-  const nextCursor =
-    (nativeRes.status === 'fulfilled' ? nativeRes.value.next : undefined) ??
-    (trc20Res.status === 'fulfilled' ? trc20Res.value.next : undefined)
-
-  return { txs: txs.slice(0, pageSize), next: nextCursor }
+  return { txs, nextCursor: encodeTronCursor(newNativeNext, newTrc20Next) }
 }
 
 /* ── v3 Bitcoin transaction history ─────────────────────────────── */
@@ -593,53 +639,53 @@ export async function getTransactionHistory(
   pageSize = 50,
   cursor?: string,
 ): Promise<TransactionHistoryResult> {
+  // TRON: use V3 directly – V4 /data/transactions does NOT return TRC-20 token transfers
+  if (chain === 'tron') {
+    const { txs, nextCursor } = await fetchTronTransactions(address, cursor)
+    return { transactions: txs, nextCursor, hasMore: !!nextCursor }
+  }
+
+  // Bitcoin: use V3 directly
+  if (chain === 'bitcoin') {
+    const offset = parseInt(cursor ?? '0') || 0
+    const { txs, hasMore } = await fetchBitcoinTransactions(address, pageSize, offset)
+    return {
+      transactions: txs,
+      nextCursor: hasMore ? String(offset + pageSize) : undefined,
+      hasMore,
+    }
+  }
+
   if (V4_CHAINS.has(chain)) {
-    try {
-      const v4Chain = toV4Chain(chain)
-      const offset = parseInt(cursor ?? '0') || 0
+    const v4Chain = toV4Chain(chain)
+    const offset = parseInt(cursor ?? '0') || 0
 
-      const params: Record<string, string> = {
-        chain: v4Chain,
-        addresses: address,
-        pageSize: String(pageSize),
-        offset: String(offset),
-        transactionDirection: 'all',
-      }
+    const params: Record<string, string> = {
+      chain: v4Chain,
+      addresses: address,
+      pageSize: String(pageSize),
+      offset: String(offset),
+      transactionDirection: 'all',
+    }
 
-      // V4 response can be a flat array or { result: [...] }
-      const raw = await tatumFetch<TatumTransaction[] | { result: TatumTransaction[] }>(
-        BASE_V4,
-        '/data/transactions',
-        params,
-      )
+    // V4 response can be a flat array or { result: [...] }
+    const raw = await tatumFetch<TatumTransaction[] | { result: TatumTransaction[] }>(
+      BASE_V4,
+      '/data/transactions',
+      params,
+    )
 
-      const txs = Array.isArray(raw) ? raw : (raw.result ?? [])
-      return {
-        transactions: normalizeV4Transactions(txs, chain, address),
-        nextCursor: txs.length === pageSize ? String(offset + pageSize) : undefined,
-        hasMore: txs.length === pageSize,
-      }
-    } catch (v4Error) {
-      // V3 fallback for TRON and Bitcoin if V4 fails
-      if (chain === 'tron') {
-        const { txs, next } = await fetchTronTransactions(address, pageSize, cursor)
-        return { transactions: txs, nextCursor: next, hasMore: !!next }
-      }
-      if (chain === 'bitcoin') {
-        const offset = parseInt(cursor ?? '0') || 0
-        const { txs, hasMore } = await fetchBitcoinTransactions(address, pageSize, offset)
-        return {
-          transactions: txs,
-          nextCursor: hasMore ? String(offset + pageSize) : undefined,
-          hasMore,
-        }
-      }
-      throw v4Error
+    const txs = Array.isArray(raw) ? raw : (raw.result ?? [])
+    return {
+      transactions: normalizeV4Transactions(txs, chain, address),
+      nextCursor: txs.length === pageSize ? String(offset + pageSize) : undefined,
+      hasMore: txs.length === pageSize,
     }
   }
 
   throw new Error(`Unsupported chain for transactions: ${chain}`)
 }
+
 
 export async function getTokenRate(
   symbol: string,

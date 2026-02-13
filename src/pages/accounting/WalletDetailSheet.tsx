@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
-import { Copy, Camera, ArrowsClockwise, Trash } from '@phosphor-icons/react'
+import { useNavigate } from 'react-router-dom'
+import { Copy, Camera, ArrowsClockwise, Trash, ArrowRight } from '@phosphor-icons/react'
 import type { Wallet } from '@/lib/database.types'
 import { useWalletBalanceQuery } from '@/hooks/queries/useWalletBalanceQuery'
 import { useWalletSnapshotsQuery } from '@/hooks/queries/useWalletSnapshotsQuery'
@@ -21,6 +22,8 @@ import {
   TableHead,
   TableCell,
 } from '@ds'
+
+const PREVIEW_TX_COUNT = 10
 
 const CHAIN_LABELS: Record<string, string> = {
   tron: 'TRON',
@@ -44,6 +47,7 @@ interface WalletDetailSheetProps {
 
 export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
   const { t } = useTranslation('pages')
+  const navigate = useNavigate()
 
   const { assets, totalUsd, isLoading: isBalanceLoading, refetch } = useWalletBalanceQuery(
     wallet?.id ?? '',
@@ -71,11 +75,13 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
     if (wallet) navigator.clipboard.writeText(wallet.address)
   }
 
-  const sortedAssets = [...assets].sort((a, b) => b.usdValue - a.usdValue)
+  const sortedAssets = [...assets]
+    .filter((a) => a.usdValue > 0)
+    .sort((a, b) => b.usdValue - a.usdValue)
 
   return (
     <Sheet open={wallet !== null} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-lg">
+      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-2xl">
         <SheetHeader>
           <SheetTitle>{wallet?.label ?? ''}</SheetTitle>
         </SheetHeader>
@@ -183,7 +189,7 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
               )}
             </div>
 
-            {/* Transaction History */}
+            {/* Transaction History (preview – last 10) */}
             <div>
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-black/70">
@@ -200,12 +206,30 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
                 </Button>
               </div>
               <WalletTransactionsTable
-                transactions={txQuery.transactions}
+                transactions={txQuery.transactions.slice(0, PREVIEW_TX_COUNT)}
                 isLoading={txQuery.isLoading}
-                hasMore={txQuery.hasMore}
-                onLoadMore={txQuery.loadMore}
+                hasMore={false}
+                onLoadMore={() => {}}
                 chain={wallet.chain}
               />
+              {txQuery.transactions.length > 0 && (
+                <div className="mt-3 flex justify-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs"
+                    onClick={() => {
+                      onClose()
+                      navigate(`/accounting/wallet/${wallet.id}/transactions`, {
+                        state: { wallet },
+                      })
+                    }}
+                  >
+                    {t('accounting.transactions.viewAll', 'View All Transactions')}
+                    <ArrowRight size={14} />
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Snapshot History */}

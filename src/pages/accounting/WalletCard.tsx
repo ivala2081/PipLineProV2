@@ -53,8 +53,10 @@ export function WalletCard({ wallet, onViewDetail, onDelete }: WalletCardProps) 
     navigator.clipboard.writeText(wallet.address)
   }
 
-  // Separate native from fungible, sort by USD value
-  const sortedAssets = [...assets].sort((a, b) => b.usdValue - a.usdValue)
+  // Only show tokens with a USD value, sorted highest first
+  const sortedAssets = [...assets]
+    .filter((a) => a.usdValue > 0)
+    .sort((a, b) => b.usdValue - a.usdValue)
 
   return (
     <Card padding="none" className="group flex flex-col overflow-hidden border border-black/10 bg-bg1">
