@@ -4,8 +4,8 @@ import { Copy, Camera, ArrowsClockwise, Trash, ArrowRight } from '@phosphor-icon
 import type { Wallet } from '@/lib/database.types'
 import { useWalletBalanceQuery } from '@/hooks/queries/useWalletBalanceQuery'
 import { useWalletSnapshotsQuery } from '@/hooks/queries/useWalletSnapshotsQuery'
-import { useWalletTransactionsQuery } from '@/hooks/queries/useWalletTransactionsQuery'
-import { WalletTransactionsTable } from './WalletTransactionsTable'
+import { useWalletTransfersQuery } from '@/hooks/queries/useWalletTransfersQuery'
+import { WalletTransfersTable } from './WalletTransfersTable'
 import { useToast } from '@/hooks/useToast'
 import {
   Sheet,
@@ -64,7 +64,7 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
       wallet?.address ?? '',
     )
 
-  const txQuery = useWalletTransactionsQuery(
+  const txQuery = useWalletTransfersQuery(
     wallet?.id ?? '',
     wallet?.chain ?? '',
     wallet?.address ?? '',
@@ -189,11 +189,11 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
               )}
             </div>
 
-            {/* Transaction History (preview – last 10) */}
+            {/* Transfer History (preview – last 10) */}
             <div>
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-black/70">
-                  {t('accounting.transactions.title', 'Transactions')}
+                  {t('accounting.transfers.title', 'Transfers')}
                 </h3>
                 <Button
                   variant="ghost"
@@ -205,14 +205,15 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
                   {t('accounting.wallets.refresh')}
                 </Button>
               </div>
-              <WalletTransactionsTable
-                transactions={txQuery.transactions.slice(0, PREVIEW_TX_COUNT)}
+              <WalletTransfersTable
+                transfers={txQuery.transfers.slice(0, PREVIEW_TX_COUNT)}
                 isLoading={txQuery.isLoading}
                 hasMore={false}
                 onLoadMore={() => {}}
                 chain={wallet.chain}
+                walletAddress={wallet.address}
               />
-              {txQuery.transactions.length > 0 && (
+              {txQuery.transfers.length > 0 && (
                 <div className="mt-3 flex justify-center">
                   <Button
                     variant="outline"
@@ -220,12 +221,12 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
                     className="gap-1.5 text-xs"
                     onClick={() => {
                       onClose()
-                      navigate(`/accounting/wallet/${wallet.id}/transactions`, {
+                      navigate(`/accounting/wallet/${wallet.id}/transfers`, {
                         state: { wallet },
                       })
                     }}
                   >
-                    {t('accounting.transactions.viewAll', 'View All Transactions')}
+                    {t('accounting.transfers.viewAll', 'View All Transfers')}
                     <ArrowRight size={14} />
                   </Button>
                 </div>

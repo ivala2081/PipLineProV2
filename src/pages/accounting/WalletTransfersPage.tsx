@@ -3,8 +3,8 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ArrowLeft, ArrowsClockwise, Copy, CaretLeft, CaretRight } from '@phosphor-icons/react'
 import { useWalletsQuery } from '@/hooks/queries/useWalletsQuery'
-import { useWalletTransactionsQuery } from '@/hooks/queries/useWalletTransactionsQuery'
-import { WalletTransactionsTable } from './WalletTransactionsTable'
+import { useWalletTransfersQuery } from '@/hooks/queries/useWalletTransfersQuery'
+import { WalletTransfersTable } from './WalletTransfersTable'
 import { Button, Tag, Skeleton } from '@ds'
 import type { Wallet } from '@/lib/database.types'
 
@@ -19,7 +19,7 @@ const CHAIN_LABELS: Record<string, string> = {
 const PAGE_SIZE_OPTIONS = [25, 50, 100, 200] as const
 const DEFAULT_PAGE_SIZE = 50
 
-export function WalletTransactionsPage() {
+export function WalletTransfersPage() {
   const { walletId } = useParams<{ walletId: string }>()
   const location = useLocation()
   const navigate = useNavigate()
@@ -29,7 +29,7 @@ export function WalletTransactionsPage() {
   const { wallets, isLoading: isWalletsLoading } = useWalletsQuery()
   const wallet = stateWallet ?? wallets.find((w) => w.id === walletId) ?? null
 
-  const txQuery = useWalletTransactionsQuery(
+  const txQuery = useWalletTransfersQuery(
     wallet?.id ?? '',
     wallet?.chain ?? '',
     wallet?.address ?? '',
@@ -39,10 +39,10 @@ export function WalletTransactionsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
 
-  const totalLoaded = txQuery.transactions.length
+  const totalLoaded = txQuery.transfers.length
   const start = (currentPage - 1) * pageSize
   const end = start + pageSize
-  const pageTxs = txQuery.transactions.slice(start, end)
+  const pageTxs = txQuery.transfers.slice(start, end)
 
   // Known page count so far (may grow as more data is fetched)
   const loadedPages = Math.ceil(totalLoaded / pageSize) || 1
@@ -78,11 +78,11 @@ export function WalletTransactionsPage() {
     return (
       <div className="flex flex-col items-center gap-4 py-20">
         <p className="text-sm text-black/50">
-          {t('accounting.transactions.walletNotFound', 'Wallet not found')}
+          {t('accounting.transfers.walletNotFound', 'Wallet not found')}
         </p>
         <Button variant="outline" size="sm" onClick={() => navigate('/accounting')}>
           <ArrowLeft size={14} />
-          {t('accounting.transactions.backToAccounting', 'Back to Accounting')}
+          {t('accounting.transfers.backToAccounting', 'Back to Accounting')}
         </Button>
       </div>
     )
@@ -138,10 +138,10 @@ export function WalletTransactionsPage() {
         </Button>
       </div>
 
-      {/* Transaction count + page info */}
+      {/* Transfer count + page info */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-black/50">
-          {t('accounting.transactions.title', 'Transactions')}
+          {t('accounting.transfers.title', 'Transfers')}
           {!txQuery.isLoading && (
             <span className="ml-1 font-medium text-black/70">
               ({totalLoaded}{txQuery.hasMore ? '+' : ''})
@@ -150,7 +150,7 @@ export function WalletTransactionsPage() {
         </p>
         {totalPages > 1 && (
           <p className="text-xs text-black/40">
-            {t('accounting.transactions.pageInfo', 'Page {{current}} of {{total}}', {
+            {t('accounting.transfers.pageInfo', 'Page {{current}} of {{total}}', {
               current: currentPage,
               total: txQuery.hasMore ? `${totalPages}+` : totalPages,
             })}
@@ -158,13 +158,14 @@ export function WalletTransactionsPage() {
         )}
       </div>
 
-      {/* Transactions table (current page only) */}
-      <WalletTransactionsTable
-        transactions={pageTxs}
+      {/* Transfers table (current page only) */}
+      <WalletTransfersTable
+        transfers={pageTxs}
         isLoading={txQuery.isLoading && pageTxs.length === 0}
         hasMore={false}
         onLoadMore={() => {}}
         chain={wallet.chain}
+        walletAddress={wallet.address}
       />
 
       {/* Pagination controls */}
@@ -172,7 +173,7 @@ export function WalletTransactionsPage() {
         {/* Page size selector */}
         <div className="flex items-center gap-2">
           <span className="text-xs text-black/40">
-            {t('accounting.transactions.perPage', 'Per page')}:
+            {t('accounting.transfers.perPage', 'Per page')}:
           </span>
           <div className="flex gap-0.5 rounded-lg border border-black/10 p-0.5">
             {PAGE_SIZE_OPTIONS.map((size) => (

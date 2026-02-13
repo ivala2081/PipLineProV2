@@ -2,14 +2,14 @@ import { useState, useEffect, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/queryKeys'
 import {
-  getTransactionHistory,
-  type NormalizedTransaction,
-  type TransactionHistoryResult,
+  getTransferHistory,
+  type NormalizedTransfer,
+  type TransferHistoryResult,
 } from '@/lib/tatumService'
 
-interface UseWalletTransactionsReturn {
-  /** All accumulated transactions fetched so far */
-  transactions: NormalizedTransaction[]
+interface UseWalletTransfersReturn {
+  /** All accumulated transfers fetched so far */
+  transfers: NormalizedTransfer[]
   isLoading: boolean
   error: string | null
   /** True if the API has more pages to fetch */
@@ -20,21 +20,21 @@ interface UseWalletTransactionsReturn {
   refetch: () => void
 }
 
-export function useWalletTransactionsQuery(
+export function useWalletTransfersQuery(
   walletId: string,
   chain: string,
   address: string,
   enabled = true,
-): UseWalletTransactionsReturn {
+): UseWalletTransfersReturn {
   const [page, setPage] = useState(0)
-  const [allTxs, setAllTxs] = useState<NormalizedTransaction[]>([])
+  const [allTxs, setAllTxs] = useState<NormalizedTransfer[]>([])
   const [nextCursor, setNextCursor] = useState<string | undefined>(undefined)
   const [hasMore, setHasMore] = useState(false)
 
   // Use page number as part of query key so each "loadMore" triggers a new fetch
-  const { data, isLoading, error, refetch } = useQuery<TransactionHistoryResult>({
-    queryKey: queryKeys.wallets.transactions(walletId, String(page)),
-    queryFn: () => getTransactionHistory(chain, address, 50, page === 0 ? undefined : nextCursor),
+  const { data, isLoading, error, refetch } = useQuery<TransferHistoryResult>({
+    queryKey: queryKeys.wallets.transfers(walletId, String(page)),
+    queryFn: () => getTransferHistory(chain, address, 50, page === 0 ? undefined : nextCursor),
     enabled: enabled && !!address && !!chain,
     staleTime: 2 * 60_000,
     refetchOnWindowFocus: false,
@@ -44,11 +44,11 @@ export function useWalletTransactionsQuery(
   useEffect(() => {
     if (!data) return
     if (page === 0) {
-      setAllTxs(data.transactions)
+      setAllTxs(data.transfers)
     } else {
       setAllTxs((prev) => {
         const seen = new Set(prev.map((tx) => tx.hash))
-        const fresh = data.transactions.filter((tx) => !seen.has(tx.hash))
+        const fresh = data.transfers.filter((tx) => !seen.has(tx.hash))
         return [...prev, ...fresh]
       })
     }
@@ -70,7 +70,7 @@ export function useWalletTransactionsQuery(
   }, [refetch])
 
   return {
-    transactions: allTxs,
+    transfers: allTxs,
     isLoading,
     error: error instanceof Error ? error.message : null,
     hasMore,

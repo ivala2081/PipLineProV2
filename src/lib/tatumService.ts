@@ -63,8 +63,8 @@ export interface TatumTransaction {
   tokenId?: string
 }
 
-/** Unified transaction shape across all chains */
-export interface NormalizedTransaction {
+/** Unified transfer shape across all chains */
+export interface NormalizedTransfer {
   hash: string
   chain: string
   timestamp: number
@@ -73,8 +73,13 @@ export interface NormalizedTransaction {
   symbol: string
   tokenAddress?: string
   counterAddress?: string
+  fromAddress?: string
+  toAddress?: string
   blockNumber?: number
 }
+
+/** @deprecated Use NormalizedTransfer instead */
+export type NormalizedTransaction = NormalizedTransfer
 
 /** Block explorer URLs per chain */
 export const EXPLORER_TX_URL: Record<string, string> = {
@@ -365,8 +370,9 @@ interface TronRawTx {
 }
 
 interface TronTrc20Tx {
-  transaction_id: string
-  token_info?: { symbol?: string; address?: string; decimals?: number; name?: string }
+  // Tatum V3 returns camelCase field names (not snake_case!)
+  txID: string
+  tokenInfo?: { symbol?: string; address?: string; decimals?: number; name?: string }
   block_timestamp?: number
   from: string
   to: string
@@ -376,29 +382,46 @@ interface TronTrc20Tx {
 
 /* ── helpers to normalize raw TRON responses ──────────────────────── */
 
+/** Minimum TRX amount to display – filters out smart-contract dust */
+const TRON_NATIVE_DUST_THRESHOLD = 0.001 // 1000 sun
+
 function normalizeTronNativeTxs(
   rawTxs: TronRawTx[],
   address: string,
-): NormalizedTransaction[] {
-  const txs: NormalizedTransaction[] = []
+): NormalizedTransfer[] {
+  const txs: NormalizedTransfer[] = []
   for (const tx of rawTxs) {
     const contract = tx.rawData?.contract?.[0]
     const val = contract?.parameter?.value
     if (!val || !tx.txID) continue
 
+    // Only include actual TRX value transfers (TransferContract).
+    // Skip TriggerSmartContract, FreezeBalanceV2Contract, VoteWitnessContract etc.
+    // which are NOT real transfers and produce noise (e.g. 0.000001 TRX).
+    // FIX: previously the check `contract.type && ...` allowed undefined types through.
+    if (contract?.type !== 'TransferContract') continue
+
+    // Skip failed transactions
+    if (tx.ret?.[0]?.contractRet && tx.ret[0].contractRet !== 'SUCCESS') continue
+
     const from = val.ownerAddressBase58 ?? val.owner_address ?? ''
     const to = val.toAddressBase58 ?? val.to_address ?? ''
     const direction: 'in' | 'out' = from === address ? 'out' : 'in'
-    const amount = val.amount != null ? (val.amount / 1_000_000).toString() : '0'
+    const amountNum = val.amount != null ? val.amount / 1_000_000 : 0
+
+    // Filter out dust amounts (smart contract interaction artifacts)
+    if (amountNum < TRON_NATIVE_DUST_THRESHOLD) continue
 
     txs.push({
       hash: tx.txID,
       chain: 'tron',
       timestamp: tx.rawData?.timestamp ?? 0,
       direction,
-      amount,
+      amount: amountNum.toString(),
       symbol: 'TRX',
       counterAddress: direction === 'out' ? to : from,
+      fromAddress: from,
+      toAddress: to,
       blockNumber: tx.blockNumber,
     })
   }
@@ -408,25 +431,38 @@ function normalizeTronNativeTxs(
 function normalizeTronTrc20Txs(
   rawTxs: TronTrc20Tx[],
   address: string,
-): NormalizedTransaction[] {
-  const txs: NormalizedTransaction[] = []
+): NormalizedTransfer[] {
+  const txs: NormalizedTransfer[] = []
   for (const tx of rawTxs) {
-    if (!tx.transaction_id) continue
+    // Tatum V3 uses "txID" (camelCase), not "transaction_id"
+    if (!tx.txID) continue
+
+    // Skip Approval events – they carry type="Approval" and are not transfers
+    if (tx.type && tx.type !== 'Transfer') continue
+
     const from = tx.from ?? ''
     const to = tx.to ?? ''
     const direction: 'in' | 'out' = from === address ? 'out' : 'in'
-    const decimals = tx.token_info?.decimals ?? 0
+
+    // Tatum V3 uses "tokenInfo" (camelCase), not "token_info"
+    const tokenInfo = tx.tokenInfo
+    const decimals = tokenInfo?.decimals ?? 0
     const amount = tx.value ? formatTrc20Balance(tx.value, decimals) : '0'
 
+    // Skip zero-value token events (approve calls, etc.)
+    if (parseFloat(amount) === 0) continue
+
     txs.push({
-      hash: tx.transaction_id,
+      hash: tx.txID,
       chain: 'tron',
       timestamp: tx.block_timestamp ?? 0,
       direction,
       amount,
-      symbol: tx.token_info?.symbol ?? 'UNKNOWN',
-      tokenAddress: tx.token_info?.address,
+      symbol: tokenInfo?.symbol ?? resolveTokenSymbol('tron', tokenInfo?.address) ?? 'UNKNOWN',
+      tokenAddress: tokenInfo?.address,
       counterAddress: direction === 'out' ? to : from,
+      fromAddress: from,
+      toAddress: to,
     })
   }
   return txs
@@ -452,10 +488,10 @@ function decodeTronCursor(cursor?: string): { nativeNext?: string; trc20Next?: s
 
 /* ── Paginated TRON fetch (native + TRC-20 in parallel) ──────────── */
 
-async function fetchTronTransactions(
+async function fetchTronTransfers(
   address: string,
   cursor?: string,
-): Promise<{ txs: NormalizedTransaction[]; nextCursor?: string }> {
+): Promise<{ txs: NormalizedTransfer[]; nextCursor?: string }> {
   const { nativeNext, trc20Next } = decodeTronCursor(cursor)
 
   // On first call (!cursor) fetch both; on subsequent calls only fetch endpoints that still have pages
@@ -486,24 +522,80 @@ async function fetchTronTransactions(
       : Promise.resolve({ transactions: [] as TronTrc20Tx[], next: undefined }),
   ])
 
-  const txs: NormalizedTransaction[] = []
-
   const newNativeNext = nativeRes.status === 'fulfilled' ? nativeRes.value.next : undefined
   const newTrc20Next = trc20Res.status === 'fulfilled' ? trc20Res.value.next : undefined
 
-  if (nativeRes.status === 'fulfilled') {
-    txs.push(...normalizeTronNativeTxs(nativeRes.value.transactions ?? [], address))
+  // Log errors so we know when an endpoint fails
+  if (nativeRes.status === 'rejected') {
+    console.warn('[Tatum] TRON native tx fetch failed:', nativeRes.reason)
   }
-  if (trc20Res.status === 'fulfilled') {
-    txs.push(...normalizeTronTrc20Txs(trc20Res.value.transactions ?? [], address))
+  if (trc20Res.status === 'rejected') {
+    console.warn('[Tatum] TRON TRC-20 tx fetch failed:', trc20Res.reason)
   }
 
+  const rawNativeTxs = nativeRes.status === 'fulfilled'
+    ? (nativeRes.value.transactions ?? [])
+    : []
+
+  // Step 1: Build txID → { timestamp, blockNumber } map from ALL native transactions.
+  // The TRC-20 endpoint does NOT return timestamps, but every TRC-20 transfer also
+  // appears in the native endpoint as a TriggerSmartContract. We use native data
+  // purely to look up timestamps for TRC-20 transfers.
+  const nativeTimestampMap = new Map<string, { ts: number; block?: number }>()
+  for (const tx of rawNativeTxs) {
+    if (tx.txID) {
+      nativeTimestampMap.set(tx.txID, {
+        ts: tx.rawData?.timestamp ?? 0,
+        block: tx.blockNumber,
+      })
+    }
+  }
+
+  // Step 2: Normalize TRC-20 transfers and enrich with timestamps from native map.
+  // The TRC-20 endpoint returns newest-first but includes NO timestamps.
+  // We look up timestamps from native data where available; for the rest we assign
+  // synthetic descending timestamps so they maintain their API sort order.
+  const trc20Txs: NormalizedTransfer[] = []
+  if (trc20Res.status === 'fulfilled') {
+    const rawTrc20 = normalizeTronTrc20Txs(trc20Res.value.transactions ?? [], address)
+    // Find the best "anchor" timestamp: first available native match or fallback to now
+    let anchorTs = Date.now()
+    for (const tx of rawTrc20) {
+      const info = nativeTimestampMap.get(tx.hash)
+      if (info && info.ts > 0) { anchorTs = info.ts; break }
+    }
+
+    for (let i = 0; i < rawTrc20.length; i++) {
+      const tx = rawTrc20[i]
+      const nativeInfo = nativeTimestampMap.get(tx.hash)
+      if (nativeInfo && nativeInfo.ts > 0) {
+        tx.timestamp = nativeInfo.ts
+        tx.blockNumber = tx.blockNumber ?? nativeInfo.block
+      } else {
+        // Assign synthetic timestamp: decreasing from anchor so order is preserved
+        tx.timestamp = anchorTs - i * 1000
+      }
+      trc20Txs.push(tx)
+    }
+  }
+
+  // Step 3: Normalize native TRX transfers (only real TransferContract, filtered)
+  // and deduplicate against TRC-20 results
+  const trc20Hashes = new Set(trc20Txs.map((tx) => tx.hash))
+  const nativeTxs: NormalizedTransfer[] = []
+  for (const tx of normalizeTronNativeTxs(rawNativeTxs, address)) {
+    if (trc20Hashes.has(tx.hash)) continue
+    nativeTxs.push(tx)
+  }
+
+  // Step 4: Merge TRC-20 (primary) + native TRX, sort by timestamp desc
+  const txs = [...trc20Txs, ...nativeTxs]
   txs.sort((a, b) => b.timestamp - a.timestamp)
 
   return { txs, nextCursor: encodeTronCursor(newNativeNext, newTrc20Next) }
 }
 
-/* ── v3 Bitcoin transaction history ─────────────────────────────── */
+/* ── v3 Bitcoin transfer history ──────────────────────────────── */
 
 interface BtcTx {
   hash: string
@@ -514,18 +606,18 @@ interface BtcTx {
   fee?: string
 }
 
-async function fetchBitcoinTransactions(
+async function fetchBitcoinTransfers(
   address: string,
   pageSize = 50,
   offset = 0,
-): Promise<{ txs: NormalizedTransaction[]; hasMore: boolean }> {
+): Promise<{ txs: NormalizedTransfer[]; hasMore: boolean }> {
   const data = await tatumFetch<BtcTx[]>(
     BASE_V3,
     `/bitcoin/transaction/address/${address}`,
     { pageSize: String(pageSize), offset: String(offset) },
   )
 
-  const txs: NormalizedTransaction[] = []
+  const txs: NormalizedTransfer[] = []
 
   for (const tx of data ?? []) {
     if (!tx.hash) continue
@@ -566,13 +658,13 @@ async function fetchBitcoinTransactions(
   return { txs, hasMore: data?.length === pageSize }
 }
 
-/* ── v4 transaction history (EVM + Solana) ──────────────────────── */
+/* ── v4 transfer history (EVM + Solana) ───────────────────────── */
 
-function normalizeV4Transactions(
+function normalizeV4Transfers(
   v4Txs: TatumTransaction[],
   chain: string,
   address: string,
-): NormalizedTransaction[] {
+): NormalizedTransfer[] {
   return v4Txs.map((tx) => {
     // V4 uses transactionSubtype: 'incoming' | 'outgoing' | 'zero-transfer'
     const direction: 'in' | 'out' =
@@ -627,30 +719,33 @@ export async function getWalletPortfolio(
   throw new Error(`Unsupported chain: ${chain}`)
 }
 
-export interface TransactionHistoryResult {
-  transactions: NormalizedTransaction[]
+export interface TransferHistoryResult {
+  transfers: NormalizedTransfer[]
   nextCursor?: string
   hasMore: boolean
 }
 
-export async function getTransactionHistory(
+/** @deprecated Use TransferHistoryResult instead */
+export type TransactionHistoryResult = TransferHistoryResult
+
+export async function getTransferHistory(
   chain: string,
   address: string,
   pageSize = 50,
   cursor?: string,
-): Promise<TransactionHistoryResult> {
+): Promise<TransferHistoryResult> {
   // TRON: use V3 directly – V4 /data/transactions does NOT return TRC-20 token transfers
   if (chain === 'tron') {
-    const { txs, nextCursor } = await fetchTronTransactions(address, cursor)
-    return { transactions: txs, nextCursor, hasMore: !!nextCursor }
+    const { txs, nextCursor } = await fetchTronTransfers(address, cursor)
+    return { transfers: txs, nextCursor, hasMore: !!nextCursor }
   }
 
   // Bitcoin: use V3 directly
   if (chain === 'bitcoin') {
     const offset = parseInt(cursor ?? '0') || 0
-    const { txs, hasMore } = await fetchBitcoinTransactions(address, pageSize, offset)
+    const { txs, hasMore } = await fetchBitcoinTransfers(address, pageSize, offset)
     return {
-      transactions: txs,
+      transfers: txs,
       nextCursor: hasMore ? String(offset + pageSize) : undefined,
       hasMore,
     }
@@ -666,6 +761,7 @@ export async function getTransactionHistory(
       pageSize: String(pageSize),
       offset: String(offset),
       transactionDirection: 'all',
+      transactionTypes: 'fungible,native',
     }
 
     // V4 response can be a flat array or { result: [...] }
@@ -677,14 +773,17 @@ export async function getTransactionHistory(
 
     const txs = Array.isArray(raw) ? raw : (raw.result ?? [])
     return {
-      transactions: normalizeV4Transactions(txs, chain, address),
+      transfers: normalizeV4Transfers(txs, chain, address),
       nextCursor: txs.length === pageSize ? String(offset + pageSize) : undefined,
       hasMore: txs.length === pageSize,
     }
   }
 
-  throw new Error(`Unsupported chain for transactions: ${chain}`)
+  throw new Error(`Unsupported chain for transfers: ${chain}`)
 }
+
+/** @deprecated Use getTransferHistory instead */
+export const getTransactionHistory = getTransferHistory
 
 
 export async function getTokenRate(
