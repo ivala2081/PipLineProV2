@@ -1,0 +1,262 @@
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import {
+  CaretLeft,
+  CaretRight,
+  ArrowUp,
+  ArrowDown,
+  CurrencyDollar,
+  Bank,
+  CreditCard,
+  Coins,
+  HashStraight,
+  ChartBar,
+} from '@phosphor-icons/react'
+import { useMonthlyAnalysisQuery } from '@/hooks/queries/useMonthlyAnalysisQuery'
+import { MonthlyCharts } from './MonthlyCharts'
+import { Button, Skeleton, EmptyState } from '@ds'
+
+function formatNumber(n: number, lang: string) {
+  return n.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+}
+
+/* ── KPI Card ──────────────────────────────────────── */
+
+function KpiCard({
+  label,
+  icon: Icon,
+  valueTry,
+  valueUsd,
+  suffix,
+  color = 'neutral',
+  lang,
+}: {
+  label: string
+  icon: React.ElementType
+  valueTry?: number
+  valueUsd?: number
+  suffix?: string
+  color?: 'green' | 'red' | 'conditional' | 'neutral'
+  lang: string
+}) {
+  const resolvedColor =
+    color === 'conditional'
+      ? (valueTry ?? 0) >= 0
+        ? 'green'
+        : 'red'
+      : color
+
+  const valueClass =
+    resolvedColor === 'green'
+      ? 'text-green'
+      : resolvedColor === 'red'
+        ? 'text-red'
+        : 'text-black/80'
+
+  return (
+    <div className="rounded-xl border border-black/10 bg-black/[0.015] px-4 py-3.5">
+      <div className="flex items-center gap-1.5">
+        <Icon size={14} className="text-black/30" />
+        <span className="text-[11px] font-medium uppercase tracking-wider text-black/40">
+          {label}
+        </span>
+      </div>
+      {valueTry !== undefined && (
+        <p className={`mt-2 font-mono text-xl font-bold tabular-nums ${valueClass}`}>
+          {formatNumber(Math.abs(valueTry), lang)}
+          <span className="ml-1 text-xs font-medium text-black/25">
+            {suffix ?? '₺'}
+          </span>
+        </p>
+      )}
+      {valueUsd !== undefined && (
+        <p className="mt-0.5 font-mono text-xs tabular-nums text-black/30">
+          {formatNumber(Math.abs(valueUsd), lang)} $
+        </p>
+      )}
+    </div>
+  )
+}
+
+/* ── Loading skeleton ──────────────────────────────── */
+
+function KpiSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-4 gap-3">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div
+            key={i}
+            className="rounded-xl border border-black/10 bg-black/[0.015] px-4 py-3.5"
+          >
+            <Skeleton className="h-3 w-20 rounded" />
+            <Skeleton className="mt-3 h-6 w-28 rounded" />
+            <Skeleton className="mt-1.5 h-3 w-16 rounded" />
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <Skeleton className="h-[310px] rounded-xl" />
+        <Skeleton className="h-[310px] rounded-xl" />
+      </div>
+    </div>
+  )
+}
+
+/* ── Main component ────────────────────────────────── */
+
+export function MonthlyTab() {
+  const { t, i18n } = useTranslation('pages')
+  const lang = i18n.language
+
+  const now = new Date()
+  const [year, setYear] = useState(now.getFullYear())
+  const [month, setMonth] = useState(now.getMonth() + 1)
+
+  const { data, isLoading } = useMonthlyAnalysisQuery(year, month)
+
+  const goToPrevMonth = () => {
+    if (month === 1) {
+      setYear((y) => y - 1)
+      setMonth(12)
+    } else {
+      setMonth((m) => m - 1)
+    }
+  }
+
+  const goToNextMonth = () => {
+    if (month === 12) {
+      setYear((y) => y + 1)
+      setMonth(1)
+    } else {
+      setMonth((m) => m + 1)
+    }
+  }
+
+  const isCurrentMonth =
+    year === now.getFullYear() && month === now.getMonth() + 1
+
+  const monthLabel = new Date(year, month - 1, 1).toLocaleDateString(
+    lang === 'tr' ? 'tr-TR' : 'en-US',
+    { month: 'long', year: 'numeric' },
+  )
+
+  return (
+    <div className="space-y-6">
+      {/* Month picker */}
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="sm" onClick={goToPrevMonth} className="size-8 p-0">
+          <CaretLeft size={16} weight="bold" />
+        </Button>
+        <span className="min-w-[160px] text-center text-sm font-semibold capitalize text-black/70">
+          {monthLabel}
+        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={goToNextMonth}
+          disabled={isCurrentMonth}
+          className="size-8 p-0"
+        >
+          <CaretRight size={16} weight="bold" />
+        </Button>
+      </div>
+
+      {/* Loading state */}
+      {isLoading && <KpiSkeleton />}
+
+      {/* Empty state */}
+      {!isLoading && (!data || data.kpis.transfer_count === 0) && (
+        <EmptyState
+          icon={ChartBar}
+          title={t('transfers.monthly.noData')}
+        />
+      )}
+
+      {/* Data */}
+      {!isLoading && data && data.kpis.transfer_count > 0 && (
+        <>
+          {/* KPI cards: 4 columns × 2 rows */}
+          <div className="grid grid-cols-4 gap-3">
+            <KpiCard
+              label={t('transfers.monthly.totalDeposits')}
+              icon={ArrowDown}
+              valueTry={data.kpis.total_deposits_try}
+              valueUsd={data.kpis.total_deposits_usd}
+              color="green"
+              lang={lang}
+            />
+            <KpiCard
+              label={t('transfers.monthly.totalWithdrawals')}
+              icon={ArrowUp}
+              valueTry={data.kpis.total_withdrawals_try}
+              valueUsd={data.kpis.total_withdrawals_usd}
+              color="red"
+              lang={lang}
+            />
+            <KpiCard
+              label={t('transfers.monthly.net')}
+              icon={ChartBar}
+              valueTry={data.kpis.total_deposits_try - data.kpis.total_withdrawals_try}
+              valueUsd={data.kpis.total_deposits_usd - data.kpis.total_withdrawals_usd}
+              color="conditional"
+              lang={lang}
+            />
+            <KpiCard
+              label={t('transfers.monthly.bankVolume')}
+              icon={Bank}
+              valueTry={data.kpis.total_bank_volume}
+              color="neutral"
+              lang={lang}
+            />
+            <KpiCard
+              label={t('transfers.monthly.creditCardVolume')}
+              icon={CreditCard}
+              valueTry={data.kpis.total_credit_card_volume}
+              color="neutral"
+              lang={lang}
+            />
+            <KpiCard
+              label={t('transfers.monthly.usdtVolume')}
+              icon={CurrencyDollar}
+              valueTry={data.kpis.total_usdt_volume}
+              suffix="$"
+              color="neutral"
+              lang={lang}
+            />
+            <KpiCard
+              label={t('transfers.monthly.commission')}
+              icon={Coins}
+              valueTry={data.kpis.total_commission_try}
+              color="neutral"
+              lang={lang}
+            />
+            {/* Transfer Count — special: plain number, no currency */}
+            <div className="rounded-xl border border-black/10 bg-black/[0.015] px-4 py-3.5">
+              <div className="flex items-center gap-1.5">
+                <HashStraight size={14} className="text-black/30" />
+                <span className="text-[11px] font-medium uppercase tracking-wider text-black/40">
+                  {t('transfers.monthly.transferCount')}
+                </span>
+              </div>
+              <p className="mt-2 font-mono text-xl font-bold tabular-nums text-black/80">
+                {data.kpis.transfer_count.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US')}
+              </p>
+              <p className="mt-0.5 text-xs tabular-nums text-black/30">
+                {data.kpis.deposit_count} {t('transfers.monthly.deposits').toLowerCase()}
+                {' / '}
+                {data.kpis.withdrawal_count} {t('transfers.monthly.withdrawals').toLowerCase()}
+              </p>
+            </div>
+          </div>
+
+          {/* Charts + Breakdowns */}
+          <MonthlyCharts data={data} lang={lang} />
+        </>
+      )}
+    </div>
+  )
+}

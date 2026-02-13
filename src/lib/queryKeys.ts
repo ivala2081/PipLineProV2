@@ -7,6 +7,8 @@ export const queryKeys = {
     detail: (id: string) => [...queryKeys.transfers.all, 'detail', id] as const,
     audit: (transferId: string, page: number) =>
       [...queryKeys.transfers.all, 'audit', transferId, page] as const,
+    monthlySummary: (orgId: string, year: number, month: number) =>
+      [...queryKeys.transfers.all, 'monthlySummary', orgId, year, month] as const,
   },
   lookups: {
     all: ['lookups'] as const,

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
@@ -8,20 +9,26 @@ import { OrganizationProvider } from '@/app/providers/OrganizationProvider'
 import { AppToastProvider } from '@/hooks/useToast'
 import { usePresence } from '@/hooks/usePresence'
 import { AppLayout } from '@/layouts/AppLayout'
-import { LoginPage } from '@/pages/login'
-import { ForgotPasswordPage } from '@/pages/forgot-password'
-import { ResetPasswordPage } from '@/pages/reset-password'
-import { DashboardPage } from '@/pages/dashboard'
-import { TransfersPage } from '@/pages/transfers'
-import { AccountingPage } from '@/pages/accounting'
-import { WalletTransactionsPage } from '@/pages/accounting/WalletTransactionsPage'
-import { Module2Page } from '@/pages/modules/module-2'
-import { Module3Page } from '@/pages/modules/module-3'
-import { MembersPage } from '@/pages/management/members'
-import { MemberProfilePage } from '@/pages/members/MemberProfilePage'
-import { OrganizationsListPage } from '@/pages/organizations'
-import { OrganizationDetailPage } from '@/pages/organizations/OrganizationDetailPage'
+import { PageErrorBoundary } from '@/components/ErrorBoundary'
 import type { ReactNode } from 'react'
+
+/* ------------------------------------------------------------------ */
+/*  Lazy page imports                                                   */
+/* ------------------------------------------------------------------ */
+
+const LoginPage = lazy(() => import('@/pages/login').then((m) => ({ default: m.LoginPage })))
+const ForgotPasswordPage = lazy(() => import('@/pages/forgot-password').then((m) => ({ default: m.ForgotPasswordPage })))
+const ResetPasswordPage = lazy(() => import('@/pages/reset-password').then((m) => ({ default: m.ResetPasswordPage })))
+const DashboardPage = lazy(() => import('@/pages/dashboard').then((m) => ({ default: m.DashboardPage })))
+const TransfersPage = lazy(() => import('@/pages/transfers').then((m) => ({ default: m.TransfersPage })))
+const AccountingPage = lazy(() => import('@/pages/accounting').then((m) => ({ default: m.AccountingPage })))
+const WalletTransactionsPage = lazy(() => import('@/pages/accounting/WalletTransactionsPage').then((m) => ({ default: m.WalletTransactionsPage })))
+const PspsPage = lazy(() => import('@/pages/psps').then((m) => ({ default: m.PspsPage })))
+const FuturePage = lazy(() => import('@/pages/future').then((m) => ({ default: m.FuturePage })))
+const MembersPage = lazy(() => import('@/pages/management/members').then((m) => ({ default: m.MembersPage })))
+const MemberProfilePage = lazy(() => import('@/pages/members/MemberProfilePage').then((m) => ({ default: m.MemberProfilePage })))
+const OrganizationsListPage = lazy(() => import('@/pages/organizations').then((m) => ({ default: m.OrganizationsListPage })))
+const OrganizationDetailPage = lazy(() => import('@/pages/organizations/OrganizationDetailPage').then((m) => ({ default: m.OrganizationDetailPage })))
 
 /* ------------------------------------------------------------------ */
 /*  Route guards                                                       */
@@ -56,6 +63,16 @@ function LoadingScreen() {
   )
 }
 
+function PageSuspense({ children }: { children: ReactNode }) {
+  return (
+    <PageErrorBoundary>
+      <Suspense fallback={<LoadingScreen />}>
+        {children}
+      </Suspense>
+    </PageErrorBoundary>
+  )
+}
+
 /* ------------------------------------------------------------------ */
 /*  App                                                                */
 /* ------------------------------------------------------------------ */
@@ -71,7 +88,7 @@ export function App() {
               path="/login"
               element={
                 <PublicRoute>
-                  <LoginPage />
+                  <PageSuspense><LoginPage /></PageSuspense>
                 </PublicRoute>
               }
             />
@@ -79,13 +96,17 @@ export function App() {
               path="/forgot-password"
               element={
                 <PublicRoute>
-                  <ForgotPasswordPage />
+                  <PageSuspense><ForgotPasswordPage /></PageSuspense>
                 </PublicRoute>
               }
             />
             <Route
               path="/reset-password"
-              element={<ResetPasswordPage />}
+              element={
+                <PublicRoute>
+                  <PageSuspense><ResetPasswordPage /></PageSuspense>
+                </PublicRoute>
+              }
             />
             <Route
               path="/*"
@@ -94,16 +115,16 @@ export function App() {
                   <OrganizationProvider>
                     <AppLayout>
                       <Routes>
-                        <Route path="/" element={<DashboardPage />} />
-                        <Route path="/transfers" element={<TransfersPage />} />
-                        <Route path="/accounting" element={<AccountingPage />} />
-                        <Route path="/accounting/wallet/:walletId/transactions" element={<WalletTransactionsPage />} />
-                        <Route path="/module-2" element={<Module2Page />} />
-                        <Route path="/module-3" element={<Module3Page />} />
-                        <Route path="/members" element={<MembersPage />} />
-                        <Route path="/members/:userId" element={<MemberProfilePage />} />
-                        <Route path="/organizations" element={<OrganizationsListPage />} />
-                        <Route path="/organizations/:orgId" element={<OrganizationDetailPage />} />
+                        <Route path="/" element={<PageSuspense><DashboardPage /></PageSuspense>} />
+                        <Route path="/transfers" element={<PageSuspense><TransfersPage /></PageSuspense>} />
+                        <Route path="/accounting" element={<PageSuspense><AccountingPage /></PageSuspense>} />
+                        <Route path="/accounting/wallet/:walletId/transactions" element={<PageSuspense><WalletTransactionsPage /></PageSuspense>} />
+                        <Route path="/psps" element={<PageSuspense><PspsPage /></PageSuspense>} />
+                        <Route path="/future" element={<PageSuspense><FuturePage /></PageSuspense>} />
+                        <Route path="/members" element={<PageSuspense><MembersPage /></PageSuspense>} />
+                        <Route path="/members/:userId" element={<PageSuspense><MemberProfilePage /></PageSuspense>} />
+                        <Route path="/organizations" element={<PageSuspense><OrganizationsListPage /></PageSuspense>} />
+                        <Route path="/organizations/:orgId" element={<PageSuspense><OrganizationDetailPage /></PageSuspense>} />
                         <Route path="*" element={<Navigate to="/" replace />} />
                       </Routes>
                     </AppLayout>

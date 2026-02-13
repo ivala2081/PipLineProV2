@@ -2,8 +2,8 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import {
   ArrowsLeftRight,
-  Table,
-  ClipboardText,
+  CreditCard,
+  Robot,
   Users,
   Buildings,
   ArrowRight,
@@ -118,16 +118,16 @@ export function DashboardPage() {
             href="/transfers"
           />
           <QuickAction
-            icon={Table}
-            label={t('nav.module2')}
-            description={t('dashboard.actions.module2')}
-            href="/module-2"
+            icon={CreditCard}
+            label={t('nav.psps')}
+            description={t('dashboard.actions.psps')}
+            href="/psps"
           />
           <QuickAction
-            icon={ClipboardText}
-            label={t('nav.module3')}
-            description={t('dashboard.actions.module3')}
-            href="/module-3"
+            icon={Robot}
+            label={t('nav.future')}
+            description={t('dashboard.actions.future')}
+            href="/future"
           />
           <QuickAction
             icon={Users}

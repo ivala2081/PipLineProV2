@@ -43,7 +43,8 @@
       "Bash(powershell:*)",
       "Bash(npx tsx:*)",
       "WebFetch(domain:tatumio.github.io)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(dir:*)"
     ]
   }
 }

@@ -11,7 +11,7 @@ import { useWalletsQuery } from '@/hooks/queries/useWalletsQuery'
 import type { AccountingEntry } from '@/lib/database.types'
 import { Button, Tabs, TabsList, TabsTrigger, TabsContent, StatCard } from '@ds'
 import { LedgerSummary } from './LedgerSummary'
-import { LedgerTab } from './LedgerTab'
+import { LedgerTable } from './LedgerTable'
 import { WalletsTab } from './WalletsTab'
 import { EntryDialog } from './EntryDialog'
 import { DeleteEntryDialog } from './DeleteEntryDialog'
@@ -20,7 +20,7 @@ import { WalletDialog } from './WalletDialog'
 /* ── Main Page ────────────────────────────────────────── */
 
 export function AccountingPage() {
-  const { t } = useTranslation('pages')
+  const { t, i18n } = useTranslation('pages')
   const accounting = useAccountingQuery()
   const wallets = useWalletsQuery()
 
@@ -47,7 +47,7 @@ export function AccountingPage() {
   // Derive last entry date
   const lastEntryDate = accounting.entries[0]?.entry_date
   const lastDateLabel = lastEntryDate
-    ? new Date(lastEntryDate + 'T00:00:00').toLocaleDateString('tr-TR', {
+    ? new Date(lastEntryDate + 'T00:00:00').toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US', {
         day: 'numeric',
         month: 'short',
       })
@@ -114,7 +114,7 @@ export function AccountingPage() {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="ledger">
-          <LedgerTab
+          <LedgerTable
             entries={accounting.entries}
             isLoading={accounting.isLoading}
             page={accounting.page}

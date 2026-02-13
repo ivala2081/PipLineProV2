@@ -11,6 +11,7 @@ import { TransfersTable } from './TransfersTable'
 import { TransferDialog } from './TransferDialog'
 import { DeleteConfirmDialog } from './DeleteConfirmDialog'
 import { LookupSettings } from './LookupSettings'
+import { MonthlyTab } from './MonthlyTab'
 
 export function TransfersPage() {
   const { t } = useTranslation('pages')
@@ -108,11 +109,17 @@ export function TransfersPage() {
           <TabsTrigger value="transfers">
             {t('transfers.tabs.transfers')}
           </TabsTrigger>
+          <TabsTrigger value="monthly">
+            {t('transfers.tabs.monthly')}
+          </TabsTrigger>
           <TabsTrigger value="settings">
             {t('transfers.tabs.settings')}
           </TabsTrigger>
         </TabsList>
         <TabsContent value="transfers">{tableContent}</TabsContent>
+        <TabsContent value="monthly">
+          <MonthlyTab />
+        </TabsContent>
         <TabsContent value="settings">
           {isAdmin ? (
             <LookupSettings />

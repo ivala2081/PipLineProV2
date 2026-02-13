@@ -1,53 +1,35 @@
-import { useState, useRef, useEffect } from 'react'
+import { useReducer, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  DotsThree,
-  PencilSimple,
-  Trash,
   ArrowUp,
-  Eye,
-  ClockCounterClockwise,
   ChartBar,
-  Coins,
-  Bank,
-  CreditCard,
-  CurrencyDollar,
   CaretLeft,
   CaretRight,
-  Check,
-  X,
 } from '@phosphor-icons/react'
 import type { TransferRow } from '@/hooks/useTransfers'
 import { TransferAuditDialog } from './TransferAuditDialog'
+import { TransferRowItem } from './TransferRowItem'
+import { TransferDetailSheet } from './TransferDetailSheet'
+import { DailySummaryDialog } from './DailySummaryDialog'
+import { groupByDate, TH_CLASS, type DateGroup } from './transfersTableUtils'
 import {
   Table,
   TableHeader,
   TableBody,
   TableRow,
   TableHead,
-  TableCell,
   Tag,
   Skeleton,
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
   Button,
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
   Pagination,
   PaginationContent,
   PaginationItem,
   PaginationLink,
   PaginationEllipsis,
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
   EmptyState,
 } from '@ds'
+
+/* ── Props ──────────────────────────────────────────── */
 
 interface TransfersTableProps {
   transfers: TransferRow[]
@@ -62,162 +44,71 @@ interface TransfersTableProps {
   onDelete: (transfer: TransferRow) => void
 }
 
-/* ── Helpers ─────────────────────────────────────────── */
+/* ── State ──────────────────────────────────────────── */
 
-interface DateGroup {
-  dateKey: string
-  label: string
-  transfers: TransferRow[]
+interface TableState {
+  detailRow: TransferRow | null
+  auditRow: TransferRow | null
+  summaryGroup: DateGroup | null
+  summaryTransfers: TransferRow[]
+  isFetchingSummary: boolean
+  customRates: Record<string, number>
 }
 
-function groupByDate(transfers: TransferRow[], lang: string): DateGroup[] {
-  const map = new Map<string, TransferRow[]>()
-  for (const t of transfers) {
-    const key = t.transfer_date.slice(0, 10)
-    const arr = map.get(key) ?? []
-    arr.push(t)
-    map.set(key, arr)
-  }
-  const locale = lang === 'tr' ? 'tr-TR' : 'en-US'
-  return Array.from(map, ([dateKey, items]) => ({
-    dateKey,
-    label: new Date(dateKey + 'T00:00:00').toLocaleDateString(locale, {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      weekday: 'long',
-    }),
-    transfers: items,
-  }))
+type TableAction =
+  | { type: 'OPEN_DETAIL'; row: TransferRow }
+  | { type: 'CLOSE_DETAIL' }
+  | { type: 'OPEN_AUDIT'; row: TransferRow }
+  | { type: 'CLOSE_AUDIT' }
+  | { type: 'OPEN_SUMMARY'; group: DateGroup }
+  | { type: 'SUMMARY_LOADED'; transfers: TransferRow[] }
+  | { type: 'SUMMARY_FALLBACK'; transfers: TransferRow[] }
+  | { type: 'CLOSE_SUMMARY' }
+  | { type: 'SET_RATE'; dateKey: string; rate: number }
+  | { type: 'RESET_RATE'; dateKey: string }
+
+const initialState: TableState = {
+  detailRow: null,
+  auditRow: null,
+  summaryGroup: null,
+  summaryTransfers: [],
+  isFetchingSummary: false,
+  customRates: {},
 }
 
-function formatTime(dateStr: string) {
-  return new Date(dateStr).toLocaleTimeString('tr-TR', {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-function formatDate(dateStr: string) {
-  const d = new Date(dateStr)
-  const date = d.toLocaleDateString('tr-TR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
-  const time = d.toLocaleTimeString('tr-TR', {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-  return { date, time }
-}
-
-function formatNumber(n: number) {
-  return n.toLocaleString('tr-TR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
-}
-
-interface DaySummary {
-  deposits: number
-  withdrawals: number
-  net: number
-  commission: number
-  count: number
-  depositCount: number
-  withdrawalCount: number
-  totalBank: number
-  totalCreditCard: number
-  totalUsd: number
-  netWithCommUsd: number
-  netWithoutCommUsd: number
-  dayRate: number
-}
-
-function computeDaySummary(transfers: TransferRow[]): DaySummary {
-  let deposits = 0
-  let withdrawals = 0
-  let commission = 0
-  let depositCount = 0
-  let withdrawalCount = 0
-  let totalBank = 0
-  let totalCreditCard = 0
-  let totalUsd = 0
-  let netWithoutCommUsd = 0
-  let commissionUsd = 0
-  let rateSum = 0
-  let rateCount = 0
-
-  for (const t of transfers) {
-    const tryAmount = Math.abs(t.amount_try ?? 0)
-    const commTry =
-      t.currency === 'USD' ? t.commission * (t.exchange_rate ?? 1) : t.commission
-    const rate = t.exchange_rate ?? 1
-
-    if (t.category?.is_deposit) {
-      deposits += tryAmount
-      depositCount++
-    } else {
-      withdrawals += tryAmount
-      withdrawalCount++
+function reducer(state: TableState, action: TableAction): TableState {
+  switch (action.type) {
+    case 'OPEN_DETAIL':
+      return { ...state, detailRow: action.row }
+    case 'CLOSE_DETAIL':
+      return { ...state, detailRow: null }
+    case 'OPEN_AUDIT':
+      return { ...state, auditRow: action.row }
+    case 'CLOSE_AUDIT':
+      return { ...state, auditRow: null }
+    case 'OPEN_SUMMARY':
+      return { ...state, summaryGroup: action.group, isFetchingSummary: true }
+    case 'SUMMARY_LOADED':
+      return { ...state, summaryTransfers: action.transfers, isFetchingSummary: false }
+    case 'SUMMARY_FALLBACK':
+      return { ...state, summaryTransfers: action.transfers, isFetchingSummary: false }
+    case 'CLOSE_SUMMARY':
+      return { ...state, summaryGroup: null, summaryTransfers: [] }
+    case 'SET_RATE':
+      return { ...state, customRates: { ...state.customRates, [action.dateKey]: action.rate } }
+    case 'RESET_RATE': {
+      const newRates = { ...state.customRates }
+      delete newRates[action.dateKey]
+      return { ...state, customRates: newRates }
     }
-    commission += commTry
-
-    const method = t.payment_method?.name?.toLowerCase() ?? ''
-    if (method.includes('bank')) totalBank += tryAmount
-    if (method.includes('credit')) totalCreditCard += tryAmount
-    if (t.currency === 'USD') totalUsd += Math.abs(t.amount ?? 0)
-
-    // USD equivalents for net calculations
-    netWithoutCommUsd += t.amount_usd ?? 0
-    commissionUsd +=
-      t.currency === 'USD' ? t.commission : t.commission / rate
-
-    if (rate > 0) {
-      rateSum += rate
-      rateCount++
-    }
-  }
-
-  return {
-    deposits,
-    withdrawals,
-    net: deposits - withdrawals,
-    commission,
-    count: transfers.length,
-    depositCount,
-    withdrawalCount,
-    totalBank,
-    totalCreditCard,
-    totalUsd,
-    netWithoutCommUsd,
-    netWithCommUsd: netWithoutCommUsd - commissionUsd,
-    dayRate: rateCount > 0 ? rateSum / rateCount : 0,
+    default:
+      return state
   }
 }
 
-function DetailRow({
-  label,
-  children,
-}: {
-  label: string
-  children: React.ReactNode
-}) {
-  return (
-    <div className="flex items-center justify-between py-2.5">
-      <span className="text-sm text-black/45">{label}</span>
-      <span className="text-sm font-medium text-black/90">{children}</span>
-    </div>
-  )
-}
+const SECURITY_PIN = '4561'
 
-/* ── Column header class ─────────────────────────────── */
-
-const TH_CLASS =
-  'whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-black/40'
-
-/* ── Component ───────────────────────────────────────── */
+/* ── Component ──────────────────────────────────────── */
 
 export function TransfersTable({
   transfers,
@@ -232,79 +123,47 @@ export function TransfersTable({
   onDelete,
 }: TransfersTableProps) {
   const { t, i18n } = useTranslation('pages')
-  const [detailRow, setDetailRow] = useState<TransferRow | null>(null)
-  const [auditRow, setAuditRow] = useState<TransferRow | null>(null)
-  const [summaryGroup, setSummaryGroup] = useState<DateGroup | null>(null)
-  const [summaryTransfers, setSummaryTransfers] = useState<TransferRow[]>([])
-  const [isFetchingSummary, setIsFetchingSummary] = useState(false)
-  const [customRates, setCustomRates] = useState<Record<string, number>>({}) // Store by date
-  const [isEditingRate, setIsEditingRate] = useState(false)
-  const [showPinDialog, setShowPinDialog] = useState(false)
-  const [pinInput, setPinInput] = useState('')
-  const [pinError, setPinError] = useState('')
-  const rateInputRef = useRef<HTMLInputElement>(null)
-  const pinInputRef = useRef<HTMLInputElement>(null)
-  
-  const SECURITY_PIN = '4561' // TODO: Move to secure storage/settings
+  const lang = i18n.language
+  const [state, dispatch] = useReducer(reducer, initialState)
 
-  useEffect(() => {
-    if (isEditingRate && rateInputRef.current) {
-      rateInputRef.current.focus()
-      rateInputRef.current.select()
-    }
-  }, [isEditingRate])
-
-  useEffect(() => {
-    if (showPinDialog && pinInputRef.current) {
-      pinInputRef.current.focus()
-    }
-  }, [showPinDialog])
-
-  const handleOpenSummary = async (group: DateGroup) => {
-    setSummaryGroup(group)
-    setIsFetchingSummary(true)
-    try {
-      const allTransfers = await fetchTransfersByDate(group.dateKey)
-      setSummaryTransfers(allTransfers)
-    } catch (error) {
-      console.error('Failed to fetch transfers for summary:', error)
-      setSummaryTransfers(group.transfers) // Fallback to current page transfers
-    } finally {
-      setIsFetchingSummary(false)
-    }
-  }
-
-  const handleVerifyPin = () => {
-    if (pinInput === SECURITY_PIN) {
-      setPinError('')
-      setShowPinDialog(false)
-      setPinInput('')
-      setIsEditingRate(true)
-    } else {
-      setPinError('Incorrect PIN')
-    }
-  }
-
-  const handleSaveRate = (dateKey: string) => {
-    const val = parseFloat(rateInputRef.current?.value ?? '')
-    if (!isNaN(val) && val > 0) {
-      setCustomRates(prev => ({ ...prev, [dateKey]: val }))
-    }
-    setIsEditingRate(false)
-  }
-
-  const handleResetRate = (dateKey: string) => {
-    setCustomRates(prev => {
-      const newRates = { ...prev }
-      delete newRates[dateKey]
-      return newRates
-    })
-  }
   const totalPages = Math.ceil(total / pageSize)
   const from = (page - 1) * pageSize + 1
   const to = Math.min(page * pageSize, total)
 
-  /* ── Loading skeleton ───────────────────────────── */
+  /* ── Handlers ─────────────────────────────────── */
+
+  const handleOpenSummary = useCallback(
+    async (group: DateGroup) => {
+      dispatch({ type: 'OPEN_SUMMARY', group })
+      try {
+        const allTransfers = await fetchTransfersByDate(group.dateKey)
+        dispatch({ type: 'SUMMARY_LOADED', transfers: allTransfers })
+      } catch (error) {
+        console.error('Failed to fetch transfers for summary:', error)
+        dispatch({ type: 'SUMMARY_FALLBACK', transfers: group.transfers })
+      }
+    },
+    [fetchTransfersByDate],
+  )
+
+  const handleView = useCallback((row: TransferRow) => {
+    dispatch({ type: 'OPEN_DETAIL', row })
+  }, [])
+
+  const handleAudit = useCallback((row: TransferRow) => {
+    dispatch({ type: 'OPEN_AUDIT', row })
+  }, [])
+
+  const handleSaveRate = useCallback((dateKey: string, rate: number) => {
+    dispatch({ type: 'SET_RATE', dateKey, rate })
+  }, [])
+
+  const handleResetRate = useCallback((dateKey: string) => {
+    dispatch({ type: 'RESET_RATE', dateKey })
+  }, [])
+
+  /* ── Loading skeleton ─────────────────────────── */
+
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -336,7 +195,8 @@ export function TransfersTable({
     )
   }
 
-  /* ── Empty state ────────────────────────────────── */
+  /* ── Empty state ──────────────────────────────── */
+
   if (transfers.length === 0) {
     return (
       <EmptyState
@@ -347,10 +207,12 @@ export function TransfersTable({
     )
   }
 
-  /* ── Group transfers by date ────────────────────── */
-  const groups = groupByDate(transfers, i18n.language)
+  /* ── Group transfers by date ──────────────────── */
 
-  /* ── Page numbers for pagination ────────────────── */
+  const groups = groupByDate(transfers, lang)
+
+  /* ── Page numbers for pagination ──────────────── */
+
   function getPageNumbers(): (number | 'ellipsis')[] {
     if (totalPages <= 5) {
       return Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -380,7 +242,8 @@ export function TransfersTable({
                   {group.label}
                 </span>
                 <Tag variant="default" className="h-5 text-xs">
-                  {dateCounts[group.dateKey] ?? group.transfers.length} {t('transfers.summary.transfersLabel')}
+                  {dateCounts[group.dateKey] ?? group.transfers.length}{' '}
+                  {t('transfers.summary.transfersLabel')}
                 </Tag>
               </div>
               <Button
@@ -433,109 +296,17 @@ export function TransfersTable({
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y divide-black/[0.04]">
-                  {group.transfers.map((row) => {
-                    const isDeposit = row.category?.is_deposit ?? true
-                    const time = formatTime(row.transfer_date)
-                    return (
-                      <TableRow
-                        key={row.id}
-                        className="hover:bg-black/[0.015]"
-                      >
-                        <TableCell className="whitespace-nowrap">
-                          <span className="text-sm font-medium text-black/90">
-                            {row.full_name}
-                          </span>
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-sm text-black/60">
-                          {row.payment_method?.name ?? '—'}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap">
-                          <span className="text-sm text-black/80">
-                            {time}
-                          </span>
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap">
-                          <Tag variant={isDeposit ? 'default' : 'red'}>
-                            {row.category
-                              ? (row.category.is_deposit
-                                  ? t('transfers.categoryValues.deposit')
-                                  : t('transfers.categoryValues.withdrawal'))
-                              : '—'}
-                          </Tag>
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-right">
-                          <span
-                            className={`font-mono text-sm font-medium tabular-nums ${row.amount >= 0 ? 'text-green' : 'text-red'}`}
-                          >
-                            {formatNumber(Math.abs(row.amount))}
-                          </span>
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-right font-mono text-sm tabular-nums text-black/50">
-                          {formatNumber(row.commission)}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-right">
-                          <span
-                            className={`font-mono text-sm font-semibold tabular-nums ${row.net >= 0 ? 'text-green' : 'text-red'}`}
-                          >
-                            {formatNumber(row.net)}
-                          </span>
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap">
-                          <Tag variant="default">{row.currency}</Tag>
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-sm text-black/60">
-                          {row.psp?.name ?? '—'}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap text-sm text-black/60">
-                          {row.type?.name
-                            ? t(`transfers.typeValues.${row.type.name}`, {
-                                defaultValue: row.type.name,
-                              })
-                            : '—'}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap px-2">
-                          <div className="flex items-center justify-end gap-0.5">
-                            <Button
-                              variant="ghost"
-                              className="size-7 p-0 text-black/30 hover:text-black/70"
-                              onClick={() => setDetailRow(row)}
-                            >
-                              <Eye size={15} />
-                            </Button>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  className="size-7 p-0 text-black/40 hover:text-black/70"
-                                >
-                                  <DotsThree size={16} weight="bold" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" sideOffset={4}>
-                                <DropdownMenuItem onClick={() => onEdit(row)}>
-                                  <PencilSimple size={14} />
-                                  {t('transfers.settings.editItem')}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => setAuditRow(row)}
-                                >
-                                  <ClockCounterClockwise size={14} />
-                                  {t('transfers.audit.button')}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="text-red"
-                                  onClick={() => onDelete(row)}
-                                >
-                                  <Trash size={14} />
-                                  {t('transfers.settings.deleteItem')}
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
+                  {group.transfers.map((row) => (
+                    <TransferRowItem
+                      key={row.id}
+                      row={row}
+                      lang={lang}
+                      onView={handleView}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                      onAudit={handleAudit}
+                    />
+                  ))}
                 </TableBody>
               </Table>
             </div>
@@ -582,9 +353,7 @@ export function TransfersTable({
 
                 <PaginationItem>
                   <PaginationLink
-                    onClick={() =>
-                      onPageChange(Math.min(totalPages, page + 1))
-                    }
+                    onClick={() => onPageChange(Math.min(totalPages, page + 1))}
                     disabled={page >= totalPages}
                     aria-label="Next page"
                   >
@@ -598,424 +367,29 @@ export function TransfersTable({
       )}
 
       {/* Daily Summary Dialog */}
-      <Dialog
-        open={summaryGroup !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setSummaryGroup(null)
-            setSummaryTransfers([])
-            setIsEditingRate(false)
-          }
-        }}
-      >
-        <DialogContent size="md" className="max-h-[85vh] gap-0 overflow-y-auto p-0">
-          {summaryGroup && (() => {
-            if (isFetchingSummary) {
-              return (
-                <div className="px-6 py-12">
-                  <DialogHeader>
-                    <DialogTitle className="text-sm font-semibold">{summaryGroup.label}</DialogTitle>
-                  </DialogHeader>
-                  <div className="mt-6 flex items-center justify-center">
-                    <div className="text-sm text-black/40">Loading summary...</div>
-                  </div>
-                </div>
-              )
-            }
-
-            const s = computeDaySummary(summaryTransfers)
-            const vol = s.deposits + s.withdrawals
-            const depositPct = vol > 0 ? (s.deposits / vol) * 100 : 50
-
-            return (
-              <>
-                {/* ── Hero zone ────────────────────── */}
-                <div className={`px-6 pt-6 pb-5 ${s.net >= 0 ? 'bg-green/[0.03]' : 'bg-red/[0.03]'}`}>
-                  <DialogHeader>
-                    <DialogTitle className="text-sm font-semibold">{summaryGroup.label}</DialogTitle>
-                  </DialogHeader>
-                  <p className="mt-0.5 text-[12px] text-black/40">
-                    {t('transfers.summary.count', { count: s.count })}
-                    {' · '}
-                    {t('transfers.summary.countDetail', {
-                      deposits: s.depositCount,
-                      withdrawals: s.withdrawalCount,
-                    })}
-                  </p>
-
-                  <p
-                    className={`mt-4 font-mono text-[2rem] font-bold leading-none tabular-nums ${s.net >= 0 ? 'text-green' : 'text-red'}`}
-                  >
-                    {s.net >= 0 ? '+' : '−'}{formatNumber(Math.abs(s.net))}
-                    <span className="ml-1.5 text-sm opacity-40">₺</span>
-                  </p>
-                  <p className="mt-1 text-[12px] text-black/30">{t('transfers.summary.net')}</p>
-                </div>
-
-                {/* ── Deposit / Withdrawal ────────── */}
-                <div className="grid grid-cols-2">
-                  <div className="border-r border-b border-black/10 px-6 py-4">
-                    <div className="flex items-center gap-1.5">
-                      <div className="size-1.5 rounded-full bg-green" />
-                      <span className="text-[12px] text-black/45">{t('transfers.summary.deposits')}</span>
-                    </div>
-                    <p className="mt-1.5 font-mono text-lg font-bold tabular-nums text-black/80">
-                      {formatNumber(s.deposits)}
-                      <span className="ml-1 text-[12px] font-medium text-black/25">₺</span>
-                    </p>
-                    <p className="mt-0.5 text-xs tabular-nums text-black/25">
-                      {s.depositCount} {t('transfers.summary.deposits').toLowerCase()}
-                    </p>
-                  </div>
-                  <div className="border-b border-black/10 px-6 py-4">
-                    <div className="flex items-center gap-1.5">
-                      <div className="size-1.5 rounded-full bg-red" />
-                      <span className="text-[12px] text-black/45">{t('transfers.summary.withdrawals')}</span>
-                    </div>
-                    <p className="mt-1.5 font-mono text-lg font-bold tabular-nums text-black/80">
-                      {formatNumber(s.withdrawals)}
-                      <span className="ml-1 text-[12px] font-medium text-black/25">₺</span>
-                    </p>
-                    <p className="mt-0.5 text-xs tabular-nums text-black/25">
-                      {s.withdrawalCount} {t('transfers.summary.withdrawals').toLowerCase()}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Proportion bar */}
-                <div className="flex h-1">
-                  <div className="bg-green/60" style={{ width: `${depositPct}%` }} />
-                  <div className="bg-red/60" style={{ width: `${100 - depositPct}%` }} />
-                </div>
-
-                {/* ── Breakdown rows ──────────────── */}
-                <div className="px-6 py-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <Bank size={16} className="text-black/30" />
-                        <span className="text-sm text-black/60">{t('transfers.summary.totalBank')}</span>
-                      </div>
-                      <span className="font-mono text-sm font-semibold tabular-nums text-black/70">
-                        {formatNumber(s.totalBank)} ₺
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <CreditCard size={16} className="text-black/30" />
-                        <span className="text-sm text-black/60">{t('transfers.summary.totalCreditCard')}</span>
-                      </div>
-                      <span className="font-mono text-sm font-semibold tabular-nums text-black/70">
-                        {formatNumber(s.totalCreditCard)} ₺
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <CurrencyDollar size={16} className="text-black/30" />
-                        <span className="text-sm text-black/60">{t('transfers.summary.totalUsd')}</span>
-                      </div>
-                      <span className="font-mono text-sm font-semibold tabular-nums text-black/70">
-                        {formatNumber(s.totalUsd)} $
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <Coins size={16} className="text-black/30" />
-                        <span className="text-sm text-black/60">{t('transfers.summary.commission')}</span>
-                      </div>
-                      <span className="font-mono text-sm font-semibold tabular-nums text-black/70">
-                        {formatNumber(s.commission)} ₺
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* ── USD section ─────────────────── */}
-                {(() => {
-                  const customRate = customRates[summaryGroup.dateKey]
-                  const effectiveRate = customRate ?? s.dayRate
-                  const overrideActive = customRate !== undefined
-                  const adjNetWithoutCommUsd = effectiveRate > 0 ? s.net / effectiveRate : 0
-                  const adjNetWithCommUsd = effectiveRate > 0 ? (s.net - s.commission) / effectiveRate : 0
-
-                  return (
-                    <div className="border-t border-black/10 bg-black/[0.02] px-6 py-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[12px] font-medium text-black/40">
-                          {t('transfers.summary.dayRate')}
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          {isEditingRate ? (
-                            <>
-                              <input
-                                ref={rateInputRef}
-                                type="number"
-                                step="0.0001"
-                                defaultValue={effectiveRate.toFixed(4)}
-                                className="h-7 w-24 rounded border border-black/10 bg-white px-2 text-right font-mono text-sm font-bold tabular-nums text-black/70 outline-none focus:border-black/25"
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    handleSaveRate(summaryGroup.dateKey)
-                                  } else if (e.key === 'Escape') {
-                                    setIsEditingRate(false)
-                                  }
-                                }}
-                              />
-                              <button
-                                className="flex size-6 items-center justify-center rounded text-green hover:bg-green/10"
-                                onClick={() => handleSaveRate(summaryGroup.dateKey)}
-                              >
-                                <Check size={14} weight="bold" />
-                              </button>
-                              <button
-                                className="flex size-6 items-center justify-center rounded text-red hover:bg-red/10"
-                                onClick={() => setIsEditingRate(false)}
-                              >
-                                <X size={14} weight="bold" />
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <span className={`font-mono text-sm font-bold tabular-nums ${overrideActive ? 'text-orange' : 'text-black/60'}`}>
-                                {effectiveRate.toFixed(4)}
-                              </span>
-                              <button
-                                className="flex size-6 items-center justify-center rounded text-black/30 hover:bg-black/5 hover:text-black/60"
-                                onClick={() => setShowPinDialog(true)}
-                                title={t('transfers.summary.editRate')}
-                              >
-                                <PencilSimple size={13} />
-                              </button>
-                              {overrideActive && (
-                                <button
-                                  className="flex size-6 items-center justify-center rounded text-black/25 hover:bg-black/5 hover:text-black/50"
-                                  onClick={() => handleResetRate(summaryGroup.dateKey)}
-                                  title={t('transfers.summary.resetRate')}
-                                >
-                                  <X size={12} />
-                                </button>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="mt-4 grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-xs text-black/35">{t('transfers.summary.netWithComm')}</p>
-                          <p
-                            className={`mt-1 font-mono text-lg font-bold tabular-nums ${adjNetWithCommUsd >= 0 ? 'text-green' : 'text-red'}`}
-                          >
-                            {adjNetWithCommUsd >= 0 ? '+' : '−'}{formatNumber(Math.abs(adjNetWithCommUsd))}
-                            <span className="ml-0.5 text-xs opacity-40">$</span>
-                          </p>
-                          <p className="mt-0.5 text-xs text-black/20">{t('transfers.summary.afterCommission')}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-black/35">{t('transfers.summary.netWithoutComm')}</p>
-                          <p
-                            className={`mt-1 font-mono text-lg font-bold tabular-nums ${adjNetWithoutCommUsd >= 0 ? 'text-green' : 'text-red'}`}
-                          >
-                            {adjNetWithoutCommUsd >= 0 ? '+' : '−'}{formatNumber(Math.abs(adjNetWithoutCommUsd))}
-                            <span className="ml-0.5 text-xs opacity-40">$</span>
-                          </p>
-                          <p className="mt-0.5 text-xs text-black/20">{t('transfers.summary.beforeCommission')}</p>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })()}
-              </>
-            )
-          })()}
-        </DialogContent>
-      </Dialog>
-
-      {/* PIN Dialog */}
-      <Dialog
-        open={showPinDialog}
-        onOpenChange={(open) => {
-          if (!open) {
-            setShowPinDialog(false)
-            setPinInput('')
-            setPinError('')
-          }
-        }}
-      >
-        <DialogContent size="sm" className="p-0">
-          <div className="px-6 pt-6 pb-5">
-            <DialogHeader>
-              <DialogTitle className="text-sm font-semibold">Security PIN Required</DialogTitle>
-            </DialogHeader>
-            <p className="mt-1 text-[12px] text-black/60">
-              Enter your PIN to modify the exchange rate
-            </p>
-
-            <div className="mt-4">
-              <input
-                ref={pinInputRef}
-                type="password"
-                value={pinInput}
-                onChange={(e) => {
-                  setPinInput(e.target.value)
-                  setPinError('')
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleVerifyPin()
-                  } else if (e.key === 'Escape') {
-                    setShowPinDialog(false)
-                    setPinInput('')
-                    setPinError('')
-                  }
-                }}
-                placeholder="Enter PIN"
-                className="h-10 w-full rounded border border-black/10 bg-white px-3 text-center font-mono text-lg tracking-widest outline-none focus:border-black/25"
-                maxLength={6}
-              />
-              {pinError && (
-                <p className="mt-2 text-xs text-red">{pinError}</p>
-              )}
-            </div>
-
-            <div className="mt-5 flex gap-2">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => {
-                  setShowPinDialog(false)
-                  setPinInput('')
-                  setPinError('')
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="filled"
-                className="flex-1"
-                onClick={handleVerifyPin}
-              >
-                Verify
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <DailySummaryDialog
+        group={state.summaryGroup}
+        transfers={state.summaryTransfers}
+        isFetching={state.isFetchingSummary}
+        customRates={state.customRates}
+        onClose={() => dispatch({ type: 'CLOSE_SUMMARY' })}
+        onSaveRate={handleSaveRate}
+        onResetRate={handleResetRate}
+        securityPin={SECURITY_PIN}
+      />
 
       {/* Detail Sheet */}
-      <Sheet
-        open={detailRow !== null}
-        onOpenChange={(open) => {
-          if (!open) setDetailRow(null)
-        }}
-      >
-        <SheetContent side="right" className="w-full sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>{t('transfers.detail.title')}</SheetTitle>
-          </SheetHeader>
-
-          {detailRow && (
-            <div className="mt-6 space-y-0 divide-y divide-black/[0.06]">
-              <DetailRow label={t('transfers.columns.fullName')}>
-                {detailRow.full_name}
-              </DetailRow>
-              <DetailRow label={t('transfers.columns.paymentMethod')}>
-                {detailRow.payment_method?.name ?? '—'}
-              </DetailRow>
-              <DetailRow label={t('transfers.columns.date')}>
-                {formatDate(detailRow.transfer_date).date}{' '}
-                <span className="text-black/40">
-                  {formatDate(detailRow.transfer_date).time}
-                </span>
-              </DetailRow>
-              <DetailRow label={t('transfers.columns.category')}>
-                <Tag
-                  variant={
-                    (detailRow.category?.is_deposit ?? true) ? 'default' : 'red'
-                  }
-                >
-                  {detailRow.category
-                    ? (detailRow.category.is_deposit
-                        ? t('transfers.categoryValues.deposit')
-                        : t('transfers.categoryValues.withdrawal'))
-                    : '—'}
-                </Tag>
-              </DetailRow>
-              <DetailRow label={t('transfers.columns.amount')}>
-                <span
-                  className={`font-mono tabular-nums ${detailRow.amount >= 0 ? 'text-green' : 'text-red'}`}
-                >
-                  {formatNumber(Math.abs(detailRow.amount))}
-                </span>
-              </DetailRow>
-              <DetailRow label={t('transfers.columns.commission')}>
-                <span className="font-mono tabular-nums text-black/50">
-                  {formatNumber(detailRow.commission)}
-                </span>
-              </DetailRow>
-              <DetailRow label={t('transfers.columns.commissionRateSnapshot')}>
-                <span className="font-mono tabular-nums text-black/50">
-                  {detailRow.commission_rate_snapshot != null
-                    ? `${(detailRow.commission_rate_snapshot * 100).toFixed(1)}%`
-                    : '—'}
-                </span>
-              </DetailRow>
-              <DetailRow label={t('transfers.columns.net')}>
-                <span
-                  className={`font-mono font-semibold tabular-nums ${detailRow.net >= 0 ? 'text-green' : 'text-red'}`}
-                >
-                  {formatNumber(detailRow.net)}
-                </span>
-              </DetailRow>
-              <DetailRow label={t('transfers.columns.currency')}>
-                <Tag variant="default">{detailRow.currency}</Tag>
-              </DetailRow>
-              <DetailRow label={t('transfers.columns.exchangeRate')}>
-                <span className="font-mono tabular-nums">
-                  {detailRow.exchange_rate?.toFixed(4) ?? '—'}
-                </span>
-              </DetailRow>
-              <DetailRow label={t('transfers.columns.tlEquivalent')}>
-                <span className="font-mono tabular-nums text-blue">
-                  {formatNumber(Math.abs(detailRow.amount_try ?? 0))} TL
-                </span>
-              </DetailRow>
-              <DetailRow label={t('transfers.columns.usdEquivalent')}>
-                <span className="font-mono tabular-nums text-green">
-                  {formatNumber(Math.abs(detailRow.amount_usd ?? 0))} USD
-                </span>
-              </DetailRow>
-              <DetailRow label={t('transfers.columns.psp')}>
-                {detailRow.psp?.name ?? '—'}
-              </DetailRow>
-              <DetailRow label={t('transfers.columns.type')}>
-                {detailRow.type?.name
-                  ? t(`transfers.typeValues.${detailRow.type.name}`, {
-                      defaultValue: detailRow.type.name,
-                    })
-                  : '—'}
-              </DetailRow>
-              <DetailRow label={t('transfers.columns.crmId')}>
-                <span className="font-mono text-[12px]">
-                  {detailRow.crm_id || '—'}
-                </span>
-              </DetailRow>
-              <DetailRow label={t('transfers.columns.metaId')}>
-                <span className="font-mono text-[12px]">
-                  {detailRow.meta_id || '—'}
-                </span>
-              </DetailRow>
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
+      <TransferDetailSheet
+        row={state.detailRow}
+        onClose={() => dispatch({ type: 'CLOSE_DETAIL' })}
+      />
 
       {/* Audit Dialog */}
       <TransferAuditDialog
-        transferId={auditRow?.id ?? null}
-        transferName={auditRow?.full_name ?? null}
-        open={auditRow !== null}
-        onClose={() => setAuditRow(null)}
+        transferId={state.auditRow?.id ?? null}
+        transferName={state.auditRow?.full_name ?? null}
+        open={state.auditRow !== null}
+        onClose={() => dispatch({ type: 'CLOSE_AUDIT' })}
       />
     </>
   )
