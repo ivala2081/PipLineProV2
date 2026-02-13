@@ -23,7 +23,11 @@ interface UseTransfersQueryReturn {
   page: number
   pageSize: number
   total: number
+  filterDate: string | null
+  dateCounts: Record<string, number>
   setPage: (page: number) => void
+  setFilterDate: (date: string | null) => void
+  fetchTransfersByDate: (dateKey: string) => Promise<TransferRow[]>
   createTransfer: (
     data: TransferFormData,
     category: TransferCategory,
@@ -48,9 +52,10 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
   const { currentOrg } = useOrganization()
   const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
+  const [filterDate, setFilterDate] = useState<string | null>(null)
   const prevOrgId = useRef(currentOrg?.id)
 
-  // IMPORTANT: Reset pagination when org changes (Bug Fix!)
+  // IMPORTANT: Reset pagination when org or filter changes
   useEffect(() => {
     if (currentOrg?.id !== prevOrgId.current) {
       setPage(1)
@@ -58,21 +63,40 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
     }
   }, [currentOrg?.id])
 
+  // Reset page when filter changes
+  useEffect(() => {
+    setPage(1)
+  }, [filterDate])
+
   // Query for transfers list
   const { data, isLoading, error } = useQuery({
-    queryKey: queryKeys.transfers.list(currentOrg?.id ?? '', page),
+    queryKey: queryKeys.transfers.list(currentOrg?.id ?? '', page, filterDate ?? undefined),
     queryFn: async () => {
       if (!currentOrg) throw new Error('No organization selected')
 
       const from = (page - 1) * PAGE_SIZE
       const to = from + PAGE_SIZE - 1
 
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('transfers')
         .select(SELECT_QUERY, { count: 'exact' })
         .eq('organization_id', currentOrg.id)
-        .order('transfer_date', { ascending: false })
-        .range(from, to)
+
+      // Apply date filter if set
+      if (filterDate) {
+        const startOfDay = `${filterDate}T00:00:00`
+        const endOfDay = `${filterDate}T23:59:59`
+        query = query.gte('transfer_date', startOfDay).lte('transfer_date', endOfDay)
+      }
+
+      let finalQuery = query.order('transfer_date', { ascending: false })
+
+      // Only apply pagination if no date filter is active
+      if (!filterDate) {
+        finalQuery = finalQuery.range(from, to)
+      }
+
+      const { data, error, count } = await finalQuery
 
       if (error) throw error
 
@@ -80,6 +104,42 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
         transfers: (data as unknown as TransferRow[]) ?? [],
         total: count ?? 0,
       }
+    },
+    enabled: !!currentOrg,
+  })
+
+  // Query for date counts (not paginated)
+  const { data: dateCountsData } = useQuery({
+    queryKey: [...queryKeys.transfers.lists(), 'dateCounts', currentOrg?.id ?? '', filterDate ?? undefined],
+    queryFn: async () => {
+      if (!currentOrg) throw new Error('No organization selected')
+
+      let query = supabase
+        .from('transfers')
+        .select('transfer_date')
+        .eq('organization_id', currentOrg.id)
+
+      // Apply date filter if set
+      if (filterDate) {
+        const startOfDay = `${filterDate}T00:00:00`
+        const endOfDay = `${filterDate}T23:59:59`
+        query = query.gte('transfer_date', startOfDay).lte('transfer_date', endOfDay)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+
+      // Group by date and count
+      const counts: Record<string, number> = {}
+      if (data) {
+        for (const row of data) {
+          const dateKey = row.transfer_date.slice(0, 10)
+          counts[dateKey] = (counts[dateKey] || 0) + 1
+        }
+      }
+
+      return counts
     },
     enabled: !!currentOrg,
   })
@@ -130,7 +190,7 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
       if (error) throw error
     },
     onSuccess: () => {
-      // Automatic invalidation - no manual fetch needed!
+      // Invalidate both transfers list and date counts
       queryClient.invalidateQueries({ queryKey: queryKeys.transfers.lists() })
     },
   })
@@ -200,12 +260,36 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
     },
   })
 
+  // Function to fetch all transfers for a specific date
+  const fetchTransfersByDate = async (dateKey: string): Promise<TransferRow[]> => {
+    if (!currentOrg) throw new Error('No organization selected')
+
+    const startOfDay = `${dateKey}T00:00:00`
+    const endOfDay = `${dateKey}T23:59:59`
+
+    const { data, error } = await supabase
+      .from('transfers')
+      .select(SELECT_QUERY)
+      .eq('organization_id', currentOrg.id)
+      .gte('transfer_date', startOfDay)
+      .lte('transfer_date', endOfDay)
+      .order('transfer_date', { ascending: false })
+
+    if (error) throw error
+
+    return (data as unknown as TransferRow[]) ?? []
+  }
+
   return {
     transfers: data?.transfers ?? [],
     total: data?.total ?? 0,
     page,
-    pageSize: PAGE_SIZE,
+    pageSize: filterDate ? (data?.total || PAGE_SIZE) : PAGE_SIZE,
+    filterDate,
+    dateCounts: dateCountsData ?? {},
     setPage,
+    setFilterDate,
+    fetchTransfersByDate,
     isLoading,
     error: error?.message ?? null,
     createTransfer: async (data, category, psp, commissionRate) =>

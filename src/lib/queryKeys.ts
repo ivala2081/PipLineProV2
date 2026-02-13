@@ -2,8 +2,8 @@ export const queryKeys = {
   transfers: {
     all: ['transfers'] as const,
     lists: () => [...queryKeys.transfers.all, 'list'] as const,
-    list: (orgId: string, page: number) =>
-      [...queryKeys.transfers.lists(), { orgId, page }] as const,
+    list: (orgId: string, page: number, filterDate?: string) =>
+      [...queryKeys.transfers.lists(), { orgId, page, filterDate }] as const,
     detail: (id: string) => [...queryKeys.transfers.all, 'detail', id] as const,
     audit: (transferId: string, page: number) =>
       [...queryKeys.transfers.all, 'audit', transferId, page] as const,

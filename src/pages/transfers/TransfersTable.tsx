@@ -55,6 +55,8 @@ interface TransfersTableProps {
   page: number
   pageSize: number
   total: number
+  dateCounts: Record<string, number>
+  fetchTransfersByDate: (dateKey: string) => Promise<TransferRow[]>
   onPageChange: (page: number) => void
   onEdit: (transfer: TransferRow) => void
   onDelete: (transfer: TransferRow) => void
@@ -223,6 +225,8 @@ export function TransfersTable({
   page,
   pageSize,
   total,
+  dateCounts,
+  fetchTransfersByDate,
   onPageChange,
   onEdit,
   onDelete,
@@ -231,9 +235,17 @@ export function TransfersTable({
   const [detailRow, setDetailRow] = useState<TransferRow | null>(null)
   const [auditRow, setAuditRow] = useState<TransferRow | null>(null)
   const [summaryGroup, setSummaryGroup] = useState<DateGroup | null>(null)
-  const [customRate, setCustomRate] = useState<number | null>(null)
+  const [summaryTransfers, setSummaryTransfers] = useState<TransferRow[]>([])
+  const [isFetchingSummary, setIsFetchingSummary] = useState(false)
+  const [customRates, setCustomRates] = useState<Record<string, number>>({}) // Store by date
   const [isEditingRate, setIsEditingRate] = useState(false)
+  const [showPinDialog, setShowPinDialog] = useState(false)
+  const [pinInput, setPinInput] = useState('')
+  const [pinError, setPinError] = useState('')
   const rateInputRef = useRef<HTMLInputElement>(null)
+  const pinInputRef = useRef<HTMLInputElement>(null)
+  
+  const SECURITY_PIN = '4561' // TODO: Move to secure storage/settings
 
   useEffect(() => {
     if (isEditingRate && rateInputRef.current) {
@@ -241,6 +253,53 @@ export function TransfersTable({
       rateInputRef.current.select()
     }
   }, [isEditingRate])
+
+  useEffect(() => {
+    if (showPinDialog && pinInputRef.current) {
+      pinInputRef.current.focus()
+    }
+  }, [showPinDialog])
+
+  const handleOpenSummary = async (group: DateGroup) => {
+    setSummaryGroup(group)
+    setIsFetchingSummary(true)
+    try {
+      const allTransfers = await fetchTransfersByDate(group.dateKey)
+      setSummaryTransfers(allTransfers)
+    } catch (error) {
+      console.error('Failed to fetch transfers for summary:', error)
+      setSummaryTransfers(group.transfers) // Fallback to current page transfers
+    } finally {
+      setIsFetchingSummary(false)
+    }
+  }
+
+  const handleVerifyPin = () => {
+    if (pinInput === SECURITY_PIN) {
+      setPinError('')
+      setShowPinDialog(false)
+      setPinInput('')
+      setIsEditingRate(true)
+    } else {
+      setPinError('Incorrect PIN')
+    }
+  }
+
+  const handleSaveRate = (dateKey: string) => {
+    const val = parseFloat(rateInputRef.current?.value ?? '')
+    if (!isNaN(val) && val > 0) {
+      setCustomRates(prev => ({ ...prev, [dateKey]: val }))
+    }
+    setIsEditingRate(false)
+  }
+
+  const handleResetRate = (dateKey: string) => {
+    setCustomRates(prev => {
+      const newRates = { ...prev }
+      delete newRates[dateKey]
+      return newRates
+    })
+  }
   const totalPages = Math.ceil(total / pageSize)
   const from = (page - 1) * pageSize + 1
   const to = Math.min(page * pageSize, total)
@@ -316,14 +375,19 @@ export function TransfersTable({
           >
             {/* Date header */}
             <div className="flex items-center justify-between bg-black/[0.02] px-4 py-2.5">
-              <span className="text-sm font-semibold text-black/70">
-                {group.label}
-              </span>
+              <div className="flex items-center gap-2.5">
+                <span className="text-sm font-semibold text-black/70">
+                  {group.label}
+                </span>
+                <Tag variant="default" className="h-5 text-xs">
+                  {dateCounts[group.dateKey] ?? group.transfers.length} {t('transfers.summary.transfersLabel')}
+                </Tag>
+              </div>
               <Button
                 variant="ghost"
                 size="sm"
                 className="h-7 gap-1.5 px-2.5 text-xs font-medium text-black/40 hover:text-black/70"
-                onClick={() => setSummaryGroup(group)}
+                onClick={() => handleOpenSummary(group)}
               >
                 <ChartBar size={14} />
                 {t('transfers.summary.label')}
@@ -539,14 +603,27 @@ export function TransfersTable({
         onOpenChange={(open) => {
           if (!open) {
             setSummaryGroup(null)
-            setCustomRate(null)
+            setSummaryTransfers([])
             setIsEditingRate(false)
           }
         }}
       >
         <DialogContent size="md" className="max-h-[85vh] gap-0 overflow-y-auto p-0">
           {summaryGroup && (() => {
-            const s = computeDaySummary(summaryGroup.transfers)
+            if (isFetchingSummary) {
+              return (
+                <div className="px-6 py-12">
+                  <DialogHeader>
+                    <DialogTitle className="text-sm font-semibold">{summaryGroup.label}</DialogTitle>
+                  </DialogHeader>
+                  <div className="mt-6 flex items-center justify-center">
+                    <div className="text-sm text-black/40">Loading summary...</div>
+                  </div>
+                </div>
+              )
+            }
+
+            const s = computeDaySummary(summaryTransfers)
             const vol = s.deposits + s.withdrawals
             const depositPct = vol > 0 ? (s.deposits / vol) * 100 : 50
 
@@ -655,8 +732,9 @@ export function TransfersTable({
 
                 {/* ── USD section ─────────────────── */}
                 {(() => {
+                  const customRate = customRates[summaryGroup.dateKey]
                   const effectiveRate = customRate ?? s.dayRate
-                  const overrideActive = customRate !== null
+                  const overrideActive = customRate !== undefined
                   const adjNetWithoutCommUsd = effectiveRate > 0 ? s.net / effectiveRate : 0
                   const adjNetWithCommUsd = effectiveRate > 0 ? (s.net - s.commission) / effectiveRate : 0
 
@@ -673,15 +751,11 @@ export function TransfersTable({
                                 ref={rateInputRef}
                                 type="number"
                                 step="0.0001"
-                                defaultValue={(customRate ?? s.dayRate).toFixed(4)}
+                                defaultValue={effectiveRate.toFixed(4)}
                                 className="h-7 w-24 rounded border border-black/10 bg-white px-2 text-right font-mono text-sm font-bold tabular-nums text-black/70 outline-none focus:border-black/25"
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter') {
-                                    const val = parseFloat(rateInputRef.current?.value ?? '')
-                                    if (!isNaN(val) && val > 0) {
-                                      setCustomRate(val)
-                                    }
-                                    setIsEditingRate(false)
+                                    handleSaveRate(summaryGroup.dateKey)
                                   } else if (e.key === 'Escape') {
                                     setIsEditingRate(false)
                                   }
@@ -689,13 +763,7 @@ export function TransfersTable({
                               />
                               <button
                                 className="flex size-6 items-center justify-center rounded text-green hover:bg-green/10"
-                                onClick={() => {
-                                  const val = parseFloat(rateInputRef.current?.value ?? '')
-                                  if (!isNaN(val) && val > 0) {
-                                    setCustomRate(val)
-                                  }
-                                  setIsEditingRate(false)
-                                }}
+                                onClick={() => handleSaveRate(summaryGroup.dateKey)}
                               >
                                 <Check size={14} weight="bold" />
                               </button>
@@ -711,14 +779,9 @@ export function TransfersTable({
                               <span className={`font-mono text-sm font-bold tabular-nums ${overrideActive ? 'text-orange' : 'text-black/60'}`}>
                                 {effectiveRate.toFixed(4)}
                               </span>
-                              {overrideActive && (
-                                <span className="text-xs text-black/25">
-                                  ({t('transfers.summary.original')}: {s.dayRate.toFixed(4)})
-                                </span>
-                              )}
                               <button
                                 className="flex size-6 items-center justify-center rounded text-black/30 hover:bg-black/5 hover:text-black/60"
-                                onClick={() => setIsEditingRate(true)}
+                                onClick={() => setShowPinDialog(true)}
                                 title={t('transfers.summary.editRate')}
                               >
                                 <PencilSimple size={13} />
@@ -726,7 +789,7 @@ export function TransfersTable({
                               {overrideActive && (
                                 <button
                                   className="flex size-6 items-center justify-center rounded text-black/25 hover:bg-black/5 hover:text-black/50"
-                                  onClick={() => setCustomRate(null)}
+                                  onClick={() => handleResetRate(summaryGroup.dateKey)}
                                   title={t('transfers.summary.resetRate')}
                                 >
                                   <X size={12} />
@@ -765,6 +828,77 @@ export function TransfersTable({
               </>
             )
           })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* PIN Dialog */}
+      <Dialog
+        open={showPinDialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowPinDialog(false)
+            setPinInput('')
+            setPinError('')
+          }
+        }}
+      >
+        <DialogContent size="sm" className="p-0">
+          <div className="px-6 pt-6 pb-5">
+            <DialogHeader>
+              <DialogTitle className="text-sm font-semibold">Security PIN Required</DialogTitle>
+            </DialogHeader>
+            <p className="mt-1 text-[12px] text-black/60">
+              Enter your PIN to modify the exchange rate
+            </p>
+
+            <div className="mt-4">
+              <input
+                ref={pinInputRef}
+                type="password"
+                value={pinInput}
+                onChange={(e) => {
+                  setPinInput(e.target.value)
+                  setPinError('')
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleVerifyPin()
+                  } else if (e.key === 'Escape') {
+                    setShowPinDialog(false)
+                    setPinInput('')
+                    setPinError('')
+                  }
+                }}
+                placeholder="Enter PIN"
+                className="h-10 w-full rounded border border-black/10 bg-white px-3 text-center font-mono text-lg tracking-widest outline-none focus:border-black/25"
+                maxLength={6}
+              />
+              {pinError && (
+                <p className="mt-2 text-xs text-red">{pinError}</p>
+              )}
+            </div>
+
+            <div className="mt-5 flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setShowPinDialog(false)
+                  setPinInput('')
+                  setPinError('')
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="filled"
+                className="flex-1"
+                onClick={handleVerifyPin}
+              >
+                Verify
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

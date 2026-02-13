@@ -96,6 +96,7 @@
       "commission": "Commission",
       "count": "{{count}} transfers",
       "countDetail": "{{deposits}}↑ · {{withdrawals}}↓",
+      "transfersLabel": "transfers",
       "totalBank": "Total Bank",
       "totalCreditCard": "Total Credit Card",
       "totalUsd": "Total USD",
