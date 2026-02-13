@@ -553,28 +553,19 @@ async function fetchTronTransfers(
 
   // Step 2: Normalize TRC-20 transfers and enrich with timestamps from native map.
   // The TRC-20 endpoint returns newest-first but includes NO timestamps.
-  // We look up timestamps from native data where available; for the rest we assign
-  // synthetic descending timestamps so they maintain their API sort order.
+  // We look up real timestamps from native data where available; unmatched
+  // transfers keep timestamp = 0 (displayed as "—" in the UI).
+  // We do NOT assign synthetic timestamps — they cause incorrect "1m ago" labels
+  // on later pages where native/trc20 pages don't overlap.
   const trc20Txs: NormalizedTransfer[] = []
   if (trc20Res.status === 'fulfilled') {
-    const rawTrc20 = normalizeTronTrc20Txs(trc20Res.value.transactions ?? [], address)
-    // Find the best "anchor" timestamp: first available native match or fallback to now
-    let anchorTs = Date.now()
-    for (const tx of rawTrc20) {
-      const info = nativeTimestampMap.get(tx.hash)
-      if (info && info.ts > 0) { anchorTs = info.ts; break }
-    }
-
-    for (let i = 0; i < rawTrc20.length; i++) {
-      const tx = rawTrc20[i]
+    for (const tx of normalizeTronTrc20Txs(trc20Res.value.transactions ?? [], address)) {
       const nativeInfo = nativeTimestampMap.get(tx.hash)
       if (nativeInfo && nativeInfo.ts > 0) {
         tx.timestamp = nativeInfo.ts
         tx.blockNumber = tx.blockNumber ?? nativeInfo.block
-      } else {
-        // Assign synthetic timestamp: decreasing from anchor so order is preserved
-        tx.timestamp = anchorTs - i * 1000
       }
+      // else: timestamp stays 0 → UI shows "—"
       trc20Txs.push(tx)
     }
   }
@@ -588,9 +579,10 @@ async function fetchTronTransfers(
     nativeTxs.push(tx)
   }
 
-  // Step 4: Merge TRC-20 (primary) + native TRX, sort by timestamp desc
+  // Step 4: Merge — TRC-20 first (primary, already newest-first from API),
+  // then native TRX transfers (also newest-first). No re-sorting needed;
+  // both arrays arrive pre-sorted from the Tatum API.
   const txs = [...trc20Txs, ...nativeTxs]
-  txs.sort((a, b) => b.timestamp - a.timestamp)
 
   return { txs, nextCursor: encodeTronCursor(newNativeNext, newTrc20Next) }
 }

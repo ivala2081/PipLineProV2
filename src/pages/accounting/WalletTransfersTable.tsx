@@ -33,6 +33,16 @@ function relativeTime(ts: number, lang: string): string {
   const hours = Math.floor(minutes / 60)
   const days = Math.floor(hours / 24)
 
+  // For older transfers (> 30 days), show actual date instead of "X days ago"
+  if (days > 30) {
+    const locale = lang === 'tr' ? 'tr-TR' : 'en-US'
+    return new Date(ts).toLocaleDateString(locale, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })
+  }
+
   if (lang === 'tr') {
     if (days > 0) return `${days} gün önce`
     if (hours > 0) return `${hours} sa önce`
