@@ -56,6 +56,7 @@ import {
   useTheme,
 } from '@ds'
 import { useLocale } from '@ds/hooks'
+import { cn } from '@ds/utils'
 
 import { navGroups } from '@/layouts/nav-config'
 import { AvatarUpload } from '@/components/AvatarUpload'
@@ -69,12 +70,13 @@ function SidebarBrand() {
   const { currentOrg } = useOrganization()
   const { state } = useSidebar()
   const isCollapsed = state === 'collapsed'
+  const logoSize = isCollapsed ? 'size-6' : 'size-8'
 
   return (
-    <div className="flex items-center gap-2.5 px-2 py-1">
-      {/* Logo mark - show org logo if available, otherwise app logo */}
+    <div className={cn('flex items-center gap-2.5 py-1', isCollapsed ? 'justify-center px-0' : 'px-2')}>
+      {/* Logo mark - show org logo if available, otherwise app logo; smaller when collapsed so it fits */}
       {currentOrg?.logo_url ? (
-        <div className="flex aspect-square size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-black/10 bg-black/5">
+        <div className={cn('flex aspect-square shrink-0 items-center justify-center overflow-hidden rounded-lg border border-black/10 bg-black/5', logoSize)}>
           <img
             src={currentOrg.logo_url}
             alt={currentOrg.name}
@@ -82,8 +84,8 @@ function SidebarBrand() {
           />
         </div>
       ) : (
-        <div className="flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg bg-brand text-white">
-          <Lightning size={18} weight="fill" />
+        <div className={cn('flex aspect-square shrink-0 items-center justify-center rounded-lg bg-brand text-white', logoSize)}>
+          <Lightning size={isCollapsed ? 14 : 18} weight="fill" />
         </div>
       )}
 
