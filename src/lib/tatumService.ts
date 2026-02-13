@@ -1,6 +1,7 @@
 const API_KEY = import.meta.env.VITE_TATUM_API_KEY as string
 const BASE_V4 = import.meta.env.DEV ? '/tatum-api/v4' : 'https://api.tatum.io/v4'
 const BASE_V3 = import.meta.env.DEV ? '/tatum-api/v3' : 'https://api.tatum.io/v3'
+const TRONGRID_BASE = import.meta.env.DEV ? '/trongrid-api/v1' : 'https://api.trongrid.io/v1'
 const TIMEOUT_MS = 30_000
 
 /* ── V4 chain name mapping ──────────────────────────────────────── */
@@ -121,6 +122,33 @@ async function tatumFetch<T>(
   if (!res.ok) {
     const body = await res.text().catch(() => '')
     throw new Error(`Tatum API ${res.status}: ${body}`)
+  }
+
+  return res.json()
+}
+
+/** Fetch from TronGrid API (no API key required, free tier) */
+async function tronGridFetch<T>(
+  path: string,
+  params: Record<string, string> = {},
+): Promise<T> {
+  const raw = `${TRONGRID_BASE}${path}`
+  const url = raw.startsWith('http') ? new URL(raw) : new URL(raw, window.location.origin)
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value)
+  }
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
+
+  const res = await fetch(url.toString(), {
+    headers: { accept: 'application/json' },
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timer))
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`TronGrid API ${res.status}: ${body}`)
   }
 
   return res.json()
@@ -369,10 +397,10 @@ interface TronRawTx {
   ret?: Array<{ contractRet?: string }>
 }
 
+/** TRC-20 transfer shape from TronGrid `/v1/accounts/{addr}/transactions/trc20` */
 interface TronTrc20Tx {
-  // Tatum V3 returns camelCase field names (not snake_case!)
-  txID: string
-  tokenInfo?: { symbol?: string; address?: string; decimals?: number; name?: string }
+  transaction_id: string
+  token_info?: { symbol?: string; address?: string; decimals?: number; name?: string }
   block_timestamp?: number
   from: string
   to: string
@@ -434,8 +462,7 @@ function normalizeTronTrc20Txs(
 ): NormalizedTransfer[] {
   const txs: NormalizedTransfer[] = []
   for (const tx of rawTxs) {
-    // Tatum V3 uses "txID" (camelCase), not "transaction_id"
-    if (!tx.txID) continue
+    if (!tx.transaction_id) continue
 
     // Skip Approval events – they carry type="Approval" and are not transfers
     if (tx.type && tx.type !== 'Transfer') continue
@@ -444,8 +471,7 @@ function normalizeTronTrc20Txs(
     const to = tx.to ?? ''
     const direction: 'in' | 'out' = from === address ? 'out' : 'in'
 
-    // Tatum V3 uses "tokenInfo" (camelCase), not "token_info"
-    const tokenInfo = tx.tokenInfo
+    const tokenInfo = tx.token_info
     const decimals = tokenInfo?.decimals ?? 0
     const amount = tx.value ? formatTrc20Balance(tx.value, decimals) : '0'
 
@@ -453,7 +479,7 @@ function normalizeTronTrc20Txs(
     if (parseFloat(amount) === 0) continue
 
     txs.push({
-      hash: tx.txID,
+      hash: tx.transaction_id,
       chain: 'tron',
       timestamp: tx.block_timestamp ?? 0,
       direction,
@@ -486,7 +512,19 @@ function decodeTronCursor(cursor?: string): { nativeNext?: string; trc20Next?: s
   }
 }
 
-/* ── Paginated TRON fetch (native + TRC-20 in parallel) ──────────── */
+/* ── TronGrid TRC-20 response shape ───────────────────────────────── */
+
+interface TronGridTrc20Response {
+  data: TronTrc20Tx[]
+  success: boolean
+  meta?: {
+    fingerprint?: string
+    page_size?: number
+    links?: { next?: string }
+  }
+}
+
+/* ── Paginated TRON fetch (native via Tatum + TRC-20 via TronGrid) ── */
 
 async function fetchTronTransfers(
   address: string,
@@ -502,8 +540,9 @@ async function fetchTronTransfers(
   const nativeParams: Record<string, string> = {}
   if (nativeNext) nativeParams.next = nativeNext
 
-  const trc20Params: Record<string, string> = {}
-  if (trc20Next) trc20Params.next = trc20Next
+  // TronGrid uses `fingerprint` for pagination and `limit` for page size
+  const trc20Params: Record<string, string> = { limit: '200' }
+  if (trc20Next) trc20Params.fingerprint = trc20Next
 
   const [nativeRes, trc20Res] = await Promise.allSettled([
     shouldFetchNative
@@ -514,64 +553,39 @@ async function fetchTronTransfers(
         )
       : Promise.resolve({ transactions: [] as TronRawTx[], next: undefined }),
     shouldFetchTrc20
-      ? tatumFetch<{ transactions?: TronTrc20Tx[]; next?: string }>(
-          BASE_V3,
-          `/tron/transaction/account/${address}/trc20`,
+      ? tronGridFetch<TronGridTrc20Response>(
+          `/accounts/${address}/transactions/trc20`,
           trc20Params,
         )
-      : Promise.resolve({ transactions: [] as TronTrc20Tx[], next: undefined }),
+      : Promise.resolve({ data: [] as TronTrc20Tx[], success: true, meta: undefined } as TronGridTrc20Response),
   ])
 
   const newNativeNext = nativeRes.status === 'fulfilled' ? nativeRes.value.next : undefined
-  const newTrc20Next = trc20Res.status === 'fulfilled' ? trc20Res.value.next : undefined
+  // TronGrid returns fingerprint for pagination (undefined when no more pages)
+  const newTrc20Next = trc20Res.status === 'fulfilled'
+    ? trc20Res.value.meta?.fingerprint
+    : undefined
 
   // Log errors so we know when an endpoint fails
   if (nativeRes.status === 'rejected') {
     console.warn('[Tatum] TRON native tx fetch failed:', nativeRes.reason)
   }
   if (trc20Res.status === 'rejected') {
-    console.warn('[Tatum] TRON TRC-20 tx fetch failed:', trc20Res.reason)
+    console.warn('[TronGrid] TRC-20 tx fetch failed:', trc20Res.reason)
   }
 
+  // Step 1: Normalize TRC-20 transfers from TronGrid.
+  // TronGrid returns block_timestamp for every transfer — no timestamp workaround needed!
+  const trc20Txs: NormalizedTransfer[] = []
+  if (trc20Res.status === 'fulfilled') {
+    trc20Txs.push(...normalizeTronTrc20Txs(trc20Res.value.data ?? [], address))
+  }
+
+  // Step 2: Normalize native TRX transfers (only real TransferContract, filtered)
+  // and deduplicate against TRC-20 results
   const rawNativeTxs = nativeRes.status === 'fulfilled'
     ? (nativeRes.value.transactions ?? [])
     : []
-
-  // Step 1: Build txID → { timestamp, blockNumber } map from ALL native transactions.
-  // The TRC-20 endpoint does NOT return timestamps, but every TRC-20 transfer also
-  // appears in the native endpoint as a TriggerSmartContract. We use native data
-  // purely to look up timestamps for TRC-20 transfers.
-  const nativeTimestampMap = new Map<string, { ts: number; block?: number }>()
-  for (const tx of rawNativeTxs) {
-    if (tx.txID) {
-      nativeTimestampMap.set(tx.txID, {
-        ts: tx.rawData?.timestamp ?? 0,
-        block: tx.blockNumber,
-      })
-    }
-  }
-
-  // Step 2: Normalize TRC-20 transfers and enrich with timestamps from native map.
-  // The TRC-20 endpoint returns newest-first but includes NO timestamps.
-  // We look up real timestamps from native data where available; unmatched
-  // transfers keep timestamp = 0 (displayed as "—" in the UI).
-  // We do NOT assign synthetic timestamps — they cause incorrect "1m ago" labels
-  // on later pages where native/trc20 pages don't overlap.
-  const trc20Txs: NormalizedTransfer[] = []
-  if (trc20Res.status === 'fulfilled') {
-    for (const tx of normalizeTronTrc20Txs(trc20Res.value.transactions ?? [], address)) {
-      const nativeInfo = nativeTimestampMap.get(tx.hash)
-      if (nativeInfo && nativeInfo.ts > 0) {
-        tx.timestamp = nativeInfo.ts
-        tx.blockNumber = tx.blockNumber ?? nativeInfo.block
-      }
-      // else: timestamp stays 0 → UI shows "—"
-      trc20Txs.push(tx)
-    }
-  }
-
-  // Step 3: Normalize native TRX transfers (only real TransferContract, filtered)
-  // and deduplicate against TRC-20 results
   const trc20Hashes = new Set(trc20Txs.map((tx) => tx.hash))
   const nativeTxs: NormalizedTransfer[] = []
   for (const tx of normalizeTronNativeTxs(rawNativeTxs, address)) {
@@ -579,10 +593,9 @@ async function fetchTronTransfers(
     nativeTxs.push(tx)
   }
 
-  // Step 4: Merge — TRC-20 first (primary, already newest-first from API),
-  // then native TRX transfers (also newest-first). No re-sorting needed;
-  // both arrays arrive pre-sorted from the Tatum API.
+  // Step 3: Merge and sort by timestamp (all transfers now have real timestamps)
   const txs = [...trc20Txs, ...nativeTxs]
+  txs.sort((a, b) => b.timestamp - a.timestamp)
 
   return { txs, nextCursor: encodeTronCursor(newNativeNext, newTrc20Next) }
 }

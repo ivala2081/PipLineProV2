@@ -18,6 +18,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/tatum-api/, ''),
       },
+      '/trongrid-api': {
+        target: 'https://api.trongrid.io',
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/trongrid-api/, ''),
+      },
     },
   },
 })
