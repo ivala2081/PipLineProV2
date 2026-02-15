@@ -34,15 +34,21 @@ export function usePspLedgerQuery(pspId: string | undefined): UsePspLedgerReturn
     queryFn: async () => {
       if (!currentOrg || !pspId) throw new Error('Missing context')
 
-      // Fetch transfers with category join
-      const { data: transfers, error: tErr } = await supabase
+      // Fetch transfers with category and type join
+      const { data: rawTransfers, error: tErr } = await supabase
         .from('transfers')
-        .select('id, transfer_date, amount, commission, net, currency, full_name, category:transfer_categories(is_deposit)')
+        .select('id, transfer_date, amount, commission, net, currency, full_name, category:transfer_categories(is_deposit), type:transfer_types(name)')
         .eq('psp_id', pspId)
         .eq('organization_id', currentOrg.id)
         .order('transfer_date', { ascending: true })
 
       if (tErr) throw tErr
+
+      // Exclude blocked transfers from ledger calculations
+      const transfers = (rawTransfers ?? []).filter((t) => {
+        const typeName = (t.type as unknown as { name: string } | null)?.name ?? ''
+        return !typeName.toLowerCase().includes('blocked')
+      })
 
       // Fetch settlements
       const { data: settlements, error: sErr } = await supabase

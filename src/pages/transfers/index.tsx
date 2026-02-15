@@ -1,30 +1,26 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, Lock, X, CalendarBlank } from '@phosphor-icons/react'
-import { useAuth } from '@/app/providers/AuthProvider'
-import { useOrganization } from '@/app/providers/OrganizationProvider'
+import { Plus, X, CalendarBlank, UploadSimple } from '@phosphor-icons/react'
 import { useLookupQueries } from '@/hooks/queries/useLookupQueries'
 import { useTransfersQuery } from '@/hooks/queries/useTransfersQuery'
 import type { TransferRow } from '@/hooks/useTransfers'
-import { Button, Card, Tabs, TabsList, TabsTrigger, TabsContent, Input } from '@ds'
+import { Button, Tabs, TabsList, TabsTrigger, TabsContent, Input } from '@ds'
 import { TransfersTable } from './TransfersTable'
 import { TransferDialog } from './TransferDialog'
 import { DeleteConfirmDialog } from './DeleteConfirmDialog'
 import { LookupSettings } from './LookupSettings'
 import { MonthlyTab } from './MonthlyTab'
+import { CsvImportDialog } from './CsvImportDialog'
 
 export function TransfersPage() {
   const { t } = useTranslation('pages')
-  const { isGod } = useAuth()
-  const { membership } = useOrganization()
-  const isAdmin = isGod || membership?.role === 'admin'
-
   const lookupData = useLookupQueries()
   const transfers = useTransfersQuery()
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingTransfer, setEditingTransfer] = useState<TransferRow | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<TransferRow | null>(null)
+  const [importOpen, setImportOpen] = useState(false)
 
   const handleAdd = () => {
     setEditingTransfer(null)
@@ -97,6 +93,10 @@ export function TransfersPage() {
               )}
             </div>
           </div>
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <UploadSimple size={16} weight="bold" />
+            {t('transfers.importCsv')}
+          </Button>
           <Button variant="filled" onClick={handleAdd}>
             <Plus size={16} weight="bold" />
             {t('transfers.addTransfer')}
@@ -121,19 +121,7 @@ export function TransfersPage() {
           <MonthlyTab />
         </TabsContent>
         <TabsContent value="settings">
-          {isAdmin ? (
-            <LookupSettings />
-          ) : (
-            <Card className="flex flex-col items-center justify-center gap-2 border border-black/5 bg-bg1 px-6 py-12 text-center">
-              <Lock size={32} className="text-black/20" />
-              <h3 className="text-sm font-semibold text-black/60">
-                {t('transfers.settings.locked')}
-              </h3>
-              <p className="text-sm text-black/40">
-                {t('transfers.settings.lockedDescription')}
-              </p>
-            </Card>
-          )}
+          <LookupSettings lookupData={lookupData} />
         </TabsContent>
       </Tabs>
 
@@ -143,6 +131,12 @@ export function TransfersPage() {
         transfer={editingTransfer}
         lookupData={lookupData}
         onSubmit={transfers}
+      />
+
+      <CsvImportDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        lookupData={lookupData}
       />
 
       <DeleteConfirmDialog

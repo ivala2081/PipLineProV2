@@ -64,6 +64,7 @@
     "title": "Transferler",
     "subtitle": "Finansal transfer ve işlemleri yönetin.",
     "addTransfer": "Transfer Ekle",
+    "importCsv": "CSV İçe Aktar",
     "editTransfer": "Transfer Düzenle",
     "tabs": {
       "transfers": "Transferler",
@@ -205,6 +206,8 @@
     "settings": {
       "title": "Arama Ayarları",
       "subtitle": "Transfer alanları için açılır menü değerlerini yönetin.",
+      "subtitleReadOnly": "Bunlar sabit transfer alan değerleridir. Değiştirilemezler.",
+      "readOnly": "Salt okunur",
       "psps": "Kasalar (PSP)",
       "categories": "Kategoriler",
       "paymentMethods": "Ödeme Yöntemleri",
@@ -217,6 +220,8 @@
       "commissionRate": "Komisyon Oranı (%)",
       "commissionRatePlaceholder": "örn. 10",
       "isDeposit": "Yatırım mı",
+      "aliases": "Diğer adları",
+      "noAliases": "—",
       "noItems": "Henüz öğe yok. Başlamak için bir tane ekleyin.",
       "deleteConfirm": "\"{{name}}\" öğesini silmek istediğinize emin misiniz?",
       "save": "Kaydet",
@@ -287,6 +292,38 @@
         "amount_try": "TL Karşılığı",
         "amount_usd": "USD Karşılığı",
         "commission_rate_snapshot": "Komisyon Oranı"
+      }
+    },
+    "import": {
+      "title": "CSV'den Transfer İçe Aktar",
+      "subtitle": "Google Sheets CSV dışa aktarımını yükleyerek toplu transfer kaydı oluşturun",
+      "steps": {
+        "upload": "Yükle",
+        "preview": "Önizleme",
+        "import": "İçe Aktar",
+        "results": "Sonuçlar"
+      },
+      "upload": {
+        "dropzone": "Buraya CSV dosyası bırakın veya tıklayarak seçin",
+        "hint": "Google Sheets CSV dışa aktarma formatı (.csv)",
+        "parseError": "CSV dosyası okunamadı"
+      },
+      "preview": {
+        "totalRows": "Toplam",
+        "valid": "Geçerli",
+        "warnings": "Uyarılar",
+        "errors": "Hatalar",
+        "exchangeRates": "Döviz Kurları",
+        "skipDuplicates": "Tekrarlanan kayıtları atla",
+        "noValidRows": "İçe aktarılacak geçerli kayıt yok"
+      },
+      "progress": {
+        "importing": "Transferler içe aktarılıyor...",
+        "batch": "Grup {{current}} / {{total}}"
+      },
+      "results": {
+        "failure": "İçe aktarma başarısız",
+        "close": "Kapat"
       }
     }
   },
@@ -447,7 +484,8 @@
       "withdrawals": "Çekimler",
       "tabs": {
         "ledger": "Hesap Defteri",
-        "settlements": "Tahsilatlar"
+        "settlements": "Tahsilatlar",
+        "settings": "Ayarlar"
       }
     },
     "columns": {
@@ -490,6 +528,21 @@
     "rowType": {
       "transfer": "Transfer",
       "settlement": "Tahsilat"
+    },
+    "settings": {
+      "status": "Durum",
+      "statusDesc": "Pasif kasalar transfer formunda gizlenir ve açılır menülerde görünmez.",
+      "commissionRate": "Komisyon Oranı",
+      "commissionRateDesc": "Bu kasa için tüm yeni transferlere uygulanan güncel komisyon oranı.",
+      "current": "Güncel",
+      "updateRate": "Güncelle",
+      "effectiveFromTitle": "Tarihsel Oran Geçmişi",
+      "effectiveFromDesc": "Komisyon oranı değişikliklerini tarihe göre planlayın. Aktif olduğunda, transferin tarihine uyan oran temel oran yerine kullanılır.",
+      "internal": "Dahili Hesap",
+      "internalDesc": "Dahili kasalar şirkete ait hesaplardır. Komisyon her zaman %0'dır ve tahsilatlar takip edilmez.",
+      "internalTag": "Dahili",
+      "externalTag": "Harici",
+      "internalCommissionHint": "Dahili — her zaman %0"
     }
   },
   "future": {

@@ -214,6 +214,7 @@ export interface Database {
           name: string
           commission_rate: number
           is_active: boolean
+          is_internal: boolean
           created_at: string
           updated_at: string
         }
@@ -223,6 +224,7 @@ export interface Database {
           name: string
           commission_rate?: number
           is_active?: boolean
+          is_internal?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -232,6 +234,7 @@ export interface Database {
           name?: string
           commission_rate?: number
           is_active?: boolean
+          is_internal?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -365,6 +368,7 @@ export interface Database {
           name: string
           is_deposit: boolean
           is_active: boolean
+          aliases: string[]
           created_at: string
           updated_at: string
         }
@@ -374,6 +378,7 @@ export interface Database {
           name: string
           is_deposit?: boolean
           is_active?: boolean
+          aliases?: string[]
           created_at?: string
           updated_at?: string
         }
@@ -383,6 +388,7 @@ export interface Database {
           name?: string
           is_deposit?: boolean
           is_active?: boolean
+          aliases?: string[]
           created_at?: string
           updated_at?: string
         }
@@ -402,6 +408,7 @@ export interface Database {
           organization_id: string
           name: string
           is_active: boolean
+          aliases: string[]
           created_at: string
           updated_at: string
         }
@@ -410,6 +417,7 @@ export interface Database {
           organization_id: string
           name: string
           is_active?: boolean
+          aliases?: string[]
           created_at?: string
           updated_at?: string
         }
@@ -418,6 +426,7 @@ export interface Database {
           organization_id?: string
           name?: string
           is_active?: boolean
+          aliases?: string[]
           created_at?: string
           updated_at?: string
         }
@@ -437,6 +446,7 @@ export interface Database {
           organization_id: string
           name: string
           is_active: boolean
+          aliases: string[]
           created_at: string
           updated_at: string
         }
@@ -445,6 +455,7 @@ export interface Database {
           organization_id: string
           name: string
           is_active?: boolean
+          aliases?: string[]
           created_at?: string
           updated_at?: string
         }
@@ -453,6 +464,7 @@ export interface Database {
           organization_id?: string
           name?: string
           is_active?: boolean
+          aliases?: string[]
           created_at?: string
           updated_at?: string
         }

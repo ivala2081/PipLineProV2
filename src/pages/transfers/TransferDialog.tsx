@@ -302,9 +302,10 @@ export function TransferDialog({
     return resolveRateForDate(pspRates, dateStr)
   }, [pspId, transferDate, ratesByPsp])
 
-  // Effective rate: override > resolved from history > PSP fallback
-  const effectiveRate =
-    rateOverride ?? resolvedRate ?? selectedPsp?.commission_rate ?? 0
+  // Effective rate: internal PSPs always 0%, otherwise override > resolved > fallback
+  const effectiveRate = selectedPsp?.is_internal
+    ? 0
+    : (rateOverride ?? resolvedRate ?? selectedPsp?.commission_rate ?? 0)
 
   const paymentMethodOptions = useMemo<SelectOption[]>(
     () =>
@@ -613,46 +614,54 @@ export function TransferDialog({
             {/* Commission rate info */}
             {selectedPsp && (
               <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-                <p className={compactHintClasses}>
-                  {t('transfers.form.commissionRate')}:{' '}
-                  <span className="font-mono font-medium tabular-nums">
-                    {(effectiveRate * 100).toFixed(1)}%
-                  </span>
-                  {rateOverride !== null && (
-                    <span className="ml-1 text-orange">
-                      ({t('transfers.form.overridden')})
+                {selectedPsp.is_internal ? (
+                  <p className={compactHintClasses}>
+                    {t('psps.settings.internalCommissionHint')}
+                  </p>
+                ) : (
+                  <>
+                    <p className={compactHintClasses}>
+                      {t('transfers.form.commissionRate')}:{' '}
+                      <span className="font-mono font-medium tabular-nums">
+                        {(effectiveRate * 100).toFixed(1)}%
+                      </span>
+                      {rateOverride !== null && (
+                        <span className="ml-1 text-orange">
+                          ({t('transfers.form.overridden')})
+                          <button
+                            type="button"
+                            className="ml-1 text-xs underline"
+                            onClick={() => {
+                              setRateOverride(null)
+                              setShowRateOverride(false)
+                            }}
+                          >
+                            {t('transfers.form.resetRate')}
+                          </button>
+                        </span>
+                      )}
+                    </p>
+
+                    {!showRateOverride && rateOverride === null && (
                       <button
                         type="button"
-                        className="ml-1 text-xs underline"
-                        onClick={() => {
-                          setRateOverride(null)
-                          setShowRateOverride(false)
-                        }}
+                        className="text-xs text-blue underline"
+                        onClick={() => setShowRateOverride(true)}
                       >
-                        {t('transfers.form.resetRate')}
+                        {t('transfers.form.overrideRate')}
                       </button>
-                    </span>
-                  )}
-                </p>
+                    )}
 
-                {!showRateOverride && rateOverride === null && (
-                  <button
-                    type="button"
-                    className="text-xs text-blue underline"
-                    onClick={() => setShowRateOverride(true)}
-                  >
-                    {t('transfers.form.overrideRate')}
-                  </button>
-                )}
-
-                {/* Snapshot info when editing */}
-                {isEdit && transfer?.commission_rate_snapshot != null && (
-                  <p className={compactHintClasses}>
-                    {t('transfers.form.originalRate')}:{' '}
-                    <span className="font-mono tabular-nums">
-                      {(transfer.commission_rate_snapshot * 100).toFixed(1)}%
-                    </span>
-                  </p>
+                    {/* Snapshot info when editing */}
+                    {isEdit && transfer?.commission_rate_snapshot != null && (
+                      <p className={compactHintClasses}>
+                        {t('transfers.form.originalRate')}:{' '}
+                        <span className="font-mono tabular-nums">
+                          {(transfer.commission_rate_snapshot * 100).toFixed(1)}%
+                        </span>
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             )}

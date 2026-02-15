@@ -47,7 +47,10 @@
       "WebFetch(domain:docs.tronscan.org)",
       "Bash(dir:*)",
       "Bash(xargs:*)",
-      "WebFetch(domain:ai.google.dev)"
+      "WebFetch(domain:ai.google.dev)",
+      "Bash(node -e:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)"
     ]
   }
 }

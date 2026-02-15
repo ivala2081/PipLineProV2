@@ -72,6 +72,10 @@ export function useLookupMutation(
       queryClient.invalidateQueries({
         queryKey: queryKeys.lookups.psps(orgId ?? ''),
       })
+      // Invalidate PSP dashboard so cards reflect updated rates
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.pspDashboard.summary(orgId ?? ''),
+      })
     } else if (table === 'transfer_categories') {
       queryClient.invalidateQueries({
         queryKey: queryKeys.lookups.categories(orgId ?? ''),

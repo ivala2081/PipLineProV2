@@ -90,6 +90,11 @@ export function groupByDate(transfers: TransferRow[], lang: string): DateGroup[]
 /* ── Day Summary ────────────────────────────────────── */
 
 export function computeDaySummary(transfers: TransferRow[]): DaySummary {
+  // Exclude blocked transfers from all calculations
+  const active = transfers.filter(
+    (t) => !t.type?.name?.toLowerCase().includes('blocked'),
+  )
+
   let deposits = 0
   let withdrawals = 0
   let commission = 0
@@ -103,7 +108,7 @@ export function computeDaySummary(transfers: TransferRow[]): DaySummary {
   let rateSum = 0
   let rateCount = 0
 
-  for (const t of transfers) {
+  for (const t of active) {
     const tryAmount = Math.abs(t.amount_try ?? 0)
     const commTry =
       t.currency === 'USD' ? t.commission * (t.exchange_rate ?? 1) : t.commission
@@ -137,7 +142,7 @@ export function computeDaySummary(transfers: TransferRow[]): DaySummary {
     withdrawals,
     net: deposits - withdrawals,
     commission,
-    count: transfers.length,
+    count: active.length,
     depositCount,
     withdrawalCount,
     totalBank,

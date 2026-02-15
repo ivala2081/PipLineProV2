@@ -8,6 +8,7 @@ export interface PspSummary {
   psp_name: string
   commission_rate: number
   is_active: boolean
+  is_internal: boolean
   total_deposits: number
   total_withdrawals: number
   total_commission: number
@@ -48,6 +49,7 @@ export function usePspDashboardQuery(): PspDashboardData {
         psp_name: string
         commission_rate: number
         is_active: boolean
+        is_internal: boolean
         total_deposits: number
         total_withdrawals: number
         total_commission: number

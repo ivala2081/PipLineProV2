@@ -64,6 +64,7 @@
     "title": "Transfers",
     "subtitle": "Manage financial transfers and transactions.",
     "addTransfer": "Add Transfer",
+    "importCsv": "Import CSV",
     "editTransfer": "Edit Transfer",
     "tabs": {
       "transfers": "Transfers",
@@ -205,6 +206,8 @@
     "settings": {
       "title": "Lookup Settings",
       "subtitle": "Manage dropdown values for transfers.",
+      "subtitleReadOnly": "These are the fixed transfer field values. They cannot be modified.",
+      "readOnly": "Read-only",
       "psps": "PSPs (Payment Service Providers)",
       "categories": "Categories",
       "paymentMethods": "Payment Methods",
@@ -220,6 +223,8 @@
       "isDeposit": "Is Deposit",
       "deposit": "Deposit",
       "withdrawal": "Withdrawal",
+      "aliases": "Also known as",
+      "noAliases": "—",
       "noItems": "No items yet. Add one to get started.",
       "deleteConfirm": "Are you sure you want to delete \"{{name}}\"?",
       "save": "Save",
@@ -287,6 +292,38 @@
         "amount_try": "TL Equivalent",
         "amount_usd": "USD Equivalent",
         "commission_rate_snapshot": "Commission Rate"
+      }
+    },
+    "import": {
+      "title": "Import Transfers from CSV",
+      "subtitle": "Upload a Google Sheets CSV export to bulk-import transfer records",
+      "steps": {
+        "upload": "Upload",
+        "preview": "Preview",
+        "import": "Import",
+        "results": "Results"
+      },
+      "upload": {
+        "dropzone": "Drop a CSV file here, or click to browse",
+        "hint": "Google Sheets CSV export format (.csv)",
+        "parseError": "Failed to parse CSV file"
+      },
+      "preview": {
+        "totalRows": "Total",
+        "valid": "Valid",
+        "warnings": "Warnings",
+        "errors": "Errors",
+        "exchangeRates": "Exchange Rates",
+        "skipDuplicates": "Skip duplicate rows",
+        "noValidRows": "No valid rows to import"
+      },
+      "progress": {
+        "importing": "Importing transfers...",
+        "batch": "Batch {{current}} of {{total}}"
+      },
+      "results": {
+        "failure": "Import failed",
+        "close": "Close"
       }
     }
   },
@@ -447,7 +484,8 @@
       "withdrawals": "Withdrawals",
       "tabs": {
         "ledger": "Ledger",
-        "settlements": "Settlements"
+        "settlements": "Settlements",
+        "settings": "Settings"
       }
     },
     "columns": {
@@ -490,6 +528,21 @@
     "rowType": {
       "transfer": "Transfer",
       "settlement": "Settlement"
+    },
+    "settings": {
+      "status": "Status",
+      "statusDesc": "Inactive PSPs are hidden from the transfer form and will not appear in dropdowns.",
+      "commissionRate": "Commission Rate",
+      "commissionRateDesc": "The current commission rate applied to all new transfers for this PSP.",
+      "current": "Current",
+      "updateRate": "Update",
+      "effectiveFromTitle": "Effective-From Rate History",
+      "effectiveFromDesc": "Schedule commission rate changes by date. When active, the rate matching a transfer's date is used instead of the base rate.",
+      "internal": "Internal Account",
+      "internalDesc": "Internal PSPs are company-owned accounts. Commission is always 0% and settlements are not tracked.",
+      "internalTag": "Internal",
+      "externalTag": "External",
+      "internalCommissionHint": "Internal — always 0%"
     }
   },
   "future": {

@@ -160,7 +160,9 @@ export function PspsPage() {
                 <Card
                   key={psp.psp_id}
                   padding="default"
-                  className="cursor-pointer border border-black/10 bg-bg1 transition-shadow hover:shadow-md"
+                  className={`cursor-pointer border border-black/10 bg-bg1 transition-shadow hover:shadow-md ${
+                    !psp.is_active ? 'opacity-50' : ''
+                  }`}
                   onClick={() => navigate(`/psps/${psp.psp_id}`)}
                 >
                   <div className="flex items-start justify-between">
@@ -176,13 +178,20 @@ export function PspsPage() {
                         </p>
                       </div>
                     </div>
-                    <Badge
-                      variant={psp.is_active ? 'default' : 'secondary'}
-                    >
-                      {psp.is_active
-                        ? t('psps.card.active')
-                        : t('psps.card.inactive')}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      {psp.is_internal && (
+                        <Badge variant="default">
+                          {t('psps.settings.internalTag')}
+                        </Badge>
+                      )}
+                      <Badge
+                        variant={psp.is_active ? 'default' : 'secondary'}
+                      >
+                        {psp.is_active
+                          ? t('psps.card.active')
+                          : t('psps.card.inactive')}
+                      </Badge>
+                    </div>
                   </div>
 
                   <div className="mt-4 grid grid-cols-2 gap-3">

@@ -1,15 +1,8 @@
-import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, PencilSimple, Trash, ClockCounterClockwise } from '@phosphor-icons/react'
-import { useLookupMutation } from '@/hooks/queries/useLookupMutation'
-import { useToast } from '@/hooks/useToast'
-import { ManagerPinDialog } from '@ds'
-import { LookupFormDialog } from './LookupFormDialog'
-import { PspRateHistoryDialog } from './PspRateHistoryDialog'
-import type { Psp } from '@/lib/database.types'
+import { Lock, CreditCard, Tag as TagIcon, GitBranch } from '@phosphor-icons/react'
+import type { useLookupQueries } from '@/hooks/queries/useLookupQueries'
 import {
   Card,
-  Button,
   Table,
   TableHeader,
   TableBody,
@@ -17,274 +10,160 @@ import {
   TableHead,
   TableCell,
   Tag,
-  Separator,
 } from '@ds'
 
-type LookupTable =
-  | 'psps'
-  | 'transfer_categories'
-  | 'payment_methods'
-  | 'transfer_types'
-
-interface SectionConfig {
-  table: LookupTable
-  titleKey: string
-  hasCommissionRate?: boolean
-  hasIsDeposit?: boolean
+interface LookupSettingsProps {
+  lookupData: ReturnType<typeof useLookupQueries>
 }
 
-const sections: SectionConfig[] = [
-  {
-    table: 'psps',
-    titleKey: 'transfers.settings.psps',
-    hasCommissionRate: true,
-  },
-  {
-    table: 'transfer_categories',
-    titleKey: 'transfers.settings.categories',
-    hasIsDeposit: true,
-  },
-  { table: 'payment_methods', titleKey: 'transfers.settings.paymentMethods' },
-  { table: 'transfer_types', titleKey: 'transfers.settings.types' },
-]
-
-function LookupSection({ config }: { config: SectionConfig }) {
+export function LookupSettings({ lookupData }: LookupSettingsProps) {
   const { t } = useTranslation('pages')
-  const { toast } = useToast()
-  const { items, createItem, updateItem, deleteItem, isCreating, isUpdating } =
-    useLookupMutation(config.table)
-
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingItem, setEditingItem] = useState<Record<string, unknown> | null>(
-    null,
-  )
-  const [rateHistoryPsp, setRateHistoryPsp] = useState<Psp | null>(null)
-  const [pinDialogOpen, setPinDialogOpen] = useState(false)
-  const [pendingSaveData, setPendingSaveData] = useState<Record<string, unknown> | null>(null)
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
-
-  const openAdd = () => {
-    setEditingItem(null)
-    setDialogOpen(true)
-  }
-
-  const openEdit = (item: Record<string, unknown>) => {
-    setEditingItem(item)
-    setDialogOpen(true)
-  }
-
-  const executeSave = async (data: Record<string, unknown>) => {
-    try {
-      if (editingItem) {
-        await updateItem(editingItem.id as string, data)
-        toast({
-          title: t('transfers.toast.lookupUpdated'),
-          variant: 'success',
-        })
-      } else {
-        await createItem(data)
-        toast({
-          title: t('transfers.toast.lookupCreated'),
-          variant: 'success',
-        })
-      }
-    } catch (error) {
-      toast({
-        title: (error as Error).message || t('transfers.toast.error'),
-        variant: 'error',
-      })
-    }
-  }
-
-  const handleSave = async (data: Record<string, unknown>) => {
-    setPendingSaveData(data)
-    setPendingDeleteId(null)
-    setPinDialogOpen(true)
-    return false
-  }
-
-  const handlePinConfirm = async () => {
-    const dataToSave = pendingSaveData
-    const idToDelete = pendingDeleteId
-    handlePinClose()
-
-    if (dataToSave) {
-      await executeSave(dataToSave)
-      setDialogOpen(false)
-    } else if (idToDelete) {
-      try {
-        await deleteItem(idToDelete)
-        toast({
-          title: t('transfers.toast.lookupDeleted'),
-          variant: 'success',
-        })
-      } catch (error) {
-        toast({
-          title: (error as Error).message || t('transfers.toast.error'),
-          variant: 'error',
-        })
-      }
-    }
-  }
-
-  const handleDelete = (id: string) => {
-    setPendingDeleteId(id)
-    setPendingSaveData(null)
-    setPinDialogOpen(true)
-  }
-
-  const handlePinClose = () => {
-    setPinDialogOpen(false)
-    setPendingSaveData(null)
-    setPendingDeleteId(null)
-  }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-5">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">{t(config.titleKey)}</h3>
-        <Button variant="outline" size="sm" onClick={openAdd}>
-          <Plus size={14} weight="bold" />
-          {t('transfers.settings.addItem')}
-        </Button>
+        <div>
+          <h2 className="text-lg font-semibold">{t('transfers.settings.title')}</h2>
+          <p className="mt-1 text-sm text-black/40">
+            {t('transfers.settings.subtitleReadOnly')}
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5 rounded-full bg-black/[0.04] px-3 py-1.5 text-xs text-black/40">
+          <Lock size={12} weight="bold" />
+          {t('transfers.settings.readOnly')}
+        </div>
       </div>
 
-      {items.length === 0 ? (
-        <p className="py-4 text-sm text-black/40">
-          {t('transfers.settings.noItems')}
-        </p>
-      ) : (
+      {/* Transfer Types */}
+      <Card padding="spacious" className="border border-black/[0.06] bg-bg1">
+        <SectionHeader
+          icon={<GitBranch size={16} weight="duotone" />}
+          title={t('transfers.settings.types')}
+          count={lookupData.transferTypes.length}
+        />
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t('transfers.settings.name')}</TableHead>
-              {config.hasCommissionRate && (
-                <TableHead>{t('transfers.settings.commissionRate')}</TableHead>
-              )}
-              {config.hasIsDeposit && (
-                <TableHead>{t('transfers.settings.isDeposit')}</TableHead>
-              )}
-              <TableHead className="w-28" />
+              <TableHead className="w-[180px]">{t('transfers.settings.name')}</TableHead>
+              <TableHead>{t('transfers.settings.aliases', 'Import Aliases')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {items.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell className="font-medium">{item.name}</TableCell>
-                {config.hasCommissionRate && (
-                  <TableCell
-                    className="cursor-pointer font-mono tabular-nums hover:text-blue"
-                    onClick={() => setRateHistoryPsp(item as unknown as Psp)}
-                  >
-                    {(
-                      ((item as Record<string, unknown>).commission_rate as number) *
-                      100
-                    ).toFixed(1)}
-                    %
-                  </TableCell>
-                )}
-                {config.hasIsDeposit && (
-                  <TableCell>
-                    <Tag
-                      variant={
-                        (item as Record<string, unknown>).is_deposit
-                          ? 'green'
-                          : 'red'
-                      }
-                    >
-                      {(item as Record<string, unknown>).is_deposit
-                        ? t('transfers.settings.deposit')
-                        : t('transfers.settings.withdrawal')}
-                    </Tag>
-                  </TableCell>
-                )}
+            {lookupData.transferTypes.map((tt) => (
+              <TableRow key={tt.id}>
+                <TableCell className="font-medium">{tt.name}</TableCell>
                 <TableCell>
-                  <div className="flex gap-1">
-                    {config.hasCommissionRate && (
-                      <Button
-                        variant="borderless"
-                        size="sm"
-                        onClick={() =>
-                          setRateHistoryPsp(item as unknown as Psp)
-                        }
-                        title={t('transfers.settings.rateHistory')}
-                      >
-                        <ClockCounterClockwise size={14} />
-                      </Button>
-                    )}
-                    <Button
-                      variant="borderless"
-                      size="sm"
-                      onClick={() => openEdit(item)}
-                    >
-                      <PencilSimple size={14} />
-                    </Button>
-                    <Button
-                      variant="borderless"
-                      size="sm"
-                      className="text-red"
-                      onClick={() => handleDelete(item.id)}
-                    >
-                      <Trash size={14} />
-                    </Button>
-                  </div>
+                  <AliasesList aliases={tt.aliases} />
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
-      )}
+      </Card>
 
-      <LookupFormDialog
-        open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        onSave={handleSave}
-        editingItem={editingItem}
-        hasCommissionRate={config.hasCommissionRate}
-        hasIsDeposit={config.hasIsDeposit}
-        title={
-          editingItem
-            ? t('transfers.settings.editItem')
-            : t('transfers.settings.addItem')
-        }
-        isSaving={isCreating || isUpdating}
-      />
-
-      {config.hasCommissionRate && (
-        <PspRateHistoryDialog
-          psp={rateHistoryPsp}
-          open={rateHistoryPsp !== null}
-          onClose={() => setRateHistoryPsp(null)}
+      {/* Categories */}
+      <Card padding="spacious" className="border border-black/[0.06] bg-bg1">
+        <SectionHeader
+          icon={<TagIcon size={16} weight="duotone" />}
+          title={t('transfers.settings.categories')}
+          count={lookupData.categories.length}
         />
-      )}
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[180px]">{t('transfers.settings.name')}</TableHead>
+              <TableHead className="w-[120px]">{t('transfers.settings.isDeposit')}</TableHead>
+              <TableHead>{t('transfers.settings.aliases', 'Import Aliases')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {lookupData.categories.map((cat) => (
+              <TableRow key={cat.id}>
+                <TableCell className="font-medium">{cat.name}</TableCell>
+                <TableCell>
+                  <Tag variant={cat.is_deposit ? 'green' : 'red'}>
+                    {cat.is_deposit
+                      ? t('transfers.settings.deposit')
+                      : t('transfers.settings.withdrawal')}
+                  </Tag>
+                </TableCell>
+                <TableCell>
+                  <AliasesList aliases={cat.aliases} />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
 
-      <ManagerPinDialog
-        open={pinDialogOpen}
-        onClose={handlePinClose}
-        onConfirm={handlePinConfirm}
-      />
+      {/* Payment Methods */}
+      <Card padding="spacious" className="border border-black/[0.06] bg-bg1">
+        <SectionHeader
+          icon={<CreditCard size={16} weight="duotone" />}
+          title={t('transfers.settings.paymentMethods')}
+          count={lookupData.paymentMethods.length}
+        />
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[180px]">{t('transfers.settings.name')}</TableHead>
+              <TableHead>{t('transfers.settings.aliases', 'Import Aliases')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {lookupData.paymentMethods.map((pm) => (
+              <TableRow key={pm.id}>
+                <TableCell className="font-medium">{pm.name}</TableCell>
+                <TableCell>
+                  <AliasesList aliases={pm.aliases} />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
     </div>
   )
 }
 
-export function LookupSettings() {
-  const { t } = useTranslation('pages')
-
+function SectionHeader({
+  icon,
+  title,
+  count,
+}: {
+  icon: React.ReactNode
+  title: string
+  count: number
+}) {
   return (
-    <Card padding="spacious" className="space-y-6 border border-black/5 bg-bg1">
-      <div>
-        <h2 className="text-lg font-semibold">{t('transfers.settings.title')}</h2>
-        <p className="mt-1 text-sm text-black/40">
-          {t('transfers.settings.subtitle')}
-        </p>
+    <div className="mb-4 flex items-center gap-2.5">
+      <div className="flex size-8 items-center justify-center rounded-lg bg-black/[0.05] text-black/50">
+        {icon}
       </div>
+      <h3 className="text-sm font-semibold">{title}</h3>
+      <span className="flex size-5 items-center justify-center rounded-full bg-black/[0.06] text-[10px] font-medium text-black/40">
+        {count}
+      </span>
+    </div>
+  )
+}
 
-      {sections.map((config, i) => (
-        <div key={config.table}>
-          <LookupSection config={config} />
-          {i < sections.length - 1 && <Separator className="mt-6" />}
-        </div>
+function AliasesList({ aliases }: { aliases: string[] }) {
+  const { t } = useTranslation('pages')
+  if (!aliases || aliases.length === 0) {
+    return <span className="text-xs text-black/20">{t('transfers.settings.noAliases', '—')}</span>
+  }
+  return (
+    <div className="flex flex-wrap gap-1">
+      {aliases.map((alias) => (
+        <span
+          key={alias}
+          className="inline-flex rounded bg-black/[0.04] px-1.5 py-0.5 text-[11px] text-black/50"
+        >
+          {alias}
+        </span>
       ))}
-    </Card>
+    </div>
   )
 }
