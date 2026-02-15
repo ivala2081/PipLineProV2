@@ -55,7 +55,9 @@
       "Bash(npx husky init:*)",
       "Bash(npm run test:run:*)",
       "Bash(pkill:*)",
-      "Bash(git filter-branch:*)"
+      "Bash(git filter-branch:*)",
+      "Bash(git stash pop:*)",
+      "Bash(git push:*)"
     ]
   }
 }
