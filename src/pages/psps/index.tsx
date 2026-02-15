@@ -1,19 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import {
-  CreditCard,
-  Plus,
-  Coins,
-  ArrowDown,
-  ArrowUp,
-  Clock,
-} from '@phosphor-icons/react'
+import { CreditCard, Plus, Clock, CaretRight } from '@phosphor-icons/react'
 import {
   Card,
   Button,
-  Badge,
-  StatCard,
+  Tag,
   EmptyState,
   Dialog,
   DialogContent,
@@ -42,7 +34,7 @@ export function PspsPage() {
   const { membership } = useOrganization()
   const isAdmin = isGod || membership?.role === 'admin'
 
-  const { psps, totals, isLoading } = usePspDashboardQuery()
+  const { psps, isLoading } = usePspDashboardQuery()
   const pspMutation = useLookupMutation('psps')
 
   const [addDialogOpen, setAddDialogOpen] = useState(false)
@@ -87,44 +79,6 @@ export function PspsPage() {
         )}
       </div>
 
-      {/* Summary Stats */}
-      {hasPsps && (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard
-            icon={Coins}
-            iconBg="bg-amber-100"
-            iconColor="text-amber-600"
-            label={t('psps.stats.outstanding')}
-            value={formatCurrency(totals.outstanding)}
-            isLoading={isLoading}
-          />
-          <StatCard
-            icon={ArrowDown}
-            iconBg="bg-green-100"
-            iconColor="text-green-600"
-            label={t('psps.stats.settlements')}
-            value={formatCurrency(totals.settlements)}
-            isLoading={isLoading}
-          />
-          <StatCard
-            icon={ArrowUp}
-            iconBg="bg-blue-100"
-            iconColor="text-blue-600"
-            label={t('psps.stats.deposits')}
-            value={formatCurrency(totals.deposits)}
-            isLoading={isLoading}
-          />
-          <StatCard
-            icon={CreditCard}
-            iconBg="bg-purple-100"
-            iconColor="text-purple-600"
-            label={t('psps.stats.commission')}
-            value={formatCurrency(totals.commission)}
-            isLoading={isLoading}
-          />
-        </div>
-      )}
-
       {/* PSP Cards */}
       {!isLoading && !hasPsps ? (
         <EmptyState
@@ -133,11 +87,7 @@ export function PspsPage() {
           description={t('psps.noPspsDesc')}
           action={
             isAdmin ? (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setAddDialogOpen(true)}
-              >
+              <Button size="sm" variant="outline" onClick={() => setAddDialogOpen(true)}>
                 <Plus size={14} weight="bold" className="mr-1" />
                 {t('psps.addPsp')}
               </Button>
@@ -150,81 +100,85 @@ export function PspsPage() {
             ? Array.from({ length: 3 }).map((_, i) => (
                 <Card
                   key={i}
-                  padding="default"
+                  padding="none"
                   className="animate-pulse border border-black/10 bg-bg1"
                 >
-                  <div className="h-24" />
+                  <div className="h-28" />
                 </Card>
               ))
-            : psps.map((psp) => (
-                <Card
-                  key={psp.psp_id}
-                  padding="default"
-                  className={`cursor-pointer border border-black/10 bg-bg1 transition-shadow hover:shadow-md ${
-                    !psp.is_active ? 'opacity-50' : ''
-                  }`}
-                  onClick={() => navigate(`/psps/${psp.psp_id}`)}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex size-10 items-center justify-center rounded-xl bg-black/5">
-                        <CreditCard size={18} className="text-black/40" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold">{psp.psp_name}</p>
-                        <p className="text-xs text-black/50">
-                          {t('psps.card.commission')}:{' '}
-                          {(psp.commission_rate * 100).toFixed(1)}%
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {psp.is_internal && (
-                        <Badge variant="default">
-                          {t('psps.settings.internalTag')}
-                        </Badge>
-                      )}
-                      <Badge
-                        variant={psp.is_active ? 'default' : 'secondary'}
-                      >
-                        {psp.is_active
-                          ? t('psps.card.active')
-                          : t('psps.card.inactive')}
-                      </Badge>
-                    </div>
-                  </div>
+            : psps.map((psp) => {
+                const accentColor = !psp.is_active
+                  ? 'bg-black/20'
+                  : psp.balance > 0
+                    ? 'bg-amber-500'
+                    : psp.balance < 0
+                      ? 'bg-red-500'
+                      : 'bg-green-500'
 
-                  <div className="mt-4 grid grid-cols-2 gap-3">
-                    <div>
-                      <p className="text-xs text-black/40">
-                        {t('psps.card.outstanding')}
-                      </p>
-                      <p
-                        className={`text-sm font-semibold tabular-nums ${psp.balance > 0 ? 'text-amber-600' : 'text-green-600'}`}
-                      >
-                        {formatCurrency(psp.balance)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-black/40">
-                        {t('psps.card.lastSettlement')}
-                      </p>
-                      <p className="flex items-center gap-1 text-sm text-black/60">
-                        {psp.last_settlement_date ? (
-                          <>
-                            <Clock size={12} />
-                            {psp.last_settlement_date}
-                          </>
-                        ) : (
-                          <span className="text-xs text-black/30">
-                            {t('psps.card.noSettlement')}
+                return (
+                  <Card
+                    key={psp.psp_id}
+                    padding="none"
+                    className={`group cursor-pointer overflow-hidden border border-black/10 bg-bg1 transition-all hover:border-black/20 hover:shadow-md ${
+                      !psp.is_active ? 'opacity-60' : ''
+                    }`}
+                    onClick={() => navigate(`/psps/${psp.psp_id}`)}
+                  >
+                    <div className="flex">
+                      {/* Left accent bar */}
+                      <div className={`w-1 shrink-0 ${accentColor}`} />
+
+                      <div className="flex flex-1 flex-col gap-3 p-4">
+                        {/* Top row: name + tags + arrow */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2.5">
+                            <p className="text-sm font-semibold">{psp.psp_name}</p>
+                            <Tag variant={psp.is_active ? 'green' : 'red'} className="text-[10px]">
+                              {psp.is_active ? t('psps.card.active') : t('psps.card.inactive')}
+                            </Tag>
+                            {psp.is_internal && (
+                              <Tag variant="purple" className="text-[10px]">
+                                {t('psps.settings.internalTag')}
+                              </Tag>
+                            )}
+                          </div>
+                          <CaretRight
+                            size={14}
+                            weight="bold"
+                            className="text-black/15 transition-all group-hover:translate-x-0.5 group-hover:text-black/40"
+                          />
+                        </div>
+
+                        {/* Balance — the single key metric */}
+                        <div className="flex items-baseline justify-between">
+                          <p
+                            className={`text-xl font-bold tabular-nums ${
+                              !psp.is_active
+                                ? 'text-black/40'
+                                : psp.balance > 0
+                                  ? 'text-amber-600'
+                                  : psp.balance < 0
+                                    ? 'text-red-600'
+                                    : 'text-green-600'
+                            }`}
+                          >
+                            {formatCurrency(psp.balance)}
+                          </p>
+                          <span className="text-[11px] font-medium text-black/30">
+                            {(psp.commission_rate * 100).toFixed(1)}%
                           </span>
-                        )}
-                      </p>
+                        </div>
+
+                        {/* Subtle footer */}
+                        <div className="flex items-center gap-1 text-[11px] text-black/30">
+                          <Clock size={10} />
+                          {psp.last_settlement_date ?? t('psps.card.noSettlement')}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                )
+              })}
         </div>
       )}
 
@@ -265,10 +219,7 @@ export function PspsPage() {
             >
               {t('psps.settlement.cancel')}
             </Button>
-            <Button
-              onClick={handleAddPsp}
-              disabled={!newName.trim() || !newRate || isSubmitting}
-            >
+            <Button onClick={handleAddPsp} disabled={!newName.trim() || !newRate || isSubmitting}>
               {isSubmitting ? t('psps.settlement.saving') : t('psps.settlement.save')}
             </Button>
           </DialogFooter>

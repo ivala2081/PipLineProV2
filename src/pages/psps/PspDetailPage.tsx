@@ -57,10 +57,7 @@ import { useLookupMutation } from '@/hooks/queries/useLookupMutation'
 import { usePspRates, usePspRateMutations } from '@/hooks/queries/usePspRatesQuery'
 import { useToast } from '@/hooks/useToast'
 import { ManagerPinDialog } from '@ds'
-import {
-  settlementFormSchema,
-  type SettlementFormValues,
-} from '@/schemas/pspSettlementSchema'
+import { settlementFormSchema, type SettlementFormValues } from '@/schemas/pspSettlementSchema'
 import type { PspSettlement } from '@/lib/database.types'
 
 /* ------------------------------------------------------------------ */
@@ -129,9 +126,7 @@ function SettlementFormDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {isEdit
-              ? t('psps.settlement.editTitle')
-              : t('psps.settlement.title')}
+            {isEdit ? t('psps.settlement.editTitle') : t('psps.settlement.title')}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
@@ -139,30 +134,19 @@ function SettlementFormDialog({
             <Label>{t('psps.settlement.date')}</Label>
             <Input type="date" {...register('settlement_date')} />
             {errors.settlement_date && (
-              <p className="text-xs text-red-500">
-                {errors.settlement_date.message}
-              </p>
+              <p className="text-xs text-red-500">{errors.settlement_date.message}</p>
             )}
           </div>
           <div className="space-y-2">
             <Label>{t('psps.settlement.amount')}</Label>
-            <Input
-              type="number"
-              step="0.01"
-              min="0"
-              {...register('amount')}
-            />
-            {errors.amount && (
-              <p className="text-xs text-red-500">{errors.amount.message}</p>
-            )}
+            <Input type="number" step="0.01" min="0" {...register('amount')} />
+            {errors.amount && <p className="text-xs text-red-500">{errors.amount.message}</p>}
           </div>
           <div className="space-y-2">
             <Label>{t('psps.settlement.currency')}</Label>
             <Select
               value={currencyVal}
-              onValueChange={(v) =>
-                setValue('currency', v as 'TL' | 'USD')
-              }
+              onValueChange={(v) => setValue('currency', v as 'TL' | 'USD')}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -175,24 +159,14 @@ function SettlementFormDialog({
           </div>
           <div className="space-y-2">
             <Label>{t('psps.settlement.notes')}</Label>
-            <Input
-              {...register('notes')}
-              placeholder={t('psps.settlement.notesPlaceholder')}
-            />
+            <Input {...register('notes')} placeholder={t('psps.settlement.notesPlaceholder')} />
           </div>
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              disabled={isSaving}
-            >
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isSaving}>
               {t('psps.settlement.cancel')}
             </Button>
             <Button type="submit" disabled={isSaving}>
-              {isSaving
-                ? t('psps.settlement.saving')
-                : t('psps.settlement.save')}
+              {isSaving ? t('psps.settlement.saving') : t('psps.settlement.save')}
             </Button>
           </DialogFooter>
         </form>
@@ -228,9 +202,7 @@ function DeleteConfirmDialog({
         </DialogHeader>
         <p className="py-2 text-sm text-black/60">
           {t('psps.deleteSettlement.description', {
-            amount: settlement
-              ? formatCurrency(Number(settlement.amount))
-              : '',
+            amount: settlement ? formatCurrency(Number(settlement.amount)) : '',
             currency: settlement?.currency ?? '',
           })}
         </p>
@@ -264,7 +236,7 @@ function LedgerTab({ pspId }: { pspId: string }) {
   const localeTag = locale === 'tr' ? 'tr-TR' : 'en-US'
 
   const formatDate = (dateStr: string) =>
-    new Date(dateStr + 'T00:00:00').toLocaleDateString(localeTag, {
+    new Date(dateStr.slice(0, 10) + 'T00:00:00').toLocaleDateString(localeTag, {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -312,11 +284,7 @@ function LedgerTab({ pspId }: { pspId: string }) {
             {rows.map((row) => (
               <TableRow
                 key={row.id}
-                className={
-                  row.type === 'settlement'
-                    ? 'bg-green-50/50'
-                    : 'hover:bg-black/[0.01]'
-                }
+                className={row.type === 'settlement' ? 'bg-green-50/50' : 'hover:bg-black/[0.01]'}
               >
                 <TableCell className="text-xs">{formatDate(row.date)}</TableCell>
                 <TableCell>
@@ -340,9 +308,7 @@ function LedgerTab({ pspId }: { pspId: string }) {
                   {row.net !== 0 ? formatCurrency(row.net) : '–'}
                 </TableCell>
                 <TableCell className="text-right tabular-nums text-sm text-green-600 font-medium">
-                  {row.settlement > 0
-                    ? formatCurrency(row.settlement)
-                    : '–'}
+                  {row.settlement > 0 ? formatCurrency(row.settlement) : '–'}
                 </TableCell>
                 <TableCell
                   className={`text-right tabular-nums text-sm font-semibold ${
@@ -368,13 +334,7 @@ function LedgerTab({ pspId }: { pspId: string }) {
 /*  Settlements Tab                                                    */
 /* ------------------------------------------------------------------ */
 
-function SettlementsTab({
-  pspId,
-  isAdmin,
-}: {
-  pspId: string
-  isAdmin: boolean
-}) {
+function SettlementsTab({ pspId, isAdmin }: { pspId: string; isAdmin: boolean }) {
   const { t } = useTranslation('pages')
   const { locale } = useLocale()
   const { toast } = useToast()
@@ -469,9 +429,7 @@ function SettlementsTab({
             <TableHeader>
               <TableRow className="bg-black/[0.02]">
                 <TableHead>{t('psps.columns.date')}</TableHead>
-                <TableHead className="text-right">
-                  {t('psps.settlement.amount')}
-                </TableHead>
+                <TableHead className="text-right">{t('psps.settlement.amount')}</TableHead>
                 <TableHead>{t('psps.settlement.currency')}</TableHead>
                 <TableHead>{t('psps.columns.notes')}</TableHead>
                 {isAdmin && <TableHead className="w-[80px]" />}
@@ -480,9 +438,7 @@ function SettlementsTab({
             <TableBody>
               {settlements.map((s) => (
                 <TableRow key={s.id} className="hover:bg-black/[0.01]">
-                  <TableCell className="text-sm">
-                    {formatDate(s.settlement_date)}
-                  </TableCell>
+                  <TableCell className="text-sm">{formatDate(s.settlement_date)}</TableCell>
                   <TableCell className="text-right tabular-nums text-sm font-semibold text-green-600">
                     {formatCurrency(Number(s.amount))}
                   </TableCell>
@@ -660,11 +616,8 @@ function SettingsTab({
 
   // Effective-from rate history (optional / collapsible)
   const [historyOpen, setHistoryOpen] = useState(false)
-  const { rates, isLoading: ratesLoading } = usePspRates(
-    historyOpen ? pspId : null,
-  )
-  const { createRate, deleteRate, isCreating, isDeleting } =
-    usePspRateMutations()
+  const { rates, isLoading: ratesLoading } = usePspRates(historyOpen ? pspId : null)
+  const { createRate, deleteRate, isCreating, isDeleting } = usePspRateMutations()
 
   const [effectiveFrom, setEffectiveFrom] = useState('')
   const [ratePercent, setRatePercent] = useState('')
@@ -673,9 +626,7 @@ function SettingsTab({
     rate: number
     effectiveFrom: string
   } | null>(null)
-  const [pendingDeleteRateId, setPendingDeleteRateId] = useState<string | null>(
-    null,
-  )
+  const [pendingDeleteRateId, setPendingDeleteRateId] = useState<string | null>(null)
 
   const todayStr = new Date().toISOString().slice(0, 10)
 
@@ -726,8 +677,7 @@ function SettingsTab({
 
   const handleDeleteClick = (rateId: string) => {
     const nonFutureRates = rates.filter((r) => r.effective_from <= todayStr)
-    const targetFrom =
-      rates.find((r) => r.id === rateId)?.effective_from ?? ''
+    const targetFrom = rates.find((r) => r.id === rateId)?.effective_from ?? ''
     const isNonFuture = targetFrom <= todayStr
     if (isNonFuture && nonFutureRates.length <= 1) {
       toast({
@@ -749,18 +699,12 @@ function SettingsTab({
       <Card padding="spacious" className="border border-black/5 bg-bg1">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-semibold">
-              {t('psps.settings.status')}
-            </h3>
-            <p className="mt-1 text-xs text-black/40">
-              {t('psps.settings.statusDesc')}
-            </p>
+            <h3 className="text-sm font-semibold">{t('psps.settings.status')}</h3>
+            <p className="mt-1 text-xs text-black/40">{t('psps.settings.statusDesc')}</p>
           </div>
           <div className="flex items-center gap-3">
             <Tag variant={isActive ? 'green' : 'red'}>
-              {isActive
-                ? t('psps.card.active')
-                : t('psps.card.inactive')}
+              {isActive ? t('psps.card.active') : t('psps.card.inactive')}
             </Tag>
             <button
               type="button"
@@ -783,18 +727,12 @@ function SettingsTab({
       <Card padding="spacious" className="border border-black/5 bg-bg1">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-semibold">
-              {t('psps.settings.internal')}
-            </h3>
-            <p className="mt-1 text-xs text-black/40">
-              {t('psps.settings.internalDesc')}
-            </p>
+            <h3 className="text-sm font-semibold">{t('psps.settings.internal')}</h3>
+            <p className="mt-1 text-xs text-black/40">{t('psps.settings.internalDesc')}</p>
           </div>
           <div className="flex items-center gap-3">
             <Tag variant={isInternal ? 'blue' : 'default'}>
-              {isInternal
-                ? t('psps.settings.internalTag')
-                : t('psps.settings.externalTag')}
+              {isInternal ? t('psps.settings.internalTag') : t('psps.settings.externalTag')}
             </Tag>
             <button
               type="button"
@@ -814,22 +752,19 @@ function SettingsTab({
       </Card>
 
       {/* Commission Rate */}
-      <Card padding="spacious" className={`border border-black/5 bg-bg1 ${isInternal ? 'opacity-50 pointer-events-none' : ''}`}>
+      <Card
+        padding="spacious"
+        className={`border border-black/5 bg-bg1 ${isInternal ? 'opacity-50 pointer-events-none' : ''}`}
+      >
         <div className="space-y-4">
           <div>
-            <h3 className="text-sm font-semibold">
-              {t('psps.settings.commissionRate')}
-            </h3>
-            <p className="mt-1 text-xs text-black/40">
-              {t('psps.settings.commissionRateDesc')}
-            </p>
+            <h3 className="text-sm font-semibold">{t('psps.settings.commissionRate')}</h3>
+            <p className="mt-1 text-xs text-black/40">{t('psps.settings.commissionRateDesc')}</p>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 rounded-lg bg-black/[0.03] px-3 py-2">
-              <span className="text-xs text-black/50">
-                {t('psps.settings.current')}
-              </span>
+              <span className="text-xs text-black/50">{t('psps.settings.current')}</span>
               <span className="font-mono text-sm font-semibold tabular-nums">
                 {(currentRate * 100).toFixed(1)}%
               </span>
@@ -852,15 +787,9 @@ function SettingsTab({
               <Button
                 size="sm"
                 onClick={handleRateSave}
-                disabled={
-                  pspMutation.isUpdating ||
-                  !newRate ||
-                  isNaN(parseFloat(newRate))
-                }
+                disabled={pspMutation.isUpdating || !newRate || isNaN(parseFloat(newRate))}
               >
-                {pspMutation.isUpdating ? (
-                  <SpinnerGap size={14} className="animate-spin" />
-                ) : null}
+                {pspMutation.isUpdating ? <SpinnerGap size={14} className="animate-spin" /> : null}
                 {t('psps.settings.updateRate')}
               </Button>
             </div>
@@ -869,150 +798,140 @@ function SettingsTab({
       </Card>
 
       {/* Effective-From Rate History (optional, hidden for internal PSPs) */}
-      {!isInternal && <Card padding="spacious" className="border border-black/5 bg-bg1">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-semibold">
-                {t('psps.settings.effectiveFromTitle')}
-              </h3>
-              <p className="mt-1 text-xs text-black/40">
-                {t('psps.settings.effectiveFromDesc')}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setHistoryOpen(!historyOpen)}
-              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-                historyOpen ? 'bg-blue' : 'bg-black/15'
-              }`}
-            >
-              <span
-                className={`pointer-events-none inline-block size-4 transform rounded-full bg-white shadow transition-transform ${
-                  historyOpen ? 'translate-x-4' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
-
-          {historyOpen && (
-            <>
-              {/* Add rate form */}
-              <div className="flex items-end gap-2 border-t border-black/5 pt-4">
-                <div className="flex-1">
-                  <Label className="mb-1 text-xs font-medium">
-                    {t('transfers.settings.effectiveFrom')}
-                  </Label>
-                  <Input
-                    type="date"
-                    value={effectiveFrom}
-                    onChange={(e) => setEffectiveFrom(e.target.value)}
-                  />
-                </div>
-                <div className="w-28">
-                  <Label className="mb-1 text-xs font-medium">
-                    {t('transfers.settings.commissionRate')}
-                  </Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    max="99.99"
-                    step="0.1"
-                    placeholder="%"
-                    value={ratePercent}
-                    onChange={(e) => setRatePercent(e.target.value)}
-                  />
-                </div>
-                <Button
-                  size="sm"
-                  onClick={handleAddClick}
-                  disabled={isCreating || !effectiveFrom || !ratePercent}
-                >
-                  {isCreating ? (
-                    <SpinnerGap size={14} className="animate-spin" />
-                  ) : (
-                    <Plus size={14} weight="bold" />
-                  )}
-                  {t('transfers.settings.addRate')}
-                </Button>
+      {!isInternal && (
+        <Card padding="spacious" className="border border-black/5 bg-bg1">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold">{t('psps.settings.effectiveFromTitle')}</h3>
+                <p className="mt-1 text-xs text-black/40">{t('psps.settings.effectiveFromDesc')}</p>
               </div>
+              <button
+                type="button"
+                onClick={() => setHistoryOpen(!historyOpen)}
+                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+                  historyOpen ? 'bg-blue' : 'bg-black/15'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block size-4 transform rounded-full bg-white shadow transition-transform ${
+                    historyOpen ? 'translate-x-4' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
 
-              {/* Rate history table */}
-              {ratesLoading ? (
-                <div className="space-y-3">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <Skeleton key={i} className="h-10 w-full rounded" />
-                  ))}
+            {historyOpen && (
+              <>
+                {/* Add rate form */}
+                <div className="flex items-end gap-2 border-t border-black/5 pt-4">
+                  <div className="flex-1">
+                    <Label className="mb-1 text-xs font-medium">
+                      {t('transfers.settings.effectiveFrom')}
+                    </Label>
+                    <Input
+                      type="date"
+                      value={effectiveFrom}
+                      onChange={(e) => setEffectiveFrom(e.target.value)}
+                    />
+                  </div>
+                  <div className="w-28">
+                    <Label className="mb-1 text-xs font-medium">
+                      {t('transfers.settings.commissionRate')}
+                    </Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="99.99"
+                      step="0.1"
+                      placeholder="%"
+                      value={ratePercent}
+                      onChange={(e) => setRatePercent(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={handleAddClick}
+                    disabled={isCreating || !effectiveFrom || !ratePercent}
+                  >
+                    {isCreating ? (
+                      <SpinnerGap size={14} className="animate-spin" />
+                    ) : (
+                      <Plus size={14} weight="bold" />
+                    )}
+                    {t('transfers.settings.addRate')}
+                  </Button>
                 </div>
-              ) : rates.length === 0 ? (
-                <p className="py-6 text-center text-sm text-black/40">
-                  {t('transfers.settings.noRateHistory')}
-                </p>
-              ) : (
-                <div className="overflow-x-auto rounded-lg border border-black/10">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-black/[0.02]">
-                        <TableHead>
-                          {t('transfers.settings.effectiveFrom')}
-                        </TableHead>
-                        <TableHead>
-                          {t('transfers.settings.commissionRate')}
-                        </TableHead>
-                        <TableHead className="w-16" />
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {rates.map((rate) => {
-                        const isCurrent = rate.id === currentRateId
-                        const isFuture = rate.effective_from > todayStr
 
-                        return (
-                          <TableRow key={rate.id}>
-                            <TableCell>
-                              <span className="font-mono text-sm tabular-nums">
-                                {rate.effective_from}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
+                {/* Rate history table */}
+                {ratesLoading ? (
+                  <div className="space-y-3">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton key={i} className="h-10 w-full rounded" />
+                    ))}
+                  </div>
+                ) : rates.length === 0 ? (
+                  <p className="py-6 text-center text-sm text-black/40">
+                    {t('transfers.settings.noRateHistory')}
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto rounded-lg border border-black/10">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-black/[0.02]">
+                          <TableHead>{t('transfers.settings.effectiveFrom')}</TableHead>
+                          <TableHead>{t('transfers.settings.commissionRate')}</TableHead>
+                          <TableHead className="w-16" />
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {rates.map((rate) => {
+                          const isCurrent = rate.id === currentRateId
+                          const isFuture = rate.effective_from > todayStr
+
+                          return (
+                            <TableRow key={rate.id}>
+                              <TableCell>
                                 <span className="font-mono text-sm tabular-nums">
-                                  {(rate.commission_rate * 100).toFixed(1)}%
+                                  {rate.effective_from}
                                 </span>
-                                {isCurrent && (
-                                  <Tag variant="green">
-                                    {t('transfers.settings.currentRate')}
-                                  </Tag>
-                                )}
-                                {isFuture && (
-                                  <Tag variant="blue">
-                                    {t('transfers.settings.futureRate')}
-                                  </Tag>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                variant="borderless"
-                                size="sm"
-                                className="text-red"
-                                onClick={() => handleDeleteClick(rate.id)}
-                                disabled={isDeleting}
-                              >
-                                <Trash size={14} />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </Card>}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono text-sm tabular-nums">
+                                    {(rate.commission_rate * 100).toFixed(1)}%
+                                  </span>
+                                  {isCurrent && (
+                                    <Tag variant="green">{t('transfers.settings.currentRate')}</Tag>
+                                  )}
+                                  {isFuture && (
+                                    <Tag variant="blue">{t('transfers.settings.futureRate')}</Tag>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="borderless"
+                                  size="sm"
+                                  className="text-red"
+                                  onClick={() => handleDeleteClick(rate.id)}
+                                  disabled={isDeleting}
+                                >
+                                  <Trash size={14} />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </Card>
+      )}
 
       <ManagerPinDialog
         open={statusPinOpen}
@@ -1113,10 +1032,7 @@ export function PspDetailPage() {
             {t('psps.detail.notFound', 'PSP not found')}
           </p>
           <p className="mt-1 text-xs text-black/40">
-            {t(
-              'psps.detail.notFoundDesc',
-              'The PSP you are looking for does not exist.',
-            )}
+            {t('psps.detail.notFoundDesc', 'The PSP you are looking for does not exist.')}
           </p>
         </div>
         <Button variant="outline" onClick={() => navigate('/psps')}>
@@ -1146,29 +1062,20 @@ export function PspDetailPage() {
               <div className="flex items-center gap-3">
                 <h1 className="text-2xl font-semibold">{psp.psp_name}</h1>
                 <Tag variant={psp.is_active ? 'green' : 'red'}>
-                  {psp.is_active
-                    ? t('psps.card.active')
-                    : t('psps.card.inactive')}
+                  {psp.is_active ? t('psps.card.active') : t('psps.card.inactive')}
                 </Tag>
-                {psp.is_internal && (
-                  <Tag variant="blue">
-                    {t('psps.settings.internalTag')}
-                  </Tag>
-                )}
+                {psp.is_internal && <Tag variant="blue">{t('psps.settings.internalTag')}</Tag>}
               </div>
               <div className="mt-1 flex items-center gap-3">
                 <span className="text-sm text-black/60">
                   {t('psps.card.commission')}:{' '}
-                  <span className="font-medium">
-                    {(psp.commission_rate * 100).toFixed(1)}%
-                  </span>
+                  <span className="font-medium">{(psp.commission_rate * 100).toFixed(1)}%</span>
                 </span>
                 {psp.last_settlement_date && (
                   <>
                     <span className="text-black/20">·</span>
                     <span className="text-sm text-black/40">
-                      {t('psps.card.lastSettlement')}:{' '}
-                      {formatDate(psp.last_settlement_date)}
+                      {t('psps.card.lastSettlement')}: {formatDate(psp.last_settlement_date)}
                     </span>
                   </>
                 )}
@@ -1179,7 +1086,9 @@ export function PspDetailPage() {
       </Card>
 
       {/* Summary Stats */}
-      <div className={`grid grid-cols-2 gap-3 ${psp.is_internal ? 'lg:grid-cols-3' : 'lg:grid-cols-5'}`}>
+      <div
+        className={`grid grid-cols-2 gap-3 ${psp.is_internal ? 'lg:grid-cols-3' : 'lg:grid-cols-5'}`}
+      >
         {!psp.is_internal && (
           <StatCard
             icon={Coins}
@@ -1226,17 +1135,13 @@ export function PspDetailPage() {
       {/* Tabs: Ledger + Settlements */}
       <Tabs defaultValue="ledger">
         <TabsList>
-          <TabsTrigger value="ledger">
-            {t('psps.detail.tabs.ledger', 'Ledger')}
-          </TabsTrigger>
+          <TabsTrigger value="ledger">{t('psps.detail.tabs.ledger', 'Ledger')}</TabsTrigger>
           {!psp.is_internal && (
             <TabsTrigger value="settlements">
               {t('psps.detail.tabs.settlements', 'Settlements')}
             </TabsTrigger>
           )}
-          <TabsTrigger value="settings">
-            {t('psps.detail.tabs.settings', 'Settings')}
-          </TabsTrigger>
+          <TabsTrigger value="settings">{t('psps.detail.tabs.settings', 'Settings')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="ledger">
@@ -1250,7 +1155,12 @@ export function PspDetailPage() {
         )}
 
         <TabsContent value="settings">
-          <SettingsTab pspId={pspId!} currentRate={psp.commission_rate} isActive={psp.is_active} isInternal={psp.is_internal} />
+          <SettingsTab
+            pspId={pspId!}
+            currentRate={psp.commission_rate}
+            isActive={psp.is_active}
+            isInternal={psp.is_internal}
+          />
         </TabsContent>
       </Tabs>
     </div>

@@ -50,7 +50,12 @@
       "WebFetch(domain:ai.google.dev)",
       "Bash(node -e:*)",
       "Bash(find:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(cloc:*)",
+      "Bash(npx husky init:*)",
+      "Bash(npm run test:run:*)",
+      "Bash(pkill:*)",
+      "Bash(git filter-branch:*)"
     ]
   }
 }
