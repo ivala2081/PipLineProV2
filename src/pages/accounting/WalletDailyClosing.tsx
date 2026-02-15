@@ -1,16 +1,8 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ArrowDown, ArrowUp, Minus } from '@phosphor-icons/react'
-import type { NormalizedTransfer } from '@/lib/tatumService'
-import {
-  Skeleton,
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from '@ds'
+import type { NormalizedTransfer } from '@/lib/tatumServiceSecure'
+import { Skeleton, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@ds'
 
 /* ── Types ────────────────────────────────────────────── */
 
@@ -38,9 +30,20 @@ export interface DailyClosing {
 /* ── Token whitelist (filter out spam/scam tokens) ────── */
 
 const KNOWN_TOKENS = new Set([
-  'TRX', 'USDT', 'USDD', 'USDC', 'TUSD', 'USDJ',
-  'BTT', 'JST', 'SUN', 'WIN', 'NFT', 'APENFT',
-  'WTRX', 'stUSDT',
+  'TRX',
+  'USDT',
+  'USDD',
+  'USDC',
+  'TUSD',
+  'USDJ',
+  'BTT',
+  'JST',
+  'SUN',
+  'WIN',
+  'NFT',
+  'APENFT',
+  'WTRX',
+  'stUSDT',
 ])
 
 /** Returns true if the symbol looks like a real token (not spam) */
@@ -64,12 +67,15 @@ function computeDailyClosings(
   lang: string,
   currentBalances: Record<string, number>,
 ): DailyClosing[] {
-  const map = new Map<string, {
-    inByToken: Record<string, number>
-    outByToken: Record<string, number>
-    inCount: number
-    outCount: number
-  }>()
+  const map = new Map<
+    string,
+    {
+      inByToken: Record<string, number>
+      outByToken: Record<string, number>
+      inCount: number
+      outCount: number
+    }
+  >()
 
   for (const tx of transfers) {
     const symbol = tx.symbol || 'UNKNOWN'
@@ -113,15 +119,16 @@ function computeDailyClosings(
       netByToken[sym] = (data.inByToken[sym] ?? 0) - (data.outByToken[sym] ?? 0)
     }
 
-    const label = dateKey === 'unknown'
-      ? '—'
-      : new Date(dateKey + 'T00:00:00Z').toLocaleDateString(locale, {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-          weekday: 'short',
-          timeZone: 'UTC',
-        })
+    const label =
+      dateKey === 'unknown'
+        ? '—'
+        : new Date(dateKey + 'T00:00:00Z').toLocaleDateString(locale, {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            weekday: 'short',
+            timeZone: 'UTC',
+          })
 
     closings.push({
       dateKey,
@@ -181,27 +188,22 @@ function TokenAmountList({
   /** If true, each token gets its own +/- sign and green/red color */
   perTokenSign?: boolean
 }) {
-  const entries = Object.entries(byToken).sort(
-    ([, a], [, b]) => Math.abs(b) - Math.abs(a),
-  )
+  const entries = Object.entries(byToken).sort(([, a], [, b]) => Math.abs(b) - Math.abs(a))
   if (entries.length === 0) {
     return <span className="text-black/20">—</span>
   }
   return (
     <div className="space-y-0.5">
       {entries.map(([sym, amount]) => {
-        const tokenColor = perTokenSign
-          ? (amount >= 0 ? 'text-green' : 'text-red')
-          : color
-        const tokenPrefix = perTokenSign
-          ? (amount >= 0 ? '+' : '-')
-          : prefix
+        const tokenColor = perTokenSign ? (amount >= 0 ? 'text-green' : 'text-red') : color
+        const tokenPrefix = perTokenSign ? (amount >= 0 ? '+' : '-') : prefix
         const displayAmount = perTokenSign ? Math.abs(amount) : Math.abs(amount)
 
         return (
           <div key={sym} className="flex items-baseline justify-end gap-1">
             <span className={`font-mono text-xs font-semibold tabular-nums ${tokenColor}`}>
-              {tokenPrefix}{fmtNum(displayAmount)}
+              {tokenPrefix}
+              {fmtNum(displayAmount)}
             </span>
             <span className="text-[10px] text-black/35">{sym}</span>
           </div>
@@ -236,8 +238,7 @@ interface WalletDailyClosingProps {
   currentBalances: Record<string, number>
 }
 
-const TH =
-  'h-9 px-4 text-xs font-semibold uppercase tracking-wider text-black/40 whitespace-nowrap'
+const TH = 'h-9 px-4 text-xs font-semibold uppercase tracking-wider text-black/40 whitespace-nowrap'
 
 /* ── Component ────────────────────────────────────────── */
 
@@ -246,7 +247,7 @@ export function WalletDailyClosing({
   isLoading,
   currentBalances,
 }: WalletDailyClosingProps) {
-  const { i18n } = useTranslation()
+  const { t, i18n } = useTranslation('pages')
 
   const closings = useMemo(
     () => computeDailyClosings(transfers, i18n.language, currentBalances),
@@ -266,7 +267,7 @@ export function WalletDailyClosing({
   if (closings.length === 0) {
     return (
       <p className="py-8 text-center text-xs text-black/40">
-        No daily data available
+        {t('accounting.dailyClosing.noData')}
       </p>
     )
   }
@@ -276,90 +277,75 @@ export function WalletDailyClosing({
       <Table className="min-w-[850px]">
         <TableHeader>
           <TableRow className="bg-black/[0.02]">
-            <TableHead className={TH}>Date</TableHead>
-            <TableHead className={TH}>Tx</TableHead>
+            <TableHead className={TH}>{t('accounting.dailyClosing.date')}</TableHead>
+            <TableHead className={TH}>{t('accounting.dailyClosing.tx')}</TableHead>
             <TableHead className={`${TH} text-right`}>
               <span className="inline-flex items-center gap-1">
                 <ArrowDown size={11} weight="bold" className="text-green" />
-                IN
+                {t('accounting.dailyClosing.in')}
               </span>
             </TableHead>
             <TableHead className={`${TH} text-right`}>
               <span className="inline-flex items-center gap-1">
                 <ArrowUp size={11} weight="bold" className="text-red" />
-                OUT
+                {t('accounting.dailyClosing.out')}
               </span>
             </TableHead>
             <TableHead className={`${TH} text-right`}>
               <span className="inline-flex items-center gap-1">
                 <Minus size={11} weight="bold" className="text-black/40" />
-                NET
+                {t('accounting.dailyClosing.net')}
               </span>
             </TableHead>
-            <TableHead className={`${TH} text-right`}>BALANCE</TableHead>
+            <TableHead className={`${TH} text-right`}>
+              {t('accounting.dailyClosing.balance')}
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {closings.map((day) => (
-              <TableRow key={day.dateKey} className="hover:bg-black/[0.01]">
-                {/* Date */}
-                <TableCell className="px-4 py-3">
-                  <div>
-                    <span className="text-sm font-medium text-black/80">
-                      {day.label}
-                    </span>
-                    <span className="ml-2 text-[10px] text-black/25">
-                      {day.dateKey !== 'unknown' ? day.dateKey : ''}
-                    </span>
-                  </div>
-                </TableCell>
+            <TableRow key={day.dateKey} className="hover:bg-black/[0.01]">
+              {/* Date */}
+              <TableCell className="px-4 py-3">
+                <div>
+                  <span className="text-sm font-medium text-black/80">{day.label}</span>
+                  <span className="ml-2 text-[10px] text-black/25">
+                    {day.dateKey !== 'unknown' ? day.dateKey : ''}
+                  </span>
+                </div>
+              </TableCell>
 
-                {/* Transfer count */}
-                <TableCell className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs tabular-nums text-black/50">
-                      {day.totalCount}
-                    </span>
-                    <span className="text-[10px] text-black/25">
-                      ({day.inCount}↓ {day.outCount}↑)
-                    </span>
-                  </div>
-                </TableCell>
+              {/* Transfer count */}
+              <TableCell className="px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs tabular-nums text-black/50">{day.totalCount}</span>
+                  <span className="text-[10px] text-black/25">
+                    ({day.inCount}↓ {day.outCount}↑)
+                  </span>
+                </div>
+              </TableCell>
 
-                {/* IN */}
-                <TableCell className="px-4 py-3 text-right">
-                  <TokenAmountList
-                    byToken={day.inByToken}
-                    color="text-green"
-                    prefix="+"
-                  />
-                </TableCell>
+              {/* IN */}
+              <TableCell className="px-4 py-3 text-right">
+                <TokenAmountList byToken={day.inByToken} color="text-green" prefix="+" />
+              </TableCell>
 
-                {/* OUT */}
-                <TableCell className="px-4 py-3 text-right">
-                  <TokenAmountList
-                    byToken={day.outByToken}
-                    color="text-red"
-                    prefix="-"
-                  />
-                </TableCell>
+              {/* OUT */}
+              <TableCell className="px-4 py-3 text-right">
+                <TokenAmountList byToken={day.outByToken} color="text-red" prefix="-" />
+              </TableCell>
 
-                {/* NET */}
-                <TableCell className="px-4 py-3 text-right">
-                  <TokenAmountList
-                    byToken={day.netByToken}
-                    color=""
-                    prefix=""
-                    perTokenSign
-                  />
-                </TableCell>
+              {/* NET */}
+              <TableCell className="px-4 py-3 text-right">
+                <TokenAmountList byToken={day.netByToken} color="" prefix="" perTokenSign />
+              </TableCell>
 
-                {/* BALANCE */}
-                <TableCell className="px-4 py-3 text-right">
-                  <BalanceList balanceByToken={day.balanceByToken} />
-                </TableCell>
-              </TableRow>
-            ))}
+              {/* BALANCE */}
+              <TableCell className="px-4 py-3 text-right">
+                <BalanceList balanceByToken={day.balanceByToken} />
+              </TableCell>
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
     </div>

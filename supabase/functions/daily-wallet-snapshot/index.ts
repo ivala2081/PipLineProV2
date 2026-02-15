@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
-import { corsHeaders } from '../_shared/cors.ts'
+import { corsHeaders, handleCors } from '../_shared/cors.ts'
 import { createAdminClient } from '../_shared/supabase-admin.ts'
 
 /* ── Config ─────────────────────────────────────────────────── */
@@ -7,15 +7,39 @@ import { createAdminClient } from '../_shared/supabase-admin.ts'
 const TATUM_API_KEY = Deno.env.get('TATUM_API_KEY') ?? ''
 const TATUM_BASE_V4 = 'https://api.tatum.io/v4'
 const TATUM_BASE_V3 = 'https://api.tatum.io/v3'
-const V4_CHAINS = new Set(['ethereum', 'bsc', 'solana', 'polygon', 'celo', 'tezos', 'chiliz', 'tron', 'bitcoin'])
+const V4_CHAINS = new Set([
+  'ethereum',
+  'bsc',
+  'solana',
+  'polygon',
+  'celo',
+  'tezos',
+  'chiliz',
+  'tron',
+  'bitcoin',
+])
 const STABLECOINS = new Set(['USDT', 'USDC', 'TUSD', 'DAI', 'BUSD', 'USDJ', 'USDD'])
 const NATIVE_SYMBOL: Record<string, string> = {
-  ethereum: 'ETH', bsc: 'BNB', solana: 'SOL', polygon: 'MATIC',
-  celo: 'CELO', tezos: 'XTZ', chiliz: 'CHZ', tron: 'TRX', bitcoin: 'BTC',
+  ethereum: 'ETH',
+  bsc: 'BNB',
+  solana: 'SOL',
+  polygon: 'MATIC',
+  celo: 'CELO',
+  tezos: 'XTZ',
+  chiliz: 'CHZ',
+  tron: 'TRX',
+  bitcoin: 'BTC',
 }
 const RATE_SYMBOL: Record<string, string> = {
-  TRX: 'TRON', ETH: 'ETH', BTC: 'BTC', BNB: 'BNB',
-  SOL: 'SOL', MATIC: 'MATIC', CELO: 'CELO', CHZ: 'CHZ', XTZ: 'XTZ',
+  TRX: 'TRON',
+  ETH: 'ETH',
+  BTC: 'BTC',
+  BNB: 'BNB',
+  SOL: 'SOL',
+  MATIC: 'MATIC',
+  CELO: 'CELO',
+  CHZ: 'CHZ',
+  XTZ: 'XTZ',
 }
 const TRC20_KNOWN: Record<string, { symbol: string; decimals: number }> = {
   TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t: { symbol: 'USDT', decimals: 6 },
@@ -81,9 +105,18 @@ function resolveTokenSymbol(chain: string, tokenAddress?: string): string | unde
 
 /* ── Tatum helpers ──────────────────────────────────────────── */
 
-interface Asset { symbol?: string; type: string; balance: string; tokenAddress?: string }
+interface Asset {
+  symbol?: string
+  type: string
+  balance: string
+  tokenAddress?: string
+}
 
-async function tatumFetch<T>(base: string, path: string, params: Record<string, string> = {}): Promise<T> {
+async function tatumFetch<T>(
+  base: string,
+  path: string,
+  params: Record<string, string> = {},
+): Promise<T> {
   const url = new URL(`${base}${path}`)
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v)
   const res = await fetch(url.toString(), {
@@ -94,7 +127,16 @@ async function tatumFetch<T>(base: string, path: string, params: Record<string, 
 }
 
 interface V4PortfolioResponse {
-  result: Array<{ chain: string; address: string; balance: string; decimals: number; tokenAddress?: string; type: string; symbol?: string; name?: string }>
+  result: Array<{
+    chain: string
+    address: string
+    balance: string
+    decimals: number
+    tokenAddress?: string
+    type: string
+    symbol?: string
+    name?: string
+  }>
   prevPage?: string
   nextPage?: string
 }
@@ -102,8 +144,16 @@ interface V4PortfolioResponse {
 async function fetchV4Portfolio(chain: string, address: string): Promise<Asset[]> {
   const v4Chain = toV4Chain(chain)
   const [nativeRes, fungibleRes] = await Promise.allSettled([
-    tatumFetch<V4PortfolioResponse>(TATUM_BASE_V4, '/data/wallet/portfolio', { chain: v4Chain, addresses: address, tokenTypes: 'native' }),
-    tatumFetch<V4PortfolioResponse>(TATUM_BASE_V4, '/data/wallet/portfolio', { chain: v4Chain, addresses: address, tokenTypes: 'fungible' }),
+    tatumFetch<V4PortfolioResponse>(TATUM_BASE_V4, '/data/wallet/portfolio', {
+      chain: v4Chain,
+      addresses: address,
+      tokenTypes: 'native',
+    }),
+    tatumFetch<V4PortfolioResponse>(TATUM_BASE_V4, '/data/wallet/portfolio', {
+      chain: v4Chain,
+      addresses: address,
+      tokenTypes: 'fungible',
+    }),
   ])
   const assets: Asset[] = []
   if (nativeRes.status === 'fulfilled') {
@@ -135,7 +185,8 @@ function formatTrc20Balance(raw: string, decimals: number): string {
 
 async function fetchTronBalance(address: string): Promise<Asset[]> {
   const data = await tatumFetch<{ balance: number; trc20?: Array<Record<string, string>> }>(
-    TATUM_BASE_V3, `/tron/account/${address}`,
+    TATUM_BASE_V3,
+    `/tron/account/${address}`,
   )
   const assets: Asset[] = []
   if (data.balance != null) {
@@ -159,9 +210,16 @@ async function fetchTronBalance(address: string): Promise<Asset[]> {
 
 async function fetchBitcoinBalance(address: string): Promise<Asset[]> {
   const data = await tatumFetch<{ incoming: string; outgoing: string }>(
-    TATUM_BASE_V3, `/bitcoin/address/balance/${address}`,
+    TATUM_BASE_V3,
+    `/bitcoin/address/balance/${address}`,
   )
-  return [{ type: 'native', symbol: 'BTC', balance: (parseFloat(data.incoming) - parseFloat(data.outgoing)).toString() }]
+  return [
+    {
+      type: 'native',
+      symbol: 'BTC',
+      balance: (parseFloat(data.incoming) - parseFloat(data.outgoing)).toString(),
+    },
+  ]
 }
 
 async function getAssets(chain: string, address: string): Promise<Asset[]> {
@@ -184,16 +242,23 @@ async function getUsdRate(symbol: string): Promise<number> {
   const rateSymbol = RATE_SYMBOL[symbol]
   if (!rateSymbol) return 0
   try {
-    const data = await tatumFetch<{ value: string }>(
-      TATUM_BASE_V4,
-      '/data/rate/symbol',
-      { symbol: rateSymbol, basePair: 'USD' },
-    )
+    const data = await tatumFetch<{ value: string }>(TATUM_BASE_V4, '/data/rate/symbol', {
+      symbol: rateSymbol,
+      basePair: 'USD',
+    })
     return parseFloat(data.value) || 0
-  } catch { return 0 }
+  } catch {
+    return 0
+  }
 }
 
-async function getAssetsWithUsd(chain: string, address: string): Promise<{ balances: { token: string; balance: string; tokenAddress?: string }[]; totalUsd: number }> {
+async function getAssetsWithUsd(
+  chain: string,
+  address: string,
+): Promise<{
+  balances: { token: string; balance: string; tokenAddress?: string }[]
+  totalUsd: number
+}> {
   const assets = await getAssets(chain, address)
 
   // Collect unique native symbols for rate fetching
@@ -227,15 +292,17 @@ async function getAssetsWithUsd(chain: string, address: string): Promise<{ balan
 /* ── Main handler ───────────────────────────────────────────── */
 
 serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  // Handle CORS preflight
+  const corsResponse = handleCors(req)
+  if (corsResponse) return corsResponse
+
+  const origin = req.headers.get('origin') || undefined
 
   try {
     if (!TATUM_API_KEY) {
       return new Response(JSON.stringify({ error: 'TATUM_API_KEY not configured' }), {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' },
       })
     }
 
@@ -251,7 +318,7 @@ serve(async (req: Request) => {
     if (walletsErr) throw walletsErr
     if (!wallets || wallets.length === 0) {
       return new Response(JSON.stringify({ message: 'No active wallets', count: 0 }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' },
       })
     }
 
@@ -291,13 +358,13 @@ serve(async (req: Request) => {
         totalWallets: wallets.length,
         errors: errors.length > 0 ? errors : undefined,
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      { headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' } },
     )
   } catch (err) {
     console.error('Unhandled error:', err)
     return new Response(
       JSON.stringify({ error: err instanceof Error ? err.message : 'Unexpected error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      { status: 500, headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' } },
     )
   }
 })

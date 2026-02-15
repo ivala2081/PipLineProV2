@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/app/providers/AuthProvider'
@@ -30,6 +30,7 @@ interface UseAccountingQueryReturn {
   createEntry: (data: EntryFormValues) => Promise<void>
   updateEntry: (id: string, data: EntryFormValues) => Promise<void>
   deleteEntry: (id: string) => Promise<void>
+  fetchEntriesByDate: (dateKey: string) => Promise<AccountingEntry[]>
   isCreating: boolean
   isUpdating: boolean
   isDeleting: boolean
@@ -42,12 +43,10 @@ export function useAccountingQuery(): UseAccountingQueryReturn {
   const [page, setPage] = useState(1)
   const prevOrgId = useRef(currentOrg?.id)
 
-  useEffect(() => {
-    if (currentOrg?.id !== prevOrgId.current) {
-      setPage(1)
-      prevOrgId.current = currentOrg?.id
-    }
-  }, [currentOrg?.id])
+  if (currentOrg?.id !== prevOrgId.current) {
+    prevOrgId.current = currentOrg?.id
+    setPage(1)
+  }
 
   // Paginated list query
   const { data, isLoading, error } = useQuery({
@@ -129,7 +128,9 @@ export function useAccountingQuery(): UseAccountingQueryReturn {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.accounting.lists() })
-      queryClient.invalidateQueries({ queryKey: queryKeys.accounting.summary(currentOrg?.id ?? '') })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.accounting.summary(currentOrg?.id ?? ''),
+      })
     },
   })
 
@@ -155,7 +156,9 @@ export function useAccountingQuery(): UseAccountingQueryReturn {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.accounting.lists() })
-      queryClient.invalidateQueries({ queryKey: queryKeys.accounting.summary(currentOrg?.id ?? '') })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.accounting.summary(currentOrg?.id ?? ''),
+      })
     },
   })
 
@@ -167,9 +170,24 @@ export function useAccountingQuery(): UseAccountingQueryReturn {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.accounting.lists() })
-      queryClient.invalidateQueries({ queryKey: queryKeys.accounting.summary(currentOrg?.id ?? '') })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.accounting.summary(currentOrg?.id ?? ''),
+      })
     },
   })
+
+  /** Fetch ALL entries for a specific date (not paginated) */
+  async function fetchEntriesByDate(dateKey: string): Promise<AccountingEntry[]> {
+    if (!currentOrg) return []
+    const { data, error } = await supabase
+      .from('accounting_entries')
+      .select('*')
+      .eq('organization_id', currentOrg.id)
+      .eq('entry_date', dateKey)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return (data as AccountingEntry[]) ?? []
+  }
 
   return {
     entries: data?.entries ?? [],
@@ -184,6 +202,7 @@ export function useAccountingQuery(): UseAccountingQueryReturn {
     createEntry: createMutation.mutateAsync,
     updateEntry: async (id, data) => updateMutation.mutateAsync({ id, data }),
     deleteEntry: deleteMutation.mutateAsync,
+    fetchEntriesByDate,
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,

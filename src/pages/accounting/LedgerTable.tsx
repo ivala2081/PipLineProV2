@@ -1,3 +1,4 @@
+import { useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   DotsThree,
@@ -6,8 +7,10 @@ import {
   ArrowUp,
   CaretLeft,
   CaretRight,
+  ChartBar,
 } from '@phosphor-icons/react'
 import type { AccountingEntry } from '@/lib/database.types'
+import { LedgerDailySummaryDialog } from './LedgerDailySummaryDialog'
 import {
   Table,
   TableHeader,
@@ -39,6 +42,7 @@ interface LedgerTableProps {
   onPageChange: (page: number) => void
   onEdit: (entry: AccountingEntry) => void
   onDelete: (entry: AccountingEntry) => void
+  fetchEntriesByDate: (dateKey: string) => Promise<AccountingEntry[]>
 }
 
 /* ── Helpers ─────────────────────────────────────────── */
@@ -83,8 +87,7 @@ const REGISTER_LABELS: Record<string, string> = {
   NAKIT_USD: 'Cash USD',
 }
 
-const TH_CLASS =
-  'whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-black/40'
+const TH_CLASS = 'whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-black/40'
 
 /* ── Component ───────────────────────────────────────── */
 
@@ -97,22 +100,47 @@ export function LedgerTable({
   onPageChange,
   onEdit,
   onDelete,
+  fetchEntriesByDate,
 }: LedgerTableProps) {
   const { t, i18n } = useTranslation('pages')
   const totalPages = Math.ceil(total / pageSize)
   const from = (page - 1) * pageSize + 1
   const to = Math.min(page * pageSize, total)
 
+  // Summary dialog state
+  const [summaryGroup, setSummaryGroup] = useState<DateGroup | null>(null)
+  const [summaryEntries, setSummaryEntries] = useState<AccountingEntry[]>([])
+  const [isFetchingSummary, setIsFetchingSummary] = useState(false)
+
+  const handleOpenSummary = useCallback(
+    async (group: DateGroup) => {
+      setSummaryGroup(group)
+      setIsFetchingSummary(true)
+      try {
+        const allEntries = await fetchEntriesByDate(group.dateKey)
+        setSummaryEntries(allEntries)
+      } catch {
+        // Fallback to entries already visible on this page
+        setSummaryEntries(group.entries)
+      }
+      setIsFetchingSummary(false)
+    },
+    [fetchEntriesByDate],
+  )
+
+  const handleCloseSummary = useCallback(() => {
+    setSummaryGroup(null)
+    setSummaryEntries([])
+  }, [])
+
   if (isLoading) {
     return (
       <div className="space-y-3">
         {Array.from({ length: 2 }).map((_, g) => (
-          <div
-            key={g}
-            className="overflow-hidden rounded-xl border border-black/10"
-          >
+          <div key={g} className="overflow-hidden rounded-xl border border-black/10">
             <div className="flex items-center justify-between bg-black/[0.02] px-4 py-2.5">
               <Skeleton className="h-4 w-48 rounded-md" />
+              <Skeleton className="h-7 w-20 rounded-md" />
             </div>
             <div className="divide-y divide-black/[0.04]">
               {Array.from({ length: 3 }).map((_, i) => (
@@ -144,8 +172,7 @@ export function LedgerTable({
   const groups = groupByDate(entries, i18n.language)
 
   function getPageNumbers(): (number | 'ellipsis')[] {
-    if (totalPages <= 5)
-      return Array.from({ length: totalPages }, (_, i) => i + 1)
+    if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1)
     if (page <= 3) return [1, 2, 3, 4, 'ellipsis', totalPages]
     if (page >= totalPages - 2)
       return [1, 'ellipsis', totalPages - 3, totalPages - 2, totalPages - 1, totalPages]
@@ -156,14 +183,23 @@ export function LedgerTable({
     <>
       <div className="space-y-3">
         {groups.map((group) => (
-          <div
-            key={group.dateKey}
-            className="overflow-hidden rounded-xl border border-black/10"
-          >
+          <div key={group.dateKey} className="overflow-hidden rounded-xl border border-black/10">
             <div className="flex items-center justify-between bg-black/[0.02] px-4 py-2.5">
-              <span className="text-sm font-semibold text-black/70">
-                {group.label}
-              </span>
+              <div className="flex items-center gap-2.5">
+                <span className="text-sm font-semibold text-black/70">{group.label}</span>
+                <Tag variant="default" className="h-5 text-xs">
+                  {group.entries.length} {t('accounting.dailySummary.entries', 'entries')}
+                </Tag>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1.5 px-2.5 text-xs font-medium text-black/40 hover:text-black/70"
+                onClick={() => handleOpenSummary(group)}
+              >
+                <ChartBar size={14} />
+                {t('accounting.dailySummary.label', 'Summary')}
+              </Button>
             </div>
 
             <div className="overflow-x-auto">
@@ -173,24 +209,14 @@ export function LedgerTable({
                     <TableHead className={TH_CLASS}>
                       {t('accounting.columns.description')}
                     </TableHead>
-                    <TableHead className={TH_CLASS}>
-                      {t('accounting.columns.type')}
-                    </TableHead>
-                    <TableHead className={TH_CLASS}>
-                      {t('accounting.columns.direction')}
-                    </TableHead>
+                    <TableHead className={TH_CLASS}>{t('accounting.columns.type')}</TableHead>
+                    <TableHead className={TH_CLASS}>{t('accounting.columns.direction')}</TableHead>
                     <TableHead className={`${TH_CLASS} text-right`}>
                       {t('accounting.columns.amount')}
                     </TableHead>
-                    <TableHead className={TH_CLASS}>
-                      {t('accounting.columns.currency')}
-                    </TableHead>
-                    <TableHead className={TH_CLASS}>
-                      {t('accounting.columns.register')}
-                    </TableHead>
-                    <TableHead className={TH_CLASS}>
-                      {t('accounting.columns.costPeriod')}
-                    </TableHead>
+                    <TableHead className={TH_CLASS}>{t('accounting.columns.currency')}</TableHead>
+                    <TableHead className={TH_CLASS}>{t('accounting.columns.register')}</TableHead>
+                    <TableHead className={TH_CLASS}>{t('accounting.columns.costPeriod')}</TableHead>
                     <TableHead className="w-16 px-2" />
                   </TableRow>
                 </TableHeader>
@@ -198,9 +224,7 @@ export function LedgerTable({
                   {group.entries.map((row) => (
                     <TableRow key={row.id} className="hover:bg-black/[0.015]">
                       <TableCell className="whitespace-nowrap">
-                        <span className="text-sm font-medium text-black/90">
-                          {row.description}
-                        </span>
+                        <span className="text-sm font-medium text-black/90">{row.description}</span>
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
                         <Tag variant="default">
@@ -248,10 +272,7 @@ export function LedgerTable({
                               <PencilSimple size={14} />
                               {t('accounting.actions.edit')}
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-red"
-                              onClick={() => onDelete(row)}
-                            >
+                            <DropdownMenuItem className="text-red" onClick={() => onDelete(row)}>
                               <Trash size={14} />
                               {t('accounting.actions.delete')}
                             </DropdownMenuItem>
@@ -292,10 +313,7 @@ export function LedgerTable({
                     </PaginationItem>
                   ) : (
                     <PaginationItem key={p}>
-                      <PaginationLink
-                        isActive={page === p}
-                        onClick={() => onPageChange(p)}
-                      >
+                      <PaginationLink isActive={page === p} onClick={() => onPageChange(p)}>
                         {p}
                       </PaginationLink>
                     </PaginationItem>
@@ -315,6 +333,14 @@ export function LedgerTable({
           )}
         </div>
       )}
+
+      {/* Daily Summary Dialog */}
+      <LedgerDailySummaryDialog
+        group={summaryGroup}
+        entries={summaryEntries}
+        isFetching={isFetchingSummary}
+        onClose={handleCloseSummary}
+      />
     </>
   )
 }

@@ -11,6 +11,12 @@ import {
   Coins,
   HashStraight,
   ChartBar,
+  TrendUp,
+  TrendDown,
+  CalendarBlank,
+  Lightning,
+  ChartLine,
+  Equals,
 } from '@phosphor-icons/react'
 import { useMonthlyAnalysisQuery } from '@/hooks/queries/useMonthlyAnalysisQuery'
 import { MonthlyCharts } from './MonthlyCharts'
@@ -23,6 +29,76 @@ function formatNumber(n: number, lang: string) {
   })
 }
 
+function formatCompactNumber(n: number, lang: string) {
+  return n.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  })
+}
+
+/* ── Change badge ─────────────────────────────────── */
+
+function ChangeBadge({
+  current,
+  previous,
+  t,
+}: {
+  current: number
+  previous: number | undefined
+  t: (key: string) => string
+}) {
+  if (previous === undefined || previous === null) {
+    return (
+      <span className="mt-1 inline-flex items-center gap-0.5 text-[10px] text-black/25">
+        {t('transfers.monthly.noPrevData')}
+      </span>
+    )
+  }
+
+  if (previous === 0 && current === 0) {
+    return (
+      <span className="mt-1 inline-flex items-center gap-0.5 text-[10px] text-black/25">
+        <Equals size={10} />
+        {t('transfers.monthly.noChange')}
+      </span>
+    )
+  }
+
+  if (previous === 0) {
+    return (
+      <span className="mt-1 inline-flex items-center gap-0.5 text-[10px] text-emerald-600">
+        <TrendUp size={10} weight="bold" />
+        {t('transfers.monthly.noPrevData')}
+      </span>
+    )
+  }
+
+  const pctChange = ((current - previous) / previous) * 100
+  const isUp = pctChange > 0
+  const isDown = pctChange < 0
+
+  if (Math.abs(pctChange) < 0.1) {
+    return (
+      <span className="mt-1 inline-flex items-center gap-0.5 text-[10px] text-black/25">
+        <Equals size={10} />
+        {t('transfers.monthly.noChange')}
+      </span>
+    )
+  }
+
+  return (
+    <span
+      className={`mt-1 inline-flex items-center gap-0.5 text-[10px] font-medium ${
+        isUp ? 'text-emerald-600' : isDown ? 'text-red-500' : 'text-black/25'
+      }`}
+    >
+      {isUp ? <TrendUp size={10} weight="bold" /> : <TrendDown size={10} weight="bold" />}
+      {isUp ? '+' : ''}
+      {pctChange.toFixed(1)}%
+    </span>
+  )
+}
+
 /* ── KPI Card ──────────────────────────────────────── */
 
 function KpiCard({
@@ -30,24 +106,23 @@ function KpiCard({
   icon: Icon,
   valueTry,
   valueUsd,
+  prevValueTry,
   suffix,
   color = 'neutral',
   lang,
+  t,
 }: {
   label: string
   icon: React.ElementType
   valueTry?: number
   valueUsd?: number
+  prevValueTry?: number
   suffix?: string
   color?: 'green' | 'red' | 'conditional' | 'neutral'
   lang: string
+  t: (key: string) => string
 }) {
-  const resolvedColor =
-    color === 'conditional'
-      ? (valueTry ?? 0) >= 0
-        ? 'green'
-        : 'red'
-      : color
+  const resolvedColor = color === 'conditional' ? ((valueTry ?? 0) >= 0 ? 'green' : 'red') : color
 
   const valueClass =
     resolvedColor === 'green'
@@ -67,9 +142,7 @@ function KpiCard({
       {valueTry !== undefined && (
         <p className={`mt-2 font-mono text-xl font-bold tabular-nums ${valueClass}`}>
           {formatNumber(Math.abs(valueTry), lang)}
-          <span className="ml-1 text-xs font-medium text-black/25">
-            {suffix ?? '₺'}
-          </span>
+          <span className="ml-1 text-xs font-medium text-black/25">{suffix ?? '₺'}</span>
         </p>
       )}
       {valueUsd !== undefined && (
@@ -77,6 +150,35 @@ function KpiCard({
           {formatNumber(Math.abs(valueUsd), lang)} $
         </p>
       )}
+      {valueTry !== undefined && (
+        <ChangeBadge
+          current={Math.abs(valueTry)}
+          previous={prevValueTry !== undefined ? Math.abs(prevValueTry) : undefined}
+          t={t}
+        />
+      )}
+    </div>
+  )
+}
+
+/* ── Insights strip ───────────────────────────────── */
+
+function InsightPill({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ElementType
+  label: string
+  value: string
+}) {
+  return (
+    <div className="flex items-center gap-2 rounded-lg border border-black/[0.06] bg-black/[0.02] px-3 py-2">
+      <Icon size={14} className="shrink-0 text-black/30" />
+      <div className="min-w-0">
+        <p className="text-[10px] font-medium uppercase tracking-wider text-black/35">{label}</p>
+        <p className="font-mono text-sm font-semibold tabular-nums text-black/70">{value}</p>
+      </div>
     </div>
   )
 }
@@ -88,14 +190,17 @@ function KpiSkeleton() {
     <div className="space-y-6">
       <div className="grid grid-cols-4 gap-3">
         {Array.from({ length: 8 }).map((_, i) => (
-          <div
-            key={i}
-            className="rounded-xl border border-black/10 bg-black/[0.015] px-4 py-3.5"
-          >
+          <div key={i} className="rounded-xl border border-black/10 bg-black/[0.015] px-4 py-3.5">
             <Skeleton className="h-3 w-20 rounded" />
             <Skeleton className="mt-3 h-6 w-28 rounded" />
             <Skeleton className="mt-1.5 h-3 w-16 rounded" />
+            <Skeleton className="mt-1.5 h-3 w-12 rounded" />
           </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-4 gap-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-14 rounded-lg" />
         ))}
       </div>
       <div className="grid grid-cols-2 gap-4">
@@ -136,13 +241,15 @@ export function MonthlyTab() {
     }
   }
 
-  const isCurrentMonth =
-    year === now.getFullYear() && month === now.getMonth() + 1
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
 
   const monthLabel = new Date(year, month - 1, 1).toLocaleDateString(
     lang === 'tr' ? 'tr-TR' : 'en-US',
     { month: 'long', year: 'numeric' },
   )
+
+  const prev = data?.prev_kpis
+  const insights = data?.insights
 
   return (
     <div className="space-y-6">
@@ -170,69 +277,80 @@ export function MonthlyTab() {
 
       {/* Empty state */}
       {!isLoading && (!data || data.kpis.transfer_count === 0) && (
-        <EmptyState
-          icon={ChartBar}
-          title={t('transfers.monthly.noData')}
-        />
+        <EmptyState icon={ChartBar} title={t('transfers.monthly.noData')} />
       )}
 
       {/* Data */}
       {!isLoading && data && data.kpis.transfer_count > 0 && (
         <>
-          {/* KPI cards: 4 columns × 2 rows */}
+          {/* KPI cards: 4 columns x 2 rows */}
           <div className="grid grid-cols-4 gap-3">
             <KpiCard
               label={t('transfers.monthly.totalDeposits')}
               icon={ArrowDown}
               valueTry={data.kpis.total_deposits_try}
               valueUsd={data.kpis.total_deposits_usd}
+              prevValueTry={prev?.total_deposits_try}
               color="green"
               lang={lang}
+              t={t}
             />
             <KpiCard
               label={t('transfers.monthly.totalWithdrawals')}
               icon={ArrowUp}
               valueTry={data.kpis.total_withdrawals_try}
               valueUsd={data.kpis.total_withdrawals_usd}
+              prevValueTry={prev?.total_withdrawals_try}
               color="red"
               lang={lang}
+              t={t}
             />
             <KpiCard
               label={t('transfers.monthly.net')}
               icon={ChartBar}
               valueTry={data.kpis.total_deposits_try - data.kpis.total_withdrawals_try}
               valueUsd={data.kpis.total_deposits_usd - data.kpis.total_withdrawals_usd}
+              prevValueTry={prev ? prev.total_deposits_try - prev.total_withdrawals_try : undefined}
               color="conditional"
               lang={lang}
+              t={t}
             />
             <KpiCard
               label={t('transfers.monthly.bankVolume')}
               icon={Bank}
               valueTry={data.kpis.total_bank_volume}
+              prevValueTry={prev?.total_bank_volume}
               color="neutral"
               lang={lang}
+              t={t}
             />
             <KpiCard
               label={t('transfers.monthly.creditCardVolume')}
               icon={CreditCard}
               valueTry={data.kpis.total_credit_card_volume}
+              prevValueTry={prev?.total_credit_card_volume}
               color="neutral"
               lang={lang}
+              t={t}
             />
             <KpiCard
               label={t('transfers.monthly.usdtVolume')}
               icon={CurrencyDollar}
               valueTry={data.kpis.total_usdt_volume}
+              prevValueTry={prev?.total_usdt_volume}
               suffix="$"
               color="neutral"
               lang={lang}
+              t={t}
             />
             <KpiCard
               label={t('transfers.monthly.commission')}
               icon={Coins}
               valueTry={data.kpis.total_commission_try}
+              prevValueTry={prev?.total_commission_try}
               color="neutral"
               lang={lang}
+              t={t}
             />
             {/* Transfer Count — special: plain number, no currency */}
             <div className="rounded-xl border border-black/10 bg-black/[0.015] px-4 py-3.5">
@@ -250,8 +368,49 @@ export function MonthlyTab() {
                 {' / '}
                 {data.kpis.withdrawal_count} {t('transfers.monthly.withdrawals').toLowerCase()}
               </p>
+              <ChangeBadge
+                current={data.kpis.transfer_count}
+                previous={prev?.transfer_count}
+                t={t}
+              />
             </div>
           </div>
+
+          {/* Insights strip */}
+          {insights && (
+            <div className="grid grid-cols-4 gap-3">
+              <InsightPill
+                icon={Lightning}
+                label={t('transfers.monthly.peakDay')}
+                value={
+                  insights.peak_day
+                    ? new Date(insights.peak_day + 'T00:00:00').toLocaleDateString(
+                        lang === 'tr' ? 'tr-TR' : 'en-US',
+                        { day: 'numeric', month: 'short' },
+                      ) +
+                      ' (' +
+                      formatCompactNumber(insights.peak_day_volume, lang) +
+                      ' ₺)'
+                    : '—'
+                }
+              />
+              <InsightPill
+                icon={CalendarBlank}
+                label={t('transfers.monthly.activeDays')}
+                value={`${insights.active_days}`}
+              />
+              <InsightPill
+                icon={ChartLine}
+                label={t('transfers.monthly.avgDailyVolume')}
+                value={`${formatCompactNumber(insights.avg_daily_volume, lang)} ₺`}
+              />
+              <InsightPill
+                icon={Equals}
+                label={t('transfers.monthly.avgPerTransfer')}
+                value={`${formatCompactNumber(insights.avg_per_transfer, lang)} ₺`}
+              />
+            </div>
+          )}
 
           {/* Charts + Breakdowns */}
           <MonthlyCharts data={data} lang={lang} />

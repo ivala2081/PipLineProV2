@@ -1,9 +1,8 @@
 import { useTranslation } from 'react-i18next'
-import { ArrowDown, ArrowUp, ArrowSquareOut, ArrowRight } from '@phosphor-icons/react'
-import type { NormalizedTransfer } from '@/lib/tatumService'
-import { EXPLORER_TX_URL } from '@/lib/tatumService'
+import { ArrowSquareOut, ArrowRight } from '@phosphor-icons/react'
+import type { NormalizedTransfer } from '@/lib/tatumServiceSecure'
+import { EXPLORER_TX_URL } from '@/lib/tatumServiceSecure'
 import {
-  Tag,
   Skeleton,
   Table,
   TableHeader,
@@ -83,8 +82,7 @@ interface WalletTransfersTableProps {
   walletAddress?: string
 }
 
-const TH =
-  'h-8 px-3 text-xs font-semibold uppercase tracking-wider text-black/40 whitespace-nowrap'
+const TH = 'h-8 px-3 text-xs font-semibold uppercase tracking-wider text-black/40 whitespace-nowrap'
 
 export function WalletTransfersTable({
   transfers,
@@ -109,9 +107,7 @@ export function WalletTransfersTable({
 
   if (transfers.length === 0) {
     return (
-      <p className="py-8 text-center text-xs text-black/40">
-        {t('accounting.transfers.empty', 'No transfers found')}
-      </p>
+      <p className="py-8 text-center text-xs text-black/40">{t('accounting.transactions.empty')}</p>
     )
   }
 
@@ -121,32 +117,24 @@ export function WalletTransfersTable({
         <Table className="min-w-[820px]">
           <TableHeader>
             <TableRow className="bg-black/[0.015]">
-              <TableHead className={TH}>
-                Tx Hash
-              </TableHead>
-              <TableHead className={TH}>
-                {t('accounting.transfers.date', 'Age')}
-              </TableHead>
-              <TableHead className={TH}>
-                From
-              </TableHead>
+              <TableHead className={TH}>{t('accounting.transactions.hash')}</TableHead>
+              <TableHead className={TH}>{t('accounting.transactions.date')}</TableHead>
+              <TableHead className={TH}>{t('accounting.transactions.from')}</TableHead>
               <TableHead className={TH} />
-              <TableHead className={TH}>
-                To
-              </TableHead>
+              <TableHead className={TH}>{t('accounting.transactions.to')}</TableHead>
               <TableHead className={`${TH} text-right`}>
-                {t('accounting.transfers.amount', 'Amount')}
+                {t('accounting.transactions.amount')}
               </TableHead>
-              <TableHead className={TH}>
-                Token
-              </TableHead>
+              <TableHead className={TH}>{t('accounting.transactions.token')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {transfers.map((tx, idx) => {
               // Derive from/to addresses
-              const from = tx.fromAddress ?? (tx.direction === 'out' ? walletAddress : tx.counterAddress) ?? ''
-              const to = tx.toAddress ?? (tx.direction === 'in' ? walletAddress : tx.counterAddress) ?? ''
+              const from =
+                tx.fromAddress ?? (tx.direction === 'out' ? walletAddress : tx.counterAddress) ?? ''
+              const to =
+                tx.toAddress ?? (tx.direction === 'in' ? walletAddress : tx.counterAddress) ?? ''
               const isFromWallet = walletAddress ? from === walletAddress : tx.direction === 'out'
               const isToWallet = walletAddress ? to === walletAddress : tx.direction === 'in'
 
@@ -209,9 +197,7 @@ export function WalletTransfersTable({
                   {/* Token */}
                   <TableCell className="px-3 py-2">
                     <div className="flex flex-col">
-                      <span className="text-xs font-semibold text-black/70">
-                        {tx.symbol}
-                      </span>
+                      <span className="text-xs font-semibold text-black/70">{tx.symbol}</span>
                       {tx.tokenAddress && (
                         <span className="font-mono text-[10px] text-black/25">
                           {truncateAddr(tx.tokenAddress)}
@@ -236,8 +222,8 @@ export function WalletTransfersTable({
             disabled={isLoading}
           >
             {isLoading
-              ? t('accounting.transfers.loading', 'Loading...')
-              : t('accounting.transfers.loadMore', 'Load more')}
+              ? t('accounting.transactions.loading')
+              : t('accounting.transactions.loadMore')}
           </Button>
         </div>
       )}

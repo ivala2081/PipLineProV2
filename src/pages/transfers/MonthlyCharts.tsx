@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   ResponsiveContainer,
@@ -10,7 +11,11 @@ import {
   Tooltip,
   CartesianGrid,
 } from 'recharts'
-import type { MonthlySummaryData } from '@/hooks/queries/useMonthlyAnalysisQuery'
+import { useTheme } from '@ds'
+import type {
+  MonthlySummaryData,
+  CategoryBreakdownItem,
+} from '@/hooks/queries/useMonthlyAnalysisQuery'
 
 function formatNumber(n: number, lang: string) {
   return n.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US', {
@@ -19,17 +24,31 @@ function formatNumber(n: number, lang: string) {
   })
 }
 
-/* ── Chart style constants ─────────────────────────── */
+/* ── Chart style helpers (theme-aware) ────────────── */
 
-const GRID_STROKE = 'rgba(0,0,0,0.06)'
-const AXIS_TICK = { fontSize: 11, fill: 'rgba(0,0,0,0.4)' }
-const AXIS_LINE = { stroke: 'rgba(0,0,0,0.08)' }
-const TOOLTIP_STYLE = {
-  fontSize: 12,
-  borderRadius: 8,
-  border: '1px solid rgba(0,0,0,0.08)',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+function useChartTheme() {
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === 'dark'
+
+  return useMemo(
+    () => ({
+      gridStroke: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+      axisTick: { fontSize: 11, fill: isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.4)' },
+      axisLine: { stroke: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' },
+      tooltipStyle: {
+        fontSize: 12,
+        borderRadius: 8,
+        backgroundColor: isDark ? '#1b2533' : '#ffffff',
+        color: isDark ? '#e6e9f2' : '#18181b',
+        border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.08)',
+        boxShadow: isDark ? '0 2px 8px rgba(0,0,0,0.4)' : '0 2px 8px rgba(0,0,0,0.06)',
+      },
+      lineColor: isDark ? '#94e9b8' : '#18181b',
+    }),
+    [isDark],
+  )
 }
+
 const GREEN = '#22c55e'
 const RED = '#ef4444'
 
@@ -44,7 +63,7 @@ function formatCompact(value: number): string {
   return value.toFixed(0)
 }
 
-/* ── Breakdown row ─────────────────────────────────── */
+/* ── Breakdown row with progress bar ──────────────── */
 
 function BreakdownRow({
   rank,
@@ -53,6 +72,7 @@ function BreakdownRow({
   suffix,
   count,
   lang,
+  pct,
 }: {
   rank: number
   name: string
@@ -60,20 +80,25 @@ function BreakdownRow({
   suffix: string
   count: number
   lang: string
+  pct: number
 }) {
   return (
-    <div className="flex items-center justify-between px-4 py-2.5">
-      <div className="flex items-center gap-2.5">
-        <span className="w-5 font-mono text-xs text-black/25">{rank}</span>
-        <span className="text-sm text-black/70">{name}</span>
-      </div>
-      <div className="flex items-center gap-3">
-        <span className="font-mono text-sm font-semibold tabular-nums text-black/70">
-          {formatNumber(value, lang)} {suffix}
-        </span>
-        <span className="min-w-[40px] text-right text-xs tabular-nums text-black/30">
-          {count}x
-        </span>
+    <div className="relative px-4 py-2.5">
+      {/* Progress bar background */}
+      <div className="absolute inset-y-0 left-0 bg-black/[0.03]" style={{ width: `${pct}%` }} />
+      <div className="relative flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <span className="w-5 font-mono text-xs text-black/25">{rank}</span>
+          <span className="text-sm text-black/70">{name}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-sm font-semibold tabular-nums text-black/70">
+            {formatNumber(value, lang)} {suffix}
+          </span>
+          <span className="min-w-[40px] text-right text-xs tabular-nums text-black/30">
+            {count}x
+          </span>
+        </div>
       </div>
     </div>
   )
@@ -96,20 +121,135 @@ function BreakdownCard({
 }) {
   if (!items || items.length === 0) return null
 
+  const maxValue = Math.max(...items.map((item) => Math.abs(Number(item[valueKey] ?? 0))))
+
   return (
     <div>
       <h3 className="mb-2 text-sm font-semibold text-black/60">{title}</h3>
       <div className="divide-y divide-black/[0.06] overflow-hidden rounded-xl border border-black/10">
-        {items.map((item, i) => (
-          <BreakdownRow
-            key={item.name as string}
-            rank={i + 1}
-            name={item.name as string}
-            value={Number(item[valueKey] ?? 0)}
-            suffix={suffix}
-            count={Number(item.count ?? 0)}
-            lang={lang}
-          />
+        {items.map((item, i) => {
+          const val = Math.abs(Number(item[valueKey] ?? 0))
+          return (
+            <BreakdownRow
+              key={item.name as string}
+              rank={i + 1}
+              name={item.name as string}
+              value={val}
+              suffix={suffix}
+              count={Number(item.count ?? 0)}
+              lang={lang}
+              pct={maxValue > 0 ? (val / maxValue) * 100 : 0}
+            />
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/* ── Category breakdown with deposit/withdrawal split */
+
+interface CategoryGroup {
+  name: string
+  deposits: number
+  withdrawals: number
+  depositCount: number
+  withdrawalCount: number
+}
+
+function CategoryBreakdownCard({
+  title,
+  items,
+  lang,
+  t,
+}: {
+  title: string
+  items: CategoryBreakdownItem[]
+  lang: string
+  t: (key: string) => string
+}) {
+  const grouped = useMemo(() => {
+    const map = new Map<string, CategoryGroup>()
+    for (const item of items) {
+      const existing = map.get(item.name) ?? {
+        name: item.name,
+        deposits: 0,
+        withdrawals: 0,
+        depositCount: 0,
+        withdrawalCount: 0,
+      }
+      if (item.is_deposit) {
+        existing.deposits = item.volume
+        existing.depositCount = item.count
+      } else {
+        existing.withdrawals = item.volume
+        existing.withdrawalCount = item.count
+      }
+      map.set(item.name, existing)
+    }
+    return Array.from(map.values()).sort(
+      (a, b) => b.deposits + b.withdrawals - (a.deposits + a.withdrawals),
+    )
+  }, [items])
+
+  if (grouped.length === 0) return null
+
+  const maxValue = Math.max(...grouped.flatMap((g) => [g.deposits, g.withdrawals]))
+
+  return (
+    <div>
+      <h3 className="mb-2 text-sm font-semibold text-black/60">{title}</h3>
+      <div className="divide-y divide-black/[0.06] overflow-hidden rounded-xl border border-black/10">
+        {grouped.map((group) => (
+          <div key={group.name} className="px-4 py-3">
+            <p className="mb-2 text-sm font-medium text-black/70">{group.name}</p>
+            <div className="space-y-1.5">
+              {/* Deposits bar */}
+              {group.deposits > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="w-12 text-[10px] font-medium uppercase text-black/35">
+                    {t('transfers.monthly.deposits')}
+                  </span>
+                  <div className="relative h-5 flex-1 overflow-hidden rounded bg-black/[0.04]">
+                    <div
+                      className="absolute inset-y-0 left-0 rounded bg-emerald-500/20"
+                      style={{
+                        width: `${maxValue > 0 ? (group.deposits / maxValue) * 100 : 0}%`,
+                      }}
+                    />
+                    <span className="relative flex h-full items-center px-2 font-mono text-[11px] font-semibold tabular-nums text-emerald-700">
+                      {formatNumber(group.deposits, lang)} ₺
+                      <span className="ml-1 font-normal text-black/30">
+                        ({group.depositCount}x)
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              )}
+              {/* Withdrawals bar */}
+              {group.withdrawals > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="w-12 text-[10px] font-medium uppercase text-black/35">
+                    {t('transfers.monthly.withdrawals')}
+                  </span>
+                  <div className="relative h-5 flex-1 overflow-hidden rounded bg-black/[0.04]">
+                    <div
+                      className="absolute inset-y-0 left-0 rounded bg-red-500/20"
+                      style={{
+                        width: `${maxValue > 0 ? (group.withdrawals / maxValue) * 100 : 0}%`,
+                      }}
+                    />
+                    <span className="relative flex h-full items-center px-2 font-mono text-[11px] font-semibold tabular-nums text-red-700">
+                      {formatNumber(group.withdrawals, lang)} ₺
+                      <span className="ml-1 font-normal text-black/30">
+                        ({group.withdrawalCount}x)
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         ))}
       </div>
     </div>
@@ -125,6 +265,7 @@ interface MonthlyChartsProps {
 
 export function MonthlyCharts({ data, lang }: MonthlyChartsProps) {
   const { t } = useTranslation('pages')
+  const ct = useChartTheme()
 
   return (
     <div className="space-y-6">
@@ -138,17 +279,17 @@ export function MonthlyCharts({ data, lang }: MonthlyChartsProps) {
           <div className="rounded-xl border border-black/10 bg-black/[0.015] p-4">
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={data.daily_volume}>
-                <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+                <CartesianGrid strokeDasharray="3 3" stroke={ct.gridStroke} />
                 <XAxis
                   dataKey="day"
                   tickFormatter={formatDay}
-                  tick={AXIS_TICK}
-                  axisLine={AXIS_LINE}
+                  tick={ct.axisTick}
+                  axisLine={ct.axisLine}
                   tickLine={false}
                 />
                 <YAxis
                   tickFormatter={formatCompact}
-                  tick={AXIS_TICK}
+                  tick={ct.axisTick}
                   axisLine={false}
                   tickLine={false}
                   width={55}
@@ -161,20 +302,10 @@ export function MonthlyCharts({ data, lang }: MonthlyChartsProps) {
                       : t('transfers.monthly.withdrawals'),
                   ]}
                   labelFormatter={(label: string) => formatDay(label)}
-                  contentStyle={TOOLTIP_STYLE}
+                  contentStyle={ct.tooltipStyle}
                 />
-                <Bar
-                  dataKey="deposits"
-                  fill={GREEN}
-                  radius={[2, 2, 0, 0]}
-                  stackId="volume"
-                />
-                <Bar
-                  dataKey="withdrawals"
-                  fill={RED}
-                  radius={[2, 2, 0, 0]}
-                  stackId="volume"
-                />
+                <Bar dataKey="deposits" fill={GREEN} radius={[2, 2, 0, 0]} stackId="volume" />
+                <Bar dataKey="withdrawals" fill={RED} radius={[2, 2, 0, 0]} stackId="volume" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -188,17 +319,17 @@ export function MonthlyCharts({ data, lang }: MonthlyChartsProps) {
           <div className="rounded-xl border border-black/10 bg-black/[0.015] p-4">
             <ResponsiveContainer width="100%" height={260}>
               <LineChart data={data.daily_net}>
-                <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
+                <CartesianGrid strokeDasharray="3 3" stroke={ct.gridStroke} />
                 <XAxis
                   dataKey="day"
                   tickFormatter={formatDay}
-                  tick={AXIS_TICK}
-                  axisLine={AXIS_LINE}
+                  tick={ct.axisTick}
+                  axisLine={ct.axisLine}
                   tickLine={false}
                 />
                 <YAxis
                   tickFormatter={formatCompact}
-                  tick={AXIS_TICK}
+                  tick={ct.axisTick}
                   axisLine={false}
                   tickLine={false}
                   width={55}
@@ -209,14 +340,14 @@ export function MonthlyCharts({ data, lang }: MonthlyChartsProps) {
                     t('transfers.monthly.net'),
                   ]}
                   labelFormatter={(label: string) => formatDay(label)}
-                  contentStyle={TOOLTIP_STYLE}
+                  contentStyle={ct.tooltipStyle}
                 />
                 <Line
                   type="monotone"
                   dataKey="net"
-                  stroke="#18181b"
+                  stroke={ct.lineColor}
                   strokeWidth={2}
-                  dot={{ r: 2.5, fill: '#18181b' }}
+                  dot={{ r: 2.5, fill: ct.lineColor }}
                   activeDot={{ r: 4 }}
                 />
               </LineChart>
@@ -237,10 +368,11 @@ export function MonthlyCharts({ data, lang }: MonthlyChartsProps) {
           items={data.payment_method_breakdown}
           lang={lang}
         />
-        <BreakdownCard
+        <CategoryBreakdownCard
           title={t('transfers.monthly.categoryBreakdown')}
           items={data.category_breakdown}
           lang={lang}
+          t={t}
         />
         <BreakdownCard
           title={t('transfers.monthly.currencySplit')}
@@ -264,24 +396,11 @@ export function MonthlyCharts({ data, lang }: MonthlyChartsProps) {
 
       {/* Top Customers — full width */}
       {data.top_customers && data.top_customers.length > 0 && (
-        <div>
-          <h3 className="mb-2 text-sm font-semibold text-black/60">
-            {t('transfers.monthly.topCustomers')}
-          </h3>
-          <div className="divide-y divide-black/[0.06] overflow-hidden rounded-xl border border-black/10">
-            {data.top_customers.map((item, i) => (
-              <BreakdownRow
-                key={item.name}
-                rank={i + 1}
-                name={item.name}
-                value={item.volume}
-                suffix="₺"
-                count={item.count}
-                lang={lang}
-              />
-            ))}
-          </div>
-        </div>
+        <BreakdownCard
+          title={t('transfers.monthly.topCustomers')}
+          items={data.top_customers}
+          lang={lang}
+        />
       )}
     </div>
   )

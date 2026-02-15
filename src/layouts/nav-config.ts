@@ -8,6 +8,7 @@ import {
   Users,
   Buildings,
   Brain,
+  Shield,
 } from '@phosphor-icons/react'
 
 export type NavItem = {
@@ -24,9 +25,7 @@ export type NavGroup = {
 export const navGroups: NavGroup[] = [
   {
     titleKey: 'nav.groups.main',
-    items: [
-      { titleKey: 'nav.dashboard', href: '/', icon: House },
-    ],
+    items: [{ titleKey: 'nav.dashboard', href: '/', icon: House }],
   },
   {
     titleKey: 'nav.groups.dataEntry',
@@ -46,12 +45,11 @@ export const navGroups: NavGroup[] = [
     titleKey: 'nav.groups.system',
     items: [
       { titleKey: 'nav.organizations', href: '/organizations', icon: Buildings },
+      { titleKey: 'nav.security', href: '/security', icon: Shield },
     ],
   },
   {
     titleKey: 'nav.groups.ai',
-    items: [
-      { titleKey: 'nav.future', href: '/future', icon: Brain },
-    ],
+    items: [{ titleKey: 'nav.future', href: '/future', icon: Brain }],
   },
 ]

@@ -20,14 +20,8 @@ import {
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { useToast } from '@/hooks/useToast'
-import {
-  useOrgMembersQuery,
-  type MemberWithProfile,
-} from '@/hooks/queries/useOrgMembersQuery'
-import {
-  useUpdateMemberRole,
-  useRemoveMember,
-} from '@/hooks/queries/useOrgMemberMutations'
+import { useOrgMembersQuery, type MemberWithProfile } from '@/hooks/queries/useOrgMembersQuery'
+import { useUpdateMemberRole, useRemoveMember } from '@/hooks/queries/useOrgMemberMutations'
 import { ConfirmDialog } from '@/pages/organizations/ConfirmDialog'
 import { AddMemberDialog } from '@/pages/organizations/AddMemberDialog'
 import { UserAvatar } from '@/components/UserAvatar'
@@ -36,7 +30,7 @@ import { usePresenceSubscription } from '@/hooks/usePresenceSubscription'
 
 export function MembersPage() {
   const navigate = useNavigate()
-  const { t } = useTranslation('pages')
+  const { t, i18n } = useTranslation('pages')
   const { toast } = useToast()
   const { user, isGod } = useAuth()
   const { currentOrg, membership } = useOrganization()
@@ -152,8 +146,7 @@ export function MembersPage() {
             <TableBody className="divide-y divide-black/[0.04]">
               {members.map((member) => {
                 const isSelf = member.user_id === user?.id
-                const displayName =
-                  member.profile?.display_name ?? member.user_id
+                const displayName = member.profile?.display_name ?? member.user_id
 
                 return (
                   <TableRow
@@ -170,9 +163,7 @@ export function MembersPage() {
                           showPresence
                           lastSeenAt={member.profile?.last_seen_at}
                         />
-                        <span className="text-sm font-medium text-black/90">
-                          {displayName}
-                        </span>
+                        <span className="text-sm font-medium text-black/90">{displayName}</span>
                       </div>
                     </TableCell>
                     <TableCell className="px-4 py-3">
@@ -180,11 +171,13 @@ export function MembersPage() {
                     </TableCell>
                     <TableCell className="px-4 py-3">
                       <Tag variant={member.role === 'admin' ? 'green' : 'blue'}>
-                        {member.role === 'admin' ? 'Admin' : 'Operation'}
+                        {t(`memberProfile.roles.${member.role}`)}
                       </Tag>
                     </TableCell>
                     <TableCell className="px-4 py-3 text-sm text-black/50">
-                      {new Date(member.created_at).toLocaleDateString('tr-TR')}
+                      {new Date(member.created_at).toLocaleDateString(
+                        i18n.language === 'tr' ? 'tr-TR' : 'en-US',
+                      )}
                     </TableCell>
                     {canManage && (
                       <TableCell className="px-2 py-3">
@@ -200,9 +193,7 @@ export function MembersPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" sideOffset={4}>
-                              <DropdownMenuItem
-                                onClick={() => handleToggleRole(member)}
-                              >
+                              <DropdownMenuItem onClick={() => handleToggleRole(member)}>
                                 {member.role === 'admin'
                                   ? t('organizations.members.actions.demoteToOperation')
                                   : t('organizations.members.actions.promoteToAdmin')}

@@ -1,17 +1,8 @@
 -- ============================================================================
--- 020: Avatar storage bucket setup (FIX - Drop existing policies first)
+-- 020: Avatar storage bucket setup
 -- ============================================================================
 
--- Drop existing policies if they exist
-DROP POLICY IF EXISTS "Users can upload their own avatar" ON storage.objects;
-DROP POLICY IF EXISTS "Users can update their own avatar" ON storage.objects;
-DROP POLICY IF EXISTS "Users can delete their own avatar" ON storage.objects;
-DROP POLICY IF EXISTS "Public avatar access" ON storage.objects;
-DROP POLICY IF EXISTS "Admins can upload avatars for org members" ON storage.objects;
-DROP POLICY IF EXISTS "Admins can update avatars for org members" ON storage.objects;
-DROP POLICY IF EXISTS "Admins can delete avatars for org members" ON storage.objects;
-
--- Create storage bucket for avatars (if not exists)
+-- Create storage bucket for avatars
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (
   'avatars',
@@ -20,10 +11,7 @@ VALUES (
   5242880, -- 5MB limit
   ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
 )
-ON CONFLICT (id) DO UPDATE SET
-  public = true,
-  file_size_limit = 5242880,
-  allowed_mime_types = ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+ON CONFLICT (id) DO NOTHING;
 
 -- Storage policies for avatars bucket
 

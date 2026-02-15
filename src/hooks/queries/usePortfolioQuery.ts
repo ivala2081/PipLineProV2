@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useQueries } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/queryKeys'
-import { getWalletPortfolioWithUsd, type PortfolioAssetWithUsd } from '@/lib/tatumService'
+import { getWalletPortfolioWithUsd, type PortfolioAssetWithUsd } from '@/lib/tatumServiceSecure'
 import type { Wallet } from '@/lib/database.types'
 
 export interface TokenAllocation {

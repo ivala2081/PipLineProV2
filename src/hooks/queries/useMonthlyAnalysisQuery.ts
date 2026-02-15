@@ -51,8 +51,18 @@ export interface CommissionByPspItem {
   commission: number
 }
 
+export interface MonthlyInsights {
+  peak_day: string | null
+  peak_day_volume: number
+  active_days: number
+  avg_daily_volume: number
+  avg_per_transfer: number
+}
+
 export interface MonthlySummaryData {
   kpis: MonthlyKpis
+  prev_kpis: MonthlyKpis | null
+  insights: MonthlyInsights
   daily_volume: DailyVolumePoint[]
   daily_net: DailyNetPoint[]
   psp_breakdown: BreakdownItem[]

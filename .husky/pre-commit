@@ -1,6 +1,3 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
 # Prevent .env file from being committed
 if git diff --cached --name-only | grep -q "^\.env$"; then
   echo "❌ ERROR: Attempting to commit .env file!"

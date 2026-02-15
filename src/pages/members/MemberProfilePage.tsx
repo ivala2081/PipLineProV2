@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -11,22 +11,12 @@ import {
   ShieldCheck,
   Info,
 } from '@phosphor-icons/react'
-import {
-  Card,
-  Tag,
-  Separator,
-  Button,
-  Skeleton,
-  EmptyState,
-} from '@ds'
+import { Tag, Separator, Button, Skeleton, EmptyState } from '@ds'
 import { useLocale } from '@ds/hooks'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { useToast } from '@/hooks/useToast'
-import {
-  useProfileQuery,
-  type ProfileWithMemberships,
-} from '@/hooks/queries/useProfileQuery'
+import { useProfileQuery } from '@/hooks/queries/useProfileQuery'
 import { useUpdateProfileMutation } from '@/hooks/queries/useUpdateProfileMutation'
 import { AvatarUpload } from '@/components/AvatarUpload'
 import { EditProfileDialog, type ProfileFormData } from './EditProfileDialog'
@@ -58,20 +48,14 @@ export function MemberProfilePage() {
   const { user, isGod, refreshProfile } = useAuth()
   const { currentOrg, membership } = useOrganization()
 
-  const {
-    data: profileData,
-    isLoading,
-    isError,
-  } = useProfileQuery(userId ?? '')
+  const { data: profileData, isLoading, isError } = useProfileQuery(userId ?? '')
   const updateProfile = useUpdateProfileMutation(userId ?? '')
 
   const isSelf = user?.id === userId
   const isAdminOfSharedOrg =
     !isGod &&
     membership?.role === 'admin' &&
-    !!profileData?.memberships.some(
-      (m) => m.organization_id === currentOrg?.id,
-    )
+    !!profileData?.memberships.some((m) => m.organization_id === currentOrg?.id)
   const canEdit = isGod || isAdminOfSharedOrg || isSelf
   const canEditAdminFields = isGod || isAdminOfSharedOrg
 
@@ -116,14 +100,14 @@ export function MemberProfilePage() {
     }
   }
 
-  const handleAvatarUpload = (url: string) => {
+  const handleAvatarUpload = () => {
     // Refetch profile to get updated avatar
-    toast({ title: 'Profile picture updated successfully', variant: 'success' })
+    toast({ title: t('memberProfile.toast.avatarUpdated'), variant: 'success' })
     if (isSelf) refreshProfile()
   }
 
   const handleAvatarRemove = () => {
-    toast({ title: 'Profile picture removed', variant: 'success' })
+    toast({ title: t('memberProfile.toast.avatarRemoved'), variant: 'success' })
     if (isSelf) refreshProfile()
   }
 
@@ -192,9 +176,12 @@ export function MemberProfilePage() {
         {/* Cover area */}
         <div className="relative h-48 overflow-hidden bg-gradient-to-br from-black/[0.02] via-black/[0.01] to-transparent">
           {/* Geometric pattern */}
-          <div className="absolute inset-0 opacity-[0.015]" style={{
-            backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 35px, currentColor 35px, currentColor 36px)`,
-          }} />
+          <div
+            className="absolute inset-0 opacity-[0.015]"
+            style={{
+              backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 35px, currentColor 35px, currentColor 36px)`,
+            }}
+          />
 
           {/* Edit button - floating on cover */}
           {canEdit && (
@@ -232,9 +219,7 @@ export function MemberProfilePage() {
 
           {/* Name and basic info */}
           <div className="space-y-4">
-            <h1 className="text-4xl font-bold tracking-tight text-black/90">
-              {displayName}
-            </h1>
+            <h1 className="text-4xl font-bold tracking-tight text-black/90">{displayName}</h1>
 
             {/* Metadata row */}
             <div className="flex flex-wrap items-center gap-4 text-sm text-black/60">
@@ -263,9 +248,11 @@ export function MemberProfilePage() {
                   key={r.orgId}
                   className="inline-flex items-center gap-2 rounded-lg border border-black/[0.08] bg-white px-3 py-1.5"
                 >
-                  <div className={`size-1.5 rounded-full ${r.role === 'admin' ? 'bg-green' : 'bg-blue'}`} />
+                  <div
+                    className={`size-1.5 rounded-full ${r.role === 'admin' ? 'bg-green' : 'bg-blue'}`}
+                  />
                   <span className="text-xs font-medium text-black/70">
-                    {r.role === 'admin' ? 'Admin' : 'Operation'}
+                    {t(`memberProfile.roles.${r.role}`)}
                   </span>
                   <span className="text-xs text-black/40">·</span>
                   <span className="text-xs text-black/60">{r.orgName}</span>
@@ -297,7 +284,9 @@ export function MemberProfilePage() {
                   <label className="block text-xs font-medium text-black/40 mb-1">
                     {t('memberProfile.fields.phone')}
                   </label>
-                  <p className={`text-sm ${profileData.phone ? 'text-black/90' : 'text-black/30 italic'}`}>
+                  <p
+                    className={`text-sm ${profileData.phone ? 'text-black/90' : 'text-black/30 italic'}`}
+                  >
                     {profileData.phone || t('memberProfile.fields.noPhone')}
                   </p>
                 </div>
@@ -314,7 +303,9 @@ export function MemberProfilePage() {
                   <label className="block text-xs font-medium text-black/40 mb-1">
                     {t('memberProfile.fields.department')}
                   </label>
-                  <p className={`text-sm ${profileData.department ? 'text-black/90' : 'text-black/30 italic'}`}>
+                  <p
+                    className={`text-sm ${profileData.department ? 'text-black/90' : 'text-black/30 italic'}`}
+                  >
                     {profileData.department || t('memberProfile.fields.noDepartment')}
                   </p>
                 </div>
@@ -351,17 +342,13 @@ export function MemberProfilePage() {
                       {t('memberProfile.sections.notes')}
                     </h2>
                   </div>
-                  <span className="text-xs text-black/40">
-                    {t('memberProfile.notesHint')}
-                  </span>
+                  <span className="text-xs text-black/40">{t('memberProfile.notesHint')}</span>
                 </div>
               </div>
               <div className="p-6">
                 <p
                   className={`whitespace-pre-wrap text-sm leading-relaxed ${
-                    profileData.notes
-                      ? 'text-black/70'
-                      : 'text-black/30 italic'
+                    profileData.notes ? 'text-black/70' : 'text-black/30 italic'
                   }`}
                 >
                   {profileData.notes || t('memberProfile.fields.noNotes')}
@@ -395,21 +382,19 @@ export function MemberProfilePage() {
                       className="group flex w-full items-center gap-3 px-6 py-4 text-left transition-colors hover:bg-black/[0.01]"
                     >
                       <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-black/[0.06] bg-black/[0.01] transition-colors group-hover:border-brand group-hover:bg-brand/5">
-                        <Buildings size={18} className="text-black/40 transition-colors group-hover:text-brand" />
+                        <Buildings
+                          size={18}
+                          className="text-black/40 transition-colors group-hover:text-brand"
+                        />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="truncate text-sm font-medium text-black/90 transition-colors group-hover:text-brand">
                           {m.organization.name}
                         </p>
-                        <p className="truncate text-xs text-black/40">
-                          {m.organization.slug}
-                        </p>
+                        <p className="truncate text-xs text-black/40">{m.organization.slug}</p>
                       </div>
-                      <Tag
-                        variant={m.role === 'admin' ? 'green' : 'blue'}
-                        className="shrink-0"
-                      >
-                        {m.role === 'admin' ? 'Admin' : 'Operation'}
+                      <Tag variant={m.role === 'admin' ? 'green' : 'blue'} className="shrink-0">
+                        {t(`memberProfile.roles.${m.role}`)}
                       </Tag>
                     </button>
                   ))}
@@ -421,14 +406,14 @@ export function MemberProfilePage() {
             <div className="rounded-xl border border-black/[0.08] bg-gradient-to-br from-blue/[0.02] to-transparent p-6">
               <div className="mb-3 flex items-center gap-2 text-blue">
                 <Info size={18} weight="fill" />
-                <h3 className="text-sm font-semibold">Profile Information</h3>
+                <h3 className="text-sm font-semibold">{t('memberProfile.profileInfo')}</h3>
               </div>
               <p className="text-xs leading-relaxed text-black/50">
                 {isSelf
-                  ? "This is your personal profile. You can edit your contact information and bio."
+                  ? t('memberProfile.profileInfoSelf')
                   : canEdit
-                    ? "You have permission to edit this member's profile information."
-                    : "You are viewing this member's profile in read-only mode."}
+                    ? t('memberProfile.profileInfoAdmin')
+                    : t('memberProfile.profileInfoReadOnly')}
               </p>
             </div>
           </div>

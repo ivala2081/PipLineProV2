@@ -57,7 +57,15 @@
       "Bash(pkill:*)",
       "Bash(git filter-branch:*)",
       "Bash(git stash pop:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(npm audit:*)",
+      "Bash(wc -l:*)",
+      "Bash(file:*)",
+      "Bash(head:*)",
+      "Bash(npm ls:*)",
+      "Bash(grep:*)",
+      "Bash(chmod:*)",
+      "Bash(npx eslint:*)"
     ]
   }
 }

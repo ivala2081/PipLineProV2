@@ -13,7 +13,8 @@
     "psps": "Kasalar",
     "future": "Gelecek",
     "members": "Üyeler",
-    "organizations": "Organizasyonlar"
+    "organizations": "Organizasyonlar",
+    "security": "Güvenlik"
   },
   "layout": {
     "noOrganization": "Organizasyon Yok",
@@ -110,7 +111,9 @@
       "beforeCommission": "Komisyon öncesi",
       "editRate": "Kuru düzenle",
       "resetRate": "Ortalamaya sıfırla",
-      "original": "ort"
+      "original": "ort",
+      "usdTransferCount": "{{count}} USD",
+      "applyingRate": "Uygulanıyor..."
     },
     "typeValues": {
       "Payment": "Ödeme",
@@ -201,7 +204,14 @@
       "commissionByPsp": "Kasaya Göre Komisyon",
       "topCustomers": "En Çok İşlem Yapan Müşteriler",
       "typeBreakdown": "Transfer Türü Dağılımı",
-      "noData": "Bu ay için transfer bulunamadı."
+      "noData": "Bu ay için transfer bulunamadı.",
+      "peakDay": "En Yoğun Gün",
+      "activeDays": "Aktif Gün",
+      "avgDailyVolume": "Günlük Ort. Hacim",
+      "avgPerTransfer": "Transfer Başına Ort.",
+      "vsLastMonth": "geçen aya göre",
+      "noChange": "Değişiklik yok",
+      "noPrevData": "Önceki veri yok"
     },
     "settings": {
       "title": "Arama Ayarları",
@@ -337,7 +347,8 @@
     "out": "Çıkış",
     "tabs": {
       "ledger": "Kasa Defteri",
-      "wallets": "Cüzdanlar"
+      "wallets": "Cüzdanlar",
+      "reconciliation": "Mutabakat"
     },
     "columns": {
       "description": "Açıklama",
@@ -389,6 +400,96 @@
       "activeWallets": "Aktif Cüzdanlar",
       "lastEntry": "Son Kayıt"
     },
+    "import": {
+      "button": "CSV İçe Aktar",
+      "title": "Kasa Kayıtlarını İçe Aktar",
+      "subtitle": "Toplu muhasebe kaydı oluşturmak için CSV dosyası yükleyin",
+      "steps": {
+        "upload": "Yükle",
+        "preview": "Önizleme",
+        "results": "Sonuçlar"
+      },
+      "upload": {
+        "dropzone": "Buraya CSV dosyası bırakın veya tıklayarak seçin",
+        "hint": "Google Sheets CSV dışa aktarma formatı (.csv)",
+        "invalidFile": "Lütfen bir .csv dosyası seçin",
+        "parseError": "CSV dosyası okunamadı",
+        "rowsDetected": "{{count}} kayıt bulundu"
+      },
+      "preview": {
+        "total": "Toplam",
+        "valid": "Geçerli",
+        "errors": "Hatalar",
+        "dateCol": "Tarih",
+        "status": "Durum",
+        "filter": {
+          "all": "Tümü",
+          "valid": "Geçerli",
+          "errors": "Hatalar"
+        }
+      },
+      "importing": "İçe aktarılıyor...",
+      "batch": "Grup {{current}} / {{total}}",
+      "importButton": "{{count}} kayıt içe aktar",
+      "back": "Geri",
+      "close": "Kapat",
+      "results": {
+        "failed": "İçe aktarma başarısız",
+        "partial": "Kısmen içe aktarıldı",
+        "partialDetail": "{{total}} kayıttan {{inserted}} tanesi içe aktarıldı. {{failed}} başarısız.",
+        "success": "İçe aktarma tamamlandı",
+        "successDetail": "{{count}} kayıt başarıyla içe aktarıldı"
+      }
+    },
+    "dailySummary": {
+      "label": "Özet",
+      "entries": "kayıt",
+      "entryCount": "{{count}} kayıt",
+      "inOutCount": "{{inCount}}↑ · {{outCount}}↓",
+      "net": "Net",
+      "byRegister": "Kasaya Göre"
+    },
+    "reconciliation": {
+      "title": "Aylık Mutabakat",
+      "subtitle": "Kasa bakiyelerini dış kayıtlarla karşılaştırın.",
+      "empty": "Bu ay için muhasebe kaydı bulunamadı.",
+      "fields": {
+        "devir": "Devir",
+        "giren": "Giren",
+        "cikan": "Çıkan",
+        "net": "Net",
+        "usdCevrim": "USD Çevrim",
+        "kur": "Kur",
+        "kasaToplam": "Kasa Toplam",
+        "beklTahs": "Beklenen Tahsilat",
+        "grandTotal": "Genel Toplam"
+      },
+      "teyit": {
+        "title": "Teyit",
+        "addEntry": "Satır Ekle",
+        "label": "Açıklama",
+        "amount": "Tutar",
+        "currency": "Para Birimi",
+        "net": "Teyit Net",
+        "fark": "Fark",
+        "noDiscrepancy": "Fark yok",
+        "hasDiscrepancy": "Fark tespit edildi"
+      },
+      "settings": {
+        "title": "Ayarlar",
+        "devirOverrides": "Devir Düzenlemeleri",
+        "kurOverride": "Kur Düzenlemesi",
+        "autoCalculated": "Otomatik hesaplandı",
+        "manualOverride": "Manuel düzenleme",
+        "resetToAuto": "Otomatiğe Sıfırla",
+        "save": "Ayarları Kaydet",
+        "saving": "Kaydediliyor..."
+      },
+      "badges": {
+        "auto": "otomatik",
+        "override": "düzenleme"
+      }
+    },
     "actions": {
       "edit": "Düzenle",
       "delete": "Sil"
@@ -426,6 +527,15 @@
       "tokenAllocation": "Token Dağılımı",
       "chainAllocation": "Zincir Dağılımı"
     },
+    "dailyClosing": {
+      "noData": "Günlük veri bulunamadı",
+      "date": "Tarih",
+      "tx": "İşlem",
+      "in": "GİRİŞ",
+      "out": "ÇIKIŞ",
+      "net": "NET",
+      "balance": "BAKİYE"
+    },
     "transactions": {
       "title": "İşlemler",
       "date": "Tarih",
@@ -433,6 +543,9 @@
       "amount": "Tutar",
       "counterparty": "Karşı Taraf",
       "hash": "İşlem Hash",
+      "from": "Gönderen",
+      "to": "Alıcı",
+      "token": "Token",
       "empty": "İşlem bulunamadı",
       "loadMore": "Daha fazla yükle",
       "loading": "Yükleniyor...",
@@ -760,6 +873,43 @@
     "validationNumber": "Şifre bir rakam içermelidir",
     "validationMatch": "Şifreler eşleşmiyor"
   },
+  "security": {
+    "title": "Güvenlik Paneli",
+    "subtitle": "Güvenlik olaylarını ve denetim kayıtlarını izleyin",
+    "accessDenied": "Erişim Engellendi",
+    "accessDeniedDescription": "Bu sayfa yalnızca god rolündeki yöneticiler tarafından erişilebilir.",
+    "suspiciousLogins": "Şüpheli Giriş Denemeleri (24s)",
+    "suspiciousLoginsDescription": "5'ten fazla başarısız giriş denemesi olan IP'ler",
+    "noSuspiciousActivity": "Şüpheli etkinlik tespit edilmedi",
+    "godActivity": "God Rolü Etkinliği (Son 7 Gün)",
+    "godActivityDescription": "God yöneticilerinin son işlemleri",
+    "noGodActivity": "Son 7 günde god etkinliği yok",
+    "securityActions": "Güvenlik İşlemleri",
+    "securityActionsNote": "Güvenlik işlemleri için Supabase SQL Editörünü veya terminal komutlarını kullanın. Belge:",
+    "metricsUnavailable": "Güvenlik metrikleri şu anda kullanılamıyor. Veritabanı fonksiyonunun dağıtılması gerekebilir.",
+    "refreshing": "Otomatik yenileme 30sn",
+    "tabs": {
+      "failedLogins": "Başarısız Girişler",
+      "auditLog": "Denetim Kaydı"
+    },
+    "dialog": {
+      "title": "Denetim Detayları",
+      "oldValues": "Önceki Değerler",
+      "newValues": "Yeni Değerler",
+      "noData": "Veri yok"
+    },
+    "columns": {
+      "ipAddress": "IP Adresi",
+      "failedAttempts": "Başarısız Deneme",
+      "lastAttempt": "Son Deneme",
+      "time": "Zaman",
+      "user": "Kullanıcı",
+      "action": "İşlem",
+      "table": "Tablo",
+      "details": "Detaylar",
+      "view": "Görüntüle"
+    }
+  },
   "memberProfile": {
     "title": "Üye Profili",
     "backToMembers": "Üyelere Dön",
@@ -769,6 +919,14 @@
     "save": "Değişiklikleri Kaydet",
     "saving": "Kaydediliyor...",
     "cancel": "İptal",
+    "roles": {
+      "admin": "Admin",
+      "operation": "Operasyon"
+    },
+    "profileInfo": "Profil Bilgisi",
+    "profileInfoSelf": "Bu sizin kişisel profiliniz. İletişim bilgilerinizi ve biyografinizi düzenleyebilirsiniz.",
+    "profileInfoAdmin": "Bu üyenin profil bilgilerini düzenleme yetkiniz var.",
+    "profileInfoReadOnly": "Bu üyenin profilini salt okunur modda görüntülüyorsunuz.",
     "sections": {
       "contactInfo": "İletişim Bilgileri",
       "bio": "Biyografi",
@@ -796,7 +954,9 @@
     },
     "toast": {
       "updated": "Profil başarıyla güncellendi",
-      "error": "Profil güncellenemedi. Lütfen tekrar deneyin."
+      "error": "Profil güncellenemedi. Lütfen tekrar deneyin.",
+      "avatarUpdated": "Profil fotoğrafı başarıyla güncellendi",
+      "avatarRemoved": "Profil fotoğrafı kaldırıldı"
     },
     "notesHint": "Yalnızca yöneticiler görebilir"
   }

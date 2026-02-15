@@ -1,26 +1,22 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  Plus,
-  Receipt,
-  Wallet,
-  CalendarBlank,
-} from '@phosphor-icons/react'
+import { Plus, UploadSimple } from '@phosphor-icons/react'
 import { useAccountingQuery } from '@/hooks/queries/useAccountingQuery'
 import { useWalletsQuery } from '@/hooks/queries/useWalletsQuery'
 import type { AccountingEntry } from '@/lib/database.types'
-import { Button, Tabs, TabsList, TabsTrigger, TabsContent, StatCard } from '@ds'
-import { LedgerSummary } from './LedgerSummary'
+import { Button, Tabs, TabsList, TabsTrigger, TabsContent } from '@ds'
 import { LedgerTable } from './LedgerTable'
 import { WalletsTab } from './WalletsTab'
 import { EntryDialog } from './EntryDialog'
 import { DeleteEntryDialog } from './DeleteEntryDialog'
 import { WalletDialog } from './WalletDialog'
+import { LedgerImportDialog } from './LedgerImportDialog'
+import { ReconciliationTab } from './ReconciliationTab'
 
 /* ── Main Page ────────────────────────────────────────── */
 
 export function AccountingPage() {
-  const { t, i18n } = useTranslation('pages')
+  const { t } = useTranslation('pages')
   const accounting = useAccountingQuery()
   const wallets = useWalletsQuery()
 
@@ -29,6 +25,7 @@ export function AccountingPage() {
   const [editingEntry, setEditingEntry] = useState<AccountingEntry | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<AccountingEntry | null>(null)
   const [walletDialogOpen, setWalletDialogOpen] = useState(false)
+  const [importDialogOpen, setImportDialogOpen] = useState(false)
 
   const handleAddEntry = () => {
     setEditingEntry(null)
@@ -44,15 +41,6 @@ export function AccountingPage() {
     setDeleteTarget(entry)
   }
 
-  // Derive last entry date
-  const lastEntryDate = accounting.entries[0]?.entry_date
-  const lastDateLabel = lastEntryDate
-    ? new Date(lastEntryDate + 'T00:00:00').toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US', {
-        day: 'numeric',
-        month: 'short',
-      })
-    : '—'
-
   return (
     <div className="space-y-6">
       {/* Page header */}
@@ -62,10 +50,16 @@ export function AccountingPage() {
           <p className="mt-1 text-sm text-black/60">{t('accounting.subtitle')}</p>
         </div>
         {activeTab === 'ledger' && (
-          <Button variant="filled" onClick={handleAddEntry}>
-            <Plus size={16} weight="bold" />
-            {t('accounting.addEntry')}
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
+              <UploadSimple size={16} weight="bold" />
+              {t('accounting.import.button', 'Import CSV')}
+            </Button>
+            <Button variant="filled" onClick={handleAddEntry}>
+              <Plus size={16} weight="bold" />
+              {t('accounting.addEntry')}
+            </Button>
+          </div>
         )}
         {activeTab === 'wallets' && (
           <Button variant="filled" onClick={() => setWalletDialogOpen(true)}>
@@ -75,43 +69,12 @@ export function AccountingPage() {
         )}
       </div>
 
-      {/* Dashboard overview: summary cards */}
-      <LedgerSummary
-        summary={accounting.summary}
-        isLoading={accounting.isSummaryLoading}
-      />
-
-      {/* Quick stats row */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <StatCard
-          icon={Receipt}
-          label={t('accounting.stats.totalEntries')}
-          value={String(accounting.total)}
-          isLoading={accounting.isLoading}
-        />
-        <StatCard
-          icon={Wallet}
-          label={t('accounting.stats.activeWallets')}
-          value={String(wallets.wallets.length)}
-          isLoading={wallets.isLoading}
-        />
-        <StatCard
-          icon={CalendarBlank}
-          label={t('accounting.stats.lastEntry')}
-          value={lastDateLabel}
-          isLoading={accounting.isLoading}
-        />
-      </div>
-
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="ledger">
-            {t('accounting.tabs.ledger')}
-          </TabsTrigger>
-          <TabsTrigger value="wallets">
-            {t('accounting.tabs.wallets')}
-          </TabsTrigger>
+          <TabsTrigger value="ledger">{t('accounting.tabs.ledger')}</TabsTrigger>
+          <TabsTrigger value="wallets">{t('accounting.tabs.wallets')}</TabsTrigger>
+          <TabsTrigger value="reconciliation">{t('accounting.tabs.reconciliation')}</TabsTrigger>
         </TabsList>
         <TabsContent value="ledger">
           <LedgerTable
@@ -123,10 +86,14 @@ export function AccountingPage() {
             onPageChange={accounting.setPage}
             onEdit={handleEditEntry}
             onDelete={handleDeleteEntry}
+            fetchEntriesByDate={accounting.fetchEntriesByDate}
           />
         </TabsContent>
         <TabsContent value="wallets">
           <WalletsTab wallets={wallets} />
+        </TabsContent>
+        <TabsContent value="reconciliation">
+          <ReconciliationTab />
         </TabsContent>
       </Tabs>
 
@@ -159,6 +126,8 @@ export function AccountingPage() {
           }
         }}
       />
+
+      <LedgerImportDialog open={importDialogOpen} onClose={() => setImportDialogOpen(false)} />
 
       <WalletDialog
         open={walletDialogOpen}

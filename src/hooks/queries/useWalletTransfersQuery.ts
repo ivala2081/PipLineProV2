@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/queryKeys'
 import {
   getTransferHistory,
   type NormalizedTransfer,
   type TransferHistoryResult,
-} from '@/lib/tatumService'
+} from '@/lib/tatumServiceSecure'
 
 interface UseWalletTransfersReturn {
   /** All accumulated transfers fetched so far */
@@ -30,6 +30,7 @@ export function useWalletTransfersQuery(
   const [allTxs, setAllTxs] = useState<NormalizedTransfer[]>([])
   const [nextCursor, setNextCursor] = useState<string | undefined>(undefined)
   const [hasMore, setHasMore] = useState(false)
+  const [prevData, setPrevData] = useState<TransferHistoryResult | undefined>(undefined)
 
   // Use page number as part of query key so each "loadMore" triggers a new fetch
   const { data, isLoading, error, refetch } = useQuery<TransferHistoryResult>({
@@ -41,20 +42,20 @@ export function useWalletTransfersQuery(
   })
 
   // Sync API results into accumulated state
-  useEffect(() => {
-    if (!data) return
+  if (data && data !== prevData) {
+    setPrevData(data)
     if (page === 0) {
       setAllTxs(data.transfers)
     } else {
-      setAllTxs((prev) => {
-        const seen = new Set(prev.map((tx) => tx.hash))
-        const fresh = data.transfers.filter((tx) => !seen.has(tx.hash))
-        return [...prev, ...fresh]
-      })
+      const seen = new Set(allTxs.map((tx) => tx.hash))
+      const fresh = data.transfers.filter((tx) => !seen.has(tx.hash))
+      if (fresh.length > 0) {
+        setAllTxs([...allTxs, ...fresh])
+      }
     }
     setNextCursor(data.nextCursor)
     setHasMore(data.hasMore)
-  }, [data, page])
+  }
 
   const loadMore = useCallback(() => {
     if (!hasMore || !nextCursor) return

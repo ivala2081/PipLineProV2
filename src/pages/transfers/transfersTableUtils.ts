@@ -87,13 +87,19 @@ export function groupByDate(transfers: TransferRow[], lang: string): DateGroup[]
   }))
 }
 
+/* ── USD helpers ────────────────────────────────────── */
+
+export function countUsdTransfers(transfers: TransferRow[]): number {
+  return transfers.filter(
+    (t) => t.currency === 'USD' && !t.type?.name?.toLowerCase().includes('blocked'),
+  ).length
+}
+
 /* ── Day Summary ────────────────────────────────────── */
 
 export function computeDaySummary(transfers: TransferRow[]): DaySummary {
   // Exclude blocked transfers from all calculations
-  const active = transfers.filter(
-    (t) => !t.type?.name?.toLowerCase().includes('blocked'),
-  )
+  const active = transfers.filter((t) => !t.type?.name?.toLowerCase().includes('blocked'))
 
   let deposits = 0
   let withdrawals = 0
@@ -110,8 +116,7 @@ export function computeDaySummary(transfers: TransferRow[]): DaySummary {
 
   for (const t of active) {
     const tryAmount = Math.abs(t.amount_try ?? 0)
-    const commTry =
-      t.currency === 'USD' ? t.commission * (t.exchange_rate ?? 1) : t.commission
+    const commTry = t.currency === 'USD' ? t.commission * (t.exchange_rate ?? 1) : t.commission
     const rate = t.exchange_rate ?? 1
 
     if (t.category?.is_deposit) {

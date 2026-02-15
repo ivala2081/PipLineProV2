@@ -1,28 +1,21 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors.ts'
+import { corsHeaders, handleCors } from '../_shared/cors.ts'
 import { createAdminClient } from '../_shared/supabase-admin.ts'
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-function jsonResponse(
-  body: Record<string, unknown>,
-  status = 200,
-): Response {
+function jsonResponse(body: Record<string, unknown>, status = 200, origin?: string): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders(origin), 'Content-Type': 'application/json' },
   })
 }
 
-function errorResponse(
-  status: number,
-  code: string,
-  message: string,
-): Response {
-  return jsonResponse({ error: code, message }, status)
+function errorResponse(status: number, code: string, message: string, origin?: string): Response {
+  return jsonResponse({ error: code, message }, status, origin)
 }
 
 /* ------------------------------------------------------------------ */
@@ -93,11 +86,7 @@ function buildNewUserEmailHtml(
 </html>`
 }
 
-function buildExistingUserEmailHtml(
-  orgName: string,
-  role: string,
-  loginUrl: string,
-): string {
+function buildExistingUserEmailHtml(orgName: string, role: string, loginUrl: string): string {
   const roleLabel = role.charAt(0).toUpperCase() + role.slice(1)
   return `<!DOCTYPE html>
 <html>
@@ -145,16 +134,17 @@ function buildExistingUserEmailHtml(
 /* ------------------------------------------------------------------ */
 
 serve(async (req: Request) => {
-  // CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  // Handle CORS preflight
+  const corsResponse = handleCors(req)
+  if (corsResponse) return corsResponse
+
+  const origin = req.headers.get('origin') || undefined
 
   try {
     // ── 1. Authenticate the caller ──────────────────────────────────
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      return errorResponse(401, 'UNAUTHORIZED', 'Missing authorization header')
+      return errorResponse(401, 'UNAUTHORIZED', 'Missing authorization header', origin)
     }
 
     const anonClient = createClient(
@@ -168,7 +158,7 @@ serve(async (req: Request) => {
     } = await anonClient.auth.getUser()
 
     if (authError || !caller) {
-      return errorResponse(401, 'UNAUTHORIZED', 'Invalid token')
+      return errorResponse(401, 'UNAUTHORIZED', 'Invalid token', origin)
     }
 
     // ── 2. Parse & validate body ────────────────────────────────────
@@ -182,13 +172,18 @@ serve(async (req: Request) => {
     }
 
     if (!orgId || !email || !role || !password) {
-      return errorResponse(400, 'VALIDATION_ERROR', 'Missing required fields')
+      return errorResponse(400, 'VALIDATION_ERROR', 'Missing required fields', origin)
     }
     if (!['admin', 'operation'].includes(role)) {
-      return errorResponse(400, 'VALIDATION_ERROR', 'Invalid role')
+      return errorResponse(400, 'VALIDATION_ERROR', 'Invalid role', origin)
     }
     if (password.length < 8) {
-      return errorResponse(400, 'VALIDATION_ERROR', 'Password must be at least 8 characters')
+      return errorResponse(
+        400,
+        'VALIDATION_ERROR',
+        'Password must be at least 8 characters',
+        origin,
+      )
     }
 
     const normalizedEmail = email.toLowerCase().trim()
@@ -214,7 +209,7 @@ serve(async (req: Request) => {
         .single()
 
       if (membership?.role !== 'admin') {
-        return errorResponse(403, 'FORBIDDEN', 'Not authorized to invite members')
+        return errorResponse(403, 'FORBIDDEN', 'Not authorized to invite members', origin)
       }
     }
 
@@ -226,7 +221,7 @@ serve(async (req: Request) => {
       .single()
 
     if (!org) {
-      return errorResponse(404, 'ORG_NOT_FOUND', 'Organization not found')
+      return errorResponse(404, 'ORG_NOT_FOUND', 'Organization not found', origin)
     }
 
     // ── 6. Insert invitation record ─────────────────────────────────
@@ -247,6 +242,7 @@ serve(async (req: Request) => {
           409,
           'DUPLICATE_INVITATION',
           'A pending invitation already exists for this email',
+          origin,
         )
       }
       throw invError
@@ -267,10 +263,9 @@ serve(async (req: Request) => {
         userAlreadyExisted = true
 
         // Look up existing user ID
-        const { data: userId } = await adminClient.rpc(
-          'get_user_id_by_email',
-          { _email: normalizedEmail },
-        )
+        const { data: userId } = await adminClient.rpc('get_user_id_by_email', {
+          _email: normalizedEmail,
+        })
 
         if (userId) {
           // Add to org directly (upsert to handle edge case)
@@ -292,12 +287,9 @@ serve(async (req: Request) => {
         }
       } else {
         // Unexpected error — roll back invitation
-        await adminClient
-          .from('organization_invitations')
-          .delete()
-          .eq('id', invitation.id)
+        await adminClient.from('organization_invitations').delete().eq('id', invitation.id)
 
-        return errorResponse(500, 'USER_CREATION_FAILED', createError.message)
+        return errorResponse(500, 'USER_CREATION_FAILED', createError.message, origin)
       }
     }
 
@@ -316,8 +308,7 @@ serve(async (req: Request) => {
         ? `You've been added to ${org.name}`
         : `You've been invited to ${org.name}`
 
-      const fromEmail =
-        Deno.env.get('RESEND_FROM_EMAIL') || 'PipLinePro <onboarding@resend.dev>'
+      const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'PipLinePro <onboarding@resend.dev>'
 
       const resendRes = await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -341,14 +332,23 @@ serve(async (req: Request) => {
     }
 
     // ── 9. Success ──────────────────────────────────────────────────
-    return jsonResponse({
-      success: true,
-      userAlreadyExisted,
-      emailSent,
-      invitationId: invitation.id,
-    })
+    return jsonResponse(
+      {
+        success: true,
+        userAlreadyExisted,
+        emailSent,
+        invitationId: invitation.id,
+      },
+      200,
+      origin,
+    )
   } catch (err) {
     console.error('Unhandled error:', err)
-    return errorResponse(500, 'INTERNAL_ERROR', 'An unexpected error occurred')
+    return errorResponse(
+      500,
+      'INTERNAL_ERROR',
+      'An unexpected error occurred',
+      req.headers.get('origin') || undefined,
+    )
   }
 })

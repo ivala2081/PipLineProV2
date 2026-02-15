@@ -13,7 +13,8 @@
     "psps": "PSPs",
     "future": "Future",
     "members": "Members",
-    "organizations": "Organizations"
+    "organizations": "Organizations",
+    "security": "Security"
   },
   "layout": {
     "noOrganization": "No Organization",
@@ -110,7 +111,9 @@
       "beforeCommission": "Before commission",
       "editRate": "Adjust rate",
       "resetRate": "Reset to average",
-      "original": "avg"
+      "original": "avg",
+      "usdTransferCount": "{{count}} USD",
+      "applyingRate": "Applying..."
     },
     "typeValues": {
       "Payment": "Payment",
@@ -201,7 +204,14 @@
       "commissionByPsp": "Commission by PSP",
       "topCustomers": "Top Customers",
       "typeBreakdown": "Transfer Type Breakdown",
-      "noData": "No transfers found for this month."
+      "noData": "No transfers found for this month.",
+      "peakDay": "Peak Day",
+      "activeDays": "Active Days",
+      "avgDailyVolume": "Avg Daily Volume",
+      "avgPerTransfer": "Avg per Transfer",
+      "vsLastMonth": "vs last month",
+      "noChange": "No change",
+      "noPrevData": "No prev. data"
     },
     "settings": {
       "title": "Lookup Settings",
@@ -337,7 +347,8 @@
     "out": "Out",
     "tabs": {
       "ledger": "Ledger",
-      "wallets": "Wallets"
+      "wallets": "Wallets",
+      "reconciliation": "Reconciliation"
     },
     "columns": {
       "description": "Description",
@@ -389,6 +400,96 @@
       "activeWallets": "Active Wallets",
       "lastEntry": "Last Entry"
     },
+    "import": {
+      "button": "Import CSV",
+      "title": "Import Ledger Entries",
+      "subtitle": "Upload a CSV file to bulk-import accounting entries",
+      "steps": {
+        "upload": "Upload",
+        "preview": "Preview",
+        "results": "Results"
+      },
+      "upload": {
+        "dropzone": "Drop a CSV file here, or click to browse",
+        "hint": "Google Sheets CSV export (.csv)",
+        "invalidFile": "Please select a .csv file",
+        "parseError": "Failed to parse CSV",
+        "rowsDetected": "{{count}} entries detected"
+      },
+      "preview": {
+        "total": "Total",
+        "valid": "Valid",
+        "errors": "Errors",
+        "dateCol": "Date",
+        "status": "Status",
+        "filter": {
+          "all": "All",
+          "valid": "Valid",
+          "errors": "Errors"
+        }
+      },
+      "importing": "Importing...",
+      "batch": "Batch {{current}} of {{total}}",
+      "importButton": "Import {{count}} entries",
+      "back": "Back",
+      "close": "Close",
+      "results": {
+        "failed": "Import failed",
+        "partial": "Partially imported",
+        "partialDetail": "Imported {{inserted}} of {{total}} entries. {{failed}} failed.",
+        "success": "Import complete",
+        "successDetail": "Successfully imported {{count}} entries"
+      }
+    },
+    "dailySummary": {
+      "label": "Summary",
+      "entries": "entries",
+      "entryCount": "{{count}} entries",
+      "inOutCount": "{{inCount}}↑ · {{outCount}}↓",
+      "net": "Net",
+      "byRegister": "By Register"
+    },
+    "reconciliation": {
+      "title": "Monthly Reconciliation",
+      "subtitle": "Cross-verify register balances against external records.",
+      "empty": "No accounting entries for this month.",
+      "fields": {
+        "devir": "Carry-Forward",
+        "giren": "In",
+        "cikan": "Out",
+        "net": "Net",
+        "usdCevrim": "USD Equivalent",
+        "kur": "Exchange Rate (KUR)",
+        "kasaToplam": "Total Fund (KASA TOPLAM)",
+        "beklTahs": "Expected Receivables",
+        "grandTotal": "Grand Total"
+      },
+      "teyit": {
+        "title": "Cross-Verification (TEYİT)",
+        "addEntry": "Add Entry",
+        "label": "Label",
+        "amount": "Amount",
+        "currency": "Currency",
+        "net": "TEYİT Net",
+        "fark": "Discrepancy (FARK)",
+        "noDiscrepancy": "No discrepancy",
+        "hasDiscrepancy": "Discrepancy detected"
+      },
+      "settings": {
+        "title": "Settings",
+        "devirOverrides": "Carry-Forward Overrides",
+        "kurOverride": "Exchange Rate Override",
+        "autoCalculated": "Auto-calculated",
+        "manualOverride": "Manual override",
+        "resetToAuto": "Reset to Auto",
+        "save": "Save Settings",
+        "saving": "Saving..."
+      },
+      "badges": {
+        "auto": "auto",
+        "override": "override"
+      }
+    },
     "actions": {
       "edit": "Edit",
       "delete": "Delete"
@@ -426,6 +527,15 @@
       "tokenAllocation": "Token Allocation",
       "chainAllocation": "Chain Allocation"
     },
+    "dailyClosing": {
+      "noData": "No daily data available",
+      "date": "Date",
+      "tx": "Tx",
+      "in": "IN",
+      "out": "OUT",
+      "net": "NET",
+      "balance": "BALANCE"
+    },
     "transactions": {
       "title": "Transactions",
       "date": "Date",
@@ -433,6 +543,9 @@
       "amount": "Amount",
       "counterparty": "Counterparty",
       "hash": "Tx Hash",
+      "from": "From",
+      "to": "To",
+      "token": "Token",
       "empty": "No transactions found",
       "loadMore": "Load more",
       "loading": "Loading...",
@@ -760,6 +873,43 @@
     "validationNumber": "Password must contain a number",
     "validationMatch": "Passwords do not match"
   },
+  "security": {
+    "title": "Security Dashboard",
+    "subtitle": "Monitor security events and audit logs",
+    "accessDenied": "Access Denied",
+    "accessDeniedDescription": "This page is only accessible to god role administrators.",
+    "suspiciousLogins": "Suspicious Login Attempts (24h)",
+    "suspiciousLoginsDescription": "IPs with more than 5 failed login attempts",
+    "noSuspiciousActivity": "No suspicious activity detected",
+    "godActivity": "God Role Activity (Last 7 Days)",
+    "godActivityDescription": "Recent actions by god administrators",
+    "noGodActivity": "No god activity in the last 7 days",
+    "securityActions": "Security Actions",
+    "securityActionsNote": "For security actions, use the Supabase SQL Editor or terminal commands as documented in",
+    "metricsUnavailable": "Security metrics are currently unavailable. The database function may need to be deployed.",
+    "refreshing": "Auto-refresh 30s",
+    "tabs": {
+      "failedLogins": "Failed Logins",
+      "auditLog": "Audit Log"
+    },
+    "dialog": {
+      "title": "Audit Details",
+      "oldValues": "Previous Values",
+      "newValues": "New Values",
+      "noData": "No data"
+    },
+    "columns": {
+      "ipAddress": "IP Address",
+      "failedAttempts": "Failed Attempts",
+      "lastAttempt": "Last Attempt",
+      "time": "Time",
+      "user": "User",
+      "action": "Action",
+      "table": "Table",
+      "details": "Details",
+      "view": "View"
+    }
+  },
   "memberProfile": {
     "title": "Member Profile",
     "backToMembers": "Back to Members",
@@ -769,6 +919,14 @@
     "save": "Save Changes",
     "saving": "Saving...",
     "cancel": "Cancel",
+    "roles": {
+      "admin": "Admin",
+      "operation": "Operation"
+    },
+    "profileInfo": "Profile Information",
+    "profileInfoSelf": "This is your personal profile. You can edit your contact information and bio.",
+    "profileInfoAdmin": "You have permission to edit this member's profile information.",
+    "profileInfoReadOnly": "You are viewing this member's profile in read-only mode.",
     "sections": {
       "contactInfo": "Contact Information",
       "bio": "Bio",
@@ -796,7 +954,9 @@
     },
     "toast": {
       "updated": "Profile updated successfully",
-      "error": "Failed to update profile. Please try again."
+      "error": "Failed to update profile. Please try again.",
+      "avatarUpdated": "Profile picture updated successfully",
+      "avatarRemoved": "Profile picture removed"
     },
     "notesHint": "Only visible to admins"
   }

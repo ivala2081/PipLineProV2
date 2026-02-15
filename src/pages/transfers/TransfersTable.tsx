@@ -1,11 +1,10 @@
 import { useReducer, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  ArrowUp,
-  ChartBar,
-  CaretLeft,
-  CaretRight,
-} from '@phosphor-icons/react'
+import { useQueryClient } from '@tanstack/react-query'
+import { ArrowUp, ChartBar, CaretLeft, CaretRight } from '@phosphor-icons/react'
+import { supabase } from '@/lib/supabase'
+import { useOrganization } from '@/app/providers/OrganizationProvider'
+import { queryKeys } from '@/lib/queryKeys'
 import type { TransferRow } from '@/hooks/useTransfers'
 import { TransferAuditDialog } from './TransferAuditDialog'
 import { TransferRowItem } from './TransferRowItem'
@@ -52,6 +51,7 @@ interface TableState {
   summaryGroup: DateGroup | null
   summaryTransfers: TransferRow[]
   isFetchingSummary: boolean
+  isApplyingRate: boolean
   customRates: Record<string, number>
 }
 
@@ -66,6 +66,8 @@ type TableAction =
   | { type: 'CLOSE_SUMMARY' }
   | { type: 'SET_RATE'; dateKey: string; rate: number }
   | { type: 'RESET_RATE'; dateKey: string }
+  | { type: 'APPLY_RATE_START' }
+  | { type: 'APPLY_RATE_DONE'; transfers: TransferRow[] }
 
 const initialState: TableState = {
   detailRow: null,
@@ -73,6 +75,7 @@ const initialState: TableState = {
   summaryGroup: null,
   summaryTransfers: [],
   isFetchingSummary: false,
+  isApplyingRate: false,
   customRates: {},
 }
 
@@ -101,6 +104,10 @@ function reducer(state: TableState, action: TableAction): TableState {
       delete newRates[action.dateKey]
       return { ...state, customRates: newRates }
     }
+    case 'APPLY_RATE_START':
+      return { ...state, isApplyingRate: true }
+    case 'APPLY_RATE_DONE':
+      return { ...state, isApplyingRate: false, summaryTransfers: action.transfers }
     default:
       return state
   }
@@ -124,6 +131,8 @@ export function TransfersTable({
 }: TransfersTableProps) {
   const { t, i18n } = useTranslation('pages')
   const lang = i18n.language
+  const { currentOrg } = useOrganization()
+  const queryClient = useQueryClient()
   const [state, dispatch] = useReducer(reducer, initialState)
 
   const totalPages = Math.ceil(total / pageSize)
@@ -154,9 +163,55 @@ export function TransfersTable({
     dispatch({ type: 'OPEN_AUDIT', row })
   }, [])
 
-  const handleSaveRate = useCallback((dateKey: string, rate: number) => {
-    dispatch({ type: 'SET_RATE', dateKey, rate })
-  }, [])
+  const handleSaveRate = useCallback(
+    async (dateKey: string, rate: number) => {
+      dispatch({ type: 'SET_RATE', dateKey, rate })
+
+      if (!currentOrg) return
+
+      dispatch({ type: 'APPLY_RATE_START' })
+
+      try {
+        // Fetch all USD transfers for this date
+        const startOfDay = `${dateKey}T00:00:00`
+        const endOfDay = `${dateKey}T23:59:59`
+
+        const { data: usdTransfers } = await supabase
+          .from('transfers')
+          .select('id, amount')
+          .eq('organization_id', currentOrg.id)
+          .eq('currency', 'USD')
+          .gte('transfer_date', startOfDay)
+          .lte('transfer_date', endOfDay)
+
+        if (usdTransfers && usdTransfers.length > 0) {
+          // Update each USD transfer with the new rate and recalculated amount_try
+          await Promise.all(
+            usdTransfers.map((t) =>
+              supabase
+                .from('transfers')
+                .update({
+                  exchange_rate: rate,
+                  amount_try: Math.round(t.amount * rate * 100) / 100,
+                } as never)
+                .eq('id', t.id),
+            ),
+          )
+        }
+
+        // Invalidate transfer queries so lists refresh
+        queryClient.invalidateQueries({ queryKey: queryKeys.transfers.lists() })
+
+        // Re-fetch summary transfers to refresh the dialog in place
+        const refreshed = await fetchTransfersByDate(dateKey)
+        dispatch({ type: 'APPLY_RATE_DONE', transfers: refreshed })
+      } catch (error) {
+        console.error('Failed to apply exchange rate:', error)
+        dispatch({ type: 'APPLY_RATE_DONE', transfers: state.summaryTransfers })
+      }
+    },
+    [currentOrg, fetchTransfersByDate, queryClient, state.summaryTransfers],
+  )
 
   const handleResetRate = useCallback((dateKey: string) => {
     dispatch({ type: 'RESET_RATE', dateKey })
@@ -168,10 +223,7 @@ export function TransfersTable({
     return (
       <div className="space-y-3">
         {Array.from({ length: 2 }).map((_, g) => (
-          <div
-            key={g}
-            className="overflow-hidden rounded-xl border border-black/10"
-          >
+          <div key={g} className="overflow-hidden rounded-xl border border-black/10">
             <div className="flex items-center justify-between bg-black/[0.02] px-4 py-2.5">
               <Skeleton className="h-4 w-48 rounded-md" />
               <Skeleton className="h-7 w-20 rounded-md" />
@@ -231,16 +283,11 @@ export function TransfersTable({
       {/* Date-grouped cards */}
       <div className="space-y-3">
         {groups.map((group) => (
-          <div
-            key={group.dateKey}
-            className="overflow-hidden rounded-xl border border-black/10"
-          >
+          <div key={group.dateKey} className="overflow-hidden rounded-xl border border-black/10">
             {/* Date header */}
             <div className="flex items-center justify-between bg-black/[0.02] px-4 py-2.5">
               <div className="flex items-center gap-2.5">
-                <span className="text-sm font-semibold text-black/70">
-                  {group.label}
-                </span>
+                <span className="text-sm font-semibold text-black/70">{group.label}</span>
                 <Tag variant="default" className="h-5 text-xs">
                   {dateCounts[group.dateKey] ?? group.transfers.length}{' '}
                   {t('transfers.summary.transfersLabel')}
@@ -262,18 +309,12 @@ export function TransfersTable({
               <Table className="min-w-[900px]">
                 <TableHeader>
                   <TableRow className="bg-black/[0.015] hover:bg-black/[0.015]">
-                    <TableHead className={TH_CLASS}>
-                      {t('transfers.columns.fullName')}
-                    </TableHead>
+                    <TableHead className={TH_CLASS}>{t('transfers.columns.fullName')}</TableHead>
                     <TableHead className={TH_CLASS}>
                       {t('transfers.columns.paymentMethod')}
                     </TableHead>
-                    <TableHead className={TH_CLASS}>
-                      {t('transfers.columns.time')}
-                    </TableHead>
-                    <TableHead className={TH_CLASS}>
-                      {t('transfers.columns.category')}
-                    </TableHead>
+                    <TableHead className={TH_CLASS}>{t('transfers.columns.time')}</TableHead>
+                    <TableHead className={TH_CLASS}>{t('transfers.columns.category')}</TableHead>
                     <TableHead className={`${TH_CLASS} text-right`}>
                       {t('transfers.columns.amount')}
                     </TableHead>
@@ -283,15 +324,9 @@ export function TransfersTable({
                     <TableHead className={`${TH_CLASS} text-right`}>
                       {t('transfers.columns.net')}
                     </TableHead>
-                    <TableHead className={TH_CLASS}>
-                      {t('transfers.columns.currency')}
-                    </TableHead>
-                    <TableHead className={TH_CLASS}>
-                      {t('transfers.columns.psp')}
-                    </TableHead>
-                    <TableHead className={TH_CLASS}>
-                      {t('transfers.columns.type')}
-                    </TableHead>
+                    <TableHead className={TH_CLASS}>{t('transfers.columns.currency')}</TableHead>
+                    <TableHead className={TH_CLASS}>{t('transfers.columns.psp')}</TableHead>
+                    <TableHead className={TH_CLASS}>{t('transfers.columns.type')}</TableHead>
                     <TableHead className="w-20 px-2" />
                   </TableRow>
                 </TableHeader>
@@ -341,10 +376,7 @@ export function TransfersTable({
                     </PaginationItem>
                   ) : (
                     <PaginationItem key={p}>
-                      <PaginationLink
-                        isActive={page === p}
-                        onClick={() => onPageChange(p)}
-                      >
+                      <PaginationLink isActive={page === p} onClick={() => onPageChange(p)}>
                         {p}
                       </PaginationLink>
                     </PaginationItem>
@@ -371,6 +403,7 @@ export function TransfersTable({
         group={state.summaryGroup}
         transfers={state.summaryTransfers}
         isFetching={state.isFetchingSummary}
+        isApplyingRate={state.isApplyingRate}
         customRates={state.customRates}
         onClose={() => dispatch({ type: 'CLOSE_SUMMARY' })}
         onSaveRate={handleSaveRate}

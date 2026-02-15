@@ -13,28 +13,26 @@ export const queryKeys = {
   lookups: {
     all: ['lookups'] as const,
     psps: (orgId: string) => [...queryKeys.lookups.all, 'psps', orgId] as const,
-    categories: (orgId: string) =>
-      [...queryKeys.lookups.all, 'categories', orgId] as const,
-    paymentMethods: (orgId: string) =>
-      [...queryKeys.lookups.all, 'paymentMethods', orgId] as const,
-    transferTypes: (orgId: string) =>
-      [...queryKeys.lookups.all, 'transferTypes', orgId] as const,
+    categories: (orgId: string) => [...queryKeys.lookups.all, 'categories', orgId] as const,
+    paymentMethods: (orgId: string) => [...queryKeys.lookups.all, 'paymentMethods', orgId] as const,
+    transferTypes: (orgId: string) => [...queryKeys.lookups.all, 'transferTypes', orgId] as const,
   },
   organizations: {
     all: ['organizations'] as const,
     list: () => [...queryKeys.organizations.all, 'list'] as const,
-    detail: (id: string) =>
-      [...queryKeys.organizations.all, 'detail', id] as const,
-    members: (orgId: string) =>
-      [...queryKeys.organizations.all, 'members', orgId] as const,
+    detail: (id: string) => [...queryKeys.organizations.all, 'detail', id] as const,
+    members: (orgId: string) => [...queryKeys.organizations.all, 'members', orgId] as const,
   },
   accounting: {
     all: ['accounting'] as const,
     lists: () => [...queryKeys.accounting.all, 'list'] as const,
     list: (orgId: string, page: number) =>
       [...queryKeys.accounting.lists(), { orgId, page }] as const,
-    summary: (orgId: string) =>
-      [...queryKeys.accounting.all, 'summary', orgId] as const,
+    summary: (orgId: string) => [...queryKeys.accounting.all, 'summary', orgId] as const,
+    reconciliation: (orgId: string, year: number, month: number) =>
+      [...queryKeys.accounting.all, 'reconciliation', orgId, year, month] as const,
+    config: (orgId: string, year: number, month: number) =>
+      [...queryKeys.accounting.all, 'config', orgId, year, month] as const,
   },
   pspRates: {
     all: ['pspRates'] as const,
@@ -43,15 +41,12 @@ export const queryKeys = {
   },
   pspSettlements: {
     all: ['pspSettlements'] as const,
-    byPsp: (pspId: string) =>
-      [...queryKeys.pspSettlements.all, 'byPsp', pspId] as const,
+    byPsp: (pspId: string) => [...queryKeys.pspSettlements.all, 'byPsp', pspId] as const,
   },
   pspDashboard: {
     all: ['pspDashboard'] as const,
-    summary: (orgId: string) =>
-      [...queryKeys.pspDashboard.all, 'summary', orgId] as const,
-    ledger: (pspId: string) =>
-      [...queryKeys.pspDashboard.all, 'ledger', pspId] as const,
+    summary: (orgId: string) => [...queryKeys.pspDashboard.all, 'summary', orgId] as const,
+    ledger: (pspId: string) => [...queryKeys.pspDashboard.all, 'ledger', pspId] as const,
   },
   profiles: {
     all: ['profiles'] as const,
@@ -59,14 +54,10 @@ export const queryKeys = {
   },
   wallets: {
     all: ['wallets'] as const,
-    list: (orgId: string) =>
-      [...queryKeys.wallets.all, 'list', orgId] as const,
-    balances: (walletId: string) =>
-      [...queryKeys.wallets.all, 'balances', walletId] as const,
-    snapshots: (walletId: string) =>
-      [...queryKeys.wallets.all, 'snapshots', walletId] as const,
-    chart: (walletId: string) =>
-      [...queryKeys.wallets.all, 'chart', walletId] as const,
+    list: (orgId: string) => [...queryKeys.wallets.all, 'list', orgId] as const,
+    balances: (walletId: string) => [...queryKeys.wallets.all, 'balances', walletId] as const,
+    snapshots: (walletId: string) => [...queryKeys.wallets.all, 'snapshots', walletId] as const,
+    chart: (walletId: string) => [...queryKeys.wallets.all, 'chart', walletId] as const,
     transfers: (walletId: string, cursor?: string) =>
       [...queryKeys.wallets.all, 'transfers', walletId, cursor ?? ''] as const,
   },
@@ -74,7 +65,6 @@ export const queryKeys = {
     all: ['presence'] as const,
     onlineCount: (orgId: string | undefined) =>
       [...queryKeys.presence.all, 'onlineCount', orgId ?? ''] as const,
-    portfolio: (orgId: string) =>
-      [...queryKeys.presence.all, 'portfolio', orgId] as const,
+    portfolio: (orgId: string) => [...queryKeys.presence.all, 'portfolio', orgId] as const,
   },
 } as const

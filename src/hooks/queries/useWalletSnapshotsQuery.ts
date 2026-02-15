@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { queryKeys } from '@/lib/queryKeys'
-import { getWalletPortfolioWithUsd } from '@/lib/tatumService'
+import { getWalletPortfolioWithUsd } from '@/lib/tatumServiceSecure'
 import type { WalletSnapshot } from '@/lib/database.types'
 
 interface UseWalletSnapshotsReturn {
@@ -71,10 +71,7 @@ export function useWalletSnapshotsQuery(
 
   const deleteMutation = useMutation({
     mutationFn: async (snapshotId: string) => {
-      const { error } = await supabase
-        .from('wallet_snapshots')
-        .delete()
-        .eq('id', snapshotId)
+      const { error } = await supabase.from('wallet_snapshots').delete().eq('id', snapshotId)
       if (error) throw error
     },
     onSuccess: () => {

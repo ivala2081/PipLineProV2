@@ -10,19 +10,20 @@ import {
   Coins,
 } from '@phosphor-icons/react'
 import type { TransferRow } from '@/hooks/useTransfers'
-import { formatNumber, computeDaySummary, type DateGroup } from './transfersTableUtils'
-import { PinDialog } from './PinDialog'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@ds'
+  formatNumber,
+  computeDaySummary,
+  countUsdTransfers,
+  type DateGroup,
+} from './transfersTableUtils'
+import { PinDialog } from './PinDialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@ds'
 
 interface DailySummaryDialogProps {
   group: DateGroup | null
   transfers: TransferRow[]
   isFetching: boolean
+  isApplyingRate: boolean
   customRates: Record<string, number>
   onClose: () => void
   onSaveRate: (dateKey: string, rate: number) => void
@@ -34,6 +35,7 @@ export function DailySummaryDialog({
   group,
   transfers,
   isFetching,
+  isApplyingRate,
   customRates,
   onClose,
   onSaveRate,
@@ -70,6 +72,7 @@ export function DailySummaryDialog({
   if (!group) return null
 
   const s = computeDaySummary(transfers)
+  const usdCount = countUsdTransfers(transfers)
   const customRate = customRates[group.dateKey]
   const effectiveRate = customRate ?? s.dayRate
   const overrideActive = customRate !== undefined
@@ -113,7 +116,8 @@ export function DailySummaryDialog({
                 <p
                   className={`mt-4 font-mono text-[2rem] font-bold leading-none tabular-nums ${s.net >= 0 ? 'text-green' : 'text-red'}`}
                 >
-                  {s.net >= 0 ? '+' : '−'}{formatNumber(Math.abs(s.net), lang)}
+                  {s.net >= 0 ? '+' : '−'}
+                  {formatNumber(Math.abs(s.net), lang)}
                   <span className="ml-1.5 text-sm opacity-40">₺</span>
                 </p>
                 <p className="mt-1 text-[12px] text-black/30">{t('transfers.summary.net')}</p>
@@ -124,7 +128,9 @@ export function DailySummaryDialog({
                 <div className="border-r border-b border-black/10 px-6 py-4">
                   <div className="flex items-center gap-1.5">
                     <div className="size-1.5 rounded-full bg-green" />
-                    <span className="text-[12px] text-black/45">{t('transfers.summary.deposits')}</span>
+                    <span className="text-[12px] text-black/45">
+                      {t('transfers.summary.deposits')}
+                    </span>
                   </div>
                   <p className="mt-1.5 font-mono text-lg font-bold tabular-nums text-black/80">
                     {formatNumber(s.deposits, lang)}
@@ -137,7 +143,9 @@ export function DailySummaryDialog({
                 <div className="border-b border-black/10 px-6 py-4">
                   <div className="flex items-center gap-1.5">
                     <div className="size-1.5 rounded-full bg-red" />
-                    <span className="text-[12px] text-black/45">{t('transfers.summary.withdrawals')}</span>
+                    <span className="text-[12px] text-black/45">
+                      {t('transfers.summary.withdrawals')}
+                    </span>
                   </div>
                   <p className="mt-1.5 font-mono text-lg font-bold tabular-nums text-black/80">
                     {formatNumber(s.withdrawals, lang)}
@@ -167,7 +175,9 @@ export function DailySummaryDialog({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                       <Bank size={16} className="text-black/30" />
-                      <span className="text-sm text-black/60">{t('transfers.summary.totalBank')}</span>
+                      <span className="text-sm text-black/60">
+                        {t('transfers.summary.totalBank')}
+                      </span>
                     </div>
                     <span className="font-mono text-sm font-semibold tabular-nums text-black/70">
                       {formatNumber(s.totalBank, lang)} ₺
@@ -176,7 +186,9 @@ export function DailySummaryDialog({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                       <CreditCard size={16} className="text-black/30" />
-                      <span className="text-sm text-black/60">{t('transfers.summary.totalCreditCard')}</span>
+                      <span className="text-sm text-black/60">
+                        {t('transfers.summary.totalCreditCard')}
+                      </span>
                     </div>
                     <span className="font-mono text-sm font-semibold tabular-nums text-black/70">
                       {formatNumber(s.totalCreditCard, lang)} ₺
@@ -185,7 +197,9 @@ export function DailySummaryDialog({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                       <CurrencyDollar size={16} className="text-black/30" />
-                      <span className="text-sm text-black/60">{t('transfers.summary.totalUsd')}</span>
+                      <span className="text-sm text-black/60">
+                        {t('transfers.summary.totalUsd')}
+                      </span>
                     </div>
                     <span className="font-mono text-sm font-semibold tabular-nums text-black/70">
                       {formatNumber(s.totalUsd, lang)} $
@@ -194,7 +208,9 @@ export function DailySummaryDialog({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                       <Coins size={16} className="text-black/30" />
-                      <span className="text-sm text-black/60">{t('transfers.summary.commission')}</span>
+                      <span className="text-sm text-black/60">
+                        {t('transfers.summary.commission')}
+                      </span>
                     </div>
                     <span className="font-mono text-sm font-semibold tabular-nums text-black/70">
                       {formatNumber(s.commission, lang)} ₺
@@ -206,11 +222,22 @@ export function DailySummaryDialog({
               {/* USD section */}
               <div className="border-t border-black/10 bg-black/[0.02] px-6 py-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-[12px] font-medium text-black/40">
-                    {t('transfers.summary.dayRate')}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[12px] font-medium text-black/40">
+                      {t('transfers.summary.dayRate')}
+                    </span>
+                    {usdCount > 0 && (
+                      <span className="rounded-full bg-blue/10 px-2 py-0.5 text-[10px] font-medium text-blue">
+                        {t('transfers.summary.usdTransferCount', { count: usdCount })}
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1.5">
-                    {isEditingRate ? (
+                    {isApplyingRate ? (
+                      <span className="text-xs text-black/40">
+                        {t('transfers.summary.applyingRate')}
+                      </span>
+                    ) : isEditingRate ? (
                       <>
                         <input
                           ref={rateInputRef}
@@ -238,7 +265,9 @@ export function DailySummaryDialog({
                       </>
                     ) : (
                       <>
-                        <span className={`font-mono text-sm font-bold tabular-nums ${overrideActive ? 'text-orange' : 'text-black/60'}`}>
+                        <span
+                          className={`font-mono text-sm font-bold tabular-nums ${overrideActive ? 'text-orange' : 'text-black/60'}`}
+                        >
                           {effectiveRate.toFixed(4)}
                         </span>
                         <button
@@ -268,20 +297,26 @@ export function DailySummaryDialog({
                     <p
                       className={`mt-1 font-mono text-lg font-bold tabular-nums ${adjNetWithCommUsd >= 0 ? 'text-green' : 'text-red'}`}
                     >
-                      {adjNetWithCommUsd >= 0 ? '+' : '−'}{formatNumber(Math.abs(adjNetWithCommUsd), lang)}
+                      {adjNetWithCommUsd >= 0 ? '+' : '−'}
+                      {formatNumber(Math.abs(adjNetWithCommUsd), lang)}
                       <span className="ml-0.5 text-xs opacity-40">$</span>
                     </p>
-                    <p className="mt-0.5 text-xs text-black/20">{t('transfers.summary.afterCommission')}</p>
+                    <p className="mt-0.5 text-xs text-black/20">
+                      {t('transfers.summary.afterCommission')}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-black/35">{t('transfers.summary.netWithoutComm')}</p>
                     <p
                       className={`mt-1 font-mono text-lg font-bold tabular-nums ${adjNetWithoutCommUsd >= 0 ? 'text-green' : 'text-red'}`}
                     >
-                      {adjNetWithoutCommUsd >= 0 ? '+' : '−'}{formatNumber(Math.abs(adjNetWithoutCommUsd), lang)}
+                      {adjNetWithoutCommUsd >= 0 ? '+' : '−'}
+                      {formatNumber(Math.abs(adjNetWithoutCommUsd), lang)}
                       <span className="ml-0.5 text-xs opacity-40">$</span>
                     </p>
-                    <p className="mt-0.5 text-xs text-black/20">{t('transfers.summary.beforeCommission')}</p>
+                    <p className="mt-0.5 text-xs text-black/20">
+                      {t('transfers.summary.beforeCommission')}
+                    </p>
                   </div>
                 </div>
               </div>
