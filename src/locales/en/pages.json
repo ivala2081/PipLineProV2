@@ -441,6 +441,19 @@
         "successDetail": "Successfully imported {{count}} entries"
       }
     },
+    "filters": {
+      "label": "Filters",
+      "search": "Search description...",
+      "clear": "Clear",
+      "allRegisters": "All Registers",
+      "allDirections": "All Directions",
+      "allTypes": "All Types",
+      "allCurrencies": "All Currencies",
+      "from": "From",
+      "to": "To",
+      "noResults": "No matching entries",
+      "noResultsDescription": "Try adjusting your filters to find what you're looking for."
+    },
     "dailySummary": {
       "label": "Summary",
       "entries": "entries",
@@ -889,6 +902,7 @@
     "metricsUnavailable": "Security metrics are currently unavailable. The database function may need to be deployed.",
     "refreshing": "Auto-refresh 30s",
     "tabs": {
+      "overview": "Overview",
       "failedLogins": "Failed Logins",
       "auditLog": "Audit Log"
     },

@@ -87,6 +87,10 @@ export function AccountingPage() {
             onEdit={handleEditEntry}
             onDelete={handleDeleteEntry}
             fetchEntriesByDate={accounting.fetchEntriesByDate}
+            filters={accounting.filters}
+            onFilterChange={accounting.setFilter}
+            onClearFilters={accounting.clearFilters}
+            hasActiveFilters={accounting.hasActiveFilters}
           />
         </TabsContent>
         <TabsContent value="wallets">

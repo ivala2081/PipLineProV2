@@ -8,8 +8,12 @@ import {
   CaretLeft,
   CaretRight,
   ChartBar,
+  MagnifyingGlass,
+  X,
+  Funnel,
 } from '@phosphor-icons/react'
 import type { AccountingEntry } from '@/lib/database.types'
+import type { LedgerFilters } from '@/hooks/queries/useAccountingQuery'
 import { LedgerDailySummaryDialog } from './LedgerDailySummaryDialog'
 import {
   Table,
@@ -25,6 +29,12 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   Button,
+  Input,
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
   Pagination,
   PaginationContent,
   PaginationItem,
@@ -43,6 +53,10 @@ interface LedgerTableProps {
   onEdit: (entry: AccountingEntry) => void
   onDelete: (entry: AccountingEntry) => void
   fetchEntriesByDate: (dateKey: string) => Promise<AccountingEntry[]>
+  filters: LedgerFilters
+  onFilterChange: <K extends keyof LedgerFilters>(key: K, value: LedgerFilters[K]) => void
+  onClearFilters: () => void
+  hasActiveFilters: boolean
 }
 
 /* ── Helpers ─────────────────────────────────────────── */
@@ -101,11 +115,18 @@ export function LedgerTable({
   onEdit,
   onDelete,
   fetchEntriesByDate,
+  filters,
+  onFilterChange,
+  onClearFilters,
+  hasActiveFilters,
 }: LedgerTableProps) {
   const { t, i18n } = useTranslation('pages')
   const totalPages = Math.ceil(total / pageSize)
   const from = (page - 1) * pageSize + 1
   const to = Math.min(page * pageSize, total)
+
+  // Filter bar expanded state
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   // Summary dialog state
   const [summaryGroup, setSummaryGroup] = useState<DateGroup | null>(null)
@@ -133,9 +154,157 @@ export function LedgerTable({
     setSummaryEntries([])
   }, [])
 
+  const filterBar = (
+    <div className="space-y-2">
+      {/* Search + toggle row */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <MagnifyingGlass
+            size={15}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-black/35"
+          />
+          <Input
+            type="text"
+            inputSize="sm"
+            placeholder={t('accounting.filters.search')}
+            value={filters.search ?? ''}
+            onChange={(e) => onFilterChange('search', e.target.value || null)}
+            className="h-8 pl-8 pr-8 text-xs"
+          />
+          {filters.search && (
+            <button
+              type="button"
+              onClick={() => onFilterChange('search', null)}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-black/30 hover:text-black/60"
+            >
+              <X size={13} />
+            </button>
+          )}
+        </div>
+        <Button
+          variant={hasActiveFilters ? 'filled' : 'outline'}
+          size="sm"
+          className="h-8 gap-1.5 px-2.5 text-xs"
+          onClick={() => setFiltersOpen(!filtersOpen)}
+        >
+          <Funnel size={14} weight={hasActiveFilters ? 'fill' : 'regular'} />
+          {t('accounting.filters.label')}
+          {hasActiveFilters && (
+            <span className="ml-0.5 flex size-4 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold">
+              {Object.values(filters).filter((v) => v != null && v !== '').length}
+            </span>
+          )}
+        </Button>
+        {hasActiveFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 gap-1 px-2 text-xs text-black/40 hover:text-black/70"
+            onClick={onClearFilters}
+          >
+            <X size={13} />
+            {t('accounting.filters.clear')}
+          </Button>
+        )}
+      </div>
+
+      {/* Expanded filter dropdowns */}
+      {filtersOpen && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-black/[0.06] bg-black/[0.015] px-3 py-2.5">
+          {/* Register */}
+          <Select
+            value={filters.register ?? '__all__'}
+            onValueChange={(v) => onFilterChange('register', v === '__all__' ? null : v)}
+          >
+            <SelectTrigger selectSize="sm" className="h-8 w-[130px] text-xs">
+              <SelectValue placeholder={t('accounting.filters.allRegisters')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">{t('accounting.filters.allRegisters')}</SelectItem>
+              <SelectItem value="USDT">USDT</SelectItem>
+              <SelectItem value="NAKIT_TL">Cash TL</SelectItem>
+              <SelectItem value="NAKIT_USD">Cash USD</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Direction */}
+          <Select
+            value={filters.direction ?? '__all__'}
+            onValueChange={(v) => onFilterChange('direction', v === '__all__' ? null : v)}
+          >
+            <SelectTrigger selectSize="sm" className="h-8 w-[110px] text-xs">
+              <SelectValue placeholder={t('accounting.filters.allDirections')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">{t('accounting.filters.allDirections')}</SelectItem>
+              <SelectItem value="in">{t('accounting.directions.in')}</SelectItem>
+              <SelectItem value="out">{t('accounting.directions.out')}</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Entry Type */}
+          <Select
+            value={filters.entryType ?? '__all__'}
+            onValueChange={(v) => onFilterChange('entryType', v === '__all__' ? null : v)}
+          >
+            <SelectTrigger selectSize="sm" className="h-8 w-[120px] text-xs">
+              <SelectValue placeholder={t('accounting.filters.allTypes')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">{t('accounting.filters.allTypes')}</SelectItem>
+              <SelectItem value="ODEME">{t('accounting.entryTypes.ODEME')}</SelectItem>
+              <SelectItem value="TRANSFER">{t('accounting.entryTypes.TRANSFER')}</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Currency */}
+          <Select
+            value={filters.currency ?? '__all__'}
+            onValueChange={(v) => onFilterChange('currency', v === '__all__' ? null : v)}
+          >
+            <SelectTrigger selectSize="sm" className="h-8 w-[110px] text-xs">
+              <SelectValue placeholder={t('accounting.filters.allCurrencies')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">{t('accounting.filters.allCurrencies')}</SelectItem>
+              <SelectItem value="TL">TL</SelectItem>
+              <SelectItem value="USD">USD</SelectItem>
+              <SelectItem value="USDT">USDT</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Date From */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-black/40">{t('accounting.filters.from')}</span>
+            <Input
+              type="date"
+              inputSize="sm"
+              value={filters.dateFrom ?? ''}
+              onChange={(e) => onFilterChange('dateFrom', e.target.value || null)}
+              className="h-8 w-[140px] text-xs"
+            />
+          </div>
+
+          {/* Date To */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-black/40">{t('accounting.filters.to')}</span>
+            <Input
+              type="date"
+              inputSize="sm"
+              value={filters.dateTo ?? ''}
+              onChange={(e) => onFilterChange('dateTo', e.target.value || null)}
+              className="h-8 w-[140px] text-xs"
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
   if (isLoading) {
     return (
       <div className="space-y-3">
+        {filterBar}
         {Array.from({ length: 2 }).map((_, g) => (
           <div key={g} className="overflow-hidden rounded-xl border border-black/10">
             <div className="flex items-center justify-between bg-black/[0.02] px-4 py-2.5">
@@ -161,11 +330,18 @@ export function LedgerTable({
 
   if (entries.length === 0) {
     return (
-      <EmptyState
-        icon={ArrowUp}
-        title={t('accounting.empty.title')}
-        description={t('accounting.empty.description')}
-      />
+      <div className="space-y-3">
+        {filterBar}
+        <EmptyState
+          icon={ArrowUp}
+          title={hasActiveFilters ? t('accounting.filters.noResults') : t('accounting.empty.title')}
+          description={
+            hasActiveFilters
+              ? t('accounting.filters.noResultsDescription')
+              : t('accounting.empty.description')
+          }
+        />
+      </div>
     )
   }
 
@@ -181,6 +357,7 @@ export function LedgerTable({
 
   return (
     <>
+      {filterBar}
       <div className="space-y-3">
         {groups.map((group) => (
           <div key={group.dateKey} className="overflow-hidden rounded-xl border border-black/10">

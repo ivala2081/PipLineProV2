@@ -441,6 +441,19 @@
         "successDetail": "{{count}} kayıt başarıyla içe aktarıldı"
       }
     },
+    "filters": {
+      "label": "Filtreler",
+      "search": "Açıklamada ara...",
+      "clear": "Temizle",
+      "allRegisters": "Tüm Kasalar",
+      "allDirections": "Tüm Yönler",
+      "allTypes": "Tüm Türler",
+      "allCurrencies": "Tüm Para Birimleri",
+      "from": "Başlangıç",
+      "to": "Bitiş",
+      "noResults": "Eşleşen kayıt bulunamadı",
+      "noResultsDescription": "Aradığınızı bulmak için filtreleri ayarlamayı deneyin."
+    },
     "dailySummary": {
       "label": "Özet",
       "entries": "kayıt",
@@ -889,6 +902,7 @@
     "metricsUnavailable": "Güvenlik metrikleri şu anda kullanılamıyor. Veritabanı fonksiyonunun dağıtılması gerekebilir.",
     "refreshing": "Otomatik yenileme 30sn",
     "tabs": {
+      "overview": "Genel Bakış",
       "failedLogins": "Başarısız Girişler",
       "auditLog": "Denetim Kaydı"
     },

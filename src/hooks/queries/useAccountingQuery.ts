@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/app/providers/AuthProvider'
@@ -17,6 +17,26 @@ export interface AccountingSummary {
   net: number
 }
 
+export interface LedgerFilters {
+  register: string | null
+  direction: string | null
+  entryType: string | null
+  currency: string | null
+  search: string | null
+  dateFrom: string | null
+  dateTo: string | null
+}
+
+const EMPTY_FILTERS: LedgerFilters = {
+  register: null,
+  direction: null,
+  entryType: null,
+  currency: null,
+  search: null,
+  dateFrom: null,
+  dateTo: null,
+}
+
 interface UseAccountingQueryReturn {
   entries: AccountingEntry[]
   isLoading: boolean
@@ -25,6 +45,10 @@ interface UseAccountingQueryReturn {
   pageSize: number
   total: number
   setPage: (page: number) => void
+  filters: LedgerFilters
+  setFilter: <K extends keyof LedgerFilters>(key: K, value: LedgerFilters[K]) => void
+  clearFilters: () => void
+  hasActiveFilters: boolean
   summary: AccountingSummary[]
   isSummaryLoading: boolean
   createEntry: (data: EntryFormValues) => Promise<void>
@@ -41,26 +65,54 @@ export function useAccountingQuery(): UseAccountingQueryReturn {
   const { currentOrg } = useOrganization()
   const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
+  const [filters, setFilters] = useState<LedgerFilters>(EMPTY_FILTERS)
   const prevOrgId = useRef(currentOrg?.id)
 
   if (currentOrg?.id !== prevOrgId.current) {
     prevOrgId.current = currentOrg?.id
     setPage(1)
+    setFilters(EMPTY_FILTERS)
   }
+
+  const setFilter = useCallback(
+    <K extends keyof LedgerFilters>(key: K, value: LedgerFilters[K]) => {
+      setFilters((prev) => ({ ...prev, [key]: value }))
+      setPage(1)
+    },
+    [],
+  )
+
+  const clearFilters = useCallback(() => {
+    setFilters(EMPTY_FILTERS)
+    setPage(1)
+  }, [])
+
+  const hasActiveFilters = Object.values(filters).some((v) => v != null && v !== '')
 
   // Paginated list query
   const { data, isLoading, error } = useQuery({
-    queryKey: queryKeys.accounting.list(currentOrg?.id ?? '', page),
+    queryKey: [...queryKeys.accounting.list(currentOrg?.id ?? '', page), filters],
     queryFn: async () => {
       if (!currentOrg) throw new Error('No organization selected')
 
       const from = (page - 1) * PAGE_SIZE
       const to = from + PAGE_SIZE - 1
 
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('accounting_entries')
         .select('*', { count: 'exact' })
         .eq('organization_id', currentOrg.id)
+
+      // Apply filters
+      if (filters.register) query = query.eq('register', filters.register)
+      if (filters.direction) query = query.eq('direction', filters.direction)
+      if (filters.entryType) query = query.eq('entry_type', filters.entryType)
+      if (filters.currency) query = query.eq('currency', filters.currency)
+      if (filters.dateFrom) query = query.gte('entry_date', filters.dateFrom)
+      if (filters.dateTo) query = query.lte('entry_date', filters.dateTo)
+      if (filters.search) query = query.ilike('description', `%${filters.search}%`)
+
+      const { data, error, count } = await query
         .order('entry_date', { ascending: false })
         .order('created_at', { ascending: false })
         .range(from, to)
@@ -195,6 +247,10 @@ export function useAccountingQuery(): UseAccountingQueryReturn {
     page,
     pageSize: PAGE_SIZE,
     setPage,
+    filters,
+    setFilter,
+    clearFilters,
+    hasActiveFilters,
     isLoading,
     error: error?.message ?? null,
     summary: summaryData ?? [],

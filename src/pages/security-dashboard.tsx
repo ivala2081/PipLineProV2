@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
   Shield,
-  ShieldCheck,
   Eye,
   Warning,
   Users,
@@ -11,7 +10,6 @@ import {
   Lightning,
   Clock,
   Database,
-  ArrowsClockwise,
 } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/app/providers/AuthProvider'
@@ -102,9 +100,9 @@ function getSeverityVariant(attempts: number): 'red' | 'orange' | 'yellow' {
   return 'yellow'
 }
 
-/* ── Table header style ───────────────────────────────────── */
+/* ── Table header style (matches members/transfers) ───────── */
 
-const TH = 'h-9 px-4 text-xs font-semibold uppercase tracking-wider text-black/40 whitespace-nowrap'
+const TH = 'h-10 px-4 text-xs font-semibold uppercase tracking-wider text-black/40'
 
 /* ── Audit Detail Dialog ──────────────────────────────────── */
 
@@ -175,6 +173,8 @@ export function SecurityDashboard() {
   const { t, i18n } = useTranslation('pages')
   const { isGod } = useAuth()
   const locale = i18n.language === 'tr' ? 'tr-TR' : 'en-US'
+
+  const [activeTab, setActiveTab] = useState('overview')
 
   const {
     data: metrics,
@@ -262,235 +262,190 @@ export function SecurityDashboard() {
     )
   }
 
-  /* ── Split metrics into hero (first 4) and secondary (rest) ── */
-  const heroMetrics = metrics?.slice(0, 4) ?? []
-  const secondaryMetrics = metrics?.slice(4) ?? []
-
   const failedCount = failedLogins?.length ?? 0
   const auditCount = godAudit?.length ?? 0
 
-  /* ── Main render ── */
   return (
     <div className="space-y-6">
-      {/* ── Header ── */}
+      {/* ── Header (standard pattern: matches transfers, accounting, psps) ── */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-brand/10">
-            <ShieldCheck size={20} weight="fill" className="text-brand" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-semibold text-black">{t('security.title')}</h1>
-            <p className="text-sm text-black/50">{t('security.subtitle')}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 text-xs text-black/30">
-          <ArrowsClockwise size={12} />
-          {t('security.refreshing')}
+        <div>
+          <h1 className="text-2xl font-semibold">{t('security.title')}</h1>
+          <p className="mt-1 text-sm text-black/60">{t('security.subtitle')}</p>
         </div>
       </div>
 
-      {/* ── Hero Metrics (4 StatCards) ── */}
-      {metricsLoading ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <StatCard key={i} icon={Lightning} label="" value="" isLoading />
-          ))}
-        </div>
-      ) : metricsError || heroMetrics.length === 0 ? (
-        <Card padding="compact">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2 text-sm text-black/40">
-              <Warning size={16} />
-              {t('security.metricsUnavailable')}
-            </div>
-            {metricsErrorObj && (
-              <p className="font-mono text-xs text-red/70">{metricsErrorObj.message}</p>
-            )}
-          </div>
-        </Card>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {heroMetrics.map((metric) => {
-              const mi = getMetricIcon(metric.metric)
-              return (
-                <StatCard
-                  key={metric.metric}
-                  icon={mi.icon}
-                  iconBg={mi.bg}
-                  iconColor={mi.color}
-                  label={metric.metric}
-                  value={metric.value}
-                />
-              )
-            })}
-          </div>
+      {/* ── Tabs (page-level, like accounting/transfers) ── */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="overview">{t('security.tabs.overview')}</TabsTrigger>
+          <TabsTrigger value="failed-logins">{t('security.tabs.failedLogins')}</TabsTrigger>
+          <TabsTrigger value="audit-log">{t('security.tabs.auditLog')}</TabsTrigger>
+        </TabsList>
 
-          {/* ── Secondary Metrics (compact row) ── */}
-          {secondaryMetrics.length > 0 && (
-            <Card padding="compact" className="bg-black/[0.015]">
-              <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
-                {secondaryMetrics.map((metric) => {
-                  const mi = getMetricIcon(metric.metric)
-                  const Icon = mi.icon
-                  return (
-                    <div key={metric.metric} className="flex items-center gap-2">
-                      <div
-                        className={`flex size-7 items-center justify-center rounded-lg ${mi.bg}`}
-                      >
-                        <Icon size={13} className={mi.color} />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-medium uppercase tracking-wider text-black/35">
-                          {metric.metric}
-                        </p>
-                        <p className="text-sm font-semibold tabular-nums">{metric.value}</p>
-                      </div>
-                    </div>
-                  )
-                })}
+        {/* ── Overview Tab ── */}
+        <TabsContent value="overview">
+          {metricsLoading ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[...Array(8)].map((_, i) => (
+                <StatCard key={i} icon={Lightning} label="" value="" isLoading />
+              ))}
+            </div>
+          ) : metricsError || !metrics?.length ? (
+            <Card padding="compact">
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2 text-sm text-black/40">
+                  <Warning size={16} />
+                  {t('security.metricsUnavailable')}
+                </div>
+                {metricsErrorObj && (
+                  <p className="font-mono text-xs text-red/70">{metricsErrorObj.message}</p>
+                )}
               </div>
             </Card>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {metrics.map((metric) => {
+                const mi = getMetricIcon(metric.metric)
+                return (
+                  <StatCard
+                    key={metric.metric}
+                    icon={mi.icon}
+                    iconBg={mi.bg}
+                    iconColor={mi.color}
+                    label={metric.metric}
+                    value={metric.value}
+                  />
+                )
+              })}
+            </div>
           )}
-        </>
-      )}
+        </TabsContent>
 
-      {/* ── Tabbed Activity Card ── */}
-      <Card padding="none">
-        <Tabs defaultValue="failed-logins">
-          <div className="border-b border-black/[0.06] px-4 pt-4 pb-0">
-            <TabsList>
-              <TabsTrigger value="failed-logins" className="gap-1.5">
-                <Warning size={14} weight="fill" />
-                {t('security.tabs.failedLogins')}
-                {failedCount > 0 && (
-                  <span className="ml-1 inline-flex size-5 items-center justify-center rounded-full bg-red/15 text-[10px] font-bold text-red">
-                    {failedCount}
-                  </span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="audit-log" className="gap-1.5">
-                <Eye size={14} />
-                {t('security.tabs.auditLog')}
-                {auditCount > 0 && (
-                  <span className="ml-1 inline-flex size-5 items-center justify-center rounded-full bg-brand/15 text-[10px] font-bold text-brand">
-                    {auditCount}
-                  </span>
-                )}
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
-          {/* ── Failed Logins Tab ── */}
-          <TabsContent value="failed-logins" className="mt-0">
-            {failedLoading ? (
-              <div className="space-y-2 p-4">
-                {[...Array(3)].map((_, i) => (
-                  <Skeleton key={i} className="h-10 rounded-lg" />
+        {/* ── Failed Logins Tab ── */}
+        <TabsContent value="failed-logins">
+          {failedLoading ? (
+            <div className="overflow-hidden rounded-xl border border-black/10">
+              <div className="bg-black/[0.015] px-4 py-3">
+                <Skeleton className="h-4 w-48 rounded-md" />
+              </div>
+              <div className="divide-y divide-black/[0.04]">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 px-4 py-3.5">
+                    <Skeleton className="h-4 w-32 rounded-md" />
+                    <Skeleton className="ml-auto h-5 w-12 rounded-md" />
+                    <Skeleton className="h-4 w-36 rounded-md" />
+                  </div>
                 ))}
               </div>
-            ) : failedCount > 0 ? (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-black/[0.015]">
-                      <TableHead className={TH}>{t('security.columns.ipAddress')}</TableHead>
-                      <TableHead className={`${TH} text-right`}>
-                        {t('security.columns.failedAttempts')}
-                      </TableHead>
-                      <TableHead className={`${TH} text-right`}>
-                        {t('security.columns.lastAttempt')}
-                      </TableHead>
+            </div>
+          ) : failedCount > 0 ? (
+            <div className="overflow-hidden rounded-xl border border-black/10">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-black/[0.015] hover:bg-black/[0.015]">
+                    <TableHead className={TH}>{t('security.columns.ipAddress')}</TableHead>
+                    <TableHead className={`${TH} text-right`}>
+                      {t('security.columns.failedAttempts')}
+                    </TableHead>
+                    <TableHead className={`${TH} text-right`}>
+                      {t('security.columns.lastAttempt')}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-black/[0.04]">
+                  {failedLogins!.map((item) => (
+                    <TableRow key={item.ip_address}>
+                      <TableCell className="px-4 py-3 font-mono text-sm">
+                        {item.ip_address}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-right">
+                        <Tag variant={getSeverityVariant(item.failed_attempts)}>
+                          {item.failed_attempts}
+                        </Tag>
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-right text-sm text-black/50">
+                        {new Date(item.last_attempt).toLocaleString(locale)}
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {failedLogins!.map((item) => (
-                      <TableRow key={item.ip_address} className="hover:bg-black/[0.01]">
-                        <TableCell className="px-4 py-3 font-mono text-sm">
-                          {item.ip_address}
-                        </TableCell>
-                        <TableCell className="px-4 py-3 text-right">
-                          <Tag variant={getSeverityVariant(item.failed_attempts)}>
-                            {item.failed_attempts}
-                          </Tag>
-                        </TableCell>
-                        <TableCell className="px-4 py-3 text-right text-sm text-black/50">
-                          {new Date(item.last_attempt).toLocaleString(locale)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-black/10 bg-bg1 py-20">
+              <div className="flex size-12 items-center justify-center rounded-full bg-black/[0.04]">
+                <Shield size={20} className="text-black/30" />
               </div>
-            ) : (
-              <div className="py-12 text-center text-sm text-black/35">
-                {t('security.noSuspiciousActivity')}
-              </div>
-            )}
-          </TabsContent>
+              <p className="text-sm text-black/60">{t('security.noSuspiciousActivity')}</p>
+            </div>
+          )}
+        </TabsContent>
 
-          {/* ── Audit Log Tab ── */}
-          <TabsContent value="audit-log" className="mt-0">
-            {auditLoading ? (
-              <div className="space-y-2 p-4">
-                {[...Array(5)].map((_, i) => (
-                  <Skeleton key={i} className="h-10 rounded-lg" />
+        {/* ── Audit Log Tab ── */}
+        <TabsContent value="audit-log">
+          {auditLoading ? (
+            <div className="overflow-hidden rounded-xl border border-black/10">
+              <div className="bg-black/[0.015] px-4 py-3">
+                <Skeleton className="h-4 w-48 rounded-md" />
+              </div>
+              <div className="divide-y divide-black/[0.04]">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 px-4 py-3.5">
+                    <Skeleton className="h-4 w-28 rounded-md" />
+                    <Skeleton className="h-4 w-32 rounded-md" />
+                    <Skeleton className="h-5 w-16 rounded-md" />
+                    <Skeleton className="h-4 w-24 rounded-md" />
+                    <Skeleton className="ml-auto h-6 w-14 rounded-md" />
+                  </div>
                 ))}
               </div>
-            ) : auditCount > 0 ? (
-              <div className="overflow-x-auto">
-                <Table className="min-w-[700px]">
-                  <TableHeader>
-                    <TableRow className="bg-black/[0.015]">
-                      <TableHead className={TH}>{t('security.columns.time')}</TableHead>
-                      <TableHead className={TH}>{t('security.columns.user')}</TableHead>
-                      <TableHead className={TH}>{t('security.columns.action')}</TableHead>
-                      <TableHead className={TH}>{t('security.columns.table')}</TableHead>
-                      <TableHead className={`${TH} text-right`}>
-                        {t('security.columns.details')}
-                      </TableHead>
+            </div>
+          ) : auditCount > 0 ? (
+            <div className="overflow-hidden rounded-xl border border-black/10">
+              <Table className="min-w-[700px]">
+                <TableHeader>
+                  <TableRow className="bg-black/[0.015] hover:bg-black/[0.015]">
+                    <TableHead className={TH}>{t('security.columns.time')}</TableHead>
+                    <TableHead className={TH}>{t('security.columns.user')}</TableHead>
+                    <TableHead className={TH}>{t('security.columns.action')}</TableHead>
+                    <TableHead className={TH}>{t('security.columns.table')}</TableHead>
+                    <TableHead className={`${TH} text-right`}>
+                      {t('security.columns.details')}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-black/[0.04]">
+                  {godAudit!.map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell className="whitespace-nowrap px-4 py-3 text-sm text-black/50">
+                        {new Date(log.created_at).toLocaleString(locale)}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-sm">{log.god_email}</TableCell>
+                      <TableCell className="px-4 py-3">
+                        <Tag variant={getActionVariant(log.action)}>{log.action}</Tag>
+                      </TableCell>
+                      <TableCell className="px-4 py-3 font-mono text-sm text-black/50">
+                        {log.table_name}
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-right">
+                        <AuditDetailButton log={log} />
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {godAudit!.map((log) => (
-                      <TableRow key={log.id} className="hover:bg-black/[0.01]">
-                        <TableCell className="whitespace-nowrap px-4 py-3 text-sm text-black/50">
-                          {new Date(log.created_at).toLocaleString(locale)}
-                        </TableCell>
-                        <TableCell className="px-4 py-3 text-sm">{log.god_email}</TableCell>
-                        <TableCell className="px-4 py-3">
-                          <Tag variant={getActionVariant(log.action)}>{log.action}</Tag>
-                        </TableCell>
-                        <TableCell className="px-4 py-3 font-mono text-sm text-black/50">
-                          {log.table_name}
-                        </TableCell>
-                        <TableCell className="px-4 py-3 text-right">
-                          <AuditDetailButton log={log} />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-black/10 bg-bg1 py-20">
+              <div className="flex size-12 items-center justify-center rounded-full bg-black/[0.04]">
+                <Eye size={20} className="text-black/30" />
               </div>
-            ) : (
-              <div className="py-12 text-center text-sm text-black/35">
-                {t('security.noGodActivity')}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      </Card>
-
-      {/* ── Footer note (replaces Security Actions card) ── */}
-      <div className="flex items-center gap-2 px-1 text-xs text-black/25">
-        <LockKey size={14} />
-        <span>
-          {t('security.securityActionsNote')}{' '}
-          <code className="rounded bg-black/[0.04] px-1 py-0.5 text-[10px]">
-            SECURITY_INCIDENT_RESPONSE.md
-          </code>
-        </span>
-      </div>
+              <p className="text-sm text-black/60">{t('security.noGodActivity')}</p>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
