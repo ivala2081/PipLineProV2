@@ -25,7 +25,7 @@ export function useReconciliationConfigMutation() {
     mutationFn: async (data: SaveConfigInput) => {
       if (!currentOrg || !user) throw new Error('No organization or user')
 
-      const { error } = await supabase.from('accounting_monthly_config' as never).upsert(
+      const { error } = await supabase.from('accounting_monthly_config').upsert(
         {
           organization_id: currentOrg.id,
           year: data.year,
@@ -38,7 +38,7 @@ export function useReconciliationConfigMutation() {
           teyit_entries: data.teyit_entries ?? [],
           created_by: user.id,
         } as never,
-        { onConflict: 'organization_id,year,month' } as never,
+        { onConflict: 'organization_id,year,month' },
       )
 
       if (error) throw error

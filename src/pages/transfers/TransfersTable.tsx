@@ -247,7 +247,7 @@ export function TransfersTable({
   /* ── Filter bar ──────────────────────────────── */
 
   const filterBar = (
-    <div className="space-y-2">
+    <div className="space-y-2 mb-4">
       {/* Search + toggle row */}
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
@@ -576,10 +576,11 @@ export function TransfersTable({
 
             {/* Table for this date group */}
             <div className="overflow-x-auto">
-              <Table className="min-w-[900px]">
+              <Table className="min-w-[1000px]">
                 <TableHeader>
                   <TableRow className="bg-black/[0.015] hover:bg-black/[0.015]">
                     <TableHead className={TH_CLASS}>{t('transfers.columns.fullName')}</TableHead>
+                    <TableHead className={TH_CLASS}>{t('transfers.columns.psp')}</TableHead>
                     <TableHead className={TH_CLASS}>
                       {t('transfers.columns.paymentMethod')}
                     </TableHead>

@@ -1,5 +1,6 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import { DotsThree, PencilSimple, Trash, Eye, ClockCounterClockwise } from '@phosphor-icons/react'
 import type { TransferRow } from '@/hooks/useTransfers'
 import { formatTime, formatNumber } from './transfersTableUtils'
@@ -39,6 +40,18 @@ export const TransferRowItem = React.memo(function TransferRowItem({
     <TableRow className="hover:bg-black/[0.015]">
       <TableCell className="whitespace-nowrap">
         <span className="text-sm font-medium text-black/90">{row.full_name}</span>
+      </TableCell>
+      <TableCell className="whitespace-nowrap text-sm">
+        {row.psp ? (
+          <Link
+            to={`/psps/${row.psp_id}`}
+            className="font-medium text-black/70 underline decoration-black/20 underline-offset-2 hover:text-black hover:decoration-black/40"
+          >
+            {row.psp.name}
+          </Link>
+        ) : (
+          <span className="text-black/40">—</span>
+        )}
       </TableCell>
       <TableCell className="whitespace-nowrap text-sm text-black/60">
         {row.payment_method?.name ?? '—'}

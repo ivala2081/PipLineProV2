@@ -155,7 +155,7 @@ export function LedgerTable({
   }, [])
 
   const filterBar = (
-    <div className="space-y-2">
+    <div className="space-y-2 mb-4">
       {/* Search + toggle row */}
       <div className="flex items-center gap-2">
         <div className="relative flex-1">

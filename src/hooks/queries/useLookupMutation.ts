@@ -4,11 +4,7 @@ import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { queryKeys } from '@/lib/queryKeys'
 
-type LookupTable =
-  | 'psps'
-  | 'transfer_categories'
-  | 'payment_methods'
-  | 'transfer_types'
+type LookupTable = 'psps'
 
 interface LookupItem {
   id: string
@@ -32,9 +28,7 @@ interface UseLookupMutationReturn {
   isDeleting: boolean
 }
 
-export function useLookupMutation(
-  table: LookupTable,
-): UseLookupMutationReturn {
+export function useLookupMutation(table: LookupTable): UseLookupMutationReturn {
   const { user } = useAuth()
   const { currentOrg } = useOrganization()
   const queryClient = useQueryClient()
@@ -123,13 +117,7 @@ export function useLookupMutation(
 
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: async ({
-      id,
-      data,
-    }: {
-      id: string
-      data: Record<string, unknown>
-    }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Record<string, unknown> }) => {
       const { error } = await supabase
         .from(table)
         .update(data as never)

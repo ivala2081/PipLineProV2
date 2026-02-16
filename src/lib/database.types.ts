@@ -6,13 +6,7 @@
  *   npx supabase gen types typescript --linked > src/lib/database.types.ts
  */
 
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type SystemRole = 'god' | 'user'
 export type OrgMemberRole = 'admin' | 'operation'
@@ -207,6 +201,74 @@ export interface Database {
           },
         ]
       }
+      /* ──────────── Global Lookup Tables (TEXT PK, no org_id) ──────────── */
+      transfer_categories: {
+        Row: {
+          id: string
+          name: string
+          is_deposit: boolean
+          aliases: string[]
+          created_at: string
+        }
+        Insert: {
+          id: string
+          name: string
+          is_deposit?: boolean
+          aliases?: string[]
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          is_deposit?: boolean
+          aliases?: string[]
+          created_at?: string
+        }
+        Relationships: []
+      }
+      payment_methods: {
+        Row: {
+          id: string
+          name: string
+          aliases: string[]
+          created_at: string
+        }
+        Insert: {
+          id: string
+          name: string
+          aliases?: string[]
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          aliases?: string[]
+          created_at?: string
+        }
+        Relationships: []
+      }
+      transfer_types: {
+        Row: {
+          id: string
+          name: string
+          aliases: string[]
+          created_at: string
+        }
+        Insert: {
+          id: string
+          name: string
+          aliases?: string[]
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          aliases?: string[]
+          created_at?: string
+        }
+        Relationships: []
+      }
+      /* ──────────── PSPs (org-specific, UUID PK) ──────────── */
       psps: {
         Row: {
           id: string
@@ -361,145 +423,29 @@ export interface Database {
           },
         ]
       }
-      transfer_categories: {
-        Row: {
-          id: string
-          organization_id: string
-          name: string
-          is_deposit: boolean
-          is_active: boolean
-          aliases: string[]
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          organization_id: string
-          name: string
-          is_deposit?: boolean
-          is_active?: boolean
-          aliases?: string[]
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          organization_id?: string
-          name?: string
-          is_deposit?: boolean
-          is_active?: boolean
-          aliases?: string[]
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'transfer_categories_organization_id_fkey'
-            columns: ['organization_id']
-            isOneToOne: false
-            referencedRelation: 'organizations'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      payment_methods: {
-        Row: {
-          id: string
-          organization_id: string
-          name: string
-          is_active: boolean
-          aliases: string[]
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          organization_id: string
-          name: string
-          is_active?: boolean
-          aliases?: string[]
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          organization_id?: string
-          name?: string
-          is_active?: boolean
-          aliases?: string[]
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'payment_methods_organization_id_fkey'
-            columns: ['organization_id']
-            isOneToOne: false
-            referencedRelation: 'organizations'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      transfer_types: {
-        Row: {
-          id: string
-          organization_id: string
-          name: string
-          is_active: boolean
-          aliases: string[]
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          organization_id: string
-          name: string
-          is_active?: boolean
-          aliases?: string[]
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          organization_id?: string
-          name?: string
-          is_active?: boolean
-          aliases?: string[]
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'transfer_types_organization_id_fkey'
-            columns: ['organization_id']
-            isOneToOne: false
-            referencedRelation: 'organizations'
-            referencedColumns: ['id']
-          },
-        ]
-      }
+      /* ──────────── Transfers ──────────── */
       transfers: {
         Row: {
           id: string
           organization_id: string
           full_name: string
-          payment_method_id: string
           transfer_date: string
-          category_id: string
           amount: number
           commission: number
           net: number
           currency: Currency
-          psp_id: string
+          category_id: string
+          payment_method_id: string
           type_id: string
+          psp_id: string | null
           crm_id: string | null
           meta_id: string | null
-          created_by: string | null
-          updated_by: string | null
           exchange_rate: number
           amount_try: number
           amount_usd: number
           commission_rate_snapshot: number | null
+          created_by: string | null
+          updated_by: string | null
           created_at: string
           updated_at: string
         }
@@ -507,23 +453,23 @@ export interface Database {
           id?: string
           organization_id: string
           full_name: string
-          payment_method_id: string
           transfer_date?: string
-          category_id: string
           amount: number
-          commission: number
-          net: number
+          commission?: number
+          net?: number
           currency?: Currency
-          psp_id: string
+          category_id: string
+          payment_method_id: string
           type_id: string
+          psp_id?: string | null
           crm_id?: string | null
           meta_id?: string | null
-          created_by?: string | null
-          updated_by?: string | null
           exchange_rate?: number
           amount_try?: number
           amount_usd?: number
           commission_rate_snapshot?: number | null
+          created_by?: string | null
+          updated_by?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -531,23 +477,23 @@ export interface Database {
           id?: string
           organization_id?: string
           full_name?: string
-          payment_method_id?: string
           transfer_date?: string
-          category_id?: string
           amount?: number
           commission?: number
           net?: number
           currency?: Currency
-          psp_id?: string
+          category_id?: string
+          payment_method_id?: string
           type_id?: string
+          psp_id?: string | null
           crm_id?: string | null
           meta_id?: string | null
-          created_by?: string | null
-          updated_by?: string | null
           exchange_rate?: number
           amount_try?: number
           amount_usd?: number
           commission_rate_snapshot?: number | null
+          created_by?: string | null
+          updated_by?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -560,13 +506,6 @@ export interface Database {
             referencedColumns: ['id']
           },
           {
-            foreignKeyName: 'transfers_payment_method_id_fkey'
-            columns: ['payment_method_id']
-            isOneToOne: false
-            referencedRelation: 'payment_methods'
-            referencedColumns: ['id']
-          },
-          {
             foreignKeyName: 'transfers_category_id_fkey'
             columns: ['category_id']
             isOneToOne: false
@@ -574,10 +513,10 @@ export interface Database {
             referencedColumns: ['id']
           },
           {
-            foreignKeyName: 'transfers_psp_id_fkey'
-            columns: ['psp_id']
+            foreignKeyName: 'transfers_payment_method_id_fkey'
+            columns: ['payment_method_id']
             isOneToOne: false
-            referencedRelation: 'psps'
+            referencedRelation: 'payment_methods'
             referencedColumns: ['id']
           },
           {
@@ -585,6 +524,13 @@ export interface Database {
             columns: ['type_id']
             isOneToOne: false
             referencedRelation: 'transfer_types'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'transfers_psp_id_fkey'
+            columns: ['psp_id']
+            isOneToOne: false
+            referencedRelation: 'psps'
             referencedColumns: ['id']
           },
           {
@@ -596,6 +542,59 @@ export interface Database {
           },
         ]
       }
+      transfer_audit_log: {
+        Row: {
+          id: string
+          transfer_id: string
+          organization_id: string
+          action: 'created' | 'updated'
+          performed_by: string | null
+          changes: Record<string, { old: unknown; new: unknown }> | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          transfer_id: string
+          organization_id: string
+          action: 'created' | 'updated'
+          performed_by?: string | null
+          changes?: Record<string, { old: unknown; new: unknown }> | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          transfer_id?: string
+          organization_id?: string
+          action?: 'created' | 'updated'
+          performed_by?: string | null
+          changes?: Record<string, { old: unknown; new: unknown }> | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'transfer_audit_log_transfer_id_fkey'
+            columns: ['transfer_id']
+            isOneToOne: false
+            referencedRelation: 'transfers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'transfer_audit_log_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'transfer_audit_log_performed_by_fkey'
+            columns: ['performed_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      /* ──────────── Exchange Rates ──────────── */
       exchange_rates: {
         Row: {
           id: string
@@ -609,7 +608,7 @@ export interface Database {
         Insert: {
           id?: string
           organization_id: string
-          currency: string
+          currency?: string
           rate_to_tl: number
           rate_date?: string
           source?: string
@@ -634,6 +633,7 @@ export interface Database {
           },
         ]
       }
+      /* ──────────── Accounting ──────────── */
       accounting_entries: {
         Row: {
           id: string
@@ -786,58 +786,70 @@ export interface Database {
           },
         ]
       }
-      transfer_audit_log: {
+      accounting_monthly_config: {
         Row: {
           id: string
-          transfer_id: string
           organization_id: string
-          action: 'created' | 'updated'
-          performed_by: string | null
-          changes: Record<string, { old: unknown; new: unknown }> | null
+          year: number
+          month: number
+          devir_usdt: number | null
+          devir_nakit_tl: number | null
+          devir_nakit_usd: number | null
+          kur: number | null
+          bekl_tahs: number | null
+          teyit_entries: Json
+          created_by: string | null
           created_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
-          transfer_id: string
           organization_id: string
-          action: 'created' | 'updated'
-          performed_by?: string | null
-          changes?: Record<string, { old: unknown; new: unknown }> | null
+          year: number
+          month: number
+          devir_usdt?: number | null
+          devir_nakit_tl?: number | null
+          devir_nakit_usd?: number | null
+          kur?: number | null
+          bekl_tahs?: number | null
+          teyit_entries?: Json
+          created_by?: string | null
           created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
-          transfer_id?: string
           organization_id?: string
-          action?: 'created' | 'updated'
-          performed_by?: string | null
-          changes?: Record<string, { old: unknown; new: unknown }> | null
+          year?: number
+          month?: number
+          devir_usdt?: number | null
+          devir_nakit_tl?: number | null
+          devir_nakit_usd?: number | null
+          kur?: number | null
+          bekl_tahs?: number | null
+          teyit_entries?: Json
+          created_by?: string | null
           created_at?: string
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'transfer_audit_log_transfer_id_fkey'
-            columns: ['transfer_id']
-            isOneToOne: false
-            referencedRelation: 'transfers'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'transfer_audit_log_organization_id_fkey'
+            foreignKeyName: 'accounting_monthly_config_organization_id_fkey'
             columns: ['organization_id']
             isOneToOne: false
             referencedRelation: 'organizations'
             referencedColumns: ['id']
           },
           {
-            foreignKeyName: 'transfer_audit_log_performed_by_fkey'
-            columns: ['performed_by']
+            foreignKeyName: 'accounting_monthly_config_created_by_fkey'
+            columns: ['created_by']
             isOneToOne: false
             referencedRelation: 'users'
             referencedColumns: ['id']
           },
         ]
       }
+      /* ──────────── Security Tables ──────────── */
       trusted_devices: {
         Row: {
           id: string
@@ -964,6 +976,26 @@ export interface Database {
         }
         Returns: { user_id: string; created: boolean }
       }
+      get_psp_summary: {
+        Args: { _org_id: string }
+        Returns: {
+          psp_id: string
+          psp_name: string
+          commission_rate: number
+          is_active: boolean
+          is_internal: boolean
+          total_deposits: number
+          total_withdrawals: number
+          total_commission: number
+          total_net: number
+          total_settlements: number
+          last_settlement_date: string | null
+        }[]
+      }
+      get_monthly_summary: {
+        Args: { _org_id: string; _year: number; _month: number }
+        Returns: Json
+      }
       [key: string]: {
         Args: Record<string, unknown>
         Returns: unknown
@@ -993,6 +1025,8 @@ export type ExchangeRate = Database['public']['Tables']['exchange_rates']['Row']
 export type AccountingEntry = Database['public']['Tables']['accounting_entries']['Row']
 export type Wallet = Database['public']['Tables']['wallets']['Row']
 export type WalletSnapshot = Database['public']['Tables']['wallet_snapshots']['Row']
+export type AccountingMonthlyConfig =
+  Database['public']['Tables']['accounting_monthly_config']['Row']
 export type PspCommissionRate = Database['public']['Tables']['psp_commission_rates']['Row']
 export type PspSettlement = Database['public']['Tables']['psp_settlements']['Row']
 export type TrustedDevice = Database['public']['Tables']['trusted_devices']['Row']

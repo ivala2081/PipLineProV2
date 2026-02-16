@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import type { TransferRow } from '@/hooks/useTransfers'
 import { formatDate, formatNumber } from './transfersTableUtils'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, Tag } from '@ds'
@@ -36,6 +37,18 @@ export function TransferDetailSheet({ row, onClose }: TransferDetailSheetProps) 
         {row && (
           <div className="mt-6 space-y-0 divide-y divide-black/[0.06]">
             <DetailRow label={t('transfers.columns.fullName')}>{row.full_name}</DetailRow>
+            <DetailRow label={t('transfers.columns.psp')}>
+              {row.psp ? (
+                <Link
+                  to={`/psps/${row.psp_id}`}
+                  className="font-medium underline decoration-black/20 underline-offset-2 hover:text-black hover:decoration-black/40"
+                >
+                  {row.psp.name}
+                </Link>
+              ) : (
+                '—'
+              )}
+            </DetailRow>
             <DetailRow label={t('transfers.columns.paymentMethod')}>
               {row.payment_method?.name ?? '—'}
             </DetailRow>

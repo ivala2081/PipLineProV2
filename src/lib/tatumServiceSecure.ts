@@ -5,7 +5,7 @@
  * This file replaces the direct API calls in tatumService.ts
  */
 
-import { tatumApi } from '@/lib/secureApi'
+import { tatumApi, tronGridApi } from '@/lib/secureApi'
 
 /* ── V4 chain name mapping ──────────────────────────────────────── */
 
@@ -400,6 +400,69 @@ export async function getTransferHistory(
       transfers,
       nextCursor: data?.length === pageSize ? String(offset + pageSize) : undefined,
       hasMore: data?.length === pageSize,
+    }
+  }
+
+  // Handle Tron (v4 data/transactions doesn't support tron)
+  if (chain === 'tron') {
+    interface TronGridTrc20Tx {
+      transaction_id: string
+      block_timestamp: number
+      from: string
+      to: string
+      value: string
+      token_info?: { symbol?: string; decimals?: number; address?: string }
+    }
+    interface TronGridResponse {
+      data?: TronGridTrc20Tx[]
+      meta?: { fingerprint?: string }
+    }
+    const transfers: NormalizedTransfer[] = []
+
+    // Fetch TRC20 transfers (USDT etc.) via TronGrid
+    const trc20Res = (await tronGridApi.getTrc20Transactions(
+      address,
+      pageSize,
+      cursor || undefined,
+    )) as TronGridResponse
+
+    for (const tx of trc20Res.data ?? []) {
+      if (!tx.transaction_id) continue
+      const decimals = tx.token_info?.decimals ?? 6
+      const rawVal = BigInt(tx.value || '0')
+      const divisor = BigInt(10 ** decimals)
+      const whole = rawVal / divisor
+      const frac = rawVal % divisor
+      let amount: string
+      if (frac === 0n) {
+        amount = whole.toString()
+      } else {
+        const fracStr = frac.toString().padStart(decimals, '0').replace(/0+$/, '')
+        amount = `${whole}.${fracStr}`
+      }
+
+      const direction: 'in' | 'out' = tx.to.toLowerCase() === address.toLowerCase() ? 'in' : 'out'
+      const symbol = tx.token_info?.symbol
+        ? (TRC20_KNOWN[tx.token_info.address ?? '']?.symbol ?? tx.token_info.symbol)
+        : 'UNKNOWN'
+
+      transfers.push({
+        hash: tx.transaction_id,
+        chain: 'tron',
+        timestamp: tx.block_timestamp,
+        direction,
+        amount,
+        symbol,
+        tokenAddress: tx.token_info?.address,
+        counterAddress: direction === 'in' ? tx.from : tx.to,
+      })
+    }
+
+    const nextFingerprint = trc20Res.meta?.fingerprint
+    return {
+      transfers,
+      nextCursor: nextFingerprint,
+      hasMore: !!nextFingerprint,
     }
   }
 
