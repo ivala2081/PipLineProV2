@@ -28,3 +28,13 @@ dist-ssr
 *.sln
 *.sw?
 nul
+
+# Data files
+*.csv
+*.sql.bak
+
+# Temp files
+supabase/.temp/
+
+# One-off scripts
+*.cjs
