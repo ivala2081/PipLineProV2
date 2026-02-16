@@ -46,21 +46,15 @@ export function useImportTransfers() {
           transfer_date: row.transferDate,
           category_id: row.categoryId!,
           amount: row.amount,
-          commission: row.commission,
-          net: row.net,
           currency: row.currency,
-          psp_id: row.pspId!,
           type_id: row.typeId!,
           exchange_rate: row.exchangeRate,
           amount_try: row.amountTry,
           amount_usd: row.amountUsd,
-          commission_rate_snapshot: row.commissionRateSnapshot,
           created_by: user.id,
         }))
 
-        const { error } = await supabase
-          .from('transfers')
-          .insert(insertPayload as never)
+        const { error } = await supabase.from('transfers').insert(insertPayload as never)
 
         if (error) {
           batch.forEach((row) => {
@@ -89,9 +83,10 @@ export function useImportTransfers() {
   })
 
   /** Fetch existing transfers for duplicate detection */
-  async function fetchExistingTransfers(
-    dateRange: { from: string; to: string },
-  ): Promise<ExistingTransfer[]> {
+  async function fetchExistingTransfers(dateRange: {
+    from: string
+    to: string
+  }): Promise<ExistingTransfer[]> {
     if (!currentOrg) return []
     const { data } = await supabase
       .from('transfers')
@@ -103,62 +98,40 @@ export function useImportTransfers() {
     return (data ?? []) as ExistingTransfer[]
   }
 
-  /** Create missing lookup entries so the CSV names can be resolved */
+  /**
+   * Lookup tables are now fixed and cannot be modified by the application.
+   * All CSV values must match the predefined aliases in the database.
+   * This function now throws an error if any lookups are missing.
+   */
   async function createMissingLookups(missing: MissingLookups): Promise<void> {
-    if (!currentOrg) throw new Error('No organization')
+    const errors: string[] = []
 
-    // Create payment methods
     if (missing.paymentMethods.length > 0) {
-      const { error } = await supabase.from('payment_methods').insert(
-        missing.paymentMethods.map((name) => ({
-          organization_id: currentOrg.id,
-          name,
-          is_active: true,
-        })),
+      errors.push(
+        `Payment methods not found: ${missing.paymentMethods.join(', ')}. ` +
+          `Valid values: Bank, Credit Card, Tether`,
       )
-      if (error) throw new Error(`Payment methods: ${error.message}`)
     }
 
-    // Create categories
     if (missing.categories.length > 0) {
-      const { error } = await supabase.from('transfer_categories').insert(
-        missing.categories.map((c) => ({
-          organization_id: currentOrg.id,
-          name: c.name,
-          is_deposit: c.isDeposit,
-          is_active: true,
-        })),
+      errors.push(
+        `Categories not found: ${missing.categories.map((c) => c.name).join(', ')}. ` +
+          `Valid values: DEP (deposit), WD (withdrawal)`,
       )
-      if (error) throw new Error(`Categories: ${error.message}`)
     }
 
-    // Create PSPs (default 0% commission — user can adjust later)
-    if (missing.psps.length > 0) {
-      const { error } = await supabase.from('psps').insert(
-        missing.psps.map((name) => ({
-          organization_id: currentOrg.id,
-          name,
-          commission_rate: 0,
-          is_active: true,
-        })),
-      )
-      if (error) throw new Error(`PSPs: ${error.message}`)
-    }
-
-    // Create transfer types
     if (missing.types.length > 0) {
-      const { error } = await supabase.from('transfer_types').insert(
-        missing.types.map((name) => ({
-          organization_id: currentOrg.id,
-          name,
-          is_active: true,
-        })),
+      errors.push(
+        `Transfer types not found: ${missing.types.join(', ')}. ` +
+          `Valid values: Client, Payment, Blocked`,
       )
-      if (error) throw new Error(`Transfer types: ${error.message}`)
     }
 
-    // Refetch lookup queries so the fresh data is available immediately
-    await queryClient.refetchQueries({ queryKey: queryKeys.lookups.all })
+    if (errors.length > 0) {
+      throw new Error(
+        'CSV contains invalid lookup values. Please fix your CSV file:\n\n' + errors.join('\n\n'),
+      )
+    }
   }
 
   return {

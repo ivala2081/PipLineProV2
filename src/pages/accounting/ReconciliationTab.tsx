@@ -296,6 +296,45 @@ function SettingsPanel({
   }
 
   const handleSave = async () => {
+    // Validate KUR is positive if provided
+    if (kur && Number(kur) <= 0) {
+      alert(
+        t('accounting.reconciliation.settings.kurMustBePositive', 'Exchange rate must be positive'),
+      )
+      return
+    }
+
+    // Validate all numeric fields are valid numbers
+    const numericFields = [
+      { value: devirUsdt, label: 'USDT Devir' },
+      { value: devirTl, label: 'Cash TL Devir' },
+      { value: devirUsd, label: 'Cash USD Devir' },
+      { value: beklTahs, label: 'Expected Collections' },
+    ]
+
+    for (const field of numericFields) {
+      if (field.value && isNaN(Number(field.value))) {
+        alert(
+          `${field.label}: ${t('accounting.reconciliation.settings.invalidNumber', 'Invalid number')}`,
+        )
+        return
+      }
+    }
+
+    // Validate TEYİT entries
+    const validTeyitEntries = teyitEntries.filter((e) => e.label.trim())
+    for (const entry of validTeyitEntries) {
+      if (entry.amount <= 0) {
+        alert(
+          t(
+            'accounting.reconciliation.teyit.amountMustBePositive',
+            'TEYİT amounts must be positive',
+          ),
+        )
+        return
+      }
+    }
+
     await onSave({
       year,
       month,
@@ -304,7 +343,7 @@ function SettingsPanel({
       devir_nakit_usd: devirUsd ? Number(devirUsd) : null,
       kur: kur ? Number(kur) : null,
       bekl_tahs: beklTahs ? Number(beklTahs) : null,
-      teyit_entries: teyitEntries.filter((e) => e.label.trim()),
+      teyit_entries: validTeyitEntries,
     })
   }
 
@@ -691,13 +730,21 @@ export function ReconciliationTab() {
       <div className="flex items-center gap-3 text-xs text-black/40">
         <span>
           {t('accounting.reconciliation.fields.kur')}:{' '}
-          <strong className="font-mono text-black/60">{formatNumber(data.kur, lang)}</strong> TL/USD
+          <strong className={`font-mono ${data.kur <= 0 ? 'text-red' : 'text-black/60'}`}>
+            {formatNumber(data.kur, lang)}
+          </strong>{' '}
+          TL/USD
         </span>
         <Tag variant="default" className="text-[10px]">
           {data.kurIsOverride
             ? t('accounting.reconciliation.badges.override')
             : t('accounting.reconciliation.badges.auto')}
         </Tag>
+        {data.kur <= 0 && (
+          <Tag variant="red" className="text-[10px]">
+            {t('accounting.reconciliation.badges.invalidKur', 'Invalid rate')}
+          </Tag>
+        )}
       </div>
 
       {/* Register cards */}

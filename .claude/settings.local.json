@@ -65,7 +65,13 @@
       "Bash(npm ls:*)",
       "Bash(grep:*)",
       "Bash(chmod:*)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "WebFetch(domain:docs.google.com)",
+      "Bash(node:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(npx husky:*)",
+      "Bash(git config:*)",
+      "Bash(sh -e .husky/pre-commit)"
     ]
   }
 }

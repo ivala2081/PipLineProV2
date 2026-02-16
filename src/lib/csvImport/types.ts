@@ -37,17 +37,13 @@ export interface ResolvedTransferRow {
   paymentMethodId: string | null
   categoryId: string | null
   isDeposit: boolean
-  pspId: string | null
   typeId: string | null
   transferDate: string
   amount: number
-  commission: number
-  net: number
   currency: Currency
   exchangeRate: number
   amountTry: number
   amountUsd: number
-  commissionRateSnapshot: number
 
   issues: ValidationIssue[]
   isValid: boolean

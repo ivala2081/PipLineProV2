@@ -25,6 +25,10 @@ export interface LedgerFilters {
   search: string | null
   dateFrom: string | null
   dateTo: string | null
+  amountMin: string | null
+  amountMax: string | null
+  costPeriod: string | null
+  paymentPeriod: string | null
 }
 
 const EMPTY_FILTERS: LedgerFilters = {
@@ -35,6 +39,10 @@ const EMPTY_FILTERS: LedgerFilters = {
   search: null,
   dateFrom: null,
   dateTo: null,
+  amountMin: null,
+  amountMax: null,
+  costPeriod: null,
+  paymentPeriod: null,
 }
 
 interface UseAccountingQueryReturn {
@@ -55,6 +63,7 @@ interface UseAccountingQueryReturn {
   updateEntry: (id: string, data: EntryFormValues) => Promise<void>
   deleteEntry: (id: string) => Promise<void>
   fetchEntriesByDate: (dateKey: string) => Promise<AccountingEntry[]>
+  fetchAllEntries: () => Promise<AccountingEntry[]>
   isCreating: boolean
   isUpdating: boolean
   isDeleting: boolean
@@ -111,6 +120,10 @@ export function useAccountingQuery(): UseAccountingQueryReturn {
       if (filters.dateFrom) query = query.gte('entry_date', filters.dateFrom)
       if (filters.dateTo) query = query.lte('entry_date', filters.dateTo)
       if (filters.search) query = query.ilike('description', `%${filters.search}%`)
+      if (filters.amountMin) query = query.gte('amount', parseFloat(filters.amountMin))
+      if (filters.amountMax) query = query.lte('amount', parseFloat(filters.amountMax))
+      if (filters.costPeriod) query = query.eq('cost_period', filters.costPeriod)
+      if (filters.paymentPeriod) query = query.eq('payment_period', filters.paymentPeriod)
 
       const { data, error, count } = await query
         .order('entry_date', { ascending: false })
@@ -136,8 +149,15 @@ export function useAccountingQuery(): UseAccountingQueryReturn {
 
       if (error) throw error
 
+      type SummaryRow = {
+        direction: string
+        amount: number
+        currency: string
+        register: string
+      }
+
       const map = new Map<string, AccountingSummary>()
-      for (const row of data ?? []) {
+      for (const row of (data as SummaryRow[]) ?? []) {
         const key = row.register
         const existing = map.get(key) ?? {
           register: row.register,
@@ -228,15 +248,44 @@ export function useAccountingQuery(): UseAccountingQueryReturn {
     },
   })
 
-  /** Fetch ALL entries for a specific date (not paginated) */
+  /** Fetch ALL entries for a specific date (not paginated, ignores filters to show complete daily picture) */
   async function fetchEntriesByDate(dateKey: string): Promise<AccountingEntry[]> {
     if (!currentOrg) return []
+
     const { data, error } = await supabase
       .from('accounting_entries')
       .select('*')
       .eq('organization_id', currentOrg.id)
       .eq('entry_date', dateKey)
       .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return (data as AccountingEntry[]) ?? []
+  }
+
+  /** Fetch ALL entries with current filters applied (for export) */
+  async function fetchAllEntries(): Promise<AccountingEntry[]> {
+    if (!currentOrg) return []
+
+    let query = supabase.from('accounting_entries').select('*').eq('organization_id', currentOrg.id)
+
+    // Apply same filters as paginated query
+    if (filters.register) query = query.eq('register', filters.register)
+    if (filters.direction) query = query.eq('direction', filters.direction)
+    if (filters.entryType) query = query.eq('entry_type', filters.entryType)
+    if (filters.currency) query = query.eq('currency', filters.currency)
+    if (filters.dateFrom) query = query.gte('entry_date', filters.dateFrom)
+    if (filters.dateTo) query = query.lte('entry_date', filters.dateTo)
+    if (filters.search) query = query.ilike('description', `%${filters.search}%`)
+    if (filters.amountMin) query = query.gte('amount', parseFloat(filters.amountMin))
+    if (filters.amountMax) query = query.lte('amount', parseFloat(filters.amountMax))
+    if (filters.costPeriod) query = query.eq('cost_period', filters.costPeriod)
+    if (filters.paymentPeriod) query = query.eq('payment_period', filters.paymentPeriod)
+
+    const { data, error } = await query
+      .order('entry_date', { ascending: false })
+      .order('created_at', { ascending: false })
+
     if (error) throw error
     return (data as AccountingEntry[]) ?? []
   }
@@ -259,6 +308,7 @@ export function useAccountingQuery(): UseAccountingQueryReturn {
     updateEntry: async (id, data) => updateMutation.mutateAsync({ id, data }),
     deleteEntry: deleteMutation.mutateAsync,
     fetchEntriesByDate,
+    fetchAllEntries,
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,

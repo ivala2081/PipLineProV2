@@ -8,7 +8,7 @@ import {
   CaretRight,
   CopySimple,
 } from '@phosphor-icons/react'
-import { Button, Badge } from '@ds'
+import { Button } from '@ds'
 import { cn } from '@ds/utils'
 import type { ImportParseResult, ResolvedTransferRow } from '@/lib/csvImport/types'
 
@@ -32,9 +32,7 @@ export function StepPreview({ parseResult, onConfirm, onBack }: StepPreviewProps
       case 'valid':
         return parseResult.rows.filter((r) => r.isValid && !r.isDuplicate)
       case 'warnings':
-        return parseResult.rows.filter((r) =>
-          r.issues.some((i) => i.severity === 'warning'),
-        )
+        return parseResult.rows.filter((r) => r.issues.some((i) => i.severity === 'warning'))
       case 'errors':
         return parseResult.rows.filter((r) => !r.isValid)
       case 'duplicates':
@@ -45,9 +43,7 @@ export function StepPreview({ parseResult, onConfirm, onBack }: StepPreviewProps
   }, [parseResult.rows, activeFilter])
 
   const importableRows = useMemo(() => {
-    return parseResult.rows.filter(
-      (r) => r.isValid && (!skipDuplicates || !r.isDuplicate),
-    )
+    return parseResult.rows.filter((r) => r.isValid && (!skipDuplicates || !r.isDuplicate))
   }, [parseResult.rows, skipDuplicates])
 
   const handleConfirm = () => {
@@ -63,10 +59,7 @@ export function StepPreview({ parseResult, onConfirm, onBack }: StepPreviewProps
   }
 
   const sortedRates = useMemo(
-    () =>
-      Array.from(parseResult.exchangeRates.entries()).sort(([a], [b]) =>
-        a.localeCompare(b),
-      ),
+    () => Array.from(parseResult.exchangeRates.entries()).sort(([a], [b]) => a.localeCompare(b)),
     [parseResult.exchangeRates],
   )
 
@@ -162,7 +155,6 @@ export function StepPreview({ parseResult, onConfirm, onBack }: StepPreviewProps
               <th className="px-2 py-2 font-medium">Category</th>
               <th className="px-2 py-2 font-medium text-right">Amount</th>
               <th className="px-2 py-2 font-medium">Currency</th>
-              <th className="px-2 py-2 font-medium">PSP</th>
               <th className="px-2 py-2 font-medium">Type</th>
               <th className="px-2 py-2 font-medium text-center">Status</th>
             </tr>
@@ -173,17 +165,13 @@ export function StepPreview({ parseResult, onConfirm, onBack }: StepPreviewProps
                 key={row.rowIndex}
                 row={row}
                 isExpanded={expandedRow === row.rowIndex}
-                onToggle={() =>
-                  setExpandedRow(
-                    expandedRow === row.rowIndex ? null : row.rowIndex,
-                  )
-                }
+                onToggle={() => setExpandedRow(expandedRow === row.rowIndex ? null : row.rowIndex)}
                 formatAmount={formatAmount}
               />
             ))}
             {filteredRows.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-black/40">
+                <td colSpan={8} className="px-4 py-8 text-center text-black/40">
                   No rows to display
                 </td>
               </tr>
@@ -201,11 +189,8 @@ export function StepPreview({ parseResult, onConfirm, onBack }: StepPreviewProps
             onChange={(e) => setSkipDuplicates(e.target.checked)}
             className="rounded"
           />
-          {t(
-            'transfers.import.preview.skipDuplicates',
-            'Skip duplicate rows',
-          )}{' '}
-          ({parseResult.duplicateRows})
+          {t('transfers.import.preview.skipDuplicates', 'Skip duplicate rows')} (
+          {parseResult.duplicateRows})
         </label>
       )}
 
@@ -214,11 +199,7 @@ export function StepPreview({ parseResult, onConfirm, onBack }: StepPreviewProps
         <Button variant="outline" onClick={onBack}>
           &larr; {t('transfers.import.steps.upload', 'Upload')}
         </Button>
-        <Button
-          variant="filled"
-          onClick={handleConfirm}
-          disabled={importableRows.length === 0}
-        >
+        <Button variant="filled" onClick={handleConfirm} disabled={importableRows.length === 0}>
           {importableRows.length > 0
             ? `Import ${importableRows.length} rows`
             : t('transfers.import.preview.noValidRows', 'No valid rows to import')}
@@ -284,9 +265,7 @@ function PreviewRow({
           <span
             className={cn(
               'inline-block rounded px-1.5 py-0.5 text-[10px] font-medium',
-              row.isDeposit
-                ? 'bg-emerald-100 text-emerald-700'
-                : 'bg-red-100 text-red-700',
+              row.isDeposit ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700',
             )}
           >
             {row.raw.categoryName}
@@ -296,9 +275,6 @@ function PreviewRow({
           {formatAmount(row.amount, row.currency)}
         </td>
         <td className="px-2 py-1.5 text-black/60">{row.currency}</td>
-        <td className="max-w-[100px] truncate px-2 py-1.5 text-black/60">
-          {row.raw.pspName}
-        </td>
         <td className="px-2 py-1.5 text-black/60">{row.raw.typeName}</td>
         <td className="px-2 py-1.5 text-center">
           {!row.isValid ? (
@@ -308,26 +284,20 @@ function PreviewRow({
           ) : row.issues.length > 0 ? (
             <Warning size={16} weight="fill" className="inline text-amber-500" />
           ) : (
-            <CheckCircle
-              size={16}
-              weight="fill"
-              className="inline text-emerald-500"
-            />
+            <CheckCircle size={16} weight="fill" className="inline text-emerald-500" />
           )}
         </td>
       </tr>
       {isExpanded && row.issues.length > 0 && (
         <tr className="bg-black/[0.02]">
-          <td colSpan={9} className="px-4 py-2">
+          <td colSpan={8} className="px-4 py-2">
             <div className="flex flex-col gap-1">
               {row.issues.map((issue, idx) => (
                 <div
                   key={idx}
                   className={cn(
                     'flex items-center gap-2 text-xs',
-                    issue.severity === 'error'
-                      ? 'text-red-600'
-                      : 'text-amber-600',
+                    issue.severity === 'error' ? 'text-red-600' : 'text-amber-600',
                   )}
                 >
                   {issue.severity === 'error' ? (

@@ -13,13 +13,11 @@ export interface TransferRow {
   organization_id: string
   full_name: string
   payment_method_id: string
+  psp_id: string
   transfer_date: string
   category_id: string
   amount: number
-  commission: number
-  net: number
   currency: Currency
-  psp_id: string
   type_id: string
   crm_id: string | null
   meta_id: string | null
@@ -28,24 +26,23 @@ export interface TransferRow {
   amount_usd: number
   created_by: string | null
   created_at: string
-  commission_rate_snapshot: number | null
   updated_at: string
-  // joined
-  psp: { name: string; commission_rate: number } | null
+  // joined from foreign keys
   category: { name: string; is_deposit: boolean } | null
   payment_method: { name: string } | null
+  psp: { name: string; commission_rate: number } | null
   type: { name: string } | null
 }
 
 export interface TransferFormData {
   full_name: string
   payment_method_id: string
+  psp_id: string
   transfer_date: string
   category_id: string
   raw_amount: number
   exchange_rate: number
   currency: Currency
-  psp_id: string
   type_id: string
   crm_id?: string
   meta_id?: string
@@ -86,30 +83,27 @@ const SELECT_QUERY =
 export function computeTransfer(
   rawAmount: number,
   category: TransferCategory,
-  commissionRate: number,
   exchangeRate: number,
   currency: Currency,
+  commissionRate = 0,
 ) {
   const amount = category.is_deposit ? rawAmount : -rawAmount
-  const commission = category.is_deposit
-    ? Math.round(rawAmount * commissionRate * 100) / 100
-    : 0
-  const net = Math.round((amount - commission) * 100) / 100
 
   let amountTry: number
   let amountUsd: number
   if (currency === 'TL') {
     amountTry = amount
-    amountUsd =
-      exchangeRate > 0
-        ? Math.round((amount / exchangeRate) * 100) / 100
-        : 0
+    amountUsd = exchangeRate > 0 ? Math.round((amount / exchangeRate) * 100) / 100 : 0
   } else {
     amountUsd = amount
     amountTry = Math.round(amount * exchangeRate * 100) / 100
   }
 
-  return { amount, commission, net, amountTry, amountUsd }
+  // Calculate commission and net
+  const commission = Math.round(Math.abs(amount) * commissionRate * 100) / 100
+  const net = amount - (category.is_deposit ? commission : -commission)
+
+  return { amount, amountTry, amountUsd, commission, net }
 }
 
 /* ------------------------------------------------------------------ */
@@ -148,7 +142,11 @@ export function useTransfers(): UseTransfersReturn {
     const from = (page - 1) * PAGE_SIZE
     const to = from + PAGE_SIZE - 1
 
-    const { data, error: fetchError, count } = await supabase
+    const {
+      data,
+      error: fetchError,
+      count,
+    } = await supabase
       .from('transfers')
       .select(SELECT_QUERY, { count: 'exact' })
       .eq('organization_id', currentOrg.id)
@@ -166,7 +164,7 @@ export function useTransfers(): UseTransfersReturn {
   }, [currentOrg, page])
 
   useEffect(() => {
-    fetchTransfers()
+    fetchTransfers() // eslint-disable-line react-hooks/set-state-in-effect -- deprecated hook, data fetch on mount
   }, [fetchTransfers])
 
   const createTransfer = useCallback(
@@ -257,10 +255,7 @@ export function useTransfers(): UseTransfersReturn {
 
   const deleteTransfer = useCallback(
     async (id: string): Promise<{ error: string | null }> => {
-      const { error: deleteError } = await supabase
-        .from('transfers')
-        .delete()
-        .eq('id', id)
+      const { error: deleteError } = await supabase.from('transfers').delete().eq('id', id)
 
       if (!deleteError) await fetchTransfers()
       return { error: deleteError?.message ?? null }

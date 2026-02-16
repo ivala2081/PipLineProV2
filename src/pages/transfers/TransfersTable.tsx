@@ -1,7 +1,17 @@
-import { useReducer, useCallback } from 'react'
+import { useReducer, useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowUp, ChartBar, CaretLeft, CaretRight } from '@phosphor-icons/react'
+import {
+  ArrowUp,
+  ChartBar,
+  CaretLeft,
+  CaretRight,
+  MagnifyingGlass,
+  X,
+  Funnel,
+} from '@phosphor-icons/react'
+import type { TransferFilters } from '@/hooks/queries/useTransfersQuery'
+import type { LookupQueries } from '@/hooks/queries/useLookupQueries'
 import { supabase } from '@/lib/supabase'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { queryKeys } from '@/lib/queryKeys'
@@ -20,6 +30,12 @@ import {
   Tag,
   Skeleton,
   Button,
+  Input,
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
   Pagination,
   PaginationContent,
   PaginationItem,
@@ -37,10 +53,15 @@ interface TransfersTableProps {
   pageSize: number
   total: number
   dateCounts: Record<string, number>
+  filters: TransferFilters
+  onFilterChange: <K extends keyof TransferFilters>(key: K, value: TransferFilters[K]) => void
+  onClearFilters: () => void
+  hasActiveFilters: boolean
   fetchTransfersByDate: (dateKey: string) => Promise<TransferRow[]>
   onPageChange: (page: number) => void
   onEdit: (transfer: TransferRow) => void
   onDelete: (transfer: TransferRow) => void
+  lookupData: LookupQueries
 }
 
 /* ── State ──────────────────────────────────────────── */
@@ -124,16 +145,22 @@ export function TransfersTable({
   pageSize,
   total,
   dateCounts,
+  filters,
+  onFilterChange,
+  onClearFilters,
+  hasActiveFilters,
   fetchTransfersByDate,
   onPageChange,
   onEdit,
   onDelete,
+  lookupData,
 }: TransfersTableProps) {
   const { t, i18n } = useTranslation('pages')
   const lang = i18n.language
   const { currentOrg } = useOrganization()
   const queryClient = useQueryClient()
   const [state, dispatch] = useReducer(reducer, initialState)
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   const totalPages = Math.ceil(total / pageSize)
   const from = (page - 1) * pageSize + 1
@@ -217,11 +244,242 @@ export function TransfersTable({
     dispatch({ type: 'RESET_RATE', dateKey })
   }, [])
 
+  /* ── Filter bar ──────────────────────────────── */
+
+  const filterBar = (
+    <div className="space-y-2">
+      {/* Search + toggle row */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <MagnifyingGlass
+            size={15}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-black/35"
+          />
+          <Input
+            type="text"
+            inputSize="sm"
+            placeholder={t('transfers.filters.search', 'Search name, CRM ID, META ID...')}
+            value={filters.search ?? ''}
+            onChange={(e) => onFilterChange('search', e.target.value || null)}
+            className="h-8 pl-8 pr-8 text-xs"
+          />
+          {filters.search && (
+            <button
+              type="button"
+              onClick={() => onFilterChange('search', null)}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-black/30 hover:text-black/60"
+            >
+              <X size={13} />
+            </button>
+          )}
+        </div>
+        <Button
+          variant={hasActiveFilters ? 'filled' : 'outline'}
+          size="sm"
+          className="h-8 gap-1.5 px-2.5 text-xs"
+          onClick={() => setFiltersOpen(!filtersOpen)}
+        >
+          <Funnel size={14} weight={hasActiveFilters ? 'fill' : 'regular'} />
+          {t('transfers.filters.label', 'Filters')}
+          {hasActiveFilters && (
+            <span className="ml-0.5 flex size-4 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold">
+              {Object.values(filters).filter((v) => v != null && v !== '').length}
+            </span>
+          )}
+        </Button>
+        {hasActiveFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 gap-1 px-2 text-xs text-black/40 hover:text-black/70"
+            onClick={onClearFilters}
+          >
+            <X size={13} />
+            {t('transfers.filters.clear', 'Clear')}
+          </Button>
+        )}
+      </div>
+
+      {/* Expanded filter dropdowns */}
+      {filtersOpen && (
+        <div className="rounded-lg border border-black/[0.08] bg-gradient-to-b from-black/[0.02] to-black/[0.015] p-4">
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+            {/* Transaction Type */}
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
+                {t('transfers.filters.transactionType', 'Transaction Type')}
+              </label>
+              <Select
+                value={filters.categoryType ?? '__all__'}
+                onValueChange={(v) => onFilterChange('categoryType', v === '__all__' ? null : v)}
+              >
+                <SelectTrigger selectSize="sm" className="h-9 w-full text-xs">
+                  <SelectValue placeholder={t('transfers.filters.allTypes', 'All Types')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">
+                    {t('transfers.filters.allTypes', 'All Types')}
+                  </SelectItem>
+                  <SelectItem value="deposit">
+                    {t('transfers.filters.deposit', 'Deposit')}
+                  </SelectItem>
+                  <SelectItem value="withdrawal">
+                    {t('transfers.filters.withdrawal', 'Withdrawal')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Currency */}
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
+                {t('transfers.filters.currency', 'Currency')}
+              </label>
+              <Select
+                value={filters.currency ?? '__all__'}
+                onValueChange={(v) => onFilterChange('currency', v === '__all__' ? null : v)}
+              >
+                <SelectTrigger selectSize="sm" className="h-9 w-full text-xs">
+                  <SelectValue
+                    placeholder={t('transfers.filters.allCurrencies', 'All Currencies')}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">
+                    {t('transfers.filters.allCurrencies', 'All Currencies')}
+                  </SelectItem>
+                  <SelectItem value="TL">TL</SelectItem>
+                  <SelectItem value="USD">USD</SelectItem>
+                  <SelectItem value="USDT">USDT</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Payment Method */}
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
+                {t('transfers.filters.paymentMethod', 'Payment Method')}
+              </label>
+              <Select
+                value={filters.paymentMethodId ?? '__all__'}
+                onValueChange={(v) => onFilterChange('paymentMethodId', v === '__all__' ? null : v)}
+              >
+                <SelectTrigger selectSize="sm" className="h-9 w-full text-xs">
+                  <SelectValue
+                    placeholder={t('transfers.filters.allPaymentMethods', 'All Methods')}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">
+                    {t('transfers.filters.allPaymentMethods', 'All Methods')}
+                  </SelectItem>
+                  {lookupData.paymentMethods.map((method) => (
+                    <SelectItem key={method.id} value={method.id}>
+                      {method.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Type */}
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
+                {t('transfers.filters.type', 'Type')}
+              </label>
+              <Select
+                value={filters.typeId ?? '__all__'}
+                onValueChange={(v) => onFilterChange('typeId', v === '__all__' ? null : v)}
+              >
+                <SelectTrigger selectSize="sm" className="h-9 w-full text-xs">
+                  <SelectValue placeholder={t('transfers.filters.allTransferTypes', 'All Types')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">
+                    {t('transfers.filters.allTransferTypes', 'All Types')}
+                  </SelectItem>
+                  {lookupData.transferTypes.map((type) => (
+                    <SelectItem key={type.id} value={type.id}>
+                      {type.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Amount Min */}
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
+                {t('transfers.filters.minAmount', 'Min Amount')}
+              </label>
+              <Input
+                type="number"
+                inputSize="sm"
+                placeholder="0.00"
+                step="0.01"
+                min="0"
+                value={filters.amountMin ?? ''}
+                onChange={(e) => onFilterChange('amountMin', e.target.value || null)}
+                className="h-9 w-full text-xs"
+              />
+            </div>
+
+            {/* Amount Max */}
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
+                {t('transfers.filters.maxAmount', 'Max Amount')}
+              </label>
+              <Input
+                type="number"
+                inputSize="sm"
+                placeholder="0.00"
+                step="0.01"
+                min="0"
+                value={filters.amountMax ?? ''}
+                onChange={(e) => onFilterChange('amountMax', e.target.value || null)}
+                className="h-9 w-full text-xs"
+              />
+            </div>
+
+            {/* Date From */}
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
+                {t('transfers.filters.from', 'Date From')}
+              </label>
+              <Input
+                type="date"
+                inputSize="sm"
+                value={filters.dateFrom ?? ''}
+                onChange={(e) => onFilterChange('dateFrom', e.target.value || null)}
+                className="h-9 w-full text-xs"
+              />
+            </div>
+
+            {/* Date To */}
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
+                {t('transfers.filters.to', 'Date To')}
+              </label>
+              <Input
+                type="date"
+                inputSize="sm"
+                value={filters.dateTo ?? ''}
+                onChange={(e) => onFilterChange('dateTo', e.target.value || null)}
+                className="h-9 w-full text-xs"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
   /* ── Loading skeleton ─────────────────────────── */
 
   if (isLoading) {
     return (
       <div className="space-y-3">
+        {filterBar}
         {Array.from({ length: 2 }).map((_, g) => (
           <div key={g} className="overflow-hidden rounded-xl border border-black/10">
             <div className="flex items-center justify-between bg-black/[0.02] px-4 py-2.5">
@@ -251,11 +509,22 @@ export function TransfersTable({
 
   if (transfers.length === 0) {
     return (
-      <EmptyState
-        icon={ArrowUp}
-        title={t('transfers.empty.title')}
-        description={t('transfers.empty.description')}
-      />
+      <div className="space-y-3">
+        {filterBar}
+        <EmptyState
+          icon={ArrowUp}
+          title={
+            hasActiveFilters
+              ? t('transfers.filters.noResults', 'No matching transfers')
+              : t('transfers.empty.title')
+          }
+          description={
+            hasActiveFilters
+              ? t('transfers.filters.noResultsDescription', 'Try adjusting your filters.')
+              : t('transfers.empty.description')
+          }
+        />
+      </div>
     )
   }
 
@@ -280,6 +549,7 @@ export function TransfersTable({
 
   return (
     <>
+      {filterBar}
       {/* Date-grouped cards */}
       <div className="space-y-3">
         {groups.map((group) => (
@@ -318,14 +588,10 @@ export function TransfersTable({
                     <TableHead className={`${TH_CLASS} text-right`}>
                       {t('transfers.columns.amount')}
                     </TableHead>
-                    <TableHead className={`${TH_CLASS} text-right`}>
-                      {t('transfers.columns.commission')}
-                    </TableHead>
-                    <TableHead className={`${TH_CLASS} text-right`}>
-                      {t('transfers.columns.net')}
-                    </TableHead>
                     <TableHead className={TH_CLASS}>{t('transfers.columns.currency')}</TableHead>
-                    <TableHead className={TH_CLASS}>{t('transfers.columns.psp')}</TableHead>
+                    <TableHead className={`${TH_CLASS} text-right`}>
+                      {t('transfers.columns.exchangeRate')}
+                    </TableHead>
                     <TableHead className={TH_CLASS}>{t('transfers.columns.type')}</TableHead>
                     <TableHead className="w-20 px-2" />
                   </TableRow>

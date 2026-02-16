@@ -210,91 +210,183 @@ export function LedgerTable({
 
       {/* Expanded filter dropdowns */}
       {filtersOpen && (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-black/[0.06] bg-black/[0.015] px-3 py-2.5">
-          {/* Register */}
-          <Select
-            value={filters.register ?? '__all__'}
-            onValueChange={(v) => onFilterChange('register', v === '__all__' ? null : v)}
-          >
-            <SelectTrigger selectSize="sm" className="h-8 w-[130px] text-xs">
-              <SelectValue placeholder={t('accounting.filters.allRegisters')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">{t('accounting.filters.allRegisters')}</SelectItem>
-              <SelectItem value="USDT">USDT</SelectItem>
-              <SelectItem value="NAKIT_TL">Cash TL</SelectItem>
-              <SelectItem value="NAKIT_USD">Cash USD</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="rounded-lg border border-black/[0.08] bg-gradient-to-b from-black/[0.02] to-black/[0.015] p-4">
+          {/* Grid layout for better space utilization */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {/* Type & Status Group */}
+            <div className="space-y-2">
+              <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
+                {t('accounting.filters.typeStatus', 'Type & Status')}
+              </label>
+              <div className="space-y-2">
+                <Select
+                  value={filters.entryType ?? '__all__'}
+                  onValueChange={(v) => onFilterChange('entryType', v === '__all__' ? null : v)}
+                >
+                  <SelectTrigger selectSize="sm" className="h-9 w-full text-xs">
+                    <SelectValue placeholder={t('accounting.filters.allTypes')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">{t('accounting.filters.allTypes')}</SelectItem>
+                    <SelectItem value="ODEME">{t('accounting.entryTypes.ODEME')}</SelectItem>
+                    <SelectItem value="TRANSFER">{t('accounting.entryTypes.TRANSFER')}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={filters.direction ?? '__all__'}
+                  onValueChange={(v) => onFilterChange('direction', v === '__all__' ? null : v)}
+                >
+                  <SelectTrigger selectSize="sm" className="h-9 w-full text-xs">
+                    <SelectValue placeholder={t('accounting.filters.allDirections')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">{t('accounting.filters.allDirections')}</SelectItem>
+                    <SelectItem value="in">{t('accounting.directions.in')}</SelectItem>
+                    <SelectItem value="out">{t('accounting.directions.out')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
-          {/* Direction */}
-          <Select
-            value={filters.direction ?? '__all__'}
-            onValueChange={(v) => onFilterChange('direction', v === '__all__' ? null : v)}
-          >
-            <SelectTrigger selectSize="sm" className="h-8 w-[110px] text-xs">
-              <SelectValue placeholder={t('accounting.filters.allDirections')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">{t('accounting.filters.allDirections')}</SelectItem>
-              <SelectItem value="in">{t('accounting.directions.in')}</SelectItem>
-              <SelectItem value="out">{t('accounting.directions.out')}</SelectItem>
-            </SelectContent>
-          </Select>
+            {/* Financial Group */}
+            <div className="space-y-2">
+              <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
+                {t('accounting.filters.financial', 'Financial')}
+              </label>
+              <div className="space-y-2">
+                <Select
+                  value={filters.register ?? '__all__'}
+                  onValueChange={(v) => onFilterChange('register', v === '__all__' ? null : v)}
+                >
+                  <SelectTrigger selectSize="sm" className="h-9 w-full text-xs">
+                    <SelectValue placeholder={t('accounting.filters.allRegisters')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">{t('accounting.filters.allRegisters')}</SelectItem>
+                    <SelectItem value="USDT">USDT</SelectItem>
+                    <SelectItem value="NAKIT_TL">Cash TL</SelectItem>
+                    <SelectItem value="NAKIT_USD">Cash USD</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={filters.currency ?? '__all__'}
+                  onValueChange={(v) => onFilterChange('currency', v === '__all__' ? null : v)}
+                >
+                  <SelectTrigger selectSize="sm" className="h-9 w-full text-xs">
+                    <SelectValue placeholder={t('accounting.filters.allCurrencies')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">{t('accounting.filters.allCurrencies')}</SelectItem>
+                    <SelectItem value="TL">TL</SelectItem>
+                    <SelectItem value="USD">USD</SelectItem>
+                    <SelectItem value="USDT">USDT</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
-          {/* Entry Type */}
-          <Select
-            value={filters.entryType ?? '__all__'}
-            onValueChange={(v) => onFilterChange('entryType', v === '__all__' ? null : v)}
-          >
-            <SelectTrigger selectSize="sm" className="h-8 w-[120px] text-xs">
-              <SelectValue placeholder={t('accounting.filters.allTypes')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">{t('accounting.filters.allTypes')}</SelectItem>
-              <SelectItem value="ODEME">{t('accounting.entryTypes.ODEME')}</SelectItem>
-              <SelectItem value="TRANSFER">{t('accounting.entryTypes.TRANSFER')}</SelectItem>
-            </SelectContent>
-          </Select>
+            {/* Amount Range Group */}
+            <div className="space-y-2">
+              <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
+                {t('accounting.filters.amountRange', 'Amount Range')}
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-medium text-black/40">
+                    {t('accounting.filters.minAmount', 'Min')}
+                  </span>
+                  <Input
+                    type="number"
+                    inputSize="sm"
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                    value={filters.amountMin ?? ''}
+                    onChange={(e) => onFilterChange('amountMin', e.target.value || null)}
+                    className="h-9 w-full text-xs"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-medium text-black/40">
+                    {t('accounting.filters.maxAmount', 'Max')}
+                  </span>
+                  <Input
+                    type="number"
+                    inputSize="sm"
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                    value={filters.amountMax ?? ''}
+                    onChange={(e) => onFilterChange('amountMax', e.target.value || null)}
+                    className="h-9 w-full text-xs"
+                  />
+                </div>
+              </div>
+            </div>
 
-          {/* Currency */}
-          <Select
-            value={filters.currency ?? '__all__'}
-            onValueChange={(v) => onFilterChange('currency', v === '__all__' ? null : v)}
-          >
-            <SelectTrigger selectSize="sm" className="h-8 w-[110px] text-xs">
-              <SelectValue placeholder={t('accounting.filters.allCurrencies')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">{t('accounting.filters.allCurrencies')}</SelectItem>
-              <SelectItem value="TL">TL</SelectItem>
-              <SelectItem value="USD">USD</SelectItem>
-              <SelectItem value="USDT">USDT</SelectItem>
-            </SelectContent>
-          </Select>
+            {/* Periods Group */}
+            <div className="space-y-2">
+              <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
+                {t('accounting.filters.periods', 'Periods')}
+              </label>
+              <div className="space-y-2">
+                <Input
+                  type="text"
+                  inputSize="sm"
+                  placeholder={t(
+                    'accounting.filters.costPeriodPlaceholder',
+                    'Cost Period (YYYY-MM)',
+                  )}
+                  value={filters.costPeriod ?? ''}
+                  onChange={(e) => onFilterChange('costPeriod', e.target.value || null)}
+                  className="h-9 w-full text-xs"
+                />
+                <Input
+                  type="text"
+                  inputSize="sm"
+                  placeholder={t(
+                    'accounting.filters.paymentPeriodPlaceholder',
+                    'Payment Period (YYYY-MM)',
+                  )}
+                  value={filters.paymentPeriod ?? ''}
+                  onChange={(e) => onFilterChange('paymentPeriod', e.target.value || null)}
+                  className="h-9 w-full text-xs"
+                />
+              </div>
+            </div>
 
-          {/* Date From */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-black/40">{t('accounting.filters.from')}</span>
-            <Input
-              type="date"
-              inputSize="sm"
-              value={filters.dateFrom ?? ''}
-              onChange={(e) => onFilterChange('dateFrom', e.target.value || null)}
-              className="h-8 w-[140px] text-xs"
-            />
-          </div>
-
-          {/* Date To */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-black/40">{t('accounting.filters.to')}</span>
-            <Input
-              type="date"
-              inputSize="sm"
-              value={filters.dateTo ?? ''}
-              onChange={(e) => onFilterChange('dateTo', e.target.value || null)}
-              className="h-8 w-[140px] text-xs"
-            />
+            {/* Date Range Group */}
+            <div className="space-y-2 md:col-span-2 lg:col-span-2">
+              <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
+                {t('accounting.filters.dateRange', 'Date Range')}
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-medium text-black/40">
+                    {t('accounting.filters.from')}
+                  </span>
+                  <Input
+                    type="date"
+                    inputSize="sm"
+                    value={filters.dateFrom ?? ''}
+                    onChange={(e) => onFilterChange('dateFrom', e.target.value || null)}
+                    className="h-9 w-full text-xs"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-medium text-black/40">
+                    {t('accounting.filters.to')}
+                  </span>
+                  <Input
+                    type="date"
+                    inputSize="sm"
+                    value={filters.dateTo ?? ''}
+                    onChange={(e) => onFilterChange('dateTo', e.target.value || null)}
+                    className="h-9 w-full text-xs"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

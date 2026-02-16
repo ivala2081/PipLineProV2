@@ -1,16 +1,5 @@
-import type {
-  Currency,
-  Psp,
-  TransferCategory,
-  PaymentMethod,
-  TransferType,
-} from '@/lib/database.types'
-import type {
-  CsvRawRow,
-  ResolvedTransferRow,
-  ValidationIssue,
-  ImportParseResult,
-} from './types'
+import type { Currency, TransferCategory, PaymentMethod, TransferType } from '@/lib/database.types'
+import type { CsvRawRow, ResolvedTransferRow, ValidationIssue, ImportParseResult } from './types'
 import { parseTurkishDecimal, parseTurkishDate } from './parseCsv'
 
 /* ------------------------------------------------------------------ */
@@ -20,7 +9,6 @@ import { parseTurkishDecimal, parseTurkishDate } from './parseCsv'
 export interface LookupMaps {
   paymentMethodsByName: Map<string, PaymentMethod>
   categoriesByName: Map<string, TransferCategory>
-  pspsByName: Map<string, Psp>
   typesByName: Map<string, TransferType>
 }
 
@@ -32,7 +20,6 @@ export interface LookupMaps {
 export function buildLookupMaps(
   paymentMethods: PaymentMethod[],
   categories: TransferCategory[],
-  psps: Psp[],
   transferTypes: TransferType[],
 ): LookupMaps {
   const pm = new Map<string, PaymentMethod>()
@@ -47,9 +34,6 @@ export function buildLookupMaps(
     for (const alias of c.aliases ?? []) cat.set(alias.toLowerCase(), c)
   }
 
-  const p = new Map<string, Psp>()
-  for (const psp of psps) p.set(psp.name.toLowerCase(), psp)
-
   const t = new Map<string, TransferType>()
   for (const type of transferTypes) {
     t.set(type.name.toLowerCase(), type)
@@ -59,7 +43,6 @@ export function buildLookupMaps(
   return {
     paymentMethodsByName: pm,
     categoriesByName: cat,
-    pspsByName: p,
     typesByName: t,
   }
 }
@@ -102,16 +85,6 @@ export function validateRow(
   }
   const isDeposit = cat?.is_deposit ?? raw.categoryName.toUpperCase() === 'YATIRIM'
 
-  // PSP
-  const psp = lookupMaps.pspsByName.get(raw.pspName.toLowerCase())
-  if (!psp) {
-    issues.push({
-      field: 'psp',
-      message: `PSP "${raw.pspName}" not found`,
-      severity: 'error',
-    })
-  }
-
   // Type (matches by name or alias)
   const type = lookupMaps.typesByName.get(raw.typeName.toLowerCase())
   if (!type) {
@@ -143,12 +116,6 @@ export function validateRow(
     })
   }
 
-  // Commission
-  const commission = parseTurkishDecimal(raw.commissionRaw)
-
-  // Net
-  const net = parseTurkishDecimal(raw.netRaw)
-
   // Currency
   const currency = raw.currency.toUpperCase() as Currency
   if (currency !== 'TL' && currency !== 'USD') {
@@ -179,19 +146,11 @@ export function validateRow(
   let amountUsd: number
   if (currency === 'TL') {
     amountTry = amount
-    amountUsd = exchangeRate > 1
-      ? Math.round((amount / exchangeRate) * 100) / 100
-      : 0
+    amountUsd = exchangeRate > 1 ? Math.round((amount / exchangeRate) * 100) / 100 : 0
   } else {
     amountUsd = amount
     amountTry = Math.round(amount * exchangeRate * 100) / 100
   }
-
-  // Commission rate snapshot
-  const absAmount = Math.abs(amount)
-  const commissionRateSnapshot = isDeposit && absAmount > 0
-    ? Math.round((Math.abs(commission) / absAmount) * 10000) / 10000
-    : 0
 
   const hasError = issues.some((i) => i.severity === 'error')
 
@@ -204,17 +163,13 @@ export function validateRow(
     paymentMethodId: pm?.id ?? null,
     categoryId: cat?.id ?? null,
     isDeposit,
-    pspId: psp?.id ?? null,
     typeId: type?.id ?? null,
     transferDate,
     amount,
-    commission,
-    net,
-    currency: (currency === 'TL' || currency === 'USD') ? currency : 'TL',
+    currency: currency === 'TL' || currency === 'USD' ? currency : 'TL',
     exchangeRate,
     amountTry,
     amountUsd,
-    commissionRateSnapshot,
     issues,
     isValid: !hasError,
     isDuplicate: false,
@@ -228,18 +183,13 @@ export function validateRow(
 export interface MissingLookups {
   paymentMethods: string[]
   categories: Array<{ name: string; isDeposit: boolean }>
-  psps: string[]
   types: string[]
   hasMissing: boolean
 }
 
-export function detectMissingLookups(
-  rawRows: CsvRawRow[],
-  lookupMaps: LookupMaps,
-): MissingLookups {
+export function detectMissingLookups(rawRows: CsvRawRow[], lookupMaps: LookupMaps): MissingLookups {
   const pmSet = new Set<string>()
   const catSet = new Map<string, boolean>()
-  const pspSet = new Set<string>()
   const typeSet = new Set<string>()
 
   for (const raw of rawRows) {
@@ -254,11 +204,6 @@ export function detectMissingLookups(
       catSet.set(raw.categoryName, raw.categoryName.toUpperCase() === 'YATIRIM')
     }
 
-    const pspKey = raw.pspName.toLowerCase()
-    if (pspKey && !lookupMaps.pspsByName.has(pspKey)) {
-      pspSet.add(raw.pspName)
-    }
-
     const typeKey = raw.typeName.toLowerCase()
     if (typeKey && !lookupMaps.typesByName.has(typeKey)) {
       typeSet.add(raw.typeName)
@@ -270,19 +215,13 @@ export function detectMissingLookups(
     name,
     isDeposit,
   }))
-  const psps = Array.from(pspSet)
   const types = Array.from(typeSet)
 
   return {
     paymentMethods,
     categories,
-    psps,
     types,
-    hasMissing:
-      paymentMethods.length > 0 ||
-      categories.length > 0 ||
-      psps.length > 0 ||
-      types.length > 0,
+    hasMissing: paymentMethods.length > 0 || categories.length > 0 || types.length > 0,
   }
 }
 

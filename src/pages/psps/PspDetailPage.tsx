@@ -519,22 +519,72 @@ function SettlementsTab({ pspId, isAdmin }: { pspId: string; isAdmin: boolean })
 }
 
 /* ------------------------------------------------------------------ */
+/*  Delete PSP Confirmation Dialog                                    */
+/* ------------------------------------------------------------------ */
+
+function DeletePspDialog({
+  open,
+  onClose,
+  onConfirm,
+  isDeleting,
+  pspName,
+}: {
+  open: boolean
+  onClose: () => void
+  onConfirm: () => void
+  isDeleting: boolean
+  pspName: string
+}) {
+  const { t } = useTranslation('pages')
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{t('psps.deletePsp.title')}</DialogTitle>
+        </DialogHeader>
+        <p className="py-2 text-sm text-black/60">
+          {t('psps.deletePsp.description', { name: pspName })}
+        </p>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={isDeleting}>
+            {t('psps.deletePsp.cancel')}
+          </Button>
+          <Button
+            variant="filled"
+            className="bg-red-600 hover:bg-red-700"
+            onClick={onConfirm}
+            disabled={isDeleting}
+          >
+            {isDeleting ? <SpinnerGap size={14} className="mr-1.5 animate-spin" /> : null}
+            {t('psps.deletePsp.confirm')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/* ------------------------------------------------------------------ */
 /*  Settings Tab                                                       */
 /* ------------------------------------------------------------------ */
 
 function SettingsTab({
   pspId,
+  pspName,
   currentRate,
   isActive,
   isInternal,
 }: {
   pspId: string
+  pspName: string
   currentRate: number
   isActive: boolean
   isInternal: boolean
 }) {
   const { t } = useTranslation('pages')
   const { toast } = useToast()
+  const navigate = useNavigate()
 
   const pspMutation = useLookupMutation('psps')
 
@@ -692,6 +742,33 @@ function SettingsTab({
   }
 
   const currentRateId = rates.find((r) => r.effective_from <= todayStr)?.id
+
+  // Delete PSP
+  const [deletePspDialogOpen, setDeletePspDialogOpen] = useState(false)
+  const [deletePinOpen, setDeletePinOpen] = useState(false)
+
+  const handleDeletePspClick = () => {
+    setDeletePspDialogOpen(true)
+  }
+
+  const handleDeletePspConfirm = () => {
+    setDeletePspDialogOpen(false)
+    setDeletePinOpen(true)
+  }
+
+  const handleDeletePinConfirm = async () => {
+    setDeletePinOpen(false)
+    try {
+      await pspMutation.deleteItem(pspId)
+      toast({ title: t('psps.toast.pspDeleted'), variant: 'success' })
+      navigate('/psps')
+    } catch (error) {
+      toast({
+        title: (error as Error).message || t('psps.toast.error'),
+        variant: 'error',
+      })
+    }
+  }
 
   return (
     <div className="space-y-4 pt-4">
@@ -933,6 +1010,34 @@ function SettingsTab({
         </Card>
       )}
 
+      {/* Danger Zone - Delete PSP */}
+      <Card padding="spacious" className="border border-red-200 bg-red-50/30">
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-sm font-semibold text-red-700">{t('psps.settings.dangerZone')}</h3>
+            <p className="mt-1 text-xs text-red-600/70">{t('psps.settings.dangerZoneDesc')}</p>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-red-200 bg-white p-3">
+            <div>
+              <p className="text-sm font-medium text-black/80">{t('psps.settings.deletePsp')}</p>
+              <p className="mt-0.5 text-xs text-black/50">
+                {t('psps.deletePsp.description', { name: pspName })}
+              </p>
+            </div>
+            <Button
+              variant="filled"
+              size="sm"
+              className="bg-red-600 hover:bg-red-700"
+              onClick={handleDeletePspClick}
+              disabled={pspMutation.isDeleting}
+            >
+              <Trash size={14} weight="bold" className="mr-1.5" />
+              {t('psps.settings.deletePsp')}
+            </Button>
+          </div>
+        </div>
+      </Card>
+
       <ManagerPinDialog
         open={statusPinOpen}
         onClose={() => {
@@ -965,6 +1070,20 @@ function SettingsTab({
           setPendingDeleteRateId(null)
         }}
         onConfirm={handleHistoryPinConfirm}
+      />
+
+      <ManagerPinDialog
+        open={deletePinOpen}
+        onClose={() => setDeletePinOpen(false)}
+        onConfirm={handleDeletePinConfirm}
+      />
+
+      <DeletePspDialog
+        open={deletePspDialogOpen}
+        onClose={() => setDeletePspDialogOpen(false)}
+        onConfirm={handleDeletePspConfirm}
+        isDeleting={pspMutation.isDeleting}
+        pspName={pspName}
       />
     </div>
   )
@@ -1157,6 +1276,7 @@ export function PspDetailPage() {
         <TabsContent value="settings">
           <SettingsTab
             pspId={pspId!}
+            pspName={psp.psp_name}
             currentRate={psp.commission_rate}
             isActive={psp.is_active}
             isInternal={psp.is_internal}

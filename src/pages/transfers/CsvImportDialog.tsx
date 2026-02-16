@@ -1,8 +1,7 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { useLookupQueries } from '@/hooks/queries/useLookupQueries'
 import { useImportTransfers } from '@/hooks/queries/useImportTransfers'
-import { useOrganization } from '@/app/providers/OrganizationProvider'
 import {
   buildLookupMaps,
   validateAllRows,
@@ -15,16 +14,9 @@ import type {
   ImportParseResult,
   ImportProgress,
 } from '@/lib/csvImport/types'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  Button,
-} from '@ds'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@ds'
 import { cn } from '@ds/utils'
-import { Warning, Plus, SpinnerGap } from '@phosphor-icons/react'
+import { Warning } from '@phosphor-icons/react'
 import { StepUpload } from './import/StepUpload'
 import { StepPreview } from './import/StepPreview'
 import { StepImport } from './import/StepImport'
@@ -43,9 +35,7 @@ const STEP_LABELS = ['Upload', 'Preview', 'Import', 'Results']
 
 export function CsvImportDialog({ open, onClose, lookupData }: CsvImportDialogProps) {
   const { t } = useTranslation('pages')
-  const { currentOrg } = useOrganization()
-  const { importTransfers, fetchExistingTransfers, createMissingLookups } =
-    useImportTransfers()
+  const { importTransfers, fetchExistingTransfers } = useImportTransfers()
 
   const [step, setStep] = useState<ImportStep>('upload')
   const [parseResult, setParseResult] = useState<ImportParseResult | null>(null)
@@ -61,9 +51,6 @@ export function CsvImportDialog({ open, onClose, lookupData }: CsvImportDialogPr
 
   // Missing lookups state
   const [missingLookups, setMissingLookups] = useState<MissingLookups | null>(null)
-  const [isCreatingLookups, setIsCreatingLookups] = useState(false)
-  const [lookupError, setLookupError] = useState<string | null>(null)
-  const [pendingRevalidation, setPendingRevalidation] = useState(false)
 
   // Keep raw rows + exchange rates for re-validation after creating lookups
   const rawRowsRef = useRef<CsvRawRow[]>([])
@@ -78,7 +65,6 @@ export function CsvImportDialog({ open, onClose, lookupData }: CsvImportDialogPr
     setStep('upload')
     setParseResult(null)
     setMissingLookups(null)
-    setLookupError(null)
     setProgress({
       phase: 'idle',
       totalRows: 0,
@@ -93,18 +79,10 @@ export function CsvImportDialog({ open, onClose, lookupData }: CsvImportDialogPr
 
   /** Build lookup maps and validate rows */
   const runValidation = useCallback(
-    async (
-      rows: CsvRawRow[],
-      exchangeRates: Map<string, number>,
-    ) => {
+    async (rows: CsvRawRow[], exchangeRates: Map<string, number>) => {
       // Read from ref to always get the latest lookup data (important after refetch)
       const ld = lookupDataRef.current
-      const lookupMaps = buildLookupMaps(
-        ld.paymentMethods,
-        ld.categories,
-        ld.psps,
-        ld.transferTypes,
-      )
+      const lookupMaps = buildLookupMaps(ld.paymentMethods, ld.categories, ld.transferTypes)
 
       // Detect missing lookups
       const missing = detectMissingLookups(rows, lookupMaps)
@@ -132,12 +110,7 @@ export function CsvImportDialog({ open, onClose, lookupData }: CsvImportDialogPr
         }
       }
 
-      const validated = validateAllRows(
-        rows,
-        lookupMaps,
-        exchangeRates,
-        existingTransfers,
-      )
+      const validated = validateAllRows(rows, lookupMaps, exchangeRates, existingTransfers)
 
       setParseResult(validated)
       setStep('preview')
@@ -154,39 +127,6 @@ export function CsvImportDialog({ open, onClose, lookupData }: CsvImportDialogPr
     },
     [runValidation],
   )
-
-  /** Create missing lookups, then schedule re-validation after data refreshes */
-  const handleCreateLookups = useCallback(async () => {
-    if (!missingLookups) return
-
-    setIsCreatingLookups(true)
-    setLookupError(null)
-
-    try {
-      // This awaits refetchQueries — data is in cache, but component
-      // hasn't re-rendered yet. Set flag so the effect re-validates
-      // after React re-renders with fresh lookupData.
-      await createMissingLookups(missingLookups)
-
-      setMissingLookups(null)
-      setParseResult(null)
-      setPendingRevalidation(true)
-    } catch (err) {
-      setLookupError(err instanceof Error ? err.message : 'Failed to create lookups')
-      setIsCreatingLookups(false)
-    }
-  }, [missingLookups, createMissingLookups])
-
-  // After creating lookups, React Query refetches and the component re-renders
-  // with fresh lookupData. This effect picks that up and re-validates.
-  useEffect(() => {
-    if (!pendingRevalidation) return
-    setPendingRevalidation(false)
-    setIsCreatingLookups(false)
-    void runValidation(rawRowsRef.current, exchangeRatesRef.current).catch(() => {
-      setLookupError('Re-validation failed after creating lookups')
-    })
-  }, [pendingRevalidation, lookupData, runValidation])
 
   /** Step 2 → Step 3: user confirmed, start importing */
   const handleConfirm = useCallback(
@@ -246,9 +186,7 @@ export function CsvImportDialog({ open, onClose, lookupData }: CsvImportDialogPr
         }}
       >
         <DialogHeader>
-          <DialogTitle>
-            {t('transfers.import.title', 'Import Transfers from CSV')}
-          </DialogTitle>
+          <DialogTitle>{t('transfers.import.title', 'Import Transfers from CSV')}</DialogTitle>
           <DialogDescription>
             {t(
               'transfers.import.subtitle',
@@ -264,9 +202,7 @@ export function CsvImportDialog({ open, onClose, lookupData }: CsvImportDialogPr
               <div
                 className={cn(
                   'flex size-7 items-center justify-center rounded-full text-xs font-medium transition-colors',
-                  idx <= currentStepIndex
-                    ? 'bg-black/80 text-white'
-                    : 'bg-black/10 text-black/40',
+                  idx <= currentStepIndex ? 'bg-black/80 text-white' : 'bg-black/10 text-black/40',
                 )}
               >
                 {idx + 1}
@@ -281,10 +217,7 @@ export function CsvImportDialog({ open, onClose, lookupData }: CsvImportDialogPr
               </span>
               {idx < STEPS.length - 1 && (
                 <div
-                  className={cn(
-                    'h-px w-8',
-                    idx < currentStepIndex ? 'bg-black/30' : 'bg-black/10',
-                  )}
+                  className={cn('h-px w-8', idx < currentStepIndex ? 'bg-black/30' : 'bg-black/10')}
                 />
               )}
             </div>
@@ -293,12 +226,7 @@ export function CsvImportDialog({ open, onClose, lookupData }: CsvImportDialogPr
 
         {/* Missing lookups banner */}
         {step === 'preview' && missingLookups?.hasMissing && (
-          <MissingLookupsBanner
-            missing={missingLookups}
-            isCreating={isCreatingLookups}
-            error={lookupError}
-            onCreate={handleCreateLookups}
-          />
+          <MissingLookupsBanner missing={missingLookups} />
         )}
 
         {/* Step content */}
@@ -315,9 +243,7 @@ export function CsvImportDialog({ open, onClose, lookupData }: CsvImportDialogPr
           />
         )}
         {step === 'import' && <StepImport progress={progress} />}
-        {step === 'results' && (
-          <StepResults progress={progress} onClose={handleClose} />
-        )}
+        {step === 'results' && <StepResults progress={progress} onClose={handleClose} />}
       </DialogContent>
     </Dialog>
   )
@@ -327,67 +253,68 @@ export function CsvImportDialog({ open, onClose, lookupData }: CsvImportDialogPr
 /*  Missing lookups banner                                             */
 /* ------------------------------------------------------------------ */
 
-function MissingLookupsBanner({
-  missing,
-  isCreating,
-  error,
-  onCreate,
-}: {
-  missing: MissingLookups
-  isCreating: boolean
-  error: string | null
-  onCreate: () => void
-}) {
-  const items: string[] = []
-  if (missing.paymentMethods.length > 0)
-    items.push(`${missing.paymentMethods.length} payment methods (${missing.paymentMethods.join(', ')})`)
-  if (missing.categories.length > 0)
-    items.push(`${missing.categories.length} categories (${missing.categories.map((c) => c.name).join(', ')})`)
-  if (missing.psps.length > 0)
-    items.push(`${missing.psps.length} PSPs (${missing.psps.join(', ')})`)
-  if (missing.types.length > 0)
-    items.push(`${missing.types.length} types (${missing.types.join(', ')})`)
+function MissingLookupsBanner({ missing }: { missing: MissingLookups }) {
+  const invalidValues: Array<{ type: string; values: string[] }> = []
+
+  if (missing.paymentMethods.length > 0) {
+    invalidValues.push({
+      type: 'Payment Methods',
+      values: missing.paymentMethods,
+    })
+  }
+  if (missing.categories.length > 0) {
+    invalidValues.push({
+      type: 'Categories',
+      values: missing.categories.map((c) => c.name),
+    })
+  }
+  if (missing.types.length > 0) {
+    invalidValues.push({
+      type: 'Transfer Types',
+      values: missing.types,
+    })
+  }
 
   return (
-    <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+    <div className="rounded-lg border border-red-200 bg-red-50 p-4">
       <div className="flex items-start gap-3">
-        <Warning size={20} weight="fill" className="mt-0.5 shrink-0 text-amber-500" />
+        <Warning size={20} weight="fill" className="mt-0.5 shrink-0 text-red-500" />
         <div className="flex-1">
-          <p className="text-sm font-medium text-amber-800">
-            Missing lookup entries detected
+          <p className="text-sm font-medium text-red-800">Invalid lookup values in CSV</p>
+          <p className="mt-1 text-xs text-red-700">
+            Your CSV file contains values that don't match the system's fixed lookup tables. Please
+            update your CSV file to use the valid values listed below:
           </p>
-          <p className="mt-1 text-xs text-amber-700">
-            The CSV references values that don't exist in your system yet:
-          </p>
-          <ul className="mt-2 space-y-1">
-            {items.map((item, idx) => (
-              <li key={idx} className="text-xs text-amber-700">
-                &bull; {item}
-              </li>
+
+          <div className="mt-3 space-y-2">
+            {invalidValues.map((item, idx) => (
+              <div key={idx} className="text-xs">
+                <p className="font-medium text-red-800">
+                  Invalid {item.type}: <span className="font-normal">{item.values.join(', ')}</span>
+                </p>
+              </div>
             ))}
-          </ul>
-          {error && (
-            <p className="mt-2 text-xs font-medium text-red-600">{error}</p>
-          )}
-          <Button
-            variant="filled"
-            size="sm"
-            className="mt-3"
-            onClick={onCreate}
-            disabled={isCreating}
-          >
-            {isCreating ? (
-              <>
-                <SpinnerGap size={14} className="animate-spin" />
-                Creating...
-              </>
-            ) : (
-              <>
-                <Plus size={14} weight="bold" />
-                Create missing entries & re-validate
-              </>
-            )}
-          </Button>
+          </div>
+
+          <div className="mt-3 space-y-2 border-t border-red-200 pt-3">
+            <p className="text-xs font-medium text-red-800">Valid values:</p>
+            <div className="space-y-1 text-xs text-red-700">
+              <p>
+                <span className="font-medium">Categories:</span> DEP (deposit), WD (withdrawal)
+              </p>
+              <p>
+                <span className="font-medium">Payment Methods:</span> Bank, Credit Card, Tether
+              </p>
+              <p>
+                <span className="font-medium">Transfer Types:</span> Client, Payment, Blocked
+              </p>
+            </div>
+          </div>
+
+          <p className="mt-3 text-xs font-medium text-red-800">
+            ⚠️ These values are fixed and cannot be modified. Please correct your CSV file and try
+            again.
+          </p>
         </div>
       </div>
     </div>

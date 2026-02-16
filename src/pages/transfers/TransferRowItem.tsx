@@ -1,12 +1,6 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  DotsThree,
-  PencilSimple,
-  Trash,
-  Eye,
-  ClockCounterClockwise,
-} from '@phosphor-icons/react'
+import { DotsThree, PencilSimple, Trash, Eye, ClockCounterClockwise } from '@phosphor-icons/react'
 import type { TransferRow } from '@/hooks/useTransfers'
 import { formatTime, formatNumber } from './transfersTableUtils'
 import {
@@ -44,9 +38,7 @@ export const TransferRowItem = React.memo(function TransferRowItem({
   return (
     <TableRow className="hover:bg-black/[0.015]">
       <TableCell className="whitespace-nowrap">
-        <span className="text-sm font-medium text-black/90">
-          {row.full_name}
-        </span>
+        <span className="text-sm font-medium text-black/90">{row.full_name}</span>
       </TableCell>
       <TableCell className="whitespace-nowrap text-sm text-black/60">
         {row.payment_method?.name ?? '—'}
@@ -70,21 +62,11 @@ export const TransferRowItem = React.memo(function TransferRowItem({
           {formatNumber(Math.abs(row.amount), lang)}
         </span>
       </TableCell>
-      <TableCell className="whitespace-nowrap text-right font-mono text-sm tabular-nums text-black/50">
-        {formatNumber(row.commission, lang)}
-      </TableCell>
-      <TableCell className="whitespace-nowrap text-right">
-        <span
-          className={`font-mono text-sm font-semibold tabular-nums ${row.net >= 0 ? 'text-green' : 'text-red'}`}
-        >
-          {formatNumber(row.net, lang)}
-        </span>
-      </TableCell>
       <TableCell className="whitespace-nowrap">
         <Tag variant="default">{row.currency}</Tag>
       </TableCell>
-      <TableCell className="whitespace-nowrap text-sm text-black/60">
-        {row.psp?.name ?? '—'}
+      <TableCell className="whitespace-nowrap text-right font-mono text-sm tabular-nums text-black/60">
+        {formatNumber(row.exchange_rate, lang)}
       </TableCell>
       <TableCell className="whitespace-nowrap text-sm text-black/60">
         {row.type?.name
@@ -122,10 +104,7 @@ export const TransferRowItem = React.memo(function TransferRowItem({
                 <ClockCounterClockwise size={14} />
                 {t('transfers.audit.button')}
               </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-red"
-                onClick={() => onDelete(row)}
-              >
+              <DropdownMenuItem className="text-red" onClick={() => onDelete(row)}>
                 <Trash size={14} />
                 {t('transfers.settings.deleteItem')}
               </DropdownMenuItem>

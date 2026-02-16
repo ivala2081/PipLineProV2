@@ -57,7 +57,8 @@ export function formatDate(dateStr: string, lang: string) {
   return { date, time }
 }
 
-export function formatNumber(n: number, lang: string = 'tr') {
+export function formatNumber(n: number | undefined | null, lang: string = 'tr') {
+  if (n === undefined || n === null) return '0.00'
   return n.toLocaleString(toLocale(lang), {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -103,20 +104,17 @@ export function computeDaySummary(transfers: TransferRow[]): DaySummary {
 
   let deposits = 0
   let withdrawals = 0
-  let commission = 0
   let depositCount = 0
   let withdrawalCount = 0
   let totalBank = 0
   let totalCreditCard = 0
   let totalUsd = 0
   let netWithoutCommUsd = 0
-  let commissionUsd = 0
   let rateSum = 0
   let rateCount = 0
 
   for (const t of active) {
     const tryAmount = Math.abs(t.amount_try ?? 0)
-    const commTry = t.currency === 'USD' ? t.commission * (t.exchange_rate ?? 1) : t.commission
     const rate = t.exchange_rate ?? 1
 
     if (t.category?.is_deposit) {
@@ -126,7 +124,6 @@ export function computeDaySummary(transfers: TransferRow[]): DaySummary {
       withdrawals += tryAmount
       withdrawalCount++
     }
-    commission += commTry
 
     const method = t.payment_method?.name?.toLowerCase() ?? ''
     if (method.includes('bank')) totalBank += tryAmount
@@ -134,7 +131,6 @@ export function computeDaySummary(transfers: TransferRow[]): DaySummary {
     if (t.currency === 'USD') totalUsd += Math.abs(t.amount ?? 0)
 
     netWithoutCommUsd += t.amount_usd ?? 0
-    commissionUsd += t.currency === 'USD' ? t.commission : t.commission / rate
 
     if (rate > 0) {
       rateSum += rate
@@ -146,7 +142,7 @@ export function computeDaySummary(transfers: TransferRow[]): DaySummary {
     deposits,
     withdrawals,
     net: deposits - withdrawals,
-    commission,
+    commission: 0, // Commission field removed from schema
     count: active.length,
     depositCount,
     withdrawalCount,
@@ -154,7 +150,7 @@ export function computeDaySummary(transfers: TransferRow[]): DaySummary {
     totalCreditCard,
     totalUsd,
     netWithoutCommUsd,
-    netWithCommUsd: netWithoutCommUsd - commissionUsd,
+    netWithCommUsd: netWithoutCommUsd, // No commission to subtract
     dayRate: rateCount > 0 ? rateSum / rateCount : 0,
   }
 }

@@ -1,20 +1,42 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { queryKeys } from '@/lib/queryKeys'
 import { computeTransfer } from '@/hooks/useTransfers'
-import type {
-  TransferRow,
-  TransferFormData,
-} from '@/hooks/useTransfers'
-import type { Psp, TransferCategory } from '@/lib/database.types'
+import type { TransferRow, TransferFormData } from '@/hooks/useTransfers'
+import type { TransferCategory } from '@/lib/database.types'
+import { TRANSFER_CATEGORIES, PAYMENT_METHODS, TRANSFER_TYPES } from '@/lib/transferLookups'
 
 const PAGE_SIZE = 25
 
 const SELECT_QUERY =
-  '*, psp:psps(name, commission_rate), category:transfer_categories(name, is_deposit), payment_method:payment_methods(name), type:transfer_types(name)'
+  '*, category:transfer_categories!category_id(name, is_deposit), payment_method:payment_methods!payment_method_id(name), psp:psps!psp_id(name, commission_rate), type:transfer_types!type_id(name)'
+
+export interface TransferFilters {
+  search: string | null
+  categoryType: string | null // 'deposit' | 'withdrawal'
+  currency: string | null
+  paymentMethodId: string | null
+  typeId: string | null
+  dateFrom: string | null
+  dateTo: string | null
+  amountMin: string | null
+  amountMax: string | null
+}
+
+const EMPTY_FILTERS: TransferFilters = {
+  search: null,
+  categoryType: null,
+  currency: null,
+  paymentMethodId: null,
+  typeId: null,
+  dateFrom: null,
+  dateTo: null,
+  amountMin: null,
+  amountMax: null,
+}
 
 interface UseTransfersQueryReturn {
   transfers: TransferRow[]
@@ -23,24 +45,15 @@ interface UseTransfersQueryReturn {
   page: number
   pageSize: number
   total: number
-  filterDate: string | null
+  filters: TransferFilters
   dateCounts: Record<string, number>
   setPage: (page: number) => void
-  setFilterDate: (date: string | null) => void
+  setFilter: <K extends keyof TransferFilters>(key: K, value: TransferFilters[K]) => void
+  clearFilters: () => void
+  hasActiveFilters: boolean
   fetchTransfersByDate: (dateKey: string) => Promise<TransferRow[]>
-  createTransfer: (
-    data: TransferFormData,
-    category: TransferCategory,
-    psp: Psp,
-    commissionRate: number,
-  ) => Promise<void>
-  updateTransfer: (
-    id: string,
-    data: TransferFormData,
-    category: TransferCategory,
-    psp: Psp,
-    commissionRate: number,
-  ) => Promise<void>
+  createTransfer: (data: TransferFormData, category: TransferCategory) => Promise<void>
+  updateTransfer: (id: string, data: TransferFormData, category: TransferCategory) => Promise<void>
   deleteTransfer: (id: string) => Promise<void>
   isCreating: boolean
   isUpdating: boolean
@@ -52,25 +65,36 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
   const { currentOrg } = useOrganization()
   const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
-  const [filterDate, setFilterDate] = useState<string | null>(null)
+  const [filters, setFilters] = useState<TransferFilters>(EMPTY_FILTERS)
   const prevOrgId = useRef(currentOrg?.id)
 
-  // IMPORTANT: Reset pagination when org or filter changes
+  // IMPORTANT: Reset pagination when org changes
   useEffect(() => {
     if (currentOrg?.id !== prevOrgId.current) {
-      setPage(1)
+      setPage(1) // eslint-disable-line react-hooks/set-state-in-effect -- intentional reset on org switch
+      setFilters(EMPTY_FILTERS)
       prevOrgId.current = currentOrg?.id
     }
   }, [currentOrg?.id])
 
-  // Reset page when filter changes
-  useEffect(() => {
+  const setFilter = useCallback(
+    <K extends keyof TransferFilters>(key: K, value: TransferFilters[K]) => {
+      setFilters((prev) => ({ ...prev, [key]: value }))
+      setPage(1)
+    },
+    [],
+  )
+
+  const clearFilters = useCallback(() => {
+    setFilters(EMPTY_FILTERS)
     setPage(1)
-  }, [filterDate])
+  }, [])
+
+  const hasActiveFilters = Object.values(filters).some((v) => v != null && v !== '')
 
   // Query for transfers list
   const { data, isLoading, error } = useQuery({
-    queryKey: queryKeys.transfers.list(currentOrg?.id ?? '', page, filterDate ?? undefined),
+    queryKey: [...queryKeys.transfers.list(currentOrg?.id ?? '', page), filters],
     queryFn: async () => {
       if (!currentOrg) throw new Error('No organization selected')
 
@@ -82,26 +106,57 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
         .select(SELECT_QUERY, { count: 'exact' })
         .eq('organization_id', currentOrg.id)
 
-      // Apply date filter if set
-      if (filterDate) {
-        const startOfDay = `${filterDate}T00:00:00`
-        const endOfDay = `${filterDate}T23:59:59`
-        query = query.gte('transfer_date', startOfDay).lte('transfer_date', endOfDay)
+      // Apply filters
+      if (filters.search) {
+        query = query.or(
+          `full_name.ilike.%${filters.search}%,crm_id.ilike.%${filters.search}%,meta_id.ilike.%${filters.search}%`,
+        )
       }
-
-      let finalQuery = query.order('transfer_date', { ascending: false })
-
-      // Only apply pagination if no date filter is active
-      if (!filterDate) {
-        finalQuery = finalQuery.range(from, to)
+      if (filters.currency) query = query.eq('currency', filters.currency)
+      if (filters.paymentMethodId) query = query.eq('payment_method_id', filters.paymentMethodId)
+      if (filters.typeId) query = query.eq('type_id', filters.typeId)
+      if (filters.dateFrom) {
+        query = query.gte('transfer_date', `${filters.dateFrom}T00:00:00`)
       }
+      if (filters.dateTo) {
+        query = query.lte('transfer_date', `${filters.dateTo}T23:59:59`)
+      }
+      if (filters.amountMin) query = query.gte('amount', parseFloat(filters.amountMin))
+      if (filters.amountMax) query = query.lte('amount', parseFloat(filters.amountMax))
 
-      const { data, error, count } = await finalQuery
+      const { data, error, count } = await query
+        .order('transfer_date', { ascending: false })
+        .range(from, to)
 
       if (error) throw error
 
+      // DEBUG: Log first row to see if joins are working
+      if (data && data.length > 0) {
+        console.log('🔍 First transfer row:', data[0])
+        console.log('🔍 Category:', data[0]?.category)
+        console.log('🔍 Payment Method:', data[0]?.payment_method)
+        console.log('🔍 Type:', data[0]?.type)
+      }
+
+      // TEMPORARY FIX: Manual client-side join since Supabase join isn't working
+      const rawTransfers = (data as unknown as TransferRow[]) ?? []
+      let transfers = rawTransfers.map((t) => ({
+        ...t,
+        category: t.category ?? TRANSFER_CATEGORIES.find((c) => c.id === t.category_id) ?? null,
+        payment_method:
+          t.payment_method ?? PAYMENT_METHODS.find((pm) => pm.id === t.payment_method_id) ?? null,
+        type: t.type ?? TRANSFER_TYPES.find((type) => type.id === t.type_id) ?? null,
+      }))
+      if (filters.categoryType) {
+        transfers = transfers.filter((t) => {
+          if (filters.categoryType === 'deposit') return t.category?.is_deposit === true
+          if (filters.categoryType === 'withdrawal') return t.category?.is_deposit === false
+          return true
+        })
+      }
+
       return {
-        transfers: (data as unknown as TransferRow[]) ?? [],
+        transfers,
         total: count ?? 0,
       }
     },
@@ -110,33 +165,48 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
 
   // Query for date counts (not paginated)
   const { data: dateCountsData } = useQuery({
-    queryKey: [...queryKeys.transfers.lists(), 'dateCounts', currentOrg?.id ?? '', filterDate ?? undefined],
+    queryKey: [...queryKeys.transfers.lists(), 'dateCounts', currentOrg?.id ?? '', filters],
     queryFn: async () => {
       if (!currentOrg) throw new Error('No organization selected')
 
       let query = supabase
         .from('transfers')
-        .select('transfer_date')
+        .select('transfer_date, category:transfer_categories!inner(is_deposit)')
         .eq('organization_id', currentOrg.id)
 
-      // Apply date filter if set
-      if (filterDate) {
-        const startOfDay = `${filterDate}T00:00:00`
-        const endOfDay = `${filterDate}T23:59:59`
-        query = query.gte('transfer_date', startOfDay).lte('transfer_date', endOfDay)
+      // Apply same filters as main query
+      if (filters.search) {
+        query = query.or(
+          `full_name.ilike.%${filters.search}%,crm_id.ilike.%${filters.search}%,meta_id.ilike.%${filters.search}%`,
+        )
       }
+      if (filters.currency) query = query.eq('currency', filters.currency)
+      if (filters.paymentMethodId) query = query.eq('payment_method_id', filters.paymentMethodId)
+      if (filters.typeId) query = query.eq('type_id', filters.typeId)
+      if (filters.dateFrom) query = query.gte('transfer_date', `${filters.dateFrom}T00:00:00`)
+      if (filters.dateTo) query = query.lte('transfer_date', `${filters.dateTo}T23:59:59`)
+      if (filters.amountMin) query = query.gte('amount', parseFloat(filters.amountMin))
+      if (filters.amountMax) query = query.lte('amount', parseFloat(filters.amountMax))
 
       const { data, error } = await query
 
       if (error) throw error
 
+      // Filter by category type if needed
+      let filteredData = data ?? []
+      if (filters.categoryType) {
+        filteredData = filteredData.filter((row: { category: { is_deposit: boolean } }) => {
+          if (filters.categoryType === 'deposit') return row.category.is_deposit === true
+          if (filters.categoryType === 'withdrawal') return row.category.is_deposit === false
+          return true
+        })
+      }
+
       // Group by date and count
       const counts: Record<string, number> = {}
-      if (data) {
-        for (const row of data) {
-          const dateKey = row.transfer_date.slice(0, 10)
-          counts[dateKey] = (counts[dateKey] || 0) + 1
-        }
+      for (const row of filteredData) {
+        const dateKey = (row as { transfer_date: string }).transfer_date.slice(0, 10)
+        counts[dateKey] = (counts[dateKey] || 0) + 1
       }
 
       return counts
@@ -149,34 +219,40 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
     mutationFn: async ({
       data,
       category,
-      commissionRate,
     }: {
       data: TransferFormData
       category: TransferCategory
-      psp: Psp
-      commissionRate: number
     }) => {
       if (!currentOrg || !user) throw new Error('No organization selected')
 
-      const { amount, commission, net, amountTry, amountUsd } = computeTransfer(
+      // Fetch PSP to get commission rate
+      const { data: pspData } = await supabase
+        .from('psps')
+        .select('commission_rate')
+        .eq('id', data.psp_id)
+        .single()
+
+      const commissionRate = pspData?.commission_rate ?? 0
+
+      const { amount, amountTry, amountUsd, commission, net } = computeTransfer(
         data.raw_amount,
         category,
-        commissionRate,
         data.exchange_rate,
         data.currency,
+        commissionRate,
       )
 
       const { error } = await supabase.from('transfers').insert({
         organization_id: currentOrg.id,
         full_name: data.full_name,
         payment_method_id: data.payment_method_id,
+        psp_id: data.psp_id,
         transfer_date: data.transfer_date,
         category_id: data.category_id,
         amount,
         commission,
         net,
         currency: data.currency,
-        psp_id: data.psp_id,
         type_id: data.type_id,
         crm_id: data.crm_id || null,
         meta_id: data.meta_id || null,
@@ -201,22 +277,28 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
       id,
       data,
       category,
-      commissionRate,
     }: {
       id: string
       data: TransferFormData
       category: TransferCategory
-      psp: Psp
-      commissionRate: number
     }) => {
       if (!currentOrg) throw new Error('No organization selected')
 
-      const { amount, commission, net, amountTry, amountUsd } = computeTransfer(
+      // Fetch PSP to get commission rate
+      const { data: pspData } = await supabase
+        .from('psps')
+        .select('commission_rate')
+        .eq('id', data.psp_id)
+        .single()
+
+      const commissionRate = pspData?.commission_rate ?? 0
+
+      const { amount, amountTry, amountUsd, commission, net } = computeTransfer(
         data.raw_amount,
         category,
-        commissionRate,
         data.exchange_rate,
         data.currency,
+        commissionRate,
       )
 
       const { error } = await supabase
@@ -224,13 +306,13 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
         .update({
           full_name: data.full_name,
           payment_method_id: data.payment_method_id,
+          psp_id: data.psp_id,
           transfer_date: data.transfer_date,
           category_id: data.category_id,
           amount,
           commission,
           net,
           currency: data.currency,
-          psp_id: data.psp_id,
           type_id: data.type_id,
           crm_id: data.crm_id || null,
           meta_id: data.meta_id || null,
@@ -277,25 +359,34 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
 
     if (error) throw error
 
-    return (data as unknown as TransferRow[]) ?? []
+    // TEMPORARY FIX: Manual client-side join
+    const rawTransfers = (data as unknown as TransferRow[]) ?? []
+    return rawTransfers.map((t) => ({
+      ...t,
+      category: t.category ?? TRANSFER_CATEGORIES.find((c) => c.id === t.category_id) ?? null,
+      payment_method:
+        t.payment_method ?? PAYMENT_METHODS.find((pm) => pm.id === t.payment_method_id) ?? null,
+      type: t.type ?? TRANSFER_TYPES.find((type) => type.id === t.type_id) ?? null,
+    }))
   }
 
   return {
     transfers: data?.transfers ?? [],
     total: data?.total ?? 0,
     page,
-    pageSize: filterDate ? (data?.total || PAGE_SIZE) : PAGE_SIZE,
-    filterDate,
+    pageSize: PAGE_SIZE,
+    filters,
+    setFilter,
+    clearFilters,
+    hasActiveFilters,
     dateCounts: dateCountsData ?? {},
     setPage,
-    setFilterDate,
     fetchTransfersByDate,
     isLoading,
     error: error?.message ?? null,
-    createTransfer: async (data, category, psp, commissionRate) =>
-      createMutation.mutateAsync({ data, category, psp, commissionRate }),
-    updateTransfer: async (id, data, category, psp, commissionRate) =>
-      updateMutation.mutateAsync({ id, data, category, psp, commissionRate }),
+    createTransfer: async (data, category) => createMutation.mutateAsync({ data, category }),
+    updateTransfer: async (id, data, category) =>
+      updateMutation.mutateAsync({ id, data, category }),
     deleteTransfer: deleteMutation.mutateAsync,
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,

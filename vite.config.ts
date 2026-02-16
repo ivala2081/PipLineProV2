@@ -14,7 +14,7 @@ export default defineConfig({
   server: {
     host: '127.0.0.1', // Localhost only - secure default
     port: 5173,
-    strictPort: true,
+    strictPort: false,
     // Only allow specific hosts - prevents DNS rebinding attacks
     allowedHosts: ['localhost', '127.0.0.1'],
     proxy: {

@@ -116,12 +116,20 @@
       "applyingRate": "Applying..."
     },
     "typeValues": {
+      "Client": "Client",
       "Payment": "Payment",
-      "Client": "Client"
+      "Blocked": "Blocked"
     },
     "categoryValues": {
+      "DEP": "Deposit",
+      "WD": "Withdrawal",
       "deposit": "Deposit",
       "withdrawal": "Withdrawal"
+    },
+    "paymentMethodValues": {
+      "Bank": "Bank",
+      "Credit Card": "Credit Card",
+      "Tether": "Tether (USDT)"
     },
     "form": {
       "fullName": "Full Name",
@@ -183,6 +191,31 @@
     "empty": {
       "title": "No transfers yet",
       "description": "Create your first transfer to get started."
+    },
+    "filters": {
+      "label": "Filters",
+      "search": "Search name, CRM ID, META ID...",
+      "clear": "Clear",
+      "transactionType": "Transaction Type",
+      "allTypes": "All Types",
+      "deposit": "Deposit",
+      "withdrawal": "Withdrawal",
+      "currency": "Currency",
+      "allCurrencies": "All Currencies",
+      "psp": "PSP",
+      "allPsps": "All PSPs",
+      "paymentMethod": "Payment Method",
+      "allPaymentMethods": "All Methods",
+      "type": "Type",
+      "allTransferTypes": "All Types",
+      "amountRange": "Amount Range",
+      "minAmount": "Min Amount",
+      "maxAmount": "Max Amount",
+      "dateRange": "Date Range",
+      "from": "Date From",
+      "to": "Date To",
+      "noResults": "No matching transfers",
+      "noResultsDescription": "Try adjusting your filters to find what you're looking for."
     },
     "monthly": {
       "totalDeposits": "Total Deposits",
@@ -452,7 +485,16 @@
       "from": "From",
       "to": "To",
       "noResults": "No matching entries",
-      "noResultsDescription": "Try adjusting your filters to find what you're looking for."
+      "noResultsDescription": "Try adjusting your filters to find what you're looking for.",
+      "typeStatus": "Type & Status",
+      "financial": "Financial",
+      "amountRange": "Amount Range",
+      "periods": "Periods",
+      "dateRange": "Date Range",
+      "minAmount": "Min",
+      "maxAmount": "Max",
+      "costPeriodPlaceholder": "Cost Period (YYYY-MM)",
+      "paymentPeriodPlaceholder": "Payment Period (YYYY-MM)"
     },
     "dailySummary": {
       "label": "Summary",
@@ -644,11 +686,18 @@
       "confirm": "Delete",
       "cancel": "Cancel"
     },
+    "deletePsp": {
+      "title": "Delete PSP",
+      "description": "Are you sure you want to delete \"{{name}}\"? This will permanently remove the PSP and all its associated data. This action cannot be undone.",
+      "confirm": "Delete PSP",
+      "cancel": "Cancel"
+    },
     "toast": {
       "settlementCreated": "Settlement added successfully",
       "settlementUpdated": "Settlement updated successfully",
       "settlementDeleted": "Settlement deleted successfully",
       "pspCreated": "PSP added successfully",
+      "pspDeleted": "PSP deleted successfully",
       "error": "An error occurred. Please try again."
     },
     "rowType": {
@@ -668,7 +717,10 @@
       "internalDesc": "Internal PSPs are company-owned accounts. Commission is always 0% and settlements are not tracked.",
       "internalTag": "Internal",
       "externalTag": "External",
-      "internalCommissionHint": "Internal — always 0%"
+      "internalCommissionHint": "Internal — always 0%",
+      "dangerZone": "Danger Zone",
+      "dangerZoneDesc": "Permanent actions that cannot be undone.",
+      "deletePsp": "Delete PSP"
     }
   },
   "future": {

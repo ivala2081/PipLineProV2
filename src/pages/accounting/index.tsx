@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, UploadSimple } from '@phosphor-icons/react'
+import { Plus, UploadSimple, DownloadSimple } from '@phosphor-icons/react'
 import { useAccountingQuery } from '@/hooks/queries/useAccountingQuery'
 import { useWalletsQuery } from '@/hooks/queries/useWalletsQuery'
 import type { AccountingEntry } from '@/lib/database.types'
@@ -12,6 +12,7 @@ import { DeleteEntryDialog } from './DeleteEntryDialog'
 import { WalletDialog } from './WalletDialog'
 import { LedgerImportDialog } from './LedgerImportDialog'
 import { ReconciliationTab } from './ReconciliationTab'
+import { exportLedgerCsv, downloadCsv } from '@/lib/csvExport/exportLedgerCsv'
 
 /* ── Main Page ────────────────────────────────────────── */
 
@@ -26,6 +27,7 @@ export function AccountingPage() {
   const [deleteTarget, setDeleteTarget] = useState<AccountingEntry | null>(null)
   const [walletDialogOpen, setWalletDialogOpen] = useState(false)
   const [importDialogOpen, setImportDialogOpen] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
 
   const handleAddEntry = () => {
     setEditingEntry(null)
@@ -41,6 +43,21 @@ export function AccountingPage() {
     setDeleteTarget(entry)
   }
 
+  const handleExport = async () => {
+    setIsExporting(true)
+    try {
+      const entries = await accounting.fetchAllEntries()
+      const csv = exportLedgerCsv(entries)
+      const timestamp = new Date().toISOString().slice(0, 10)
+      const filename = `ledger-export-${timestamp}.csv`
+      downloadCsv(csv, filename)
+    } catch (err) {
+      console.error('Export failed:', err)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Page header */}
@@ -51,6 +68,12 @@ export function AccountingPage() {
         </div>
         {activeTab === 'ledger' && (
           <div className="flex gap-2">
+            <Button variant="ghost" onClick={handleExport} disabled={isExporting}>
+              <DownloadSimple size={16} weight="bold" />
+              {isExporting
+                ? t('accounting.export.exporting', 'Exporting...')
+                : t('accounting.export.button', 'Export CSV')}
+            </Button>
             <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
               <UploadSimple size={16} weight="bold" />
               {t('accounting.import.button', 'Import CSV')}

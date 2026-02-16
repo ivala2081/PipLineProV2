@@ -116,12 +116,20 @@
       "applyingRate": "Uygulanıyor..."
     },
     "typeValues": {
+      "Client": "Müşteri",
       "Payment": "Ödeme",
-      "Client": "Müşteri"
+      "Blocked": "Bloke"
     },
     "categoryValues": {
+      "DEP": "Yatırım",
+      "WD": "Çekim",
       "deposit": "Yatırım",
       "withdrawal": "Çekim"
+    },
+    "paymentMethodValues": {
+      "Bank": "Banka",
+      "Credit Card": "Kredi Kartı",
+      "Tether": "Tether (USDT)"
     },
     "form": {
       "fullName": "Ad Soyad",
@@ -183,6 +191,31 @@
     "empty": {
       "title": "Henüz transfer yok",
       "description": "Başlamak için ilk transferinizi oluşturun."
+    },
+    "filters": {
+      "label": "Filtreler",
+      "search": "İsim, CRM ID, META ID ara...",
+      "clear": "Temizle",
+      "transactionType": "İşlem Türü",
+      "allTypes": "Tüm Türler",
+      "deposit": "Yatırım",
+      "withdrawal": "Çekim",
+      "currency": "Para Birimi",
+      "allCurrencies": "Tüm Para Birimleri",
+      "psp": "PSP",
+      "allPsps": "Tüm PSP'ler",
+      "paymentMethod": "Ödeme Yöntemi",
+      "allPaymentMethods": "Tüm Yöntemler",
+      "type": "Tür",
+      "allTransferTypes": "Tüm Türler",
+      "amountRange": "Tutar Aralığı",
+      "minAmount": "Min Tutar",
+      "maxAmount": "Maks Tutar",
+      "dateRange": "Tarih Aralığı",
+      "from": "Başlangıç Tarihi",
+      "to": "Bitiş Tarihi",
+      "noResults": "Eşleşen transfer bulunamadı",
+      "noResultsDescription": "Aradığınızı bulmak için filtreleri ayarlamayı deneyin."
     },
     "monthly": {
       "totalDeposits": "Toplam Yatırım",
@@ -452,7 +485,16 @@
       "from": "Başlangıç",
       "to": "Bitiş",
       "noResults": "Eşleşen kayıt bulunamadı",
-      "noResultsDescription": "Aradığınızı bulmak için filtreleri ayarlamayı deneyin."
+      "noResultsDescription": "Aradığınızı bulmak için filtreleri ayarlamayı deneyin.",
+      "typeStatus": "Tür ve Durum",
+      "financial": "Finansal",
+      "amountRange": "Tutar Aralığı",
+      "periods": "Dönemler",
+      "dateRange": "Tarih Aralığı",
+      "minAmount": "Min",
+      "maxAmount": "Maks",
+      "costPeriodPlaceholder": "Maliyet Dönemi (YYYY-AA)",
+      "paymentPeriodPlaceholder": "Ödeme Dönemi (YYYY-AA)"
     },
     "dailySummary": {
       "label": "Özet",
@@ -644,11 +686,18 @@
       "confirm": "Sil",
       "cancel": "İptal"
     },
+    "deletePsp": {
+      "title": "Kasayı Sil",
+      "description": "\"{{name}}\" kasasını silmek istediğinize emin misiniz? Bu işlem kasayı ve ilişkili tüm verileri kalıcı olarak kaldıracaktır. Bu işlem geri alınamaz.",
+      "confirm": "Kasayı Sil",
+      "cancel": "İptal"
+    },
     "toast": {
       "settlementCreated": "Tahsilat başarıyla eklendi",
       "settlementUpdated": "Tahsilat başarıyla güncellendi",
       "settlementDeleted": "Tahsilat başarıyla silindi",
       "pspCreated": "Kasa başarıyla eklendi",
+      "pspDeleted": "Kasa başarıyla silindi",
       "error": "Bir hata oluştu. Lütfen tekrar deneyin."
     },
     "rowType": {
@@ -668,7 +717,10 @@
       "internalDesc": "Dahili kasalar şirkete ait hesaplardır. Komisyon her zaman %0'dır ve tahsilatlar takip edilmez.",
       "internalTag": "Dahili",
       "externalTag": "Harici",
-      "internalCommissionHint": "Dahili — her zaman %0"
+      "internalCommissionHint": "Dahili — her zaman %0",
+      "dangerZone": "Tehlikeli Bölge",
+      "dangerZoneDesc": "Geri alınamayan kalıcı işlemler.",
+      "deletePsp": "Kasayı Sil"
     }
   },
   "future": {
