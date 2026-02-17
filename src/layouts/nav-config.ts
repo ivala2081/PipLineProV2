@@ -51,8 +51,18 @@ export const navGroups: NavGroup[] = [
   {
     titleKey: 'nav.groups.system',
     items: [
-      { titleKey: 'nav.organizations', href: '/organizations', icon: Buildings, roles: ['god'] },
-      { titleKey: 'nav.security', href: '/security', icon: Shield, roles: ['god'] },
+      {
+        titleKey: 'nav.organizations',
+        href: '/organizations',
+        icon: Buildings,
+        roles: ['god', 'admin', 'manager'],
+      },
+      {
+        titleKey: 'nav.security',
+        href: '/security',
+        icon: Shield,
+        roles: ['god', 'admin', 'manager'],
+      },
     ],
   },
   {

@@ -2,16 +2,10 @@ import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Plus, MagnifyingGlass } from '@phosphor-icons/react'
-import {
-  Button,
-  Input,
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@ds'
+import { Button, Input, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@ds'
 import { useAuth } from '@/app/providers/AuthProvider'
+import { useOrganization } from '@/app/providers/OrganizationProvider'
+import { canManageOrg } from '@/lib/roles'
 import { useOrganizationsQuery } from '@/hooks/queries/useOrganizationsQuery'
 import { OrganizationsTable } from './OrganizationsTable'
 import { CreateOrganizationDialog } from './CreateOrganizationDialog'
@@ -21,6 +15,8 @@ type StatusFilter = 'all' | 'active' | 'inactive'
 export function OrganizationsListPage() {
   const { t } = useTranslation('pages')
   const { isGod } = useAuth()
+  const { membership } = useOrganization()
+  const canManage = isGod || canManageOrg(membership?.role)
   const navigate = useNavigate()
 
   const { data: organizations = [], isLoading, error, refetch } = useOrganizationsQuery()
@@ -34,9 +30,7 @@ export function OrganizationsListPage() {
     if (search.trim()) {
       const q = search.toLowerCase()
       result = result.filter(
-        (org) =>
-          org.name.toLowerCase().includes(q) ||
-          org.slug.toLowerCase().includes(q),
+        (org) => org.name.toLowerCase().includes(q) || org.slug.toLowerCase().includes(q),
       )
     }
 
@@ -55,15 +49,10 @@ export function OrganizationsListPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">{t('organizations.title')}</h1>
-          <p className="mt-1 text-sm text-black/60">
-            {t('organizations.subtitle')}
-          </p>
+          <p className="mt-1 text-sm text-black/60">{t('organizations.subtitle')}</p>
         </div>
-        {isGod && (
-          <Button
-            variant="filled"
-            onClick={() => setCreateDialogOpen(true)}
-          >
+        {canManage && (
+          <Button variant="filled" onClick={() => setCreateDialogOpen(true)}>
             <Plus size={16} weight="bold" />
             {t('organizations.create')}
           </Button>
@@ -85,10 +74,7 @@ export function OrganizationsListPage() {
             className="pl-8"
           />
         </div>
-        <Select
-          value={statusFilter}
-          onValueChange={(v) => setStatusFilter(v as StatusFilter)}
-        >
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
           <SelectTrigger selectSize="sm" className="w-28">
             <SelectValue />
           </SelectTrigger>
@@ -114,7 +100,7 @@ export function OrganizationsListPage() {
         onRetry={() => refetch()}
       />
 
-      {isGod && (
+      {canManage && (
         <CreateOrganizationDialog
           open={createDialogOpen}
           onClose={() => setCreateDialogOpen(false)}

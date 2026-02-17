@@ -80,9 +80,11 @@ export function OrganizationDetailPage() {
     ? 'God'
     : currentUserMember?.role === 'admin'
       ? t('organizations.members.roles.admin')
-      : currentUserMember?.role === 'operation'
-        ? t('organizations.members.roles.operation')
-        : null
+      : currentUserMember?.role === 'manager'
+        ? t('organizations.members.roles.manager')
+        : currentUserMember?.role === 'operation'
+          ? t('organizations.members.roles.operation')
+          : null
 
   if (isLoading) {
     return (

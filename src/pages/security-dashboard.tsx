@@ -13,6 +13,8 @@ import {
 } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/app/providers/AuthProvider'
+import { useOrganization } from '@/app/providers/OrganizationProvider'
+import { canManageOrg } from '@/lib/roles'
 import {
   Card,
   StatCard,
@@ -172,6 +174,8 @@ function AuditDetailButton({ log }: { log: GodAuditLog }) {
 export function SecurityDashboard() {
   const { t, i18n } = useTranslation('pages')
   const { isGod } = useAuth()
+  const { membership } = useOrganization()
+  const canAccess = isGod || canManageOrg(membership?.role)
   const locale = i18n.language === 'tr' ? 'tr-TR' : 'en-US'
 
   const [activeTab, setActiveTab] = useState('overview')
@@ -188,7 +192,7 @@ export function SecurityDashboard() {
       if (error) throw new Error(error.message)
       return (data as SecurityMetric[]) ?? []
     },
-    enabled: isGod,
+    enabled: canAccess,
     refetchInterval: 30000,
     retry: 1,
   })
@@ -231,7 +235,7 @@ export function SecurityDashboard() {
         .sort((a, b) => b.failed_attempts - a.failed_attempts)
         .slice(0, 10) as FailedLoginGroup[]
     },
-    enabled: isGod,
+    enabled: canAccess,
   })
 
   const { data: godAudit, isLoading: auditLoading } = useQuery({
@@ -247,11 +251,11 @@ export function SecurityDashboard() {
       if (error) throw error
       return data as GodAuditLog[]
     },
-    enabled: isGod,
+    enabled: canAccess,
   })
 
   /* ── Access denied ── */
-  if (!isGod) {
+  if (!canAccess) {
     return (
       <EmptyState
         icon={Shield}

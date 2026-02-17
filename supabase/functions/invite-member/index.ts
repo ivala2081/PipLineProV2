@@ -208,7 +208,7 @@ serve(async (req: Request) => {
         .eq('user_id', caller.id)
         .single()
 
-      if (membership?.role !== 'admin') {
+      if (membership?.role !== 'admin' && membership?.role !== 'manager') {
         return errorResponse(403, 'FORBIDDEN', 'Not authorized to invite members', origin)
       }
     }
