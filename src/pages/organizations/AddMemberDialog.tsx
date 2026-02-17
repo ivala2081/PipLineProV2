@@ -116,6 +116,10 @@ export function AddMemberDialog({ open, onClose, orgId }: AddMemberDialogProps) 
                 <span className="text-sm">{t('organizations.addMemberDialog.roleOperation')}</span>
               </label>
               <label className="flex items-center gap-2">
+                <input type="radio" value="manager" {...form.register('role')} className="size-4" />
+                <span className="text-sm">{t('organizations.addMemberDialog.roleManager')}</span>
+              </label>
+              <label className="flex items-center gap-2">
                 <input type="radio" value="admin" {...form.register('role')} className="size-4" />
                 <span className="text-sm">{t('organizations.addMemberDialog.roleAdmin')}</span>
               </label>

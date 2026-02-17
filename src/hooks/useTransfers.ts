@@ -178,9 +178,9 @@ export function useTransfers(): UseTransfersReturn {
       const { amount, commission, net, amountTry, amountUsd } = computeTransfer(
         data.raw_amount,
         category,
-        psp.commission_rate,
         data.exchange_rate,
         data.currency,
+        psp.commission_rate,
       )
 
       const { error: insertError } = await supabase.from('transfers').insert({
@@ -221,9 +221,9 @@ export function useTransfers(): UseTransfersReturn {
       const { amount, commission, net, amountTry, amountUsd } = computeTransfer(
         data.raw_amount,
         category,
-        psp.commission_rate,
         data.exchange_rate,
         data.currency,
+        psp.commission_rate,
       )
 
       const { error: updateError } = await supabase

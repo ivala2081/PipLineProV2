@@ -31,29 +31,51 @@ export function useImportTransfers() {
     }) => {
       if (!currentOrg || !user) throw new Error('No organization or user')
 
+      // Fetch PSP commission rates for all PSPs referenced by rows
+      const pspIds = [...new Set(rows.map((r) => r.pspId).filter(Boolean))] as string[]
+      const rateMap = new Map<string, number>()
+      if (pspIds.length > 0) {
+        const { data: pspData } = await supabase
+          .from('psps')
+          .select('id, commission_rate')
+          .in('id', pspIds)
+        for (const p of pspData ?? []) {
+          rateMap.set(p.id, Number(p.commission_rate))
+        }
+      }
+
       const batches = chunkArray(rows, BATCH_SIZE)
       const errors: ImportProgress['errors'] = []
       let insertedCount = 0
 
       for (let i = 0; i < batches.length; i++) {
         const batch = batches[i]
-        const insertPayload = batch.map((row) => ({
-          organization_id: currentOrg.id,
-          full_name: row.fullName,
-          crm_id: row.crmId,
-          meta_id: row.metaId,
-          payment_method_id: row.paymentMethodId!,
-          psp_id: row.pspId!,
-          transfer_date: row.transferDate,
-          category_id: row.categoryId!,
-          amount: row.amount,
-          currency: row.currency,
-          type_id: row.typeId!,
-          exchange_rate: row.exchangeRate,
-          amount_try: row.amountTry,
-          amount_usd: row.amountUsd,
-          created_by: user.id,
-        }))
+        const insertPayload = batch.map((row) => {
+          const commissionRate = row.pspId ? (rateMap.get(row.pspId) ?? 0) : 0
+          const commission = Math.round(Math.abs(row.amount) * commissionRate * 100) / 100
+          const net = row.amount - (row.isDeposit ? commission : -commission)
+
+          return {
+            organization_id: currentOrg.id,
+            full_name: row.fullName,
+            crm_id: row.crmId,
+            meta_id: row.metaId,
+            payment_method_id: row.paymentMethodId!,
+            psp_id: row.pspId!,
+            transfer_date: row.transferDate,
+            category_id: row.categoryId!,
+            amount: row.amount,
+            commission,
+            net,
+            currency: row.currency,
+            type_id: row.typeId!,
+            exchange_rate: row.exchangeRate,
+            amount_try: row.amountTry,
+            amount_usd: row.amountUsd,
+            commission_rate_snapshot: commissionRate,
+            created_by: user.id,
+          }
+        })
 
         const { error } = await supabase.from('transfers').insert(insertPayload as never)
 
@@ -80,6 +102,7 @@ export function useImportTransfers() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.transfers.lists() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.pspDashboard.all })
     },
   })
 

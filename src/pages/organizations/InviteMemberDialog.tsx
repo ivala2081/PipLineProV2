@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { UserPlus, ShieldCheck, User, Eye, EyeSlash } from '@phosphor-icons/react'
+import { UserPlus, ShieldCheck, User, Eye, EyeSlash, Crown } from '@phosphor-icons/react'
 import {
   Dialog,
   DialogContent,
@@ -15,10 +15,7 @@ import {
 } from '@ds'
 import { useToast } from '@/hooks/useToast'
 import { useInviteMember } from '@/hooks/queries/useOrgMemberMutations'
-import {
-  inviteMemberSchema,
-  type InviteMemberValues,
-} from '@/schemas/organizationSchema'
+import { inviteMemberSchema, type InviteMemberValues } from '@/schemas/organizationSchema'
 
 interface InviteMemberDialogProps {
   open: boolean
@@ -44,9 +41,7 @@ function RoleCard({
       type="button"
       onClick={onClick}
       className={`flex w-full items-start gap-3 rounded-xl border-2 p-4 text-left transition-colors ${
-        selected
-          ? 'border-brand bg-brand/5'
-          : 'border-black/10 hover:border-black/20'
+        selected ? 'border-brand bg-brand/5' : 'border-black/10 hover:border-black/20'
       }`}
     >
       <div
@@ -57,20 +52,14 @@ function RoleCard({
         {icon}
       </div>
       <div>
-        <p className={`text-sm font-medium ${selected ? 'text-brand' : ''}`}>
-          {title}
-        </p>
+        <p className={`text-sm font-medium ${selected ? 'text-brand' : ''}`}>{title}</p>
         <p className="mt-0.5 text-xs text-black/40">{description}</p>
       </div>
     </button>
   )
 }
 
-export function InviteMemberDialog({
-  open,
-  onClose,
-  orgId,
-}: InviteMemberDialogProps) {
+export function InviteMemberDialog({ open, onClose, orgId }: InviteMemberDialogProps) {
   const { t } = useTranslation('pages')
   const { toast } = useToast()
   const inviteMember = useInviteMember(orgId)
@@ -131,9 +120,7 @@ export function InviteMemberDialog({
               placeholder={t('organizations.inviteDialog.emailPlaceholder')}
             />
             {form.formState.errors.email && (
-              <p className="text-xs text-red">
-                {form.formState.errors.email.message}
-              </p>
+              <p className="text-xs text-red">{form.formState.errors.email.message}</p>
             )}
           </div>
 
@@ -171,9 +158,7 @@ export function InviteMemberDialog({
               </button>
             </div>
             {form.formState.errors.password ? (
-              <p className="text-xs text-red">
-                {form.formState.errors.password.message}
-              </p>
+              <p className="text-xs text-red">{form.formState.errors.password.message}</p>
             ) : (
               <p className="text-xs text-black/40">
                 {t('organizations.inviteDialog.passwordHint')}
@@ -193,6 +178,13 @@ export function InviteMemberDialog({
                 description={t('organizations.inviteDialog.roleOperationDescription')}
               />
               <RoleCard
+                selected={selectedRole === 'manager'}
+                onClick={() => form.setValue('role', 'manager')}
+                icon={<Crown size={18} />}
+                title={t('organizations.inviteDialog.roleManager')}
+                description={t('organizations.inviteDialog.roleManagerDescription')}
+              />
+              <RoleCard
                 selected={selectedRole === 'admin'}
                 onClick={() => form.setValue('role', 'admin')}
                 icon={<ShieldCheck size={18} />}
@@ -201,9 +193,7 @@ export function InviteMemberDialog({
               />
             </div>
             {form.formState.errors.role && (
-              <p className="text-xs text-red">
-                {form.formState.errors.role.message}
-              </p>
+              <p className="text-xs text-red">{form.formState.errors.role.message}</p>
             )}
           </div>
 
@@ -216,11 +206,7 @@ export function InviteMemberDialog({
             >
               {t('organizations.inviteDialog.cancel')}
             </Button>
-            <Button
-              type="submit"
-              variant="filled"
-              disabled={inviteMember.isPending}
-            >
+            <Button type="submit" variant="filled" disabled={inviteMember.isPending}>
               {inviteMember.isPending
                 ? t('organizations.inviteDialog.sending')
                 : t('organizations.inviteDialog.invite')}

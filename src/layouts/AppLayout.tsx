@@ -1,15 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import {
-  CaretUpDown,
-  Check,
-  PencilSimple,
-  SignOut,
-  Moon,
-  Sun,
-  Globe,
-} from '@phosphor-icons/react'
+import { CaretUpDown, Check, PencilSimple, SignOut, Moon, Sun, Globe } from '@phosphor-icons/react'
 
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
@@ -69,7 +61,6 @@ function SidebarBrand() {
   const { resolvedTheme } = useTheme()
   const isCollapsed = state === 'collapsed'
   const logoSize = isCollapsed ? 'size-6' : 'size-8'
-  const appLogo = resolvedTheme === 'dark' ? '/for-dark.png' : '/for-white.png'
   const appIcon = resolvedTheme === 'dark' ? '/2.png' : '/1.png'
 
   return (
@@ -120,38 +111,51 @@ function SidebarBrand() {
 function SidebarNav() {
   const { t } = useTranslation('pages')
   const location = useLocation()
+  const { isGod } = useAuth()
+  const { membership } = useOrganization()
   const tNav = t as (key: string) => string
+
+  // Determine effective role for nav filtering
+  const effectiveRole = isGod ? 'god' : membership?.role
 
   return (
     <>
-      {navGroups.map((group, idx) => (
-        <SidebarGroup key={group.titleKey}>
-          {idx > 0 && <SidebarSeparator className="mb-2" />}
-          <SidebarGroupLabel>{tNav(group.titleKey)}</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {group.items.map((item) => {
-                const Icon = item.icon
-                const isActive =
-                  item.href === '/'
-                    ? location.pathname === '/'
-                    : location.pathname.startsWith(item.href)
+      {navGroups.map((group, idx) => {
+        // Filter items by role
+        const visibleItems = group.items.filter(
+          (item) => !item.roles || (effectiveRole && item.roles.includes(effectiveRole)),
+        )
+        if (visibleItems.length === 0) return null
 
-                return (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild isActive={isActive} tooltip={tNav(item.titleKey)}>
-                      <Link to={item.href}>
-                        <Icon size={18} weight={isActive ? 'fill' : 'regular'} />
-                        <span>{tNav(item.titleKey)}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      ))}
+        return (
+          <SidebarGroup key={group.titleKey}>
+            {idx > 0 && <SidebarSeparator className="mb-2" />}
+            <SidebarGroupLabel>{tNav(group.titleKey)}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {visibleItems.map((item) => {
+                  const Icon = item.icon
+                  const isActive =
+                    item.href === '/'
+                      ? location.pathname === '/'
+                      : location.pathname.startsWith(item.href)
+
+                  return (
+                    <SidebarMenuItem key={item.href}>
+                      <SidebarMenuButton asChild isActive={isActive} tooltip={tNav(item.titleKey)}>
+                        <Link to={item.href}>
+                          <Icon size={18} weight={isActive ? 'fill' : 'regular'} />
+                          <span>{tNav(item.titleKey)}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )
+      })}
     </>
   )
 }
@@ -292,9 +296,11 @@ function UserMenu() {
     ? { label: 'God', variant: 'red' as const }
     : membership?.role === 'admin'
       ? { label: 'Admin', variant: 'green' as const }
-      : membership?.role === 'operation'
-        ? { label: 'Operation', variant: 'blue' as const }
-        : null
+      : membership?.role === 'manager'
+        ? { label: 'Manager', variant: 'purple' as const }
+        : membership?.role === 'operation'
+          ? { label: 'Operation', variant: 'blue' as const }
+          : null
 
   const handleSignOut = async () => {
     if (isSigningOut) return

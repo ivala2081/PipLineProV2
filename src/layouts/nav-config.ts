@@ -15,6 +15,8 @@ export type NavItem = {
   titleKey: string
   href: string
   icon: ComponentType<IconProps>
+  /** If set, only users with one of these effective roles can see this item */
+  roles?: string[]
 }
 
 export type NavGroup = {
@@ -37,15 +39,20 @@ export const navGroups: NavGroup[] = [
   {
     titleKey: 'nav.groups.management',
     items: [
-      { titleKey: 'nav.members', href: '/members', icon: Users },
-      { titleKey: 'nav.psps', href: '/psps', icon: CreditCard },
+      {
+        titleKey: 'nav.members',
+        href: '/members',
+        icon: Users,
+        roles: ['god', 'admin', 'manager'],
+      },
+      { titleKey: 'nav.psps', href: '/psps', icon: CreditCard, roles: ['god', 'admin', 'manager'] },
     ],
   },
   {
     titleKey: 'nav.groups.system',
     items: [
-      { titleKey: 'nav.organizations', href: '/organizations', icon: Buildings },
-      { titleKey: 'nav.security', href: '/security', icon: Shield },
+      { titleKey: 'nav.organizations', href: '/organizations', icon: Buildings, roles: ['god'] },
+      { titleKey: 'nav.security', href: '/security', icon: Shield, roles: ['god'] },
     ],
   },
   {

@@ -37,9 +37,15 @@ export function MembersPage() {
   const { currentOrg, membership } = useOrganization()
 
   const orgId = currentOrg?.id ?? ''
-  const canManage = isGod || membership?.role === 'admin'
+  const canManage = isGod || membership?.role === 'admin' || membership?.role === 'manager'
 
-  const { data: members = [], isLoading } = useOrgMembersQuery(orgId)
+  const { data: rawMembers = [], isLoading } = useOrgMembersQuery(orgId)
+
+  // Sort by role priority: manager → admin → operation
+  const roleOrder: Record<string, number> = { manager: 0, admin: 1, operation: 2 }
+  const members = [...rawMembers].sort(
+    (a, b) => (roleOrder[a.role] ?? 9) - (roleOrder[b.role] ?? 9),
+  )
   const updateRole = useUpdateMemberRole(orgId)
   const removeMember = useRemoveMember(orgId)
 
@@ -50,8 +56,11 @@ export function MembersPage() {
   // Subscribe to real-time presence updates
   usePresenceSubscription()
 
-  const handleToggleRole = async (member: MemberWithProfile) => {
-    const newRole = member.role === 'admin' ? 'operation' : 'admin'
+  const handleChangeRole = async (
+    member: MemberWithProfile,
+    newRole: 'admin' | 'manager' | 'operation',
+  ) => {
+    if (member.role === newRole) return
     try {
       await updateRole.mutateAsync({ userId: member.user_id, role: newRole })
       toast({ title: t('organizations.toast.roleUpdated'), variant: 'success' })
@@ -172,7 +181,15 @@ export function MembersPage() {
                       <LastSeen lastSeenAt={member.profile?.last_seen_at} />
                     </TableCell>
                     <TableCell className="px-4 py-3">
-                      <Tag variant={member.role === 'admin' ? 'green' : 'blue'}>
+                      <Tag
+                        variant={
+                          member.role === 'admin'
+                            ? 'green'
+                            : member.role === 'manager'
+                              ? 'purple'
+                              : 'blue'
+                        }
+                      >
                         {t(`memberProfile.roles.${member.role}`)}
                       </Tag>
                     </TableCell>
@@ -199,11 +216,25 @@ export function MembersPage() {
                               sideOffset={4}
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <DropdownMenuItem onClick={() => handleToggleRole(member)}>
-                                {member.role === 'admin'
-                                  ? t('organizations.members.actions.demoteToOperation')
-                                  : t('organizations.members.actions.promoteToAdmin')}
-                              </DropdownMenuItem>
+                              {member.role !== 'admin' && (
+                                <DropdownMenuItem onClick={() => handleChangeRole(member, 'admin')}>
+                                  {t('organizations.members.actions.makeAdmin')}
+                                </DropdownMenuItem>
+                              )}
+                              {member.role !== 'manager' && (
+                                <DropdownMenuItem
+                                  onClick={() => handleChangeRole(member, 'manager')}
+                                >
+                                  {t('organizations.members.actions.makeManager')}
+                                </DropdownMenuItem>
+                              )}
+                              {member.role !== 'operation' && (
+                                <DropdownMenuItem
+                                  onClick={() => handleChangeRole(member, 'operation')}
+                                >
+                                  {t('organizations.members.actions.makeOperation')}
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem
                                 className="text-red"
                                 onClick={() => setPinTarget(member)}

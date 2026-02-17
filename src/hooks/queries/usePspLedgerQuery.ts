@@ -34,10 +34,20 @@ export function usePspLedgerQuery(pspId: string | undefined): UsePspLedgerReturn
     queryFn: async () => {
       if (!currentOrg || !pspId) throw new Error('Missing context')
 
+      // Fetch PSP commission rate as fallback for transfers with missing commission/net
+      const { data: pspData } = await supabase
+        .from('psps')
+        .select('commission_rate')
+        .eq('id', pspId)
+        .single()
+      const pspRate = Number(pspData?.commission_rate ?? 0)
+
       // Fetch transfers with category and type join
       const { data: rawTransfers, error: tErr } = await supabase
         .from('transfers')
-        .select('id, transfer_date, amount, commission, net, currency, full_name, category:transfer_categories(is_deposit), type:transfer_types(name)')
+        .select(
+          'id, transfer_date, amount, commission, net, commission_rate_snapshot, currency, full_name, category:transfer_categories(is_deposit), type:transfer_types(name)',
+        )
         .eq('psp_id', pspId)
         .eq('organization_id', currentOrg.id)
         .order('transfer_date', { ascending: true })
@@ -65,6 +75,18 @@ export function usePspLedgerQuery(pspId: string | undefined): UsePspLedgerReturn
         const cat = t.category as unknown as { is_deposit: boolean } | null
         const isDeposit = cat?.is_deposit ?? false
         const absAmount = Math.abs(Number(t.amount))
+        const storedCommission = Number(t.commission)
+        const storedNet = Number(t.net)
+
+        // Recompute commission/net if stored values are 0 but amount is non-zero
+        // This handles transfers imported without commission/net computation
+        let commission = storedCommission
+        let net = storedNet
+        if (storedNet === 0 && absAmount > 0) {
+          const rate = Number(t.commission_rate_snapshot) || pspRate
+          commission = Math.round(absAmount * rate * 100) / 100
+          net = Number(t.amount) - (isDeposit ? commission : -commission)
+        }
 
         return {
           id: t.id,
@@ -72,8 +94,8 @@ export function usePspLedgerQuery(pspId: string | undefined): UsePspLedgerReturn
           date: t.transfer_date,
           deposit: isDeposit ? absAmount : 0,
           withdrawal: !isDeposit ? absAmount : 0,
-          commission: Number(t.commission),
-          net: Number(t.net),
+          commission,
+          net,
           settlement: 0,
           currency: t.currency,
           fullName: t.full_name,

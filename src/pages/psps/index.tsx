@@ -32,7 +32,7 @@ export function PspsPage() {
   const navigate = useNavigate()
   const { isGod } = useAuth()
   const { membership } = useOrganization()
-  const isAdmin = isGod || membership?.role === 'admin'
+  const isAdmin = isGod || membership?.role === 'admin' || membership?.role === 'manager'
 
   const { psps, isLoading } = usePspDashboardQuery()
   const pspMutation = useLookupMutation('psps')

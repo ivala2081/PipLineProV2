@@ -47,6 +47,72 @@
     "welcome": "Tekrar hoş geldin, {{name}}",
     "orgContext": "{{org}} yönetiliyor",
     "quickActions": "Hızlı İşlemler",
+    "period": {
+      "today": "Bugün",
+      "week": "Bu Hafta",
+      "month": "Bu Ay"
+    },
+    "kpi": {
+      "deposits": "Yatırımlar",
+      "withdrawals": "Çekimler",
+      "netCash": "Net Nakit",
+      "commission": "Komisyon",
+      "transactions": "İşlemler"
+    },
+    "currencyAnalysis": {
+      "title": "Para Birimi Gelir Analizi",
+      "deposits": "Yatırımlar",
+      "withdrawals": "Çekimler",
+      "transactions": "işlem",
+      "liveRate": "Canlı Kur"
+    },
+    "charts": {
+      "dailyVolume": "Günlük Hacim Trendi",
+      "paymentMethods": "Ödeme Yöntemleri",
+      "pspVolume": "Kasaya Göre Hacim",
+      "dailyNet": "Günlük Net Akış",
+      "deposits": "Yatırımlar",
+      "withdrawals": "Çekimler",
+      "net": "Net",
+      "total": "Toplam",
+      "noData": "Bu dönem için veri yok"
+    },
+    "tables": {
+      "recentTransfers": "Son Transferler",
+      "viewAll": "Tümünü Gör",
+      "name": "İsim",
+      "amount": "Tutar",
+      "category": "Kategori",
+      "method": "Yöntem",
+      "psp": "Kasa",
+      "time": "Zaman",
+      "noTransfers": "Henüz transfer yok",
+      "topCustomers": "En Aktif Müşteriler",
+      "activityFeed": "Son Hareketler",
+      "noActivity": "Henüz hareket yok",
+      "actCreated": "transfer oluşturdu:",
+      "actUpdated": "transfer güncelledi:"
+    },
+    "mini": {
+      "activePsps": "Aktif Kasalar",
+      "ofTotal": "toplam {{total}}",
+      "deposits": "Yatırım Sayısı",
+      "withdrawals": "Çekim Sayısı",
+      "avgTransaction": "Ort. İşlem"
+    },
+    "insights": {
+      "registerBalances": "Kasa Bakiyeleri",
+      "noBalances": "Kasa verisi yok",
+      "exchangeRate": "USD / TRY Kur",
+      "walletChains": "Cüzdan Zincirleri",
+      "noWallets": "Cüzdan yapılandırılmamış",
+      "totalWallets": "Toplam {{count}} cüzdan",
+      "peakDay": "En Yoğun Gün",
+      "activeDays": "Aktif Günler",
+      "days": "gün",
+      "avgDailyVolume": "Ort. Günlük Hacim",
+      "avgPerTransfer": "Ort. / Transfer"
+    },
     "stats": {
       "totalRecords": "Toplam Kayıt",
       "thisWeek": "Bu Hafta",
@@ -817,11 +883,15 @@
       },
       "roles": {
         "admin": "Admin",
+        "manager": "Yönetici",
         "operation": "Operasyon"
       },
       "actions": {
         "promoteToAdmin": "Admin Yap",
         "demoteToOperation": "Operasyona İndir",
+        "makeAdmin": "Admin Yap",
+        "makeManager": "Yönetici Yap",
+        "makeOperation": "Operasyon Yap",
         "remove": "Üyeyi Kaldır"
       },
       "removeConfirm": {
@@ -842,11 +912,34 @@
       "role": "Rol",
       "roleAdmin": "Admin",
       "roleAdminDescription": "Ayarlar ve üyelere tam erişim",
+      "roleManager": "Yönetici",
+      "roleManagerDescription": "Organizasyon içinde tam erişim",
       "roleOperation": "Operasyon",
       "roleOperationDescription": "Verileri görüntüleyebilir ve yönetebilir",
       "add": "Üye Ekle",
       "cancel": "İptal",
       "adding": "Ekleniyor..."
+    },
+    "inviteDialog": {
+      "title": "Üye Davet Et",
+      "email": "E-posta Adresi",
+      "emailPlaceholder": "kullanici@ornek.com",
+      "password": "Şifre",
+      "passwordPlaceholder": "En az 6 karakter",
+      "passwordHint": "Bu, üyenin ilk giriş şifresi olacaktır.",
+      "displayName": "Görünen Ad",
+      "displayNamePlaceholder": "Ad soyad girin",
+      "optional": "isteğe bağlı",
+      "role": "Rol",
+      "roleAdmin": "Admin",
+      "roleAdminDescription": "Ayarlar ve üyelere tam erişim",
+      "roleManager": "Yönetici",
+      "roleManagerDescription": "Organizasyon içinde tam erişim",
+      "roleOperation": "Operasyon",
+      "roleOperationDescription": "Verileri görüntüleyebilir ve yönetebilir",
+      "invite": "Davet Gönder",
+      "cancel": "İptal",
+      "sending": "Gönderiliyor..."
     },
     "settings": {
       "title": "Genel",
@@ -994,6 +1087,7 @@
     "cancel": "İptal",
     "roles": {
       "admin": "Admin",
+      "manager": "Yönetici",
       "operation": "Operasyon"
     },
     "profileInfo": "Profil Bilgisi",

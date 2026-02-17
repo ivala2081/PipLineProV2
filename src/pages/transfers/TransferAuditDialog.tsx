@@ -1,20 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  UserCircle,
-  PencilSimple,
-  Plus,
-  CaretLeft,
-  CaretRight,
-} from '@phosphor-icons/react'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  Skeleton,
-} from '@ds'
+import { UserCircle, PencilSimple, Plus, CaretLeft, CaretRight } from '@phosphor-icons/react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Skeleton } from '@ds'
 import { useTransferAuditQuery } from '@/hooks/queries/useTransferAuditQuery'
 import type { AuditLogEntry } from '@/hooks/queries/useTransferAuditQuery'
 
@@ -50,19 +37,15 @@ function AuditEntry({
   const { date, time } = formatDateTime(entry.created_at)
   const isCreated = entry.action === 'created'
   const performerName =
-    entry.performer?.display_name || t('transfers.audit.unknownUser')
+    entry.performer?.display_name || entry.performer?.email || t('transfers.audit.unknownUser')
 
-  const changedFieldCount = entry.changes
-    ? Object.keys(entry.changes).length
-    : 0
+  const changedFieldCount = entry.changes ? Object.keys(entry.changes).length : 0
 
   return (
     <div className="flex gap-3 py-3">
       <div
         className={`mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full ${
-          isCreated
-            ? 'bg-green/10 text-green'
-            : 'bg-orange/10 text-orange'
+          isCreated ? 'bg-green/10 text-green' : 'bg-orange/10 text-orange'
         }`}
       >
         {isCreated ? <Plus size={14} weight="bold" /> : <PencilSimple size={14} />}
@@ -70,9 +53,7 @@ function AuditEntry({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <UserCircle size={14} className="shrink-0 text-black/40" />
-          <span className="text-sm font-medium text-black/80">
-            {performerName}
-          </span>
+          <span className="text-sm font-medium text-black/80">{performerName}</span>
         </div>
         <p className="mt-0.5 text-[12px] text-black/50">
           {isCreated
@@ -82,21 +63,14 @@ function AuditEntry({
         {!isCreated && entry.changes && changedFieldCount > 0 && (
           <div className="mt-2 space-y-1">
             {Object.entries(entry.changes).map(([field, change]) => (
-              <div
-                key={field}
-                className="rounded-md bg-black/[0.02] px-2.5 py-1.5 text-xs"
-              >
+              <div key={field} className="rounded-md bg-black/[0.02] px-2.5 py-1.5 text-xs">
                 <span className="font-medium text-black/50">
                   {t(`transfers.audit.fields.${field}`, { defaultValue: field })}
                 </span>
                 <span className="text-black/30">{' : '}</span>
-                <span className="text-red/80 line-through">
-                  {String(change.old ?? '—')}
-                </span>
+                <span className="text-red/80 line-through">{String(change.old ?? '—')}</span>
                 <span className="text-black/30">{' → '}</span>
-                <span className="text-green/80">
-                  {String(change.new ?? '—')}
-                </span>
+                <span className="text-green/80">{String(change.new ?? '—')}</span>
               </div>
             ))}
           </div>
@@ -138,9 +112,7 @@ export function TransferAuditDialog({
       <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>{t('transfers.audit.title')}</DialogTitle>
-          {transferName && (
-            <DialogDescription>{transferName}</DialogDescription>
-          )}
+          {transferName && <DialogDescription>{transferName}</DialogDescription>}
         </DialogHeader>
 
         <div className="max-h-[400px] overflow-y-auto">
@@ -163,9 +135,7 @@ export function TransferAuditDialog({
             </div>
           ) : entries.length === 0 ? (
             <div className="py-10 text-center">
-              <p className="text-sm text-black/40">
-                {t('transfers.audit.empty')}
-              </p>
+              <p className="text-sm text-black/40">{t('transfers.audit.empty')}</p>
             </div>
           ) : (
             <div className="divide-y divide-black/[0.06]">

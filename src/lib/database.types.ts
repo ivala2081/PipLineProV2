@@ -9,7 +9,7 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type SystemRole = 'god' | 'user'
-export type OrgMemberRole = 'admin' | 'operation'
+export type OrgMemberRole = 'admin' | 'manager' | 'operation'
 export type InvitationStatus = 'pending' | 'accepted' | 'expired'
 export type Currency = 'TL' | 'USD'
 
@@ -20,6 +20,7 @@ export interface Database {
         Row: {
           id: string
           system_role: SystemRole
+          email: string | null
           display_name: string | null
           avatar_url: string | null
           phone: string | null
@@ -33,6 +34,7 @@ export interface Database {
         Insert: {
           id: string
           system_role?: SystemRole
+          email?: string | null
           display_name?: string | null
           avatar_url?: string | null
           phone?: string | null
@@ -46,6 +48,7 @@ export interface Database {
         Update: {
           id?: string
           system_role?: SystemRole
+          email?: string | null
           display_name?: string | null
           avatar_url?: string | null
           phone?: string | null

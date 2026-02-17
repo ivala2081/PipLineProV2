@@ -47,6 +47,72 @@
     "welcome": "Welcome back, {{name}}",
     "orgContext": "Managing {{org}}",
     "quickActions": "Quick Actions",
+    "period": {
+      "today": "Today",
+      "week": "This Week",
+      "month": "This Month"
+    },
+    "kpi": {
+      "deposits": "Deposits",
+      "withdrawals": "Withdrawals",
+      "netCash": "Net Cash",
+      "commission": "Commission",
+      "transactions": "Transactions"
+    },
+    "currencyAnalysis": {
+      "title": "Currency Revenue Analysis",
+      "deposits": "Deposits",
+      "withdrawals": "Withdrawals",
+      "transactions": "transactions",
+      "liveRate": "Live Rate"
+    },
+    "charts": {
+      "dailyVolume": "Daily Volume Trend",
+      "paymentMethods": "Payment Methods",
+      "pspVolume": "Volume by PSP",
+      "dailyNet": "Daily Net Flow",
+      "deposits": "Deposits",
+      "withdrawals": "Withdrawals",
+      "net": "Net",
+      "total": "Total",
+      "noData": "No data for this period"
+    },
+    "tables": {
+      "recentTransfers": "Recent Transfers",
+      "viewAll": "View All",
+      "name": "Name",
+      "amount": "Amount",
+      "category": "Category",
+      "method": "Method",
+      "psp": "PSP",
+      "time": "Time",
+      "noTransfers": "No transfers yet",
+      "topCustomers": "Top Customers",
+      "activityFeed": "Activity Feed",
+      "noActivity": "No recent activity",
+      "actCreated": "created transfer for",
+      "actUpdated": "updated transfer for"
+    },
+    "mini": {
+      "activePsps": "Active PSPs",
+      "ofTotal": "of {{total}} total",
+      "deposits": "Deposit Count",
+      "withdrawals": "Withdrawal Count",
+      "avgTransaction": "Avg Transaction"
+    },
+    "insights": {
+      "registerBalances": "Register Balances",
+      "noBalances": "No register data",
+      "exchangeRate": "USD / TRY Rate",
+      "walletChains": "Wallet Chains",
+      "noWallets": "No wallets configured",
+      "totalWallets": "{{count}} wallets total",
+      "peakDay": "Peak Day",
+      "activeDays": "Active Days",
+      "days": "days",
+      "avgDailyVolume": "Avg Daily Volume",
+      "avgPerTransfer": "Avg / Transfer"
+    },
     "stats": {
       "totalRecords": "Total Records",
       "thisWeek": "This Week",
@@ -817,11 +883,15 @@
       },
       "roles": {
         "admin": "Admin",
+        "manager": "Manager",
         "operation": "Operation"
       },
       "actions": {
         "promoteToAdmin": "Promote to Admin",
         "demoteToOperation": "Demote to Operation",
+        "makeAdmin": "Make Admin",
+        "makeManager": "Make Manager",
+        "makeOperation": "Make Operation",
         "remove": "Remove Member"
       },
       "removeConfirm": {
@@ -842,11 +912,34 @@
       "role": "Role",
       "roleAdmin": "Admin",
       "roleAdminDescription": "Full access to settings and members",
+      "roleManager": "Manager",
+      "roleManagerDescription": "Full access within the organization",
       "roleOperation": "Operation",
       "roleOperationDescription": "Can view and manage data",
       "add": "Add Member",
       "cancel": "Cancel",
       "adding": "Adding..."
+    },
+    "inviteDialog": {
+      "title": "Invite Member",
+      "email": "Email Address",
+      "emailPlaceholder": "user@example.com",
+      "password": "Password",
+      "passwordPlaceholder": "At least 6 characters",
+      "passwordHint": "This will be the member's initial login password.",
+      "displayName": "Display Name",
+      "displayNamePlaceholder": "Enter full name",
+      "optional": "optional",
+      "role": "Role",
+      "roleAdmin": "Admin",
+      "roleAdminDescription": "Full access to settings and members",
+      "roleManager": "Manager",
+      "roleManagerDescription": "Full access within the organization",
+      "roleOperation": "Operation",
+      "roleOperationDescription": "Can view and manage data",
+      "invite": "Send Invite",
+      "cancel": "Cancel",
+      "sending": "Sending..."
     },
     "settings": {
       "title": "General",
@@ -994,6 +1087,7 @@
     "cancel": "Cancel",
     "roles": {
       "admin": "Admin",
+      "manager": "Manager",
       "operation": "Operation"
     },
     "profileInfo": "Profile Information",

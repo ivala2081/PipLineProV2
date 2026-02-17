@@ -1,16 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Buildings, ChartLineUp, Diamond, Image } from '@phosphor-icons/react'
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-  Button,
-  Tag,
-  Card,
-  Skeleton,
-} from '@ds'
+import { ArrowLeft, Buildings, ChartLineUp, Diamond } from '@phosphor-icons/react'
+import { Tabs, TabsList, TabsTrigger, TabsContent, Button, Tag, Card, Skeleton } from '@ds'
 import { useLocale } from '@ds/hooks'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganizationDetailQuery } from '@/hooks/queries/useOrganizationDetailQuery'
@@ -28,16 +19,20 @@ const ORG_ICONS: Record<string, { icon: React.ReactNode }> = {
   },
 }
 
-function OrgDetailAvatar({ name, slug, logoUrl }: { name: string; slug: string; logoUrl?: string | null }) {
+function OrgDetailAvatar({
+  name,
+  slug,
+  logoUrl,
+}: {
+  name: string
+  slug: string
+  logoUrl?: string | null
+}) {
   // Priority: logoUrl > custom icon > fallback to initials
   if (logoUrl) {
     return (
       <div className="flex size-14 items-center justify-center overflow-hidden rounded-xl border-2 border-black/10 bg-black/5">
-        <img
-          src={logoUrl}
-          alt={`${name} logo`}
-          className="size-full object-cover"
-        />
+        <img src={logoUrl} alt={`${name} logo`} className="size-full object-cover" />
       </div>
     )
   }
@@ -70,7 +65,8 @@ export function OrganizationDetailPage() {
   const { data: members = [] } = useOrgMembersQuery(orgId ?? '')
 
   const currentUserMember = members.find((m) => m.user_id === user?.id)
-  const canManage = isGod || currentUserMember?.role === 'admin'
+  const canManage =
+    isGod || currentUserMember?.role === 'admin' || currentUserMember?.role === 'manager'
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString(locale === 'tr' ? 'tr-TR' : 'en-US', {
@@ -114,12 +110,8 @@ export function OrganizationDetailPage() {
           <Buildings size={28} className="text-black/40" />
         </div>
         <div className="text-center">
-          <p className="text-sm font-medium text-black/60">
-            {t('organizations.notFound')}
-          </p>
-          <p className="mt-1 text-xs text-black/40">
-            {t('organizations.notFoundDescription')}
-          </p>
+          <p className="text-sm font-medium text-black/60">{t('organizations.notFound')}</p>
+          <p className="mt-1 text-xs text-black/40">{t('organizations.notFoundDescription')}</p>
         </div>
         <Button variant="outline" onClick={() => navigate('/organizations')}>
           <ArrowLeft size={16} />
@@ -132,11 +124,7 @@ export function OrganizationDetailPage() {
   return (
     <div className="space-y-6">
       {/* Back button */}
-      <Button
-        variant="gray"
-        size="sm"
-        onClick={() => navigate('/organizations')}
-      >
+      <Button variant="gray" size="sm" onClick={() => navigate('/organizations')}>
         <ArrowLeft size={16} />
         {t('organizations.backToList')}
       </Button>
@@ -150,9 +138,7 @@ export function OrganizationDetailPage() {
               <div className="flex items-center gap-3">
                 <h1 className="text-2xl font-semibold">{org.name}</h1>
                 <Tag variant={org.is_active ? 'green' : 'red'}>
-                  {org.is_active
-                    ? t('organizations.active')
-                    : t('organizations.inactive')}
+                  {org.is_active ? t('organizations.active') : t('organizations.inactive')}
                 </Tag>
               </div>
               <div className="mt-1 flex items-center gap-3">
@@ -174,16 +160,10 @@ export function OrganizationDetailPage() {
       {/* Tabs */}
       <Tabs defaultValue="overview">
         <TabsList>
-          <TabsTrigger value="overview">
-            {t('organizations.tabs.overview')}
-          </TabsTrigger>
-          <TabsTrigger value="members">
-            {t('organizations.tabs.members')}
-          </TabsTrigger>
+          <TabsTrigger value="overview">{t('organizations.tabs.overview')}</TabsTrigger>
+          <TabsTrigger value="members">{t('organizations.tabs.members')}</TabsTrigger>
           {canManage && (
-            <TabsTrigger value="settings">
-              {t('organizations.tabs.settings')}
-            </TabsTrigger>
+            <TabsTrigger value="settings">{t('organizations.tabs.settings')}</TabsTrigger>
           )}
         </TabsList>
 

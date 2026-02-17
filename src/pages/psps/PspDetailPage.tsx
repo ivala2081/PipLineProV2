@@ -1100,7 +1100,7 @@ export function PspDetailPage() {
   const { locale } = useLocale()
   const { isGod } = useAuth()
   const { membership } = useOrganization()
-  const isAdmin = isGod || membership?.role === 'admin'
+  const isAdmin = isGod || membership?.role === 'admin' || membership?.role === 'manager'
 
   const { psps, isLoading } = usePspDashboardQuery()
   const psp = psps.find((p) => p.psp_id === pspId)

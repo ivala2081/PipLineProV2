@@ -54,7 +54,7 @@ export function MemberProfilePage() {
   const isSelf = user?.id === userId
   const isAdminOfSharedOrg =
     !isGod &&
-    membership?.role === 'admin' &&
+    (membership?.role === 'admin' || membership?.role === 'manager') &&
     !!profileData?.memberships.some((m) => m.organization_id === currentOrg?.id)
   const canEdit = isGod || isAdminOfSharedOrg || isSelf
   const canEditAdminFields = isGod || isAdminOfSharedOrg
@@ -249,7 +249,7 @@ export function MemberProfilePage() {
                   className="inline-flex items-center gap-2 rounded-lg border border-black/[0.08] bg-white px-3 py-1.5"
                 >
                   <div
-                    className={`size-1.5 rounded-full ${r.role === 'admin' ? 'bg-green' : 'bg-blue'}`}
+                    className={`size-1.5 rounded-full ${r.role === 'admin' ? 'bg-green' : r.role === 'manager' ? 'bg-purple' : 'bg-blue'}`}
                   />
                   <span className="text-xs font-medium text-black/70">
                     {t(`memberProfile.roles.${r.role}`)}
@@ -393,7 +393,12 @@ export function MemberProfilePage() {
                         </p>
                         <p className="truncate text-xs text-black/40">{m.organization.slug}</p>
                       </div>
-                      <Tag variant={m.role === 'admin' ? 'green' : 'blue'} className="shrink-0">
+                      <Tag
+                        variant={
+                          m.role === 'admin' ? 'green' : m.role === 'manager' ? 'purple' : 'blue'
+                        }
+                        className="shrink-0"
+                      >
                         {t(`memberProfile.roles.${m.role}`)}
                       </Tag>
                     </button>
