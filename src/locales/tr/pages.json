@@ -113,7 +113,8 @@
       "resetRate": "Ortalamaya sıfırla",
       "original": "ort",
       "usdTransferCount": "{{count}} USD",
-      "applyingRate": "Uygulanıyor..."
+      "applyingRate": "Uygulanıyor...",
+      "breakdown": "Dağılım"
     },
     "typeValues": {
       "Client": "Müşteri",
@@ -214,6 +215,7 @@
       "dateRange": "Tarih Aralığı",
       "from": "Başlangıç Tarihi",
       "to": "Bitiş Tarihi",
+      "date": "Tarih",
       "noResults": "Eşleşen transfer bulunamadı",
       "noResultsDescription": "Aradığınızı bulmak için filtreleri ayarlamayı deneyin."
     },

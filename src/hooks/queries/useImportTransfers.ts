@@ -43,6 +43,7 @@ export function useImportTransfers() {
           crm_id: row.crmId,
           meta_id: row.metaId,
           payment_method_id: row.paymentMethodId!,
+          psp_id: row.pspId!,
           transfer_date: row.transferDate,
           category_id: row.categoryId!,
           amount: row.amount,
@@ -124,6 +125,13 @@ export function useImportTransfers() {
       errors.push(
         `Transfer types not found: ${missing.types.join(', ')}. ` +
           `Valid values: Client, Payment, Blocked`,
+      )
+    }
+
+    if (missing.psps.length > 0) {
+      errors.push(
+        `PSPs not found: ${missing.psps.join(', ')}. ` +
+          `Please create these PSPs in your organization before importing.`,
       )
     }
 

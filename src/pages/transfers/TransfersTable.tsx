@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   ArrowUp,
+  CalendarBlank,
   ChartBar,
   CaretLeft,
   CaretRight,
@@ -258,6 +259,7 @@ export function TransfersTable({
           <Input
             type="text"
             inputSize="sm"
+            autoComplete="off"
             placeholder={t('transfers.filters.search', 'Search name, CRM ID, META ID...')}
             value={filters.search ?? ''}
             onChange={(e) => onFilterChange('search', e.target.value || null)}
@@ -273,6 +275,44 @@ export function TransfersTable({
             </button>
           )}
         </div>
+        {/* Quick date picker */}
+        {(() => {
+          const hasDate = filters.dateFrom != null && filters.dateFrom === filters.dateTo
+          return (
+            <div className="relative">
+              <CalendarBlank
+                size={14}
+                weight={hasDate ? 'fill' : 'regular'}
+                className={`pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 ${hasDate ? 'text-brand' : 'text-black/35'}`}
+              />
+              <Input
+                type="date"
+                inputSize="sm"
+                autoComplete="off"
+                value={hasDate ? filters.dateFrom! : ''}
+                onChange={(e) => {
+                  const v = e.target.value || null
+                  onFilterChange('dateFrom', v)
+                  onFilterChange('dateTo', v)
+                }}
+                className={`h-8 w-[9.5rem] cursor-pointer pl-8 text-xs transition-colors [&::-webkit-calendar-picker-indicator]:opacity-0 ${hasDate ? 'border-brand/30 pr-7' : 'pr-2.5'}`}
+              />
+              {hasDate && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onFilterChange('dateFrom', null)
+                    onFilterChange('dateTo', null)
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-black/30 transition-colors hover:bg-black/5 hover:text-black/60"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+          )
+        })()}
+
         <Button
           variant={hasActiveFilters ? 'filled' : 'outline'}
           size="sm"
@@ -449,6 +489,7 @@ export function TransfersTable({
               <Input
                 type="date"
                 inputSize="sm"
+                autoComplete="off"
                 value={filters.dateFrom ?? ''}
                 onChange={(e) => onFilterChange('dateFrom', e.target.value || null)}
                 className="h-9 w-full text-xs"
@@ -463,6 +504,7 @@ export function TransfersTable({
               <Input
                 type="date"
                 inputSize="sm"
+                autoComplete="off"
                 value={filters.dateTo ?? ''}
                 onChange={(e) => onFilterChange('dateTo', e.target.value || null)}
                 className="h-9 w-full text-xs"
@@ -580,19 +622,21 @@ export function TransfersTable({
                 <TableHeader>
                   <TableRow className="bg-black/[0.015] hover:bg-black/[0.015]">
                     <TableHead className={TH_CLASS}>{t('transfers.columns.fullName')}</TableHead>
-                    <TableHead className={TH_CLASS}>{t('transfers.columns.psp')}</TableHead>
                     <TableHead className={TH_CLASS}>
                       {t('transfers.columns.paymentMethod')}
                     </TableHead>
-                    <TableHead className={TH_CLASS}>{t('transfers.columns.time')}</TableHead>
                     <TableHead className={TH_CLASS}>{t('transfers.columns.category')}</TableHead>
                     <TableHead className={`${TH_CLASS} text-right`}>
                       {t('transfers.columns.amount')}
                     </TableHead>
-                    <TableHead className={TH_CLASS}>{t('transfers.columns.currency')}</TableHead>
                     <TableHead className={`${TH_CLASS} text-right`}>
-                      {t('transfers.columns.exchangeRate')}
+                      {t('transfers.columns.commission')}
                     </TableHead>
+                    <TableHead className={`${TH_CLASS} text-right`}>
+                      {t('transfers.columns.net')}
+                    </TableHead>
+                    <TableHead className={TH_CLASS}>{t('transfers.columns.currency')}</TableHead>
+                    <TableHead className={TH_CLASS}>{t('transfers.columns.psp')}</TableHead>
                     <TableHead className={TH_CLASS}>{t('transfers.columns.type')}</TableHead>
                     <TableHead className="w-20 px-2" />
                   </TableRow>

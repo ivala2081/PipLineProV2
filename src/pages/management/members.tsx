@@ -24,6 +24,7 @@ import { useOrgMembersQuery, type MemberWithProfile } from '@/hooks/queries/useO
 import { useUpdateMemberRole, useRemoveMember } from '@/hooks/queries/useOrgMemberMutations'
 import { ConfirmDialog } from '@/pages/organizations/ConfirmDialog'
 import { AddMemberDialog } from '@/pages/organizations/AddMemberDialog'
+import { PinDialog } from '@/pages/transfers/PinDialog'
 import { UserAvatar } from '@/components/UserAvatar'
 import { LastSeen } from '@/components/LastSeen'
 import { usePresenceSubscription } from '@/hooks/usePresenceSubscription'
@@ -42,6 +43,7 @@ export function MembersPage() {
   const updateRole = useUpdateMemberRole(orgId)
   const removeMember = useRemoveMember(orgId)
 
+  const [pinTarget, setPinTarget] = useState<MemberWithProfile | null>(null)
   const [removeTarget, setRemoveTarget] = useState<MemberWithProfile | null>(null)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
 
@@ -192,7 +194,11 @@ export function MembersPage() {
                                 <DotsThree size={16} weight="bold" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" sideOffset={4}>
+                            <DropdownMenuContent
+                              align="end"
+                              sideOffset={4}
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <DropdownMenuItem onClick={() => handleToggleRole(member)}>
                                 {member.role === 'admin'
                                   ? t('organizations.members.actions.demoteToOperation')
@@ -200,7 +206,7 @@ export function MembersPage() {
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="text-red"
-                                onClick={() => setRemoveTarget(member)}
+                                onClick={() => setPinTarget(member)}
                               >
                                 {t('organizations.members.actions.remove')}
                               </DropdownMenuItem>
@@ -223,6 +229,16 @@ export function MembersPage() {
           </div>
         </div>
       )}
+
+      <PinDialog
+        open={!!pinTarget}
+        onClose={() => setPinTarget(null)}
+        onVerified={() => {
+          setRemoveTarget(pinTarget)
+          setPinTarget(null)
+        }}
+        securityPin="4561"
+      />
 
       <ConfirmDialog
         open={!!removeTarget}

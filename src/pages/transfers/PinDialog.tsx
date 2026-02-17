@@ -1,12 +1,6 @@
 import { useRef, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  Button,
-} from '@ds'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, Button } from '@ds'
 
 interface PinDialogProps {
   open: boolean
@@ -50,21 +44,21 @@ export function PinDialog({ open, onClose, onVerified, securityPin }: PinDialogP
         if (!isOpen) handleClose()
       }}
     >
-      <DialogContent size="sm" className="p-0">
+      <DialogContent size="sm" className="p-0" aria-describedby={undefined}>
         <div className="px-6 pt-6 pb-5">
           <DialogHeader>
-            <DialogTitle className="text-sm font-semibold">
-              {t('transfers.pin.title')}
-            </DialogTitle>
+            <DialogTitle className="text-sm font-semibold">{t('transfers.pin.title')}</DialogTitle>
           </DialogHeader>
-          <p className="mt-1 text-[12px] text-black/60">
-            {t('transfers.pin.description')}
-          </p>
+          <p className="mt-1 text-[12px] text-black/60">{t('transfers.pin.description')}</p>
 
           <div className="mt-4">
             <input
               ref={pinInputRef}
-              type="password"
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              data-1p-ignore
+              data-lpignore="true"
               value={pinInput}
               onChange={(e) => {
                 setPinInput(e.target.value)
@@ -75,12 +69,10 @@ export function PinDialog({ open, onClose, onVerified, securityPin }: PinDialogP
                 else if (e.key === 'Escape') handleClose()
               }}
               placeholder={t('transfers.pin.placeholder')}
-              className="h-10 w-full rounded border border-black/10 bg-white px-3 text-center font-mono text-lg tracking-widest outline-none focus:border-black/25"
+              className="h-10 w-full rounded border border-black/10 bg-white px-3 text-center font-mono text-lg tracking-widest outline-none focus:border-black/25 [-webkit-text-security:disc]"
               maxLength={6}
             />
-            {pinError && (
-              <p className="mt-2 text-xs text-red">{pinError}</p>
-            )}
+            {pinError && <p className="mt-2 text-xs text-red">{pinError}</p>}
           </div>
 
           <div className="mt-5 flex gap-2">

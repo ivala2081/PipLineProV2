@@ -130,15 +130,7 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
 
       if (error) throw error
 
-      // DEBUG: Log first row to see if joins are working
-      if (data && data.length > 0) {
-        console.log('🔍 First transfer row:', data[0])
-        console.log('🔍 Category:', data[0]?.category)
-        console.log('🔍 Payment Method:', data[0]?.payment_method)
-        console.log('🔍 Type:', data[0]?.type)
-      }
-
-      // TEMPORARY FIX: Manual client-side join since Supabase join isn't working
+      // Client-side join fallback for lookup tables
       const rawTransfers = (data as unknown as TransferRow[]) ?? []
       let transfers = rawTransfers.map((t) => ({
         ...t,
@@ -171,7 +163,11 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
 
       let query = supabase
         .from('transfers')
-        .select('transfer_date, category:transfer_categories!inner(is_deposit)')
+        .select(
+          filters.categoryType
+            ? 'transfer_date, category:transfer_categories!inner(is_deposit)'
+            : 'transfer_date',
+        )
         .eq('organization_id', currentOrg.id)
 
       // Apply same filters as main query

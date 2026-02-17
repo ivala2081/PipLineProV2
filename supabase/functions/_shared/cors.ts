@@ -1,7 +1,9 @@
 // Secure CORS configuration
 // Add your production/staging domains to ALLOWED_ORIGINS environment variable
 // Set in Supabase Dashboard: Settings → Edge Functions → Secrets
-const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || 'http://localhost:5173').split(',')
+const ALLOWED_ORIGINS = (
+  Deno.env.get('ALLOWED_ORIGINS') || 'http://localhost:5173,http://127.0.0.1:5173'
+).split(',')
 
 export function corsHeaders(origin?: string): Record<string, string> {
   // Default to first allowed origin if no origin provided

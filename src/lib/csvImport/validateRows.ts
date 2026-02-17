@@ -1,4 +1,5 @@
 import type { Currency, TransferCategory, PaymentMethod, TransferType } from '@/lib/database.types'
+import type { Psp } from '@/hooks/queries/usePspsQuery'
 import type { CsvRawRow, ResolvedTransferRow, ValidationIssue, ImportParseResult } from './types'
 import { parseTurkishDecimal, parseTurkishDate } from './parseCsv'
 
@@ -10,6 +11,7 @@ export interface LookupMaps {
   paymentMethodsByName: Map<string, PaymentMethod>
   categoriesByName: Map<string, TransferCategory>
   typesByName: Map<string, TransferType>
+  pspsByName: Map<string, Psp>
 }
 
 /**
@@ -21,6 +23,7 @@ export function buildLookupMaps(
   paymentMethods: PaymentMethod[],
   categories: TransferCategory[],
   transferTypes: TransferType[],
+  psps: Psp[],
 ): LookupMaps {
   const pm = new Map<string, PaymentMethod>()
   for (const m of paymentMethods) {
@@ -40,10 +43,16 @@ export function buildLookupMaps(
     for (const alias of type.aliases ?? []) t.set(alias.toLowerCase(), type)
   }
 
+  const pspMap = new Map<string, Psp>()
+  for (const psp of psps) {
+    pspMap.set(psp.name.toLowerCase(), psp)
+  }
+
   return {
     paymentMethodsByName: pm,
     categoriesByName: cat,
     typesByName: t,
+    pspsByName: pspMap,
   }
 }
 
@@ -91,6 +100,17 @@ export function validateRow(
     issues.push({
       field: 'type',
       message: `Type "${raw.typeName}" not found`,
+      severity: 'error',
+    })
+  }
+
+  // PSP (matches by name, case-insensitive)
+  const pspKey = raw.pspName.toLowerCase().trim()
+  const psp = pspKey ? lookupMaps.pspsByName.get(pspKey) : undefined
+  if (pspKey && !psp) {
+    issues.push({
+      field: 'psp',
+      message: `PSP "${raw.pspName}" not found`,
       severity: 'error',
     })
   }
@@ -164,6 +184,7 @@ export function validateRow(
     categoryId: cat?.id ?? null,
     isDeposit,
     typeId: type?.id ?? null,
+    pspId: psp?.id ?? null,
     transferDate,
     amount,
     currency: currency === 'TL' || currency === 'USD' ? currency : 'TL',
@@ -184,6 +205,7 @@ export interface MissingLookups {
   paymentMethods: string[]
   categories: Array<{ name: string; isDeposit: boolean }>
   types: string[]
+  psps: string[]
   hasMissing: boolean
 }
 
@@ -191,6 +213,7 @@ export function detectMissingLookups(rawRows: CsvRawRow[], lookupMaps: LookupMap
   const pmSet = new Set<string>()
   const catSet = new Map<string, boolean>()
   const typeSet = new Set<string>()
+  const pspSet = new Set<string>()
 
   for (const raw of rawRows) {
     // Lookup maps already include aliases as keys, so direct lookup works
@@ -208,6 +231,11 @@ export function detectMissingLookups(rawRows: CsvRawRow[], lookupMaps: LookupMap
     if (typeKey && !lookupMaps.typesByName.has(typeKey)) {
       typeSet.add(raw.typeName)
     }
+
+    const pspKey = raw.pspName.toLowerCase().trim()
+    if (pspKey && !lookupMaps.pspsByName.has(pspKey)) {
+      pspSet.add(raw.pspName)
+    }
   }
 
   const paymentMethods = Array.from(pmSet)
@@ -216,12 +244,15 @@ export function detectMissingLookups(rawRows: CsvRawRow[], lookupMaps: LookupMap
     isDeposit,
   }))
   const types = Array.from(typeSet)
+  const psps = Array.from(pspSet)
 
   return {
     paymentMethods,
     categories,
     types,
-    hasMissing: paymentMethods.length > 0 || categories.length > 0 || types.length > 0,
+    psps,
+    hasMissing:
+      paymentMethods.length > 0 || categories.length > 0 || types.length > 0 || psps.length > 0,
   }
 }
 

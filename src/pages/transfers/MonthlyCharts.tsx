@@ -83,22 +83,23 @@ function BreakdownRow({
   pct: number
 }) {
   return (
-    <div className="relative px-4 py-2.5">
-      {/* Progress bar background */}
-      <div className="absolute inset-y-0 left-0 bg-black/[0.03]" style={{ width: `${pct}%` }} />
-      <div className="relative flex items-center justify-between">
+    <div className="px-4 py-2.5">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <span className="w-5 font-mono text-xs text-black/25">{rank}</span>
-          <span className="text-sm text-black/70">{name}</span>
+          <span className="w-5 font-mono text-xs text-black/20">{rank}</span>
+          <span className="text-[13px] font-medium text-black/70">{name}</span>
         </div>
         <div className="flex items-center gap-3">
-          <span className="font-mono text-sm font-semibold tabular-nums text-black/70">
+          <span className="font-mono text-[13px] font-semibold tabular-nums text-black/70">
             {formatNumber(value, lang)} {suffix}
           </span>
           <span className="min-w-[40px] text-right text-xs tabular-nums text-black/30">
             {count}x
           </span>
         </div>
+      </div>
+      <div className="mt-1.5 ml-[30px] h-1 overflow-hidden rounded-full bg-black/[0.04]">
+        <div className="h-full rounded-full bg-brand/30" style={{ width: `${pct}%` }} />
       </div>
     </div>
   )
@@ -131,7 +132,7 @@ function BreakdownCard({
           const val = Math.abs(Number(item[valueKey] ?? 0))
           return (
             <BreakdownRow
-              key={item.name as string}
+              key={`${item.name}-${i}`}
               rank={i + 1}
               name={item.name as string}
               value={val}
@@ -203,48 +204,52 @@ function CategoryBreakdownCard({
         {grouped.map((group) => (
           <div key={group.name} className="px-4 py-3">
             <p className="mb-2 text-sm font-medium text-black/70">{group.name}</p>
-            <div className="space-y-1.5">
-              {/* Deposits bar */}
+            <div className="space-y-2">
+              {/* Deposits */}
               {group.deposits > 0 && (
-                <div className="flex items-center gap-2">
-                  <span className="w-12 text-[10px] font-medium uppercase text-black/35">
-                    {t('transfers.monthly.deposits')}
-                  </span>
-                  <div className="relative h-5 flex-1 overflow-hidden rounded bg-black/[0.04]">
-                    <div
-                      className="absolute inset-y-0 left-0 rounded bg-emerald-500/20"
-                      style={{
-                        width: `${maxValue > 0 ? (group.deposits / maxValue) * 100 : 0}%`,
-                      }}
-                    />
-                    <span className="relative flex h-full items-center px-2 font-mono text-[11px] font-semibold tabular-nums text-emerald-700">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-medium uppercase tracking-wider text-black/35">
+                      {t('transfers.monthly.deposits')}
+                    </span>
+                    <span className="font-mono text-[11px] font-semibold tabular-nums text-green">
                       {formatNumber(group.deposits, lang)} ₺
                       <span className="ml-1 font-normal text-black/30">
                         ({group.depositCount}x)
                       </span>
                     </span>
                   </div>
-                </div>
-              )}
-              {/* Withdrawals bar */}
-              {group.withdrawals > 0 && (
-                <div className="flex items-center gap-2">
-                  <span className="w-12 text-[10px] font-medium uppercase text-black/35">
-                    {t('transfers.monthly.withdrawals')}
-                  </span>
-                  <div className="relative h-5 flex-1 overflow-hidden rounded bg-black/[0.04]">
+                  <div className="h-1.5 overflow-hidden rounded-full bg-black/[0.04]">
                     <div
-                      className="absolute inset-y-0 left-0 rounded bg-red-500/20"
+                      className="h-full rounded-full bg-green/40"
                       style={{
-                        width: `${maxValue > 0 ? (group.withdrawals / maxValue) * 100 : 0}%`,
+                        width: `${maxValue > 0 ? (group.deposits / maxValue) * 100 : 0}%`,
                       }}
                     />
-                    <span className="relative flex h-full items-center px-2 font-mono text-[11px] font-semibold tabular-nums text-red-700">
+                  </div>
+                </div>
+              )}
+              {/* Withdrawals */}
+              {group.withdrawals > 0 && (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-medium uppercase tracking-wider text-black/35">
+                      {t('transfers.monthly.withdrawals')}
+                    </span>
+                    <span className="font-mono text-[11px] font-semibold tabular-nums text-red">
                       {formatNumber(group.withdrawals, lang)} ₺
                       <span className="ml-1 font-normal text-black/30">
                         ({group.withdrawalCount}x)
                       </span>
                     </span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-black/[0.04]">
+                    <div
+                      className="h-full rounded-full bg-red/40"
+                      style={{
+                        width: `${maxValue > 0 ? (group.withdrawals / maxValue) * 100 : 0}%`,
+                      }}
+                    />
                   </div>
                 </div>
               )}
@@ -270,7 +275,7 @@ export function MonthlyCharts({ data, lang }: MonthlyChartsProps) {
   return (
     <div className="space-y-6">
       {/* Charts: Daily Volume + Daily Net */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Daily Volume Bar Chart */}
         <div>
           <h3 className="mb-2 text-sm font-semibold text-black/60">
@@ -356,8 +361,8 @@ export function MonthlyCharts({ data, lang }: MonthlyChartsProps) {
         </div>
       </div>
 
-      {/* Breakdowns: 2-column grid */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* Breakdowns */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <BreakdownCard
           title={t('transfers.monthly.pspBreakdown')}
           items={data.psp_breakdown}

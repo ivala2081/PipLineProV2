@@ -1011,15 +1011,15 @@ function SettingsTab({
       )}
 
       {/* Danger Zone - Delete PSP */}
-      <Card padding="spacious" className="border border-red-200 bg-red-50/30">
+      <Card padding="spacious" className="border border-red/20 bg-red/5">
         <div className="space-y-4">
           <div>
-            <h3 className="text-sm font-semibold text-red-700">{t('psps.settings.dangerZone')}</h3>
-            <p className="mt-1 text-xs text-red-600/70">{t('psps.settings.dangerZoneDesc')}</p>
+            <h3 className="text-sm font-semibold text-red">{t('psps.settings.dangerZone')}</h3>
+            <p className="mt-1 text-xs text-red/50">{t('psps.settings.dangerZoneDesc')}</p>
           </div>
-          <div className="flex items-center justify-between rounded-lg border border-red-200 bg-white p-3">
+          <div className="flex items-center justify-between rounded-lg border border-red/15 bg-bg1 p-3">
             <div>
-              <p className="text-sm font-medium text-black/80">{t('psps.settings.deletePsp')}</p>
+              <p className="text-sm font-medium text-black">{t('psps.settings.deletePsp')}</p>
               <p className="mt-0.5 text-xs text-black/50">
                 {t('psps.deletePsp.description', { name: pspName })}
               </p>

@@ -82,7 +82,12 @@ export function CsvImportDialog({ open, onClose, lookupData }: CsvImportDialogPr
     async (rows: CsvRawRow[], exchangeRates: Map<string, number>) => {
       // Read from ref to always get the latest lookup data (important after refetch)
       const ld = lookupDataRef.current
-      const lookupMaps = buildLookupMaps(ld.paymentMethods, ld.categories, ld.transferTypes)
+      const lookupMaps = buildLookupMaps(
+        ld.paymentMethods,
+        ld.categories,
+        ld.transferTypes,
+        ld.psps,
+      )
 
       // Detect missing lookups
       const missing = detectMissingLookups(rows, lookupMaps)
@@ -274,6 +279,12 @@ function MissingLookupsBanner({ missing }: { missing: MissingLookups }) {
       values: missing.types,
     })
   }
+  if (missing.psps.length > 0) {
+    invalidValues.push({
+      type: 'PSPs',
+      values: missing.psps,
+    })
+  }
 
   return (
     <div className="rounded-lg border border-red-200 bg-red-50 p-4">
@@ -308,12 +319,16 @@ function MissingLookupsBanner({ missing }: { missing: MissingLookups }) {
               <p>
                 <span className="font-medium">Transfer Types:</span> Client, Payment, Blocked
               </p>
+              <p>
+                <span className="font-medium">PSPs:</span> Must match existing PSPs in your
+                organization
+              </p>
             </div>
           </div>
 
           <p className="mt-3 text-xs font-medium text-red-800">
-            ⚠️ These values are fixed and cannot be modified. Please correct your CSV file and try
-            again.
+            Categories, Payment Methods, and Transfer Types are fixed. PSPs must be created in the
+            system before importing. Please correct your CSV file and try again.
           </p>
         </div>
       </div>

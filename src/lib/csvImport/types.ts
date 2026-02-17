@@ -38,6 +38,7 @@ export interface ResolvedTransferRow {
   categoryId: string | null
   isDeposit: boolean
   typeId: string | null
+  pspId: string | null
   transferDate: string
   amount: number
   currency: Currency

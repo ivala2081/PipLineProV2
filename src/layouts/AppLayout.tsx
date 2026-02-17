@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { useState, type FormEvent, type ReactNode } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -11,7 +11,6 @@ import {
   Sun,
   Globe,
   Lightning,
-  Image as ImageIcon,
 } from '@phosphor-icons/react'
 
 import { useAuth } from '@/app/providers/AuthProvider'
@@ -73,18 +72,26 @@ function SidebarBrand() {
   const logoSize = isCollapsed ? 'size-6' : 'size-8'
 
   return (
-    <div className={cn('flex items-center gap-2.5 py-1', isCollapsed ? 'justify-center px-0' : 'px-2')}>
+    <div
+      className={cn('flex items-center gap-2.5 py-1', isCollapsed ? 'justify-center px-0' : 'px-2')}
+    >
       {/* Logo mark - show org logo if available, otherwise app logo; smaller when collapsed so it fits */}
       {currentOrg?.logo_url ? (
-        <div className={cn('flex aspect-square shrink-0 items-center justify-center overflow-hidden rounded-lg border border-black/10 bg-black/5', logoSize)}>
-          <img
-            src={currentOrg.logo_url}
-            alt={currentOrg.name}
-            className="size-full object-cover"
-          />
+        <div
+          className={cn(
+            'flex aspect-square shrink-0 items-center justify-center overflow-hidden rounded-lg border border-black/10 bg-black/5',
+            logoSize,
+          )}
+        >
+          <img src={currentOrg.logo_url} alt={currentOrg.name} className="size-full object-cover" />
         </div>
       ) : (
-        <div className={cn('flex aspect-square shrink-0 items-center justify-center rounded-lg bg-brand text-white', logoSize)}>
+        <div
+          className={cn(
+            'flex aspect-square shrink-0 items-center justify-center rounded-lg bg-brand text-white',
+            logoSize,
+          )}
+        >
           <Lightning size={isCollapsed ? 14 : 18} weight="fill" />
         </div>
       )}
@@ -96,9 +103,7 @@ function SidebarBrand() {
             PipLinePro-V2
           </span>
           {currentOrg && (
-            <span className="truncate text-[11px] text-black/50">
-              {currentOrg.name}
-            </span>
+            <span className="truncate text-[11px] text-black/50">{currentOrg.name}</span>
           )}
         </div>
       )}
@@ -125,17 +130,14 @@ function SidebarNav() {
             <SidebarMenu>
               {group.items.map((item) => {
                 const Icon = item.icon
-                const isActive = item.href === '/'
-                  ? location.pathname === '/'
-                  : location.pathname.startsWith(item.href)
+                const isActive =
+                  item.href === '/'
+                    ? location.pathname === '/'
+                    : location.pathname.startsWith(item.href)
 
                 return (
                   <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive}
-                      tooltip={tNav(item.titleKey)}
-                    >
+                    <SidebarMenuButton asChild isActive={isActive} tooltip={tNav(item.titleKey)}>
                       <Link to={item.href}>
                         <Icon size={18} weight={isActive ? 'fill' : 'regular'} />
                         <span>{tNav(item.titleKey)}</span>
@@ -156,26 +158,22 @@ function SidebarNav() {
 /*  Edit Profile Dialog                                                */
 /* ------------------------------------------------------------------ */
 
-function EditProfileDialog({
-  open,
-  onClose,
-}: {
-  open: boolean
-  onClose: () => void
-}) {
+function EditProfileDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useTranslation('pages')
   const { user, profile, refreshProfile } = useAuth()
   const [displayName, setDisplayName] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Sync state when dialog opens
-  useEffect(() => {
+  // Sync state when dialog opens (adjusting state during render)
+  const [prevOpen, setPrevOpen] = useState(false)
+  if (open !== prevOpen) {
+    setPrevOpen(open)
     if (open) {
       setDisplayName(profile?.display_name ?? '')
       setError(null)
     }
-  }, [open, profile?.display_name])
+  }
 
   const getInitials = (name: string | null) => {
     if (!name) return '?'
@@ -246,11 +244,7 @@ function EditProfileDialog({
 
           <div className="space-y-2">
             <Label>{t('layout.profile.email')}</Label>
-            <Input
-              value={user?.email ?? ''}
-              disabled
-              className="text-black/50"
-            />
+            <Input value={user?.email ?? ''} disabled className="text-black/50" />
           </div>
           <div className="space-y-2">
             <Label>{t('layout.profile.displayName')}</Label>
@@ -263,12 +257,7 @@ function EditProfileDialog({
             {error && <p className="text-xs text-red">{error}</p>}
           </div>
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={isSaving}
-            >
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>
               {t('layout.profile.cancel')}
             </Button>
             <Button type="submit" variant="filled" disabled={isSaving}>
@@ -330,10 +319,7 @@ function UserMenu() {
         <SidebarMenuItem>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <SidebarMenuButton
-                size="lg"
-                className="data-[state=open]:bg-black/8"
-              >
+              <SidebarMenuButton size="lg" className="data-[state=open]:bg-black/8">
                 <Avatar className="size-8">
                   <AvatarImage src={profile?.avatar_url ?? undefined} alt={displayName} />
                   <AvatarFallback className="text-xs font-medium">{initials}</AvatarFallback>
@@ -383,10 +369,7 @@ function UserMenu() {
         </SidebarMenuItem>
       </SidebarMenu>
 
-      <EditProfileDialog
-        open={editProfileOpen}
-        onClose={() => setEditProfileOpen(false)}
-      />
+      <EditProfileDialog open={editProfileOpen} onClose={() => setEditProfileOpen(false)} />
     </>
   )
 }
@@ -398,9 +381,6 @@ function UserMenu() {
 function HeaderOrgSwitcher() {
   const { t } = useTranslation('pages')
   const { currentOrg, organizations, selectOrg } = useOrganization()
-
-  // Debug: log organizations to see if logo_url is present
-  console.log('Organizations in switcher:', organizations.map(o => ({ name: o.name, logo_url: o.logo_url })))
 
   if (organizations.length === 0) return null
 
@@ -419,7 +399,9 @@ function HeaderOrgSwitcher() {
           ) : (
             <Buildings size={14} />
           )}
-          <span className="max-w-[120px] truncate">{currentOrg?.name ?? t('layout.noOrganization')}</span>
+          <span className="max-w-[120px] truncate">
+            {currentOrg?.name ?? t('layout.noOrganization')}
+          </span>
           <CaretUpDown size={12} className="text-black/40" />
         </button>
       </DropdownMenuTrigger>
@@ -427,17 +409,10 @@ function HeaderOrgSwitcher() {
         <DropdownMenuLabel>{t('layout.organizations')}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {organizations.map((org) => (
-          <DropdownMenuItem
-            key={org.id}
-            onSelect={() => selectOrg(org.id)}
-          >
+          <DropdownMenuItem key={org.id} onSelect={() => selectOrg(org.id)}>
             {org.logo_url ? (
               <div className="flex size-5 items-center justify-center overflow-hidden rounded border border-black/10 bg-black/5">
-                <img
-                  src={org.logo_url}
-                  alt={org.name}
-                  className="size-full object-cover"
-                />
+                <img src={org.logo_url} alt={org.name} className="size-full object-cover" />
               </div>
             ) : (
               <div className="flex aspect-square size-5 items-center justify-center rounded bg-brand/10 text-brand text-[10px] font-bold">
@@ -445,9 +420,7 @@ function HeaderOrgSwitcher() {
               </div>
             )}
             <span className="truncate">{org.name}</span>
-            {org.id === currentOrg?.id && (
-              <Check size={14} className="ml-auto text-brand" />
-            )}
+            {org.id === currentOrg?.id && <Check size={14} className="ml-auto text-brand" />}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
@@ -470,9 +443,7 @@ function HeaderBar() {
 
   for (const group of navGroups) {
     const found = group.items.find((item) =>
-      item.href === '/'
-        ? location.pathname === '/'
-        : location.pathname.startsWith(item.href),
+      item.href === '/' ? location.pathname === '/' : location.pathname.startsWith(item.href),
     )
     if (found) {
       currentGroup = group
@@ -511,7 +482,9 @@ function HeaderBar() {
           aria-label={t('layout.changeLanguage')}
         >
           <Globe size={16} />
-          <span className="hidden sm:inline">{localeNames[locale as keyof typeof localeNames]}</span>
+          <span className="hidden sm:inline">
+            {localeNames[locale as keyof typeof localeNames]}
+          </span>
         </button>
         <button
           onClick={toggleTheme}
@@ -546,9 +519,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       </Sidebar>
       <SidebarInset className="max-h-svh min-w-0 w-full overflow-hidden">
         <HeaderBar />
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 md:p-6">
-          {children}
-        </div>
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 md:p-6">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   )

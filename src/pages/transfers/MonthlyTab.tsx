@@ -66,7 +66,7 @@ function ChangeBadge({
 
   if (previous === 0) {
     return (
-      <span className="mt-1 inline-flex items-center gap-0.5 text-[10px] text-emerald-600">
+      <span className="mt-1 inline-flex items-center gap-0.5 text-[10px] text-green">
         <TrendUp size={10} weight="bold" />
         {t('transfers.monthly.noPrevData')}
       </span>
@@ -89,7 +89,7 @@ function ChangeBadge({
   return (
     <span
       className={`mt-1 inline-flex items-center gap-0.5 text-[10px] font-medium ${
-        isUp ? 'text-emerald-600' : isDown ? 'text-red-500' : 'text-black/25'
+        isUp ? 'text-green' : isDown ? 'text-red' : 'text-black/25'
       }`}
     >
       {isUp ? <TrendUp size={10} weight="bold" /> : <TrendDown size={10} weight="bold" />}
@@ -188,7 +188,7 @@ function InsightPill({
 function KpiSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {Array.from({ length: 8 }).map((_, i) => (
           <div key={i} className="rounded-xl border border-black/10 bg-black/[0.015] px-4 py-3.5">
             <Skeleton className="h-3 w-20 rounded" />
@@ -198,12 +198,12 @@ function KpiSkeleton() {
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <Skeleton key={i} className="h-14 rounded-lg" />
         ))}
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Skeleton className="h-[310px] rounded-xl" />
         <Skeleton className="h-[310px] rounded-xl" />
       </div>
@@ -283,8 +283,8 @@ export function MonthlyTab() {
       {/* Data */}
       {!isLoading && data && data.kpis.transfer_count > 0 && (
         <>
-          {/* KPI cards: 4 columns x 2 rows */}
-          <div className="grid grid-cols-4 gap-3">
+          {/* KPI cards */}
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <KpiCard
               label={t('transfers.monthly.totalDeposits')}
               icon={ArrowDown}
@@ -378,7 +378,7 @@ export function MonthlyTab() {
 
           {/* Insights strip */}
           {insights && (
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <InsightPill
                 icon={Lightning}
                 label={t('transfers.monthly.peakDay')}

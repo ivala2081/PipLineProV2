@@ -104,6 +104,8 @@ export function computeDaySummary(transfers: TransferRow[]): DaySummary {
 
   let deposits = 0
   let withdrawals = 0
+  let totalCommission = 0
+  let totalCommissionUsd = 0
   let depositCount = 0
   let withdrawalCount = 0
   let totalBank = 0
@@ -116,8 +118,15 @@ export function computeDaySummary(transfers: TransferRow[]): DaySummary {
   for (const t of active) {
     const tryAmount = Math.abs(t.amount_try ?? 0)
     const rate = t.exchange_rate ?? 1
+    // Commission only applies to deposits
+    const isDeposit = t.category?.is_deposit ?? false
+    const commissionRate = isDeposit ? (t.psp?.commission_rate ?? 0) : 0
+    const commissionTry = Math.round(tryAmount * commissionRate * 100) / 100
+    const commissionUsd = rate > 0 ? Math.round((commissionTry / rate) * 100) / 100 : 0
 
-    if (t.category?.is_deposit) {
+    totalCommission += commissionTry
+
+    if (isDeposit) {
       deposits += tryAmount
       depositCount++
     } else {
@@ -126,11 +135,15 @@ export function computeDaySummary(transfers: TransferRow[]): DaySummary {
     }
 
     const method = t.payment_method?.name?.toLowerCase() ?? ''
-    if (method.includes('bank')) totalBank += tryAmount
-    if (method.includes('credit')) totalCreditCard += tryAmount
-    if (t.currency === 'USD') totalUsd += Math.abs(t.amount ?? 0)
+    if (method.includes('bank')) totalBank += isDeposit ? tryAmount : -tryAmount
+    if (method.includes('credit')) totalCreditCard += isDeposit ? tryAmount : -tryAmount
+    if (t.currency === 'USD') {
+      const usdAmt = Math.abs(t.amount ?? 0)
+      totalUsd += t.category?.is_deposit ? usdAmt : -usdAmt
+    }
 
     netWithoutCommUsd += t.amount_usd ?? 0
+    totalCommissionUsd += commissionUsd
 
     if (rate > 0) {
       rateSum += rate
@@ -142,7 +155,7 @@ export function computeDaySummary(transfers: TransferRow[]): DaySummary {
     deposits,
     withdrawals,
     net: deposits - withdrawals,
-    commission: 0, // Commission field removed from schema
+    commission: totalCommission,
     count: active.length,
     depositCount,
     withdrawalCount,
@@ -150,7 +163,7 @@ export function computeDaySummary(transfers: TransferRow[]): DaySummary {
     totalCreditCard,
     totalUsd,
     netWithoutCommUsd,
-    netWithCommUsd: netWithoutCommUsd, // No commission to subtract
+    netWithCommUsd: netWithoutCommUsd - totalCommissionUsd,
     dayRate: rateCount > 0 ? rateSum / rateCount : 0,
   }
 }

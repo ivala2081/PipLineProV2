@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { DotsThree, PencilSimple, Trash, Eye, ClockCounterClockwise } from '@phosphor-icons/react'
 import type { TransferRow } from '@/hooks/useTransfers'
-import { formatTime, formatNumber } from './transfersTableUtils'
+import { formatNumber } from './transfersTableUtils'
 import {
   TableRow,
   TableCell,
@@ -34,30 +34,18 @@ export const TransferRowItem = React.memo(function TransferRowItem({
 }: TransferRowItemProps) {
   const { t } = useTranslation('pages')
   const isDeposit = row.category?.is_deposit ?? true
-  const time = formatTime(row.transfer_date, lang)
+  const commission = isDeposit
+    ? Math.round(Math.abs(row.amount) * (row.psp?.commission_rate ?? 0) * 100) / 100
+    : 0
+  const net = row.amount - commission
 
   return (
     <TableRow className="hover:bg-black/[0.015]">
       <TableCell className="whitespace-nowrap">
         <span className="text-sm font-medium text-black/90">{row.full_name}</span>
       </TableCell>
-      <TableCell className="whitespace-nowrap text-sm">
-        {row.psp ? (
-          <Link
-            to={`/psps/${row.psp_id}`}
-            className="font-medium text-black/70 underline decoration-black/20 underline-offset-2 hover:text-black hover:decoration-black/40"
-          >
-            {row.psp.name}
-          </Link>
-        ) : (
-          <span className="text-black/40">—</span>
-        )}
-      </TableCell>
       <TableCell className="whitespace-nowrap text-sm text-black/60">
         {row.payment_method?.name ?? '—'}
-      </TableCell>
-      <TableCell className="whitespace-nowrap">
-        <span className="text-sm text-black/80">{time}</span>
       </TableCell>
       <TableCell className="whitespace-nowrap">
         <Tag variant={isDeposit ? 'default' : 'red'}>
@@ -75,11 +63,32 @@ export const TransferRowItem = React.memo(function TransferRowItem({
           {formatNumber(Math.abs(row.amount), lang)}
         </span>
       </TableCell>
+      <TableCell className="whitespace-nowrap text-right">
+        <span className="font-mono text-sm tabular-nums text-black/50">
+          {formatNumber(commission, lang)}
+        </span>
+      </TableCell>
+      <TableCell className="whitespace-nowrap text-right">
+        <span
+          className={`font-mono text-sm font-medium tabular-nums ${net >= 0 ? 'text-green' : 'text-red'}`}
+        >
+          {formatNumber(Math.abs(net), lang)}
+        </span>
+      </TableCell>
       <TableCell className="whitespace-nowrap">
         <Tag variant="default">{row.currency}</Tag>
       </TableCell>
-      <TableCell className="whitespace-nowrap text-right font-mono text-sm tabular-nums text-black/60">
-        {formatNumber(row.exchange_rate, lang)}
+      <TableCell className="whitespace-nowrap text-sm">
+        {row.psp ? (
+          <Link
+            to={`/psps/${row.psp_id}`}
+            className="font-medium text-black/70 underline decoration-black/20 underline-offset-2 hover:text-black hover:decoration-black/40"
+          >
+            {row.psp.name}
+          </Link>
+        ) : (
+          <span className="text-black/40">—</span>
+        )}
       </TableCell>
       <TableCell className="whitespace-nowrap text-sm text-black/60">
         {row.type?.name

@@ -148,16 +148,16 @@ export function SettingsTab({ org, orgId }: SettingsTabProps) {
       if (org.logo_url) {
         await deleteOrganizationLogo(org.logo_url)
       }
-      
+
       form.setValue('logo_url', null)
       setLogoPreview(null)
-      
+
       // Save the change immediately
       await updateOrg.mutateAsync({ ...form.getValues(), logo_url: null })
-      
+
       // Refresh organizations in provider to update header/sidebar
       await refreshOrgs()
-      
+
       toast({ title: t('organizations.settings.logoRemoved'), variant: 'success' })
     } catch (err) {
       toast({ title: (err as Error).message, variant: 'error' })
@@ -182,7 +182,10 @@ export function SettingsTab({ org, orgId }: SettingsTabProps) {
             {t('organizations.settings.logoTitle', 'Organization Logo')}
           </h2>
           <p className="text-sm text-black/60">
-            {t('organizations.settings.logoSubtitle', 'Upload your organization logo. Recommended size: 512x512px')}
+            {t(
+              'organizations.settings.logoSubtitle',
+              'Upload your organization logo. Recommended size: 512x512px',
+            )}
           </p>
         </div>
 
@@ -191,11 +194,7 @@ export function SettingsTab({ org, orgId }: SettingsTabProps) {
           <div className="relative">
             <div className="flex size-24 items-center justify-center overflow-hidden rounded-xl border-2 border-black/10 bg-black/5">
               {logoPreview ? (
-                <img
-                  src={logoPreview}
-                  alt="Organization logo"
-                  className="size-full object-cover"
-                />
+                <img src={logoPreview} alt="Organization logo" className="size-full object-cover" />
               ) : (
                 <Image size={32} className="text-black/40" />
               )}
@@ -245,12 +244,8 @@ export function SettingsTab({ org, orgId }: SettingsTabProps) {
       {/* General Settings */}
       <Card padding="spacious" className="space-y-6 border border-black/5 bg-bg1">
         <div>
-          <h2 className="text-lg font-semibold">
-            {t('organizations.settings.title')}
-          </h2>
-          <p className="text-sm text-black/60">
-            {t('organizations.settings.subtitle')}
-          </p>
+          <h2 className="text-lg font-semibold">{t('organizations.settings.title')}</h2>
+          <p className="text-sm text-black/60">{t('organizations.settings.subtitle')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -259,23 +254,15 @@ export function SettingsTab({ org, orgId }: SettingsTabProps) {
             <Label>{t('organizations.settings.name')}</Label>
             <Input {...form.register('name')} />
             {form.formState.errors.name && (
-              <p className="text-xs text-red">
-                {form.formState.errors.name.message}
-              </p>
+              <p className="text-xs text-red">{form.formState.errors.name.message}</p>
             )}
           </div>
 
           {/* Slug (read-only) */}
           <div className="space-y-2">
             <Label>{t('organizations.settings.slug')}</Label>
-            <Input
-              value={org.slug}
-              disabled
-              className="font-mono opacity-60"
-            />
-            <p className="text-xs text-black/40">
-              {t('organizations.settings.slugDescription')}
-            </p>
+            <Input value={org.slug} disabled className="font-mono opacity-60" />
+            <p className="text-xs text-black/40">{t('organizations.settings.slugDescription')}</p>
           </div>
 
           <Separator />
@@ -289,9 +276,7 @@ export function SettingsTab({ org, orgId }: SettingsTabProps) {
               className="mt-0.5 size-4 rounded border-black/20"
             />
             <div>
-              <Label htmlFor="is-active">
-                {t('organizations.settings.isActive')}
-              </Label>
+              <Label htmlFor="is-active">{t('organizations.settings.isActive')}</Label>
               <p className="text-xs text-black/40">
                 {t('organizations.settings.isActiveDescription')}
               </p>
@@ -303,15 +288,13 @@ export function SettingsTab({ org, orgId }: SettingsTabProps) {
             <Button
               type="button"
               variant="outline"
-              onClick={() => form.reset({ name: org.name, is_active: org.is_active, logo_url: org.logo_url })}
+              onClick={() =>
+                form.reset({ name: org.name, is_active: org.is_active, logo_url: org.logo_url })
+              }
             >
               {t('organizations.settings.reset')}
             </Button>
-            <Button
-              type="submit"
-              variant="filled"
-              disabled={updateOrg.isPending}
-            >
+            <Button type="submit" variant="filled" disabled={updateOrg.isPending}>
               {updateOrg.isPending
                 ? t('organizations.settings.saving')
                 : t('organizations.settings.save')}
@@ -321,14 +304,12 @@ export function SettingsTab({ org, orgId }: SettingsTabProps) {
       </Card>
 
       {/* Danger Zone */}
-      <Card padding="spacious" className="space-y-4 border border-red/20 bg-bg1">
+      <Card padding="spacious" className="space-y-4 border border-red/20 bg-red/5">
         <div>
           <h2 className="text-lg font-semibold text-red">
             {t('organizations.settings.dangerZone')}
           </h2>
-          <p className="text-sm text-black/60">
-            {t('organizations.settings.dangerZoneDescription')}
-          </p>
+          <p className="text-sm text-red/50">{t('organizations.settings.dangerZoneDescription')}</p>
         </div>
       </Card>
 

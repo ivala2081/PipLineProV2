@@ -113,7 +113,8 @@
       "resetRate": "Reset to average",
       "original": "avg",
       "usdTransferCount": "{{count}} USD",
-      "applyingRate": "Applying..."
+      "applyingRate": "Applying...",
+      "breakdown": "Breakdown"
     },
     "typeValues": {
       "Client": "Client",
@@ -214,6 +215,7 @@
       "dateRange": "Date Range",
       "from": "Date From",
       "to": "Date To",
+      "date": "Date",
       "noResults": "No matching transfers",
       "noResultsDescription": "Try adjusting your filters to find what you're looking for."
     },
