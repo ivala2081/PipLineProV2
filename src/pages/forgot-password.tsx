@@ -111,13 +111,17 @@ export function ForgotPasswordPage() {
         />
       </div>
 
-      {/* Card */}
-      <Card className="w-full max-w-md space-y-6 bg-bg1 border border-black/10">
+      {/* Logo + Card */}
+      <div className="flex w-full max-w-md flex-col items-center">
+        <img
+          src={resolvedTheme === 'dark' ? '/for-dark.png' : '/for-white.png'}
+          alt="PipLinePro"
+          className="mb-8 h-16 w-auto object-contain"
+        />
+
+      <Card className="w-full space-y-6 bg-bg1 border border-black/10">
         {/* Header */}
         <div className="space-y-2">
-          <p className="text-sm font-semibold tracking-widest text-brand uppercase">
-            {t('login.brand')}
-          </p>
           <h1 className="text-2xl font-semibold text-black">{t('forgotPassword.title')}</h1>
           <p className="text-sm text-black/60">{t('forgotPassword.subtitle')}</p>
         </div>
@@ -151,8 +155,11 @@ export function ForgotPasswordPage() {
               <Input
                 id="email"
                 type="email"
+                inputMode="email"
+                autoCapitalize="none"
+                autoCorrect="off"
                 title={t('forgotPassword.email')}
-                placeholder=" "
+                placeholder={t('forgotPassword.email')}
                 value={email}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setEmail(e.target.value)
@@ -162,6 +169,7 @@ export function ForgotPasswordPage() {
                 required
                 autoComplete="email"
                 aria-invalid={!!emailError}
+                inputSize="lg"
                 className="bg-black/5"
               />
               {emailError && <FormMessage error>{emailError}</FormMessage>}
@@ -193,6 +201,7 @@ export function ForgotPasswordPage() {
           </Link>
         </div>
       </Card>
+      </div>
     </div>
   )
 }

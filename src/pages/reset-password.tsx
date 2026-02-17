@@ -130,25 +130,29 @@ export function ResetPasswordPage() {
           locale={locale}
           localeNames={localeNames}
         />
-        <Card className="w-full max-w-md space-y-6 bg-bg1 border border-black/10">
-          <div className="space-y-2">
-            <p className="text-sm font-semibold tracking-widest text-brand uppercase">
-              {t('login.brand')}
-            </p>
-            <h1 className="text-2xl font-semibold text-black">
-              {t('resetPassword.title')}
-            </h1>
-          </div>
-          <FormMessage error>{t('resetPassword.errorExpired')}</FormMessage>
-          <div className="text-center">
-            <Link
-              to="/forgot-password"
-              className="text-sm text-brand underline-offset-4 transition-colors hover:underline"
-            >
-              {t('forgotPassword.submit')}
-            </Link>
-          </div>
-        </Card>
+        <div className="flex w-full max-w-md flex-col items-center">
+          <img
+            src={resolvedTheme === 'dark' ? '/for-dark.png' : '/for-white.png'}
+            alt="PipLinePro"
+            className="mb-8 h-16 w-auto object-contain"
+          />
+          <Card className="w-full space-y-6 bg-bg1 border border-black/10">
+            <div className="space-y-2">
+              <h1 className="text-2xl font-semibold text-black">
+                {t('resetPassword.title')}
+              </h1>
+            </div>
+            <FormMessage error>{t('resetPassword.errorExpired')}</FormMessage>
+            <div className="text-center">
+              <Link
+                to="/forgot-password"
+                className="text-sm text-brand underline-offset-4 transition-colors hover:underline"
+              >
+                {t('forgotPassword.submit')}
+              </Link>
+            </div>
+          </Card>
+        </div>
       </div>
     )
   }
@@ -174,27 +178,31 @@ export function ResetPasswordPage() {
           locale={locale}
           localeNames={localeNames}
         />
-        <Card className="w-full max-w-md space-y-6 bg-bg1 border border-black/10">
-          <div className="space-y-2">
-            <p className="text-sm font-semibold tracking-widest text-brand uppercase">
-              {t('login.brand')}
-            </p>
-            <h1 className="text-2xl font-semibold text-black">
-              {t('resetPassword.success')}
-            </h1>
-            <p className="text-sm text-black/60">
-              {t('resetPassword.successMessage')}
-            </p>
-          </div>
-          <Button
-            variant="filled"
-            size="lg"
-            className="w-full"
-            onClick={() => navigate('/login', { replace: true })}
-          >
-            <span className="font-semibold">{t('resetPassword.goToLogin')}</span>
-          </Button>
-        </Card>
+        <div className="flex w-full max-w-md flex-col items-center">
+          <img
+            src={resolvedTheme === 'dark' ? '/for-dark.png' : '/for-white.png'}
+            alt="PipLinePro"
+            className="mb-8 h-16 w-auto object-contain"
+          />
+          <Card className="w-full space-y-6 bg-bg1 border border-black/10">
+            <div className="space-y-2">
+              <h1 className="text-2xl font-semibold text-black">
+                {t('resetPassword.success')}
+              </h1>
+              <p className="text-sm text-black/60">
+                {t('resetPassword.successMessage')}
+              </p>
+            </div>
+            <Button
+              variant="filled"
+              size="lg"
+              className="w-full"
+              onClick={() => navigate('/login', { replace: true })}
+            >
+              <span className="font-semibold">{t('resetPassword.goToLogin')}</span>
+            </Button>
+          </Card>
+        </div>
       </div>
     )
   }
@@ -211,12 +219,16 @@ export function ResetPasswordPage() {
         localeNames={localeNames}
       />
 
-      <Card className="w-full max-w-md space-y-6 bg-bg1 border border-black/10">
+      <div className="flex w-full max-w-md flex-col items-center">
+        <img
+          src={resolvedTheme === 'dark' ? '/for-dark.png' : '/for-white.png'}
+          alt="PipLinePro"
+          className="mb-8 h-16 w-auto object-contain"
+        />
+
+      <Card className="w-full space-y-6 bg-bg1 border border-black/10">
         {/* Header */}
         <div className="space-y-2">
-          <p className="text-sm font-semibold tracking-widest text-brand uppercase">
-            {t('login.brand')}
-          </p>
           <h1 className="text-2xl font-semibold text-black">
             {t('resetPassword.title')}
           </h1>
@@ -337,6 +349,7 @@ export function ResetPasswordPage() {
           </Link>
         </div>
       </Card>
+      </div>
     </div>
   )
 }

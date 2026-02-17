@@ -2,7 +2,6 @@ import { useState, type FormEvent, type ReactNode } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
-  Buildings,
   CaretUpDown,
   Check,
   PencilSimple,
@@ -10,7 +9,6 @@ import {
   Moon,
   Sun,
   Globe,
-  Lightning,
 } from '@phosphor-icons/react'
 
 import { useAuth } from '@/app/providers/AuthProvider'
@@ -68,14 +66,17 @@ import { OnlineCount } from '@/components/OnlineCount'
 function SidebarBrand() {
   const { currentOrg } = useOrganization()
   const { state } = useSidebar()
+  const { resolvedTheme } = useTheme()
   const isCollapsed = state === 'collapsed'
   const logoSize = isCollapsed ? 'size-6' : 'size-8'
+  const appLogo = resolvedTheme === 'dark' ? '/for-dark.png' : '/for-white.png'
+  const appIcon = resolvedTheme === 'dark' ? '/2.png' : '/1.png'
 
   return (
     <div
       className={cn('flex items-center gap-2.5 py-1', isCollapsed ? 'justify-center px-0' : 'px-2')}
     >
-      {/* Logo mark - show org logo if available, otherwise app logo; smaller when collapsed so it fits */}
+      {/* Logo mark - show org logo if available, otherwise app icon (collapsed) or full logo (expanded) */}
       {currentOrg?.logo_url ? (
         <div
           className={cn(
@@ -88,11 +89,11 @@ function SidebarBrand() {
       ) : (
         <div
           className={cn(
-            'flex aspect-square shrink-0 items-center justify-center rounded-lg bg-brand text-white',
+            'flex aspect-square shrink-0 items-center justify-center overflow-hidden rounded-lg',
             logoSize,
           )}
         >
-          <Lightning size={isCollapsed ? 14 : 18} weight="fill" />
+          <img src={appIcon} alt="PipLinePro" className="size-full object-contain" />
         </div>
       )}
 
@@ -100,7 +101,8 @@ function SidebarBrand() {
       {!isCollapsed && (
         <div className="grid flex-1 text-left leading-tight">
           <span className="truncate text-sm font-bold tracking-tight text-black">
-            PipLinePro-V2
+            PipLinePro
+            <span className="ml-1 text-[10px] font-medium text-black/30">V2.1</span>
           </span>
           {currentOrg && (
             <span className="truncate text-[11px] text-black/50">{currentOrg.name}</span>
@@ -381,6 +383,8 @@ function UserMenu() {
 function HeaderOrgSwitcher() {
   const { t } = useTranslation('pages')
   const { currentOrg, organizations, selectOrg } = useOrganization()
+  const { resolvedTheme } = useTheme()
+  const headerIcon = resolvedTheme === 'dark' ? '/2.png' : '/1.png'
 
   if (organizations.length === 0) return null
 
@@ -397,7 +401,7 @@ function HeaderOrgSwitcher() {
               />
             </div>
           ) : (
-            <Buildings size={14} />
+            <img src={headerIcon} alt="PipLinePro" className="size-4 object-contain" />
           )}
           <span className="max-w-[120px] truncate">
             {currentOrg?.name ?? t('layout.noOrganization')}

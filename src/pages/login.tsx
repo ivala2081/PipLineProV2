@@ -225,13 +225,18 @@ export function LoginPage() {
         />
       </div>
 
+      {/* Logo above card */}
+      <div className="flex w-full max-w-md flex-col items-center">
+        <img
+          src={resolvedTheme === 'dark' ? '/for-dark.png' : '/for-white.png'}
+          alt="PipLinePro"
+          className="mb-8 h-16 w-auto object-contain"
+        />
+
       {/* Login card */}
-      <Card className="w-full max-w-md space-y-6 bg-bg1 border border-black/10 shadow-lg">
+      <Card className="w-full space-y-6 bg-bg1 border border-black/10 shadow-lg">
         {/* Header */}
         <div className="space-y-2">
-          <p className="text-sm font-semibold tracking-widest text-brand uppercase">
-            {t('login.brand')}
-          </p>
           <h1 className="text-2xl font-semibold text-black">{t('login.title')}</h1>
           <p className="text-sm text-black/60">{t('login.subtitle')}</p>
         </div>
@@ -369,6 +374,8 @@ export function LoginPage() {
           </Link>
         </div>
       </Card>
+        <span className="mt-4 text-xs text-black/30">V2.1</span>
+      </div>
       </div>
     </TooltipProvider>
   )
