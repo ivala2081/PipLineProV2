@@ -159,7 +159,7 @@ export function ForgotPasswordPage() {
                 autoCapitalize="none"
                 autoCorrect="off"
                 title={t('forgotPassword.email')}
-                placeholder={t('forgotPassword.email')}
+                placeholder=" "
                 value={email}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   setEmail(e.target.value)
