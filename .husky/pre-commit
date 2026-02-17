@@ -1,3 +1,5 @@
+#!/usr/bin/env sh
+
 # Prevent .env file from being committed
 if git diff --cached --name-only | grep -q "^\.env$"; then
   echo "❌ ERROR: Attempting to commit .env file!"

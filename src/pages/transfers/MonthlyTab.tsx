@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   CaretLeft,
   CaretRight,
@@ -17,9 +18,16 @@ import {
   Lightning,
   ChartLine,
   Equals,
+  PencilSimple,
+  Check,
+  X,
 } from '@phosphor-icons/react'
 import { useMonthlyAnalysisQuery } from '@/hooks/queries/useMonthlyAnalysisQuery'
+import { useOrganization } from '@/app/providers/OrganizationProvider'
+import { supabase } from '@/lib/supabase'
+import { queryKeys } from '@/lib/queryKeys'
 import { MonthlyCharts } from './MonthlyCharts'
+import { PinDialog } from './PinDialog'
 import { Button, Skeleton, EmptyState } from '@ds'
 
 function formatNumber(n: number, lang: string) {
@@ -213,15 +221,60 @@ function KpiSkeleton() {
 
 /* ── Main component ────────────────────────────────── */
 
+const SECURITY_PIN = '4561'
+
 export function MonthlyTab() {
   const { t, i18n } = useTranslation('pages')
   const lang = i18n.language
+  const { currentOrg } = useOrganization()
+  const queryClient = useQueryClient()
 
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
 
   const { data, isLoading } = useMonthlyAnalysisQuery(year, month)
+
+  // Monthly rate editor state
+  const [isEditingRate, setIsEditingRate] = useState(false)
+  const [isUpdatingRate, setIsUpdatingRate] = useState(false)
+  const [showPinDialog, setShowPinDialog] = useState(false)
+  const rateInputRef = useRef<HTMLInputElement>(null)
+
+  const handleSaveMonthlyRate = useCallback(async () => {
+    if (!currentOrg) return
+    const val = parseFloat(rateInputRef.current?.value ?? '')
+    if (isNaN(val) || val <= 0) {
+      setIsEditingRate(false)
+      return
+    }
+
+    setIsEditingRate(false)
+    setIsUpdatingRate(true)
+
+    try {
+      const { data: result, error } = await supabase.rpc('update_month_exchange_rate', {
+        _org_id: currentOrg.id,
+        _year: year,
+        _month: month,
+        _new_rate: val,
+      })
+
+      if (error) throw error
+
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: queryKeys.transfers.all })
+
+      const res = result as { tl_updated: number; usd_updated: number }
+      console.info(
+        `Monthly rate updated: ${val} — ${res.tl_updated} TL + ${res.usd_updated} USD transfers`,
+      )
+    } catch (err) {
+      console.error('Failed to update monthly rate:', err)
+    } finally {
+      setIsUpdatingRate(false)
+    }
+  }, [currentOrg, year, month, queryClient])
 
   const goToPrevMonth = () => {
     if (month === 1) {
@@ -253,24 +306,90 @@ export function MonthlyTab() {
 
   return (
     <div className="space-y-6">
-      {/* Month picker */}
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" onClick={goToPrevMonth} className="size-8 p-0">
-          <CaretLeft size={16} weight="bold" />
-        </Button>
-        <span className="min-w-[160px] text-center text-sm font-semibold capitalize text-black/70">
-          {monthLabel}
-        </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={goToNextMonth}
-          disabled={isCurrentMonth}
-          className="size-8 p-0"
-        >
-          <CaretRight size={16} weight="bold" />
-        </Button>
+      {/* Month picker + rate editor */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={goToPrevMonth} className="size-8 p-0">
+            <CaretLeft size={16} weight="bold" />
+          </Button>
+          <span className="min-w-[160px] text-center text-sm font-semibold capitalize text-black/70">
+            {monthLabel}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={goToNextMonth}
+            disabled={isCurrentMonth}
+            className="size-8 p-0"
+          >
+            <CaretRight size={16} weight="bold" />
+          </Button>
+        </div>
+
+        {/* Monthly rate editor */}
+        {!isLoading && data && data.kpis.transfer_count > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-black/30">
+              {t('transfers.monthly.monthlyRate')}
+            </span>
+            {isUpdatingRate ? (
+              <div className="flex items-center gap-2">
+                <div className="size-3 animate-spin rounded-full border border-black/10 border-t-black/40" />
+                <span className="text-xs text-black/40">
+                  {t('transfers.monthly.rateUpdating')}
+                </span>
+              </div>
+            ) : isEditingRate ? (
+              <div className="flex items-center gap-1.5">
+                <input
+                  ref={rateInputRef}
+                  type="number"
+                  step="0.01"
+                  defaultValue="43.60"
+                  className="h-7 w-24 rounded-lg border border-black/10 bg-white px-2 text-right font-mono text-sm font-bold tabular-nums text-black/70 outline-none focus:border-black/25"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveMonthlyRate()
+                    else if (e.key === 'Escape') setIsEditingRate(false)
+                  }}
+                />
+                <button
+                  className="flex size-6 items-center justify-center rounded-md text-green hover:bg-green/10"
+                  onClick={handleSaveMonthlyRate}
+                >
+                  <Check size={14} weight="bold" />
+                </button>
+                <button
+                  className="flex size-6 items-center justify-center rounded-md text-red hover:bg-red/10"
+                  onClick={() => setIsEditingRate(false)}
+                >
+                  <X size={14} weight="bold" />
+                </button>
+              </div>
+            ) : (
+              <button
+                className="flex items-center gap-1.5 rounded-lg border border-black/[0.06] bg-black/[0.02] px-2.5 py-1.5 text-xs font-medium text-black/50 transition-colors hover:bg-black/[0.04] hover:text-black/70"
+                onClick={() => setShowPinDialog(true)}
+              >
+                <CurrencyDollar size={13} />
+                {t('transfers.monthly.editMonthlyRate')}
+                <PencilSimple size={12} className="text-black/25" />
+              </button>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* PIN dialog for rate editing */}
+      <PinDialog
+        open={showPinDialog}
+        onClose={() => setShowPinDialog(false)}
+        onVerified={() => {
+          setShowPinDialog(false)
+          setIsEditingRate(true)
+        }}
+        securityPin={SECURITY_PIN}
+      />
 
       {/* Loading state */}
       {isLoading && <KpiSkeleton />}

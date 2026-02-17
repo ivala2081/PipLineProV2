@@ -246,7 +246,12 @@
       "avgPerTransfer": "Transfer Başına Ort.",
       "vsLastMonth": "geçen aya göre",
       "noChange": "Değişiklik yok",
-      "noPrevData": "Önceki veri yok"
+      "noPrevData": "Önceki veri yok",
+      "monthlyRate": "Aylık Kur (USD/TRY)",
+      "editMonthlyRate": "Kuru Düzenle",
+      "rateUpdating": "Güncelleniyor...",
+      "rateUpdated": "Kur güncellendi ({{tl}} TL + {{usd}} USD transfer)",
+      "rateUpdateFailed": "Kur güncellenemedi"
     },
     "settings": {
       "title": "Arama Ayarları",

@@ -117,7 +117,7 @@ export function TransferAuditDialog({
 }: TransferAuditDialogProps) {
   const { t } = useTranslation('pages')
   const [page, setPage] = useState(1)
-  const { entries, total, pageSize, isLoading } = useTransferAuditQuery(
+  const { entries, total, pageSize, isLoading, error } = useTransferAuditQuery(
     open ? transferId : null,
     page,
   )
@@ -156,6 +156,10 @@ export function TransferAuditDialog({
                   </div>
                 </div>
               ))}
+            </div>
+          ) : error ? (
+            <div className="py-10 text-center">
+              <p className="text-sm text-red/70">{error}</p>
             </div>
           ) : entries.length === 0 ? (
             <div className="py-10 text-center">

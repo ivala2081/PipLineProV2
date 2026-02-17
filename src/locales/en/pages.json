@@ -246,7 +246,12 @@
       "avgPerTransfer": "Avg per Transfer",
       "vsLastMonth": "vs last month",
       "noChange": "No change",
-      "noPrevData": "No prev. data"
+      "noPrevData": "No prev. data",
+      "monthlyRate": "Monthly Rate (USD/TRY)",
+      "editMonthlyRate": "Edit Rate",
+      "rateUpdating": "Updating...",
+      "rateUpdated": "Rate updated ({{tl}} TL + {{usd}} USD transfers)",
+      "rateUpdateFailed": "Rate update failed"
     },
     "settings": {
       "title": "Lookup Settings",

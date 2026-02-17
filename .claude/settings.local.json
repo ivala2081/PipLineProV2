@@ -73,7 +73,9 @@
       "Bash(git config:*)",
       "Bash(sh -e .husky/pre-commit)",
       "Bash(SUPABASE_ACCESS_TOKEN=sbp_4282054627a0941ea1fff0add7f33598e25a3b14 npx supabase:*)",
-      "Bash(du:*)"
+      "Bash(du:*)",
+      "Bash(git var:*)",
+      "Bash(echo:*)"
     ]
   }
 }
