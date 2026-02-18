@@ -210,7 +210,8 @@ export function SecurityDashboard() {
       if (error) throw error
 
       const grouped = new Map<string, { count: number; lastAttempt: string }>()
-      for (const row of data || []) {
+      const rows = (data || []) as { ip_address: string | null; created_at: string }[]
+      for (const row of rows) {
         const existing = grouped.get(row.ip_address || 'unknown')
         if (existing) {
           existing.count++

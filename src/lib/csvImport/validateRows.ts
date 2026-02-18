@@ -1,4 +1,4 @@
-import type { Currency, TransferCategory, PaymentMethod, TransferType } from '@/lib/database.types'
+import type { Currency } from '@/lib/database.types'
 import type { Psp } from '@/hooks/queries/usePspsQuery'
 import type { CsvRawRow, ResolvedTransferRow, ValidationIssue, ImportParseResult } from './types'
 import { parseTurkishDecimal, parseTurkishDate } from './parseCsv'
@@ -7,10 +7,15 @@ import { parseTurkishDecimal, parseTurkishDate } from './parseCsv'
 /*  Lookup maps (indexed by name + aliases)                            */
 /* ------------------------------------------------------------------ */
 
+/** Minimal shape for lookup items (supports both DB rows and hardcoded lookups) */
+type PaymentMethodLike = { id: string; name: string; aliases: string[] }
+type TransferCategoryLike = { id: string; name: string; is_deposit: boolean; aliases: string[] }
+type TransferTypeLike = { id: string; name: string; aliases: string[] }
+
 export interface LookupMaps {
-  paymentMethodsByName: Map<string, PaymentMethod>
-  categoriesByName: Map<string, TransferCategory>
-  typesByName: Map<string, TransferType>
+  paymentMethodsByName: Map<string, PaymentMethodLike>
+  categoriesByName: Map<string, TransferCategoryLike>
+  typesByName: Map<string, TransferTypeLike>
   pspsByName: Map<string, Psp>
 }
 
@@ -20,24 +25,24 @@ export interface LookupMaps {
  * as long as the alias is configured in the database.
  */
 export function buildLookupMaps(
-  paymentMethods: PaymentMethod[],
-  categories: TransferCategory[],
-  transferTypes: TransferType[],
+  paymentMethods: PaymentMethodLike[],
+  categories: TransferCategoryLike[],
+  transferTypes: TransferTypeLike[],
   psps: Psp[],
 ): LookupMaps {
-  const pm = new Map<string, PaymentMethod>()
+  const pm = new Map<string, PaymentMethodLike>()
   for (const m of paymentMethods) {
     pm.set(m.name.toLowerCase(), m)
     for (const alias of m.aliases ?? []) pm.set(alias.toLowerCase(), m)
   }
 
-  const cat = new Map<string, TransferCategory>()
+  const cat = new Map<string, TransferCategoryLike>()
   for (const c of categories) {
     cat.set(c.name.toLowerCase(), c)
     for (const alias of c.aliases ?? []) cat.set(alias.toLowerCase(), c)
   }
 
-  const t = new Map<string, TransferType>()
+  const t = new Map<string, TransferTypeLike>()
   for (const type of transferTypes) {
     t.set(type.name.toLowerCase(), type)
     for (const alias of type.aliases ?? []) t.set(alias.toLowerCase(), type)

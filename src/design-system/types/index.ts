@@ -27,7 +27,7 @@ export type TextSize = 12 | 14 | 16 | 18 | 24 | 32 | 48 | 64
 /*  Variants                                                          */
 /* ------------------------------------------------------------------ */
 
-export type ButtonVariant = 'borderless' | 'gray' | 'outline' | 'filled'
+export type ButtonVariant = 'borderless' | 'ghost' | 'gray' | 'outline' | 'filled'
 export type ToggleVariant = 'borderless' | 'outline'
 
 /* ------------------------------------------------------------------ */

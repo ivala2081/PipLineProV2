@@ -15,10 +15,10 @@ import { queryKeys } from '@/lib/queryKeys';
  */
 export function usePresenceSubscription() {
   const queryClient = useQueryClient();
-  const { currentOrganization } = useOrganization();
+  const { currentOrg } = useOrganization();
 
   useEffect(() => {
-    if (!currentOrganization?.id) return;
+    if (!currentOrg?.id) return;
 
     // Subscribe to profile updates (presence changes)
     const channel = supabase
@@ -29,19 +29,19 @@ export function usePresenceSubscription() {
           event: 'UPDATE',
           schema: 'public',
           table: 'profiles',
-          filter: `id=in.(${currentOrganization.id})`, // Will be filtered by RLS
+          filter: `id=in.(${currentOrg.id})`, // Will be filtered by RLS
         },
         (payload) => {
           console.log('Presence update:', payload);
 
           // Invalidate online count query
           queryClient.invalidateQueries({
-            queryKey: queryKeys.presence.onlineCount(currentOrganization.id),
+            queryKey: queryKeys.presence.onlineCount(currentOrg.id),
           });
 
           // Invalidate organization members query (to update presence in lists)
           queryClient.invalidateQueries({
-            queryKey: queryKeys.organizations.members(currentOrganization.id),
+            queryKey: queryKeys.organizations.members(currentOrg.id),
           });
 
           // Invalidate profiles query
@@ -57,5 +57,5 @@ export function usePresenceSubscription() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentOrganization?.id, queryClient]);
+  }, [currentOrg?.id, queryClient]);
 }

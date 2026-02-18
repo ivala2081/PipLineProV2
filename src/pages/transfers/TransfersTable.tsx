@@ -13,6 +13,7 @@ import {
 } from '@phosphor-icons/react'
 import type { TransferFilters } from '@/hooks/queries/useTransfersQuery'
 import type { LookupQueries } from '@/hooks/queries/useLookupQueries'
+import type { PaymentMethod, TransferType } from '@/lib/transferLookups'
 import { supabase } from '@/lib/supabase'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { queryKeys } from '@/lib/queryKeys'
@@ -212,16 +213,17 @@ export function TransfersTable({
           .gte('transfer_date', startOfDay)
           .lte('transfer_date', endOfDay)
 
-        if (usdTransfers && usdTransfers.length > 0) {
+        const typedUsdTransfers = (usdTransfers || []) as { id: string; amount: number }[]
+        if (typedUsdTransfers.length > 0) {
           // Update each USD transfer with the new rate and recalculated amount_try
           await Promise.all(
-            usdTransfers.map((t) =>
+            typedUsdTransfers.map((t) =>
               supabase
                 .from('transfers')
                 .update({
                   exchange_rate: rate,
                   amount_try: Math.round(t.amount * rate * 100) / 100,
-                } as never)
+                })
                 .eq('id', t.id),
             ),
           )
@@ -413,7 +415,7 @@ export function TransfersTable({
                   <SelectItem value="__all__">
                     {t('transfers.filters.allPaymentMethods', 'All Methods')}
                   </SelectItem>
-                  {lookupData.paymentMethods.map((method) => (
+                  {lookupData.paymentMethods.map((method: PaymentMethod) => (
                     <SelectItem key={method.id} value={method.id}>
                       {method.name}
                     </SelectItem>
@@ -438,7 +440,7 @@ export function TransfersTable({
                   <SelectItem value="__all__">
                     {t('transfers.filters.allTransferTypes', 'All Types')}
                   </SelectItem>
-                  {lookupData.transferTypes.map((type) => (
+                  {lookupData.transferTypes.map((type: TransferType) => (
                     <SelectItem key={type.id} value={type.id}>
                       {type.name}
                     </SelectItem>

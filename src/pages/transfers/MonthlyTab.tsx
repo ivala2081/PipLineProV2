@@ -253,12 +253,12 @@ export function MonthlyTab() {
     setIsUpdatingRate(true)
 
     try {
-      const { data: result, error } = await supabase.rpc('update_month_exchange_rate', {
+      const { data: result, error } = await supabase.rpc('update_month_exchange_rate' as never, {
         _org_id: currentOrg.id,
         _year: year,
         _month: month,
         _new_rate: val,
-      })
+      } as never)
 
       if (error) throw error
 

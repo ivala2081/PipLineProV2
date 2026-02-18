@@ -4,6 +4,9 @@ import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import type { Currency, Psp, TransferCategory } from '@/lib/database.types'
 
+/** Category shape needed for transfer computation (supports both DB and lookup types) */
+type CategoryForTransfer = Pick<TransferCategory, 'id' | 'is_deposit'>
+
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
@@ -58,13 +61,13 @@ interface UseTransfersReturn {
   setPage: (page: number) => void
   createTransfer: (
     data: TransferFormData,
-    category: TransferCategory,
+    category: CategoryForTransfer,
     psp: Psp,
   ) => Promise<{ error: string | null }>
   updateTransfer: (
     id: string,
     data: TransferFormData,
-    category: TransferCategory,
+    category: CategoryForTransfer,
     psp: Psp,
   ) => Promise<{ error: string | null }>
   deleteTransfer: (id: string) => Promise<{ error: string | null }>
@@ -82,7 +85,7 @@ const SELECT_QUERY =
 
 export function computeTransfer(
   rawAmount: number,
-  category: TransferCategory,
+  category: CategoryForTransfer,
   exchangeRate: number,
   currency: Currency,
   commissionRate = 0,
@@ -170,7 +173,7 @@ export function useTransfers(): UseTransfersReturn {
   const createTransfer = useCallback(
     async (
       data: TransferFormData,
-      category: TransferCategory,
+      category: CategoryForTransfer,
       psp: Psp,
     ): Promise<{ error: string | null }> => {
       if (!currentOrg || !user) return { error: 'No organization selected' }
@@ -213,7 +216,7 @@ export function useTransfers(): UseTransfersReturn {
     async (
       id: string,
       data: TransferFormData,
-      category: TransferCategory,
+      category: CategoryForTransfer,
       psp: Psp,
     ): Promise<{ error: string | null }> => {
       if (!currentOrg) return { error: 'No organization selected' }

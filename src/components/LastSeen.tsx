@@ -22,7 +22,7 @@ export function LastSeen({
   className,
   showPrefix = false,
 }: LastSeenProps) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('components');
   const [displayTime, setDisplayTime] = useState(() => formatLastSeen(lastSeenAt));
   const online = isUserOnline(lastSeenAt);
 

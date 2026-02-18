@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { Buildings, Users, WarningCircle, Image } from '@phosphor-icons/react'
+import { Buildings, Users, WarningCircle } from '@phosphor-icons/react'
 import {
   Table,
   TableHeader,

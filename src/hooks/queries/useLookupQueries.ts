@@ -8,7 +8,7 @@ import {
 } from '@/lib/transferLookups'
 import { usePspsQuery, type Psp } from './usePspsQuery'
 
-interface LookupQueries {
+export interface LookupQueries {
   categories: TransferCategory[]
   paymentMethods: PaymentMethod[]
   transferTypes: TransferType[]

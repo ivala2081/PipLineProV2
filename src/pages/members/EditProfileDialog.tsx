@@ -181,7 +181,7 @@ export function EditProfileDialog({
             <Button type="submit" variant="filled" disabled={isSaving}>
               {isSaving
                 ? t('memberProfile.saving')
-                : t('memberProfile.saveChanges')}
+                : t('memberProfile.save')}
             </Button>
           </div>
         </form>

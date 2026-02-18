@@ -899,7 +899,9 @@
         "description": "Are you sure you want to remove \"{{name}}\" from this organization? This action cannot be undone."
       },
       "empty": "No members in this organization.",
-      "emptyDescription": "Invite members to start collaborating."
+      "emptyDescription": "Invite members to start collaborating.",
+      "count": "{{count}} member",
+      "count_plural": "{{count}} members"
     },
     "addMemberDialog": {
       "title": "Add Member",
@@ -970,7 +972,40 @@
       "memberRemoved": "Member removed successfully",
       "roleUpdated": "Member role updated successfully",
       "memberAdded": "Member added successfully",
+      "invited": "Invitation sent successfully",
+      "duplicateInvitation": "A pending invitation already exists for this email",
+      "invitationRevoked": "Invitation revoked successfully",
       "error": "An error occurred. Please try again."
+    },
+    "invitations": {
+      "title": "Invitations",
+      "subtitle": "Manage pending and past invitations.",
+      "count": "{{count}} invitation",
+      "count_plural": "{{count}} invitations",
+      "invite": "Invite Member",
+      "empty": "No invitations",
+      "emptyDescription": "Invite members to add them to this organization.",
+      "filterAll": "All",
+      "filterPending": "Pending",
+      "filterAccepted": "Accepted",
+      "filterExpired": "Expired",
+      "columns": {
+        "email": "Email",
+        "role": "Role",
+        "status": "Status",
+        "createdAt": "Created",
+        "expiresAt": "Expires"
+      },
+      "statuses": {
+        "pending": "Pending",
+        "accepted": "Accepted",
+        "expired": "Expired"
+      },
+      "revoke": "Revoke",
+      "revokeConfirm": {
+        "title": "Revoke Invitation",
+        "description": "Are you sure you want to revoke the invitation for {{email}}? They will no longer be able to accept it."
+      }
     }
   },
   "login": {

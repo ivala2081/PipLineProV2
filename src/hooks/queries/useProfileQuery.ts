@@ -20,6 +20,7 @@ export function useProfileQuery(userId: string) {
         .single()
 
       if (profileError) throw profileError
+      if (!profile) throw new Error('Profile not found')
 
       const { data: memberships, error: membershipsError } = await supabase
         .from('organization_members')

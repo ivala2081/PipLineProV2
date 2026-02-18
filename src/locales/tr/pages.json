@@ -899,7 +899,9 @@
         "description": "\"{{name}}\" üyesini bu organizasyondan kaldırmak istediğinize emin misiniz? Bu işlem geri alınamaz."
       },
       "empty": "Bu organizasyonda üye yok.",
-      "emptyDescription": "İş birliği yapmak için üye davet edin."
+      "emptyDescription": "İş birliği yapmak için üye davet edin.",
+      "count": "{{count}} üye",
+      "count_plural": "{{count}} üye"
     },
     "addMemberDialog": {
       "title": "Üye Ekle",
@@ -970,7 +972,40 @@
       "memberRemoved": "Üye başarıyla kaldırıldı",
       "roleUpdated": "Üye rolü başarıyla güncellendi",
       "memberAdded": "Üye başarıyla eklendi",
+      "invited": "Davet başarıyla gönderildi",
+      "duplicateInvitation": "Bu e-posta için zaten bekleyen bir davet var",
+      "invitationRevoked": "Davet başarıyla iptal edildi",
       "error": "Bir hata oluştu. Lütfen tekrar deneyin."
+    },
+    "invitations": {
+      "title": "Davetler",
+      "subtitle": "Bekleyen ve geçmiş davetleri yönetin.",
+      "count": "{{count}} davet",
+      "count_plural": "{{count}} davet",
+      "invite": "Üye Davet Et",
+      "empty": "Davet yok",
+      "emptyDescription": "Bu organizasyona üye eklemek için davet gönderin.",
+      "filterAll": "Tümü",
+      "filterPending": "Bekleyen",
+      "filterAccepted": "Kabul Edildi",
+      "filterExpired": "Süresi Doldu",
+      "columns": {
+        "email": "E-posta",
+        "role": "Rol",
+        "status": "Durum",
+        "createdAt": "Oluşturulma",
+        "expiresAt": "Son Kullanma"
+      },
+      "statuses": {
+        "pending": "Bekliyor",
+        "accepted": "Kabul Edildi",
+        "expired": "Süresi Doldu"
+      },
+      "revoke": "İptal Et",
+      "revokeConfirm": {
+        "title": "Daveti İptal Et",
+        "description": "{{email}} için daveti iptal etmek istediğinize emin misiniz? Artık kabul edemeyecekler."
+      }
     }
   },
   "login": {

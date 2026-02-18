@@ -12,11 +12,10 @@ export default defineConfig({
     },
   },
   server: {
-    host: '127.0.0.1', // Localhost only - secure default
+    host: '0.0.0.0', // Listen on all interfaces (needed for custom domain access)
     port: 5173,
     strictPort: false,
-    // Only allow specific hosts - prevents DNS rebinding attacks
-    allowedHosts: ['localhost', '127.0.0.1'],
+    allowedHosts: ['localhost', '127.0.0.1', 'erp.orderinvests.net', 'erp.orderinvest.net'],
     proxy: {
       '/tatum-api': {
         target: 'https://api.tatum.io',
@@ -39,12 +38,6 @@ export default defineConfig({
   // Security: prevent source map exposure in production
   build: {
     sourcemap: false, // Disable source maps in production
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true, // Remove console.logs in production
-        drop_debugger: true,
-      },
-    },
+    minify: 'esbuild', // esbuild is faster; use terser if you need drop_console
   },
 })

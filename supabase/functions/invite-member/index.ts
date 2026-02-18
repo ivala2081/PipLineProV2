@@ -174,7 +174,7 @@ serve(async (req: Request) => {
     if (!orgId || !email || !role || !password) {
       return errorResponse(400, 'VALIDATION_ERROR', 'Missing required fields', origin)
     }
-    if (!['admin', 'operation'].includes(role)) {
+    if (!['admin', 'manager', 'operation'].includes(role)) {
       return errorResponse(400, 'VALIDATION_ERROR', 'Invalid role', origin)
     }
     if (password.length < 8) {

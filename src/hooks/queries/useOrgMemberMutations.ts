@@ -86,6 +86,69 @@ export function useUpdateMemberRole(orgId: string) {
   })
 }
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+export function useInviteMember(orgId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      email,
+      password,
+      role,
+      displayName,
+    }: {
+      email: string
+      password: string
+      role: OrgMemberRole
+      displayName?: string
+    }) => {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/invite-member`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          orgId,
+          email,
+          role,
+          password,
+          displayName: displayName || undefined,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || data.error || 'Invite failed')
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.organizations.invitations(orgId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.organizations.members(orgId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.organizations.list() })
+    },
+  })
+}
+
+export function useRevokeInvitation(orgId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (invitationId: string) => {
+      const { error } = await supabase
+        .from('organization_invitations')
+        .delete()
+        .eq('id', invitationId)
+        .eq('organization_id', orgId)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.organizations.invitations(orgId) })
+    },
+  })
+}
+
 export function useRemoveMember(orgId: string) {
   const queryClient = useQueryClient()
 

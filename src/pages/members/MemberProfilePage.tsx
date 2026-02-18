@@ -10,6 +10,7 @@ import {
   Briefcase,
   ShieldCheck,
   Info,
+  User,
 } from '@phosphor-icons/react'
 import { Tag, Separator, Button, Skeleton, EmptyState } from '@ds'
 import { useLocale } from '@ds/hooks'

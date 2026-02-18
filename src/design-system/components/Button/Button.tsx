@@ -12,6 +12,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         borderless: 'bg-transparent font-normal hover:bg-black/8',
+        ghost: 'bg-transparent font-normal hover:bg-black/8',
         gray: 'bg-black/10 hover:bg-black/20 disabled:bg-black/5 focus:ring-offset-2',
         outline:
           'bg-transparent border border-black/20 border-solid hover:bg-black/8 disabled:border-black/10',
