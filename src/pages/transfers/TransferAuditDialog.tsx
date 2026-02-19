@@ -42,7 +42,7 @@ function AuditEntry({
   const changedFieldCount = entry.changes ? Object.keys(entry.changes).length : 0
 
   return (
-    <div className="flex gap-3 py-3">
+    <div className="flex gap-sm py-3">
       <div
         className={`mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full ${
           isCreated ? 'bg-green/10 text-green' : 'bg-orange/10 text-orange'
@@ -51,7 +51,7 @@ function AuditEntry({
         {isCreated ? <Plus size={14} weight="bold" /> : <PencilSimple size={14} />}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-sm">
           <UserCircle size={14} className="shrink-0 text-black/40" />
           <span className="text-sm font-medium text-black/80">{performerName}</span>
         </div>
@@ -117,11 +117,11 @@ export function TransferAuditDialog({
 
         <div className="max-h-[400px] overflow-y-auto">
           {isLoading ? (
-            <div className="space-y-4 py-2">
+            <div className="space-y-md py-2">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex gap-3">
+                <div key={i} className="flex gap-sm">
                   <Skeleton className="size-8 shrink-0 rounded-full" />
-                  <div className="flex-1 space-y-2">
+                  <div className="flex-1 space-y-sm">
                     <Skeleton className="h-4 w-32 rounded-md" />
                     <Skeleton className="h-3 w-48 rounded-md" />
                     <Skeleton className="h-3 w-20 rounded-md" />

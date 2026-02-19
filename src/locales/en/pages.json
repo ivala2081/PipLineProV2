@@ -320,7 +320,20 @@
       "editMonthlyRate": "Edit Rate",
       "rateUpdating": "Updating...",
       "rateUpdated": "Rate updated ({{tl}} TL + {{usd}} USD transfers)",
-      "rateUpdateFailed": "Rate update failed"
+      "rateUpdateFailed": "Rate update failed",
+      "tether": "Tether (USDT)",
+      "bankAndCC": "Bank + Card",
+      "usdtNet": "USDT Net",
+      "usdCevirim": "USD Volume",
+      "komSonUsd": "Post-Commission USD",
+      "finansPct": "Finance Cost",
+      "dailyBreakdown": "Daily Breakdown",
+      "date": "Date",
+      "banka": "Bank (₺)",
+      "komisyon": "Commission (₺)",
+      "kk": "Card (₺)",
+      "kur": "Rate",
+      "total": "Total"
     },
     "settings": {
       "title": "Lookup Settings",
@@ -730,6 +743,21 @@
         "ledger": "Ledger",
         "settlements": "Settlements",
         "settings": "Settings"
+      }
+    },
+    "ledger": {
+      "sortBy": "Sort by",
+      "noResultsForDate": "No entries for the selected date range.",
+      "sort": {
+        "date": "Date",
+        "deposit": "Deposit",
+        "withdrawal": "Withdrawal",
+        "total": "Gross",
+        "commission": "Commission",
+        "net": "Net",
+        "settlement": "Settlement",
+        "kasaTop": "Balance",
+        "devir": "Carry Over"
       }
     },
     "columns": {

@@ -9,9 +9,20 @@ import { Card, Button, Skeleton } from '@ds'
 
 /* Spam token filter – matches WalletDailyClosing */
 const KNOWN_TOKENS = new Set([
-  'TRX', 'USDT', 'USDD', 'USDC', 'TUSD', 'USDJ',
-  'BTT', 'JST', 'SUN', 'WIN', 'NFT', 'APENFT',
-  'WTRX', 'stUSDT',
+  'TRX',
+  'USDT',
+  'USDD',
+  'USDC',
+  'TUSD',
+  'USDJ',
+  'BTT',
+  'JST',
+  'SUN',
+  'WIN',
+  'NFT',
+  'APENFT',
+  'WTRX',
+  'stUSDT',
 ])
 function isLegitToken(sym: string): boolean {
   if (!sym) return false
@@ -50,21 +61,17 @@ interface WalletCardProps {
 
 export function WalletCard({ wallet, onViewDetail, onDelete }: WalletCardProps) {
   const { t } = useTranslation('pages')
-  const { assets, totalUsd, isLoading: isBalanceLoading } = useWalletBalanceQuery(
-    wallet.id,
-    wallet.chain,
-    wallet.address,
-  )
+  const {
+    assets,
+    totalUsd,
+    isLoading: isBalanceLoading,
+  } = useWalletBalanceQuery(wallet.id, wallet.chain, wallet.address)
   const { takeSnapshot, isTakingSnapshot } = useWalletSnapshotsQuery(
     wallet.id,
     wallet.chain,
     wallet.address,
   )
-  const txQuery = useWalletTransfersQuery(
-    wallet.id,
-    wallet.chain,
-    wallet.address,
-  )
+  const txQuery = useWalletTransfersQuery(wallet.id, wallet.chain, wallet.address)
 
   const todaySummary = useMemo(() => {
     const now = new Date()
@@ -126,7 +133,8 @@ export function WalletCard({ wallet, onViewDetail, onDelete }: WalletCardProps) 
       const prefix = sign === 'auto' ? (amount >= 0 ? '+' : '') : sign
       return (
         <span key={sym} className={`font-mono text-[13px] font-semibold tabular-nums ${c}`}>
-          {prefix}{fmt(sign === '-' ? -Math.abs(amount) : amount)}
+          {prefix}
+          {fmt(sign === '-' ? -Math.abs(amount) : amount)}
           <span className="ml-0.5 text-[10px] font-medium opacity-50">{sym}</span>
         </span>
       )
@@ -139,11 +147,11 @@ export function WalletCard({ wallet, onViewDetail, onDelete }: WalletCardProps) 
       <div className="flex items-stretch">
         {/* Left: Identity */}
         <div className="flex min-w-0 flex-1 flex-col justify-center px-5 py-4">
-          <div className="flex items-center gap-2">
-            <span className="truncate text-[15px] font-semibold text-black/90">
-              {wallet.label}
-            </span>
-            <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${chainInfo.color}`}>
+          <div className="flex items-center gap-sm">
+            <span className="truncate text-[15px] font-semibold text-black/90">{wallet.label}</span>
+            <span
+              className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${chainInfo.color}`}
+            >
               {chainInfo.label}
             </span>
             <Button
@@ -180,14 +188,16 @@ export function WalletCard({ wallet, onViewDetail, onDelete }: WalletCardProps) 
           {!isBalanceLoading && sortedAssets.length > 0 && (
             <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
               {sortedAssets.slice(0, 3).map((asset, i) => {
-                const label = asset.symbol || (asset.tokenAddress ? `${asset.tokenAddress.slice(0, 6)}…` : asset.type)
+                const label =
+                  asset.symbol ||
+                  (asset.tokenAddress ? `${asset.tokenAddress.slice(0, 6)}…` : asset.type)
                 const bal = parseFloat(asset.balance)
                 return (
                   <span key={i} className="text-[11px] text-black/40">
                     <span className="font-mono font-medium tabular-nums text-black/55">
                       {bal.toLocaleString('en-US', { maximumFractionDigits: 2 })}
-                    </span>
-                    {' '}{label}
+                    </span>{' '}
+                    {label}
                   </span>
                 )
               })}
@@ -209,14 +219,14 @@ export function WalletCard({ wallet, onViewDetail, onDelete }: WalletCardProps) 
             </p>
             <div className="space-y-1">
               {/* IN row */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-sm">
                 <span className="w-7 text-[10px] font-bold uppercase text-green/60">IN</span>
                 <div className="flex flex-wrap gap-x-3">
                   {renderTokenAmounts(todaySummary.inByToken, '+', 'text-green')}
                 </div>
               </div>
               {/* OUT row */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-sm">
                 <span className="w-7 text-[10px] font-bold uppercase text-red/60">OUT</span>
                 <div className="flex flex-wrap gap-x-3">
                   {renderTokenAmounts(todaySummary.outByToken, '-', 'text-red')}

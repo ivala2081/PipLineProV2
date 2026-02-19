@@ -1,7 +1,15 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, ArrowsClockwise, Copy, CaretLeft, CaretRight, List, CalendarBlank } from '@phosphor-icons/react'
+import {
+  ArrowLeft,
+  ArrowsClockwise,
+  Copy,
+  CaretLeft,
+  CaretRight,
+  List,
+  CalendarBlank,
+} from '@phosphor-icons/react'
 import { useWalletsQuery } from '@/hooks/queries/useWalletsQuery'
 import { useWalletTransfersQuery } from '@/hooks/queries/useWalletTransfersQuery'
 import { useWalletBalanceQuery } from '@/hooks/queries/useWalletBalanceQuery'
@@ -95,7 +103,7 @@ export function WalletTransfersPage() {
 
   if (!wallet && isWalletsLoading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-md">
         <Skeleton className="h-8 w-48 rounded" />
         <Skeleton className="h-4 w-72 rounded" />
         <Skeleton className="h-64 w-full rounded-xl" />
@@ -105,7 +113,7 @@ export function WalletTransfersPage() {
 
   if (!wallet) {
     return (
-      <div className="flex flex-col items-center gap-4 py-20">
+      <div className="flex flex-col items-center gap-md py-20">
         <p className="text-sm text-black/50">
           {t('accounting.transfers.walletNotFound', 'Wallet not found')}
         </p>
@@ -121,7 +129,7 @@ export function WalletTransfersPage() {
   const pageNumbers: number[] = []
   const maxVisible = 7
   let pageStart = Math.max(1, currentPage - Math.floor(maxVisible / 2))
-  let pageEnd = Math.min(totalPages, pageStart + maxVisible - 1)
+  const pageEnd = Math.min(totalPages, pageStart + maxVisible - 1)
   if (pageEnd - pageStart + 1 < maxVisible) {
     pageStart = Math.max(1, pageEnd - maxVisible + 1)
   }
@@ -130,9 +138,9 @@ export function WalletTransfersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-lg">
       {/* Header */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-sm">
         <Button
           variant="ghost"
           size="sm"
@@ -142,11 +150,11 @@ export function WalletTransfersPage() {
           <ArrowLeft size={18} />
         </Button>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-sm">
             <h1 className="text-2xl font-semibold">{wallet.label}</h1>
             <Tag variant="default">{CHAIN_LABELS[wallet.chain] ?? wallet.chain}</Tag>
           </div>
-          <div className="mt-1 flex items-center gap-2">
+          <div className="mt-1 flex items-center gap-sm">
             <code className="truncate text-xs text-black/50">{wallet.address}</code>
             <button
               onClick={handleCopy}
@@ -169,7 +177,7 @@ export function WalletTransfersPage() {
 
       {/* View toggle + info bar */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-sm">
           {/* Toggle buttons */}
           <div className="flex gap-0.5 rounded-lg border border-black/10 p-0.5">
             <button
@@ -199,7 +207,9 @@ export function WalletTransfersPage() {
           {/* Transfer count */}
           {!txQuery.isLoading && (
             <span className="text-xs text-black/40">
-              {totalLoaded}{txQuery.hasMore ? '+' : ''} {t('accounting.transfers.title', 'transfers').toLowerCase()}
+              {totalLoaded}
+              {txQuery.hasMore ? '+' : ''}{' '}
+              {t('accounting.transfers.title', 'transfers').toLowerCase()}
               {view === 'daily' && txQuery.hasMore && (
                 <span className="ml-1 text-orange">
                   ({t('accounting.transfers.loadingAll', 'loading all…')})
@@ -234,7 +244,7 @@ export function WalletTransfersPage() {
           {/* Pagination controls */}
           <div className="flex items-center justify-between">
             {/* Page size selector */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-sm">
               <span className="text-xs text-black/40">
                 {t('accounting.transfers.perPage', 'Per page')}:
               </span>
@@ -260,7 +270,7 @@ export function WalletTransfersPage() {
 
             {/* Page numbers */}
             {totalPages > 1 && (
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-xs">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -281,9 +291,7 @@ export function WalletTransfersPage() {
                     >
                       1
                     </Button>
-                    {pageStart > 2 && (
-                      <span className="px-1 text-xs text-black/30">...</span>
-                    )}
+                    {pageStart > 2 && <span className="px-1 text-xs text-black/30">...</span>}
                   </>
                 )}
 

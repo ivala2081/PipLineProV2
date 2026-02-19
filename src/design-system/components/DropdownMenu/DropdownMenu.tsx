@@ -20,7 +20,7 @@ export const DropdownMenuContent: FC<DropdownMenuContentProps> = ({
     <DropdownMenuPrimitive.Content
       sideOffset={sideOffset}
       className={cn(
-        'ui-surface z-50 min-w-[8rem] overflow-hidden rounded-xl bg-bg1 p-1 text-black shadow-md',
+        'ui-surface z-50 min-w-[8rem] overflow-hidden rounded-2xl border border-black/10 bg-bg1/95 backdrop-blur-xl p-1.5 text-black shadow-xl shadow-black/10 ring-1 ring-black/5 animate-in fade-in duration-150',
         className,
       )}
       {...props}
@@ -32,15 +32,12 @@ DropdownMenuContent.displayName = 'DropdownMenuContent'
 export type DropdownMenuItemProps = ComponentProps<typeof DropdownMenuPrimitive.Item> & {
   inset?: boolean
 }
-export const DropdownMenuItem: FC<DropdownMenuItemProps> = ({
-  className,
-  inset,
-  ...props
-}) => (
+export const DropdownMenuItem: FC<DropdownMenuItemProps> = ({ className, inset, ...props }) => (
   <DropdownMenuPrimitive.Item
     className={cn(
-      'relative flex cursor-pointer select-none items-center gap-2 rounded-lg px-2 py-1.5 text-sm outline-none',
-      'focus:bg-black/5 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      'relative flex cursor-pointer select-none items-center gap-2 rounded-xl px-3 py-2 text-sm outline-none transition-colors duration-150',
+      'focus:bg-brand/10 focus:text-brand data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      'hover:bg-black/5 data-[highlighted]:bg-brand/10 data-[highlighted]:text-brand',
       inset && 'pl-8',
       className,
     )}
@@ -49,7 +46,9 @@ export const DropdownMenuItem: FC<DropdownMenuItemProps> = ({
 )
 DropdownMenuItem.displayName = 'DropdownMenuItem'
 
-export type DropdownMenuCheckboxItemProps = ComponentProps<typeof DropdownMenuPrimitive.CheckboxItem>
+export type DropdownMenuCheckboxItemProps = ComponentProps<
+  typeof DropdownMenuPrimitive.CheckboxItem
+>
 export const DropdownMenuCheckboxItem: FC<DropdownMenuCheckboxItemProps> = ({
   className,
   children,
@@ -58,8 +57,9 @@ export const DropdownMenuCheckboxItem: FC<DropdownMenuCheckboxItemProps> = ({
 }) => (
   <DropdownMenuPrimitive.CheckboxItem
     className={cn(
-      'relative flex cursor-pointer select-none items-center rounded-lg py-1.5 pl-8 pr-2 text-sm outline-none',
-      'focus:bg-black/5 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      'relative flex cursor-pointer select-none items-center rounded-xl py-2 pl-9 pr-3 text-sm outline-none transition-colors duration-150',
+      'focus:bg-brand/10 focus:text-brand data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      'hover:bg-black/5 data-[highlighted]:bg-brand/10 data-[highlighted]:text-brand',
       className,
     )}
     checked={checked}
@@ -83,8 +83,9 @@ export const DropdownMenuRadioItem: FC<DropdownMenuRadioItemProps> = ({
 }) => (
   <DropdownMenuPrimitive.RadioItem
     className={cn(
-      'relative flex cursor-pointer select-none items-center rounded-lg py-1.5 pl-8 pr-2 text-sm outline-none',
-      'focus:bg-black/5 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      'relative flex cursor-pointer select-none items-center rounded-xl py-2 pl-9 pr-3 text-sm outline-none transition-colors duration-150',
+      'focus:bg-brand/10 focus:text-brand data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      'hover:bg-black/5 data-[highlighted]:bg-brand/10 data-[highlighted]:text-brand',
       className,
     )}
     {...props}
@@ -102,11 +103,7 @@ DropdownMenuRadioItem.displayName = 'DropdownMenuRadioItem'
 export type DropdownMenuLabelProps = ComponentProps<typeof DropdownMenuPrimitive.Label> & {
   inset?: boolean
 }
-export const DropdownMenuLabel: FC<DropdownMenuLabelProps> = ({
-  className,
-  inset,
-  ...props
-}) => (
+export const DropdownMenuLabel: FC<DropdownMenuLabelProps> = ({ className, inset, ...props }) => (
   <DropdownMenuPrimitive.Label
     className={cn('px-2 py-1.5 text-sm font-semibold', inset && 'pl-8', className)}
     {...props}
@@ -115,10 +112,7 @@ export const DropdownMenuLabel: FC<DropdownMenuLabelProps> = ({
 DropdownMenuLabel.displayName = 'DropdownMenuLabel'
 
 export type DropdownMenuSeparatorProps = ComponentProps<typeof DropdownMenuPrimitive.Separator>
-export const DropdownMenuSeparator: FC<DropdownMenuSeparatorProps> = ({
-  className,
-  ...props
-}) => (
+export const DropdownMenuSeparator: FC<DropdownMenuSeparatorProps> = ({ className, ...props }) => (
   <DropdownMenuPrimitive.Separator
     className={cn('-mx-1 my-1 h-px bg-black/10', className)}
     {...props}
@@ -127,10 +121,7 @@ export const DropdownMenuSeparator: FC<DropdownMenuSeparatorProps> = ({
 DropdownMenuSeparator.displayName = 'DropdownMenuSeparator'
 
 export type DropdownMenuShortcutProps = ComponentProps<'span'>
-export const DropdownMenuShortcut: FC<DropdownMenuShortcutProps> = ({
-  className,
-  ...props
-}) => (
+export const DropdownMenuShortcut: FC<DropdownMenuShortcutProps> = ({ className, ...props }) => (
   <span className={cn('ml-auto text-xs tracking-widest text-black/40', className)} {...props} />
 )
 DropdownMenuShortcut.displayName = 'DropdownMenuShortcut'
@@ -142,7 +133,7 @@ export const DropdownMenuSubContent: FC<DropdownMenuSubContentProps> = ({
 }) => (
   <DropdownMenuPrimitive.SubContent
     className={cn(
-      'ui-surface z-50 min-w-[8rem] overflow-hidden rounded-xl bg-bg1 p-1 text-black shadow-lg',
+      'ui-surface z-50 min-w-[8rem] overflow-hidden rounded-2xl border border-black/10 bg-bg1/95 backdrop-blur-xl p-1.5 text-black shadow-xl shadow-black/10 ring-1 ring-black/5 animate-in fade-in duration-150',
       className,
     )}
     {...props}
@@ -150,7 +141,9 @@ export const DropdownMenuSubContent: FC<DropdownMenuSubContentProps> = ({
 )
 DropdownMenuSubContent.displayName = 'DropdownMenuSubContent'
 
-export type DropdownMenuSubTriggerProps = ComponentProps<typeof DropdownMenuPrimitive.SubTrigger> & {
+export type DropdownMenuSubTriggerProps = ComponentProps<
+  typeof DropdownMenuPrimitive.SubTrigger
+> & {
   inset?: boolean
 }
 export const DropdownMenuSubTrigger: FC<DropdownMenuSubTriggerProps> = ({
@@ -161,7 +154,7 @@ export const DropdownMenuSubTrigger: FC<DropdownMenuSubTriggerProps> = ({
 }) => (
   <DropdownMenuPrimitive.SubTrigger
     className={cn(
-      'flex cursor-default select-none items-center gap-2 rounded-lg px-2 py-1.5 text-sm outline-none focus:bg-black/5',
+      'flex cursor-default select-none items-center gap-2 rounded-xl px-3 py-2 text-sm outline-none transition-colors duration-150 focus:bg-brand/10 focus:text-brand data-[highlighted]:bg-brand/10 data-[highlighted]:text-brand',
       inset && 'pl-8',
       className,
     )}

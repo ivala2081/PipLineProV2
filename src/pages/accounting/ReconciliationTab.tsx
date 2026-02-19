@@ -80,7 +80,7 @@ function RegisterCard({
     <Card padding="default" className="border border-black/10 bg-bg1">
       {/* Header */}
       <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-sm">
           <div className={`flex size-10 items-center justify-center rounded-xl ${config.iconBg}`}>
             <Icon size={20} weight="duotone" className={config.iconColor} />
           </div>
@@ -171,7 +171,7 @@ function KasaToplamCard({
     <Card padding="default" className="border border-black/10 bg-black/[0.02]">
       <div className="flex items-start justify-between">
         <div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-sm">
             <div className="flex size-10 items-center justify-center rounded-xl bg-black/5">
               <Vault size={20} weight="duotone" className="text-black/50" />
             </div>
@@ -358,13 +358,13 @@ function SettingsPanel({
     'h-8 w-full rounded-md border border-black/10 bg-white px-2.5 text-sm font-mono tabular-nums text-black/80 placeholder:text-black/25 focus:border-black/20 focus:outline-none focus:ring-1 focus:ring-black/10'
 
   return (
-    <div className="space-y-5 rounded-xl border border-black/10 bg-white p-5">
+    <div className="space-y-lg rounded-xl border border-black/10 bg-white p-5">
       {/* DEVİR Overrides */}
       <div>
         <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-black/40">
           {t('accounting.reconciliation.settings.devirOverrides')}
         </p>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-md sm:grid-cols-3">
           {[
             { label: 'USDT', value: devirUsdt, onChange: setDevirUsdt },
             { label: 'Cash TL', value: devirTl, onChange: setDevirTl },
@@ -386,7 +386,7 @@ function SettingsPanel({
       </div>
 
       {/* KUR + BEKL. TAHS */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
         <div>
           <label className="mb-1 block text-xs text-black/50">
             {t('accounting.reconciliation.fields.kur')}
@@ -436,9 +436,9 @@ function SettingsPanel({
           </Button>
         </div>
         {teyitEntries.length > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-sm">
             {teyitEntries.map((entry, i) => (
-              <div key={i} className="flex items-center gap-2">
+              <div key={i} className="flex items-center gap-sm">
                 <input
                   type="text"
                   className={`${inputClass} flex-1`}
@@ -535,7 +535,7 @@ function TeyitResults({
       </div>
 
       {/* Entries list */}
-      <div className="mb-4 space-y-2">
+      <div className="mb-4 space-y-sm">
         {teyitEntries.map((entry, i) => (
           <div key={i} className="flex items-center justify-between text-sm">
             <span className="text-black/60">{entry.label}</span>
@@ -553,7 +553,7 @@ function TeyitResults({
       </div>
 
       {/* NET + FARK */}
-      <div className="space-y-2 border-t border-black/10 pt-3">
+      <div className="space-y-sm border-t border-black/10 pt-3">
         <div className="flex items-center justify-between text-sm">
           <span className="font-medium text-black/50">
             {t('accounting.reconciliation.teyit.net')}
@@ -565,7 +565,7 @@ function TeyitResults({
         <div
           className={`flex items-center justify-between rounded-lg px-3 py-2.5 ${hasFark ? 'bg-red/5' : 'bg-green/5'}`}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-sm">
             {hasFark ? (
               <Warning size={16} weight="fill" className="text-red" />
             ) : (
@@ -635,22 +635,22 @@ export function ReconciliationTab() {
   /* ── Loading skeleton ─── */
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-2">
+      <div className="space-y-lg">
+        <div className="flex items-center gap-sm">
           <Skeleton className="size-8 rounded-md" />
           <Skeleton className="h-5 w-40 rounded-md" />
           <Skeleton className="size-8 rounded-md" />
         </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-md sm:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <Card key={i} padding="default" className="border border-black/10 bg-bg1">
-              <div className="mb-4 flex items-center gap-3">
+              <div className="mb-4 flex items-center gap-sm">
                 <Skeleton className="size-10 rounded-xl" />
                 <Skeleton className="h-4 w-20 rounded" />
               </div>
               <Skeleton className="mb-3 h-8 w-32 rounded" />
               <Skeleton className="mb-3 h-1.5 w-full rounded-full" />
-              <div className="flex gap-6">
+              <div className="flex gap-lg">
                 <Skeleton className="h-3 w-20 rounded" />
                 <Skeleton className="h-3 w-20 rounded" />
               </div>
@@ -665,9 +665,9 @@ export function ReconciliationTab() {
   /* ── Empty state ─── */
   if (!data || (data.registers.every((r) => r.giren === 0 && r.cikan === 0) && !config)) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-lg">
         {/* Month picker */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-sm">
           <Button variant="ghost" size="sm" onClick={goToPrevMonth} className="size-8 p-0">
             <CaretLeft size={16} weight="bold" />
           </Button>
@@ -695,10 +695,10 @@ export function ReconciliationTab() {
 
   /* ── Data view ─── */
   return (
-    <div className="space-y-6">
+    <div className="space-y-lg">
       {/* Month picker + settings toggle */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-sm">
           <Button variant="ghost" size="sm" onClick={goToPrevMonth} className="size-8 p-0">
             <CaretLeft size={16} weight="bold" />
           </Button>
@@ -727,7 +727,7 @@ export function ReconciliationTab() {
       </div>
 
       {/* KUR indicator */}
-      <div className="flex items-center gap-3 text-xs text-black/40">
+      <div className="flex items-center gap-sm text-xs text-black/40">
         <span>
           {t('accounting.reconciliation.fields.kur')}:{' '}
           <strong className={`font-mono ${data.kur <= 0 ? 'text-red' : 'text-black/60'}`}>
@@ -748,7 +748,7 @@ export function ReconciliationTab() {
       </div>
 
       {/* Register cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-md sm:grid-cols-3">
         {data.registers.map((reg) => (
           <RegisterCard key={reg.register} reg={reg} kur={data.kur} lang={lang} t={t} />
         ))}

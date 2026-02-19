@@ -1,12 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  User,
-  Phone,
-  Briefcase,
-  Info,
-  ShieldCheck,
-} from '@phosphor-icons/react'
+import { User, Phone, Briefcase, Info, ShieldCheck } from '@phosphor-icons/react'
 import {
   Dialog,
   DialogContent,
@@ -48,6 +42,7 @@ export function EditProfileDialog({
 
   // Sync form data when initial data changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFormData(initialData)
   }, [initialData, open])
 
@@ -70,18 +65,16 @@ export function EditProfileDialog({
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto px-1 space-y-6">
+          <div className="flex-1 overflow-y-auto px-1 space-y-lg">
             {/* Display Name */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2 text-sm font-medium">
+            <div className="space-y-sm">
+              <Label className="flex items-center gap-sm text-sm font-medium">
                 <User size={16} className="text-black/50" />
                 {t('memberProfile.fields.displayName')}
               </Label>
               <Input
                 value={formData.display_name}
-                onChange={(e) =>
-                  setFormData((p) => ({ ...p, display_name: e.target.value }))
-                }
+                onChange={(e) => setFormData((p) => ({ ...p, display_name: e.target.value }))}
                 placeholder={t('memberProfile.fields.displayNamePlaceholder')}
               />
             </div>
@@ -89,17 +82,15 @@ export function EditProfileDialog({
             <Separator />
 
             {/* Phone */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2 text-sm font-medium">
+            <div className="space-y-sm">
+              <Label className="flex items-center gap-sm text-sm font-medium">
                 <Phone size={16} className="text-black/50" />
                 {t('memberProfile.fields.phone')}
               </Label>
               <Input
                 type="tel"
                 value={formData.phone}
-                onChange={(e) =>
-                  setFormData((p) => ({ ...p, phone: e.target.value }))
-                }
+                onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))}
                 placeholder={t('memberProfile.fields.phonePlaceholder')}
               />
             </div>
@@ -107,16 +98,14 @@ export function EditProfileDialog({
             <Separator />
 
             {/* Bio */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2 text-sm font-medium">
+            <div className="space-y-sm">
+              <Label className="flex items-center gap-sm text-sm font-medium">
                 <Info size={16} className="text-black/50" />
                 {t('memberProfile.sections.bio')}
               </Label>
               <textarea
                 value={formData.bio}
-                onChange={(e) =>
-                  setFormData((p) => ({ ...p, bio: e.target.value }))
-                }
+                onChange={(e) => setFormData((p) => ({ ...p, bio: e.target.value }))}
                 placeholder={t('memberProfile.fields.bioPlaceholder')}
                 rows={5}
                 className="w-full resize-none rounded-lg border border-black/10 bg-white px-4 py-3 text-sm text-black/90 outline-none transition-colors placeholder:text-black/30 focus:border-black/20"
@@ -129,16 +118,14 @@ export function EditProfileDialog({
                 <Separator />
 
                 {/* Department */}
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2 text-sm font-medium">
+                <div className="space-y-sm">
+                  <Label className="flex items-center gap-sm text-sm font-medium">
                     <Briefcase size={16} className="text-black/50" />
                     {t('memberProfile.fields.department')}
                   </Label>
                   <Input
                     value={formData.department}
-                    onChange={(e) =>
-                      setFormData((p) => ({ ...p, department: e.target.value }))
-                    }
+                    onChange={(e) => setFormData((p) => ({ ...p, department: e.target.value }))}
                     placeholder={t('memberProfile.fields.departmentPlaceholder')}
                   />
                 </div>
@@ -146,8 +133,8 @@ export function EditProfileDialog({
                 <Separator />
 
                 {/* Internal Notes */}
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2 text-sm font-medium">
+                <div className="space-y-sm">
+                  <Label className="flex items-center gap-sm text-sm font-medium">
                     <ShieldCheck size={16} className="text-black/50" />
                     {t('memberProfile.sections.notes')}
                     <span className="text-xs font-normal text-black/40">
@@ -156,9 +143,7 @@ export function EditProfileDialog({
                   </Label>
                   <textarea
                     value={formData.notes}
-                    onChange={(e) =>
-                      setFormData((p) => ({ ...p, notes: e.target.value }))
-                    }
+                    onChange={(e) => setFormData((p) => ({ ...p, notes: e.target.value }))}
                     placeholder={t('memberProfile.fields.notesPlaceholder')}
                     rows={4}
                     className="w-full resize-none rounded-lg border border-black/10 bg-white px-4 py-3 text-sm text-black/90 outline-none transition-colors placeholder:text-black/30 focus:border-black/20"
@@ -169,19 +154,12 @@ export function EditProfileDialog({
           </div>
 
           {/* Fixed footer with actions */}
-          <div className="flex justify-end gap-2 border-t border-black/5 pt-4 mt-6">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleCancel}
-              disabled={isSaving}
-            >
+          <div className="flex justify-end gap-sm border-t border-black/5 pt-4 mt-6">
+            <Button type="button" variant="outline" onClick={handleCancel} disabled={isSaving}>
               {t('memberProfile.cancel')}
             </Button>
             <Button type="submit" variant="filled" disabled={isSaving}>
-              {isSaving
-                ? t('memberProfile.saving')
-                : t('memberProfile.save')}
+              {isSaving ? t('memberProfile.saving') : t('memberProfile.save')}
             </Button>
           </div>
         </form>

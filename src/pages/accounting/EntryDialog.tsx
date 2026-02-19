@@ -12,7 +12,7 @@ import {
   DialogFooter,
   Button,
   Input,
-  DateInput,
+  DatePickerField,
   Select,
   SelectTrigger,
   SelectValue,
@@ -100,9 +100,9 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={onFormSubmit} className="space-y-4">
+        <form onSubmit={onFormSubmit} className="space-y-md">
           {/* Description */}
-          <div className="space-y-2">
+          <div className="space-y-sm">
             <Label>{t('accounting.form.description')}</Label>
             <Input
               {...register('description')}
@@ -112,8 +112,8 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
           </div>
 
           {/* Entry Type & Direction row */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-md">
+            <div className="space-y-sm">
               <Label>{t('accounting.form.entryType')}</Label>
               <Select
                 value={watch('entry_type')}
@@ -128,7 +128,7 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-sm">
               <Label>{t('accounting.form.direction')}</Label>
               <div className="flex gap-1">
                 <Button
@@ -154,13 +154,13 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
           </div>
 
           {/* Amount & Currency row */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-md">
+            <div className="space-y-sm">
               <Label>{t('accounting.form.amount')}</Label>
               <Input type="number" step="0.01" {...register('amount')} />
               {errors.amount && <p className="text-xs text-red">{errors.amount.message}</p>}
             </div>
-            <div className="space-y-2">
+            <div className="space-y-sm">
               <Label>{t('accounting.form.currency')}</Label>
               <Select
                 value={watch('currency')}
@@ -179,7 +179,7 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
           </div>
 
           {/* Register */}
-          <div className="space-y-2">
+          <div className="space-y-sm">
             <Label>{t('accounting.form.register')}</Label>
             <Select
               value={watch('register')}
@@ -197,22 +197,25 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
           </div>
 
           {/* Date */}
-          <div className="space-y-2">
+          <div className="space-y-sm">
             <Label>{t('accounting.form.date')}</Label>
-            <DateInput {...register('entry_date')} />
+            <DatePickerField
+              value={watch('entry_date')}
+              onChange={(e) => setValue('entry_date', e.target.value)}
+            />
             {errors.entry_date && <p className="text-xs text-red">{errors.entry_date.message}</p>}
           </div>
 
           {/* Cost Period & Payment Period */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-md">
+            <div className="space-y-sm">
               <Label>{t('accounting.form.costPeriod')}</Label>
               <Input
                 {...register('cost_period')}
                 placeholder={t('accounting.form.costPeriodPlaceholder')}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-sm">
               <Label>{t('accounting.form.paymentPeriod')}</Label>
               <Input
                 {...register('payment_period')}

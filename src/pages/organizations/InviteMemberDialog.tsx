@@ -103,16 +103,16 @@ export function InviteMemberDialog({ open, onClose, orgId }: InviteMemberDialogP
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent size="md">
         <DialogHeader>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-sm">
             <div className="flex size-10 items-center justify-center rounded-lg bg-brand/10">
               <UserPlus size={20} className="text-brand" />
             </div>
             <DialogTitle>{t('organizations.inviteDialog.title')}</DialogTitle>
           </div>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-md">
           {/* Email */}
-          <div className="space-y-2">
+          <div className="space-y-sm">
             <Label>{t('organizations.inviteDialog.email')}</Label>
             <Input
               type="email"
@@ -125,7 +125,7 @@ export function InviteMemberDialog({ open, onClose, orgId }: InviteMemberDialogP
           </div>
 
           {/* Display Name */}
-          <div className="space-y-2">
+          <div className="space-y-sm">
             <Label>
               {t('organizations.inviteDialog.displayName')}
               <span className="ml-1 text-xs font-normal text-black/40">
@@ -140,7 +140,7 @@ export function InviteMemberDialog({ open, onClose, orgId }: InviteMemberDialogP
           </div>
 
           {/* Password */}
-          <div className="space-y-2">
+          <div className="space-y-sm">
             <Label>{t('organizations.inviteDialog.password')}</Label>
             <div className="relative">
               <Input
@@ -167,9 +167,9 @@ export function InviteMemberDialog({ open, onClose, orgId }: InviteMemberDialogP
           </div>
 
           {/* Role */}
-          <div className="space-y-2">
+          <div className="space-y-sm">
             <Label>{t('organizations.inviteDialog.role')}</Label>
-            <div className="grid gap-2">
+            <div className="grid gap-sm">
               <RoleCard
                 selected={selectedRole === 'operation'}
                 onClick={() => form.setValue('role', 'operation')}

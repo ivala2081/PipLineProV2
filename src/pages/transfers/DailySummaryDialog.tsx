@@ -117,7 +117,7 @@ export function DailySummaryDialog({
 
                 <div className="relative">
                   {/* Date header */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-sm">
                     <div className="flex size-7 items-center justify-center rounded-lg bg-black/5">
                       <CalendarBlank size={14} weight="duotone" className="text-black/40" />
                     </div>
@@ -161,7 +161,7 @@ export function DailySummaryDialog({
               </div>
 
               {/* ── Deposit / Withdrawal cards ── */}
-              <div className="grid grid-cols-2 gap-3 px-6 pb-4">
+              <div className="grid grid-cols-2 gap-md px-6 pb-4">
                 <div className="rounded-xl border border-green/15 bg-green/[0.03] px-4 py-3">
                   <div className="flex items-center gap-1.5">
                     <ArrowDown size={12} weight="bold" className="text-green" />
@@ -301,7 +301,7 @@ export function DailySummaryDialog({
               <div className="border-t border-black/[0.06] bg-black/[0.015] px-6 py-4">
                 {/* Rate row */}
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-sm">
                     <span className="text-[11px] font-semibold uppercase tracking-wider text-black/30">
                       {t('transfers.summary.dayRate')}
                     </span>
@@ -313,7 +313,7 @@ export function DailySummaryDialog({
                   </div>
                   <div className="flex items-center gap-1.5">
                     {isApplyingRate ? (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-sm">
                         <div className="size-3 animate-spin rounded-full border border-black/10 border-t-black/40" />
                         <span className="text-xs text-black/40">
                           {t('transfers.summary.applyingRate')}
@@ -377,7 +377,7 @@ export function DailySummaryDialog({
                 </div>
 
                 {/* USD Net cards */}
-                <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="mt-4 grid grid-cols-2 gap-md">
                   <div className="rounded-xl border border-black/[0.06] bg-white px-4 py-3">
                     <p className="text-[11px] font-medium text-black/35">
                       {t('transfers.summary.netWithComm')}

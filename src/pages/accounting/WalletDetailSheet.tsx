@@ -49,20 +49,22 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
   const { t } = useTranslation('pages')
   const navigate = useNavigate()
 
-  const { assets, totalUsd, isLoading: isBalanceLoading, refetch } = useWalletBalanceQuery(
-    wallet?.id ?? '',
-    wallet?.chain ?? '',
-    wallet?.address ?? '',
-    !!wallet,
-  )
+  const {
+    assets,
+    totalUsd,
+    isLoading: isBalanceLoading,
+    refetch,
+  } = useWalletBalanceQuery(wallet?.id ?? '', wallet?.chain ?? '', wallet?.address ?? '', !!wallet)
 
   const { toast } = useToast()
-  const { snapshots, isLoading: isSnapshotsLoading, takeSnapshot, isTakingSnapshot, deleteSnapshot, isDeleting } =
-    useWalletSnapshotsQuery(
-      wallet?.id ?? '',
-      wallet?.chain ?? '',
-      wallet?.address ?? '',
-    )
+  const {
+    snapshots,
+    isLoading: isSnapshotsLoading,
+    takeSnapshot,
+    isTakingSnapshot,
+    deleteSnapshot,
+    isDeleting,
+  } = useWalletSnapshotsQuery(wallet?.id ?? '', wallet?.chain ?? '', wallet?.address ?? '')
 
   const txQuery = useWalletTransfersQuery(
     wallet?.id ?? '',
@@ -87,18 +89,14 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
         </SheetHeader>
 
         {wallet && (
-          <div className="mt-6 space-y-6">
+          <div className="mt-6 space-y-lg">
             {/* Wallet Info */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Tag variant="default">
-                  {CHAIN_LABELS[wallet.chain] ?? wallet.chain}
-                </Tag>
+            <div className="space-y-sm">
+              <div className="flex items-center gap-sm">
+                <Tag variant="default">{CHAIN_LABELS[wallet.chain] ?? wallet.chain}</Tag>
               </div>
-              <div className="flex items-center gap-2">
-                <code className="break-all text-xs text-black/60">
-                  {wallet.address}
-                </code>
+              <div className="flex items-center gap-sm">
+                <code className="break-all text-xs text-black/60">{wallet.address}</code>
                 <button
                   onClick={handleCopy}
                   className="shrink-0 text-black/30 transition hover:text-black/60"
@@ -139,33 +137,24 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
                 </Button>
               </div>
               {isBalanceLoading ? (
-                <div className="space-y-2">
+                <div className="space-y-sm">
                   {Array.from({ length: 3 }).map((_, i) => (
                     <Skeleton key={i} className="h-12 w-full rounded-lg" />
                   ))}
                 </div>
               ) : sortedAssets.length === 0 ? (
-                <p className="text-xs text-black/40">
-                  {t('accounting.wallets.noBalances')}
-                </p>
+                <p className="text-xs text-black/40">{t('accounting.wallets.noBalances')}</p>
               ) : (
                 <div className="divide-y divide-black/5 rounded-xl border border-black/10">
                   {sortedAssets.map((asset, i) => {
                     const label =
                       asset.symbol ||
-                      (asset.tokenAddress
-                        ? `${asset.tokenAddress.slice(0, 8)}…`
-                        : asset.type)
+                      (asset.tokenAddress ? `${asset.tokenAddress.slice(0, 8)}…` : asset.type)
                     const bal = parseFloat(asset.balance)
                     return (
-                      <div
-                        key={i}
-                        className="flex items-center justify-between px-4 py-3"
-                      >
+                      <div key={i} className="flex items-center justify-between px-4 py-3">
                         <div>
-                          <span className="text-sm font-semibold text-black/80">
-                            {label}
-                          </span>
+                          <span className="text-sm font-semibold text-black/80">{label}</span>
                           {asset.tokenAddress && (
                             <p className="text-xs text-black/25">
                               {asset.tokenAddress.slice(0, 12)}…{asset.tokenAddress.slice(-4)}
@@ -258,15 +247,13 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
               </div>
 
               {isSnapshotsLoading ? (
-                <div className="space-y-2">
+                <div className="space-y-sm">
                   {Array.from({ length: 3 }).map((_, i) => (
                     <Skeleton key={i} className="h-5 w-full rounded" />
                   ))}
                 </div>
               ) : snapshots.length === 0 ? (
-                <p className="text-xs text-black/40">
-                  {t('accounting.wallets.noSnapshots')}
-                </p>
+                <p className="text-xs text-black/40">{t('accounting.wallets.noSnapshots')}</p>
               ) : (
                 <div className="overflow-x-auto rounded-xl border border-black/10">
                   <Table>
@@ -294,17 +281,12 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
                             )}
                           </TableCell>
                           <TableCell className="text-right font-mono text-sm font-semibold tabular-nums text-black/80">
-                            {snap.total_usd > 0
-                              ? `$${formatUsd(snap.total_usd)}`
-                              : '—'}
+                            {snap.total_usd > 0 ? `$${formatUsd(snap.total_usd)}` : '—'}
                           </TableCell>
                           <TableCell>
                             <div className="space-y-0.5">
                               {snap.balances.map((b, i) => (
-                                <div
-                                  key={i}
-                                  className="flex items-center gap-2 text-xs"
-                                >
+                                <div key={i} className="flex items-center gap-2 text-xs">
                                   <span className="text-black/50">{b.token}</span>
                                   <span className="font-mono tabular-nums text-black/70">
                                     {parseFloat(b.balance).toLocaleString('en-US', {
@@ -324,7 +306,10 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
                               onClick={async () => {
                                 try {
                                   await deleteSnapshot(snap.id)
-                                  toast({ title: t('accounting.toast.snapshotDeleted'), variant: 'success' })
+                                  toast({
+                                    title: t('accounting.toast.snapshotDeleted'),
+                                    variant: 'success',
+                                  })
                                 } catch (err) {
                                   toast({ title: (err as Error).message, variant: 'error' })
                                 }

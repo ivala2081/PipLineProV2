@@ -141,9 +141,9 @@ export function LedgerImportDialog({ open, onClose }: LedgerImportDialogProps) {
         </DialogHeader>
 
         {/* Step indicator */}
-        <div className="flex items-center justify-center gap-2 py-4">
+        <div className="flex items-center justify-center gap-sm py-4">
           {STEPS.map((s, idx) => (
-            <div key={s} className="flex items-center gap-2">
+            <div key={s} className="flex items-center gap-sm">
               <div
                 className={cn(
                   'flex size-7 items-center justify-center rounded-full text-xs font-medium transition-colors',
@@ -240,7 +240,7 @@ function StepUpload({ onParsed }: { onParsed: (result: LedgerImportParseResult) 
   )
 
   return (
-    <div className="flex flex-col items-center gap-6 py-4">
+    <div className="flex flex-col items-center gap-lg py-4">
       {/* Drop zone */}
       <button
         type="button"
@@ -257,7 +257,7 @@ function StepUpload({ onParsed }: { onParsed: (result: LedgerImportParseResult) 
           if (file) processFile(file)
         }}
         className={cn(
-          'flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-12 transition-colors',
+          'flex w-full flex-col items-center justify-center gap-sm rounded-xl border-2 border-dashed p-12 transition-colors',
           isDragging
             ? 'border-black/30 bg-black/5'
             : 'border-black/10 hover:border-black/20 hover:bg-black/[0.02]',
@@ -292,7 +292,7 @@ function StepUpload({ onParsed }: { onParsed: (result: LedgerImportParseResult) 
 
       {/* File info */}
       {fileName && !error && (
-        <div className="flex w-full items-center gap-3 rounded-lg border border-black/10 bg-black/[0.02] px-4 py-3">
+        <div className="flex w-full items-center gap-sm rounded-lg border border-black/10 bg-black/[0.02] px-4 py-3">
           <File size={20} className="text-black/40" />
           <div className="flex-1">
             <p className="text-sm font-medium text-black/80">{fileName}</p>
@@ -307,7 +307,7 @@ function StepUpload({ onParsed }: { onParsed: (result: LedgerImportParseResult) 
 
       {/* Error */}
       {error && (
-        <div className="flex w-full items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+        <div className="flex w-full items-start gap-sm rounded-lg border border-red-200 bg-red-50 px-4 py-3">
           <Warning size={20} className="mt-0.5 shrink-0 text-red-500" />
           <p className="text-sm text-red-700">{error}</p>
         </div>
@@ -355,9 +355,9 @@ function StepPreview({
     n.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-md">
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-md">
         <SummaryCard
           label={t('accounting.import.preview.total', 'Total')}
           value={parseResult.rows.length}
@@ -450,8 +450,8 @@ function StepPreview({
 
       {/* Import progress bar (shown during import) */}
       {isImporting && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm text-black/60">
+        <div className="space-y-sm">
+          <div className="flex items-center gap-sm text-sm text-black/60">
             <SpinnerGap size={16} className="animate-spin" />
             <span>
               {t('accounting.import.importing', 'Importing...')} —{' '}
@@ -576,7 +576,7 @@ function PreviewRow({
           <td colSpan={9} className="px-6 py-3">
             <div className="space-y-1">
               {row.issues.map((issue, idx) => (
-                <div key={idx} className="flex items-center gap-2 text-xs">
+                <div key={idx} className="flex items-center gap-sm text-xs">
                   <span
                     className={cn(
                       'rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase',
@@ -635,7 +635,7 @@ function StepResults({
   const success = progress.insertedRows > 0 && progress.failedRows === 0
 
   return (
-    <div className="flex flex-col items-center gap-6 py-8">
+    <div className="flex flex-col items-center gap-lg py-8">
       {/* Icon */}
       {allFailed && <XCircle size={56} weight="fill" className="text-red-500" />}
       {partial && <Warning size={56} weight="fill" className="text-amber-500" />}

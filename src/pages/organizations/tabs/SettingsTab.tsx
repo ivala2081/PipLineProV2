@@ -174,9 +174,9 @@ export function SettingsTab({ org, orgId }: SettingsTabProps) {
   })
 
   return (
-    <div className="space-y-6 pt-4">
+    <div className="space-y-lg pt-md">
       {/* Logo Settings */}
-      <Card padding="spacious" className="space-y-6 border border-black/5 bg-bg1">
+      <Card padding="spacious" className="space-y-lg border border-black/5 bg-bg1">
         <div>
           <h2 className="text-lg font-semibold">
             {t('organizations.settings.logoTitle', 'Organization Logo')}
@@ -189,7 +189,7 @@ export function SettingsTab({ org, orgId }: SettingsTabProps) {
           </p>
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-lg">
           {/* Logo Preview */}
           <div className="relative">
             <div className="flex size-24 items-center justify-center overflow-hidden rounded-xl border-2 border-black/10 bg-black/5">
@@ -202,7 +202,7 @@ export function SettingsTab({ org, orgId }: SettingsTabProps) {
           </div>
 
           {/* Upload Actions */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-sm">
             <input
               ref={fileInputRef}
               type="file"
@@ -242,15 +242,15 @@ export function SettingsTab({ org, orgId }: SettingsTabProps) {
       </Card>
 
       {/* General Settings */}
-      <Card padding="spacious" className="space-y-6 border border-black/5 bg-bg1">
+      <Card padding="spacious" className="space-y-lg border border-black/5 bg-bg1">
         <div>
           <h2 className="text-lg font-semibold">{t('organizations.settings.title')}</h2>
           <p className="text-sm text-black/60">{t('organizations.settings.subtitle')}</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-md">
           {/* Name */}
-          <div className="space-y-2">
+          <div className="space-y-sm">
             <Label>{t('organizations.settings.name')}</Label>
             <Input {...form.register('name')} />
             {form.formState.errors.name && (
@@ -259,7 +259,7 @@ export function SettingsTab({ org, orgId }: SettingsTabProps) {
           </div>
 
           {/* Slug (read-only) */}
-          <div className="space-y-2">
+          <div className="space-y-sm">
             <Label>{t('organizations.settings.slug')}</Label>
             <Input value={org.slug} disabled className="font-mono opacity-60" />
             <p className="text-xs text-black/40">{t('organizations.settings.slugDescription')}</p>
@@ -268,7 +268,7 @@ export function SettingsTab({ org, orgId }: SettingsTabProps) {
           <Separator />
 
           {/* Active Toggle */}
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-sm">
             <input
               type="checkbox"
               id="is-active"
@@ -284,7 +284,7 @@ export function SettingsTab({ org, orgId }: SettingsTabProps) {
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-sm pt-2">
             <Button
               type="button"
               variant="outline"
@@ -304,7 +304,7 @@ export function SettingsTab({ org, orgId }: SettingsTabProps) {
       </Card>
 
       {/* Danger Zone */}
-      <Card padding="spacious" className="space-y-4 border border-red/20 bg-red/5">
+      <Card padding="spacious" className="space-y-md border border-red/20 bg-red/5">
         <div>
           <h2 className="text-lg font-semibold text-red">
             {t('organizations.settings.dangerZone')}

@@ -36,9 +36,9 @@ export function PortfolioSummary({
   const { t } = useTranslation('pages')
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-md">
       {!isLoading && totalUsd > 0 && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
           {/* Token allocation */}
           <div className="rounded-xl border border-black/10 bg-bg1 px-5 py-4">
             <p className="mb-2.5 text-xs font-medium uppercase tracking-wider text-black/40">
@@ -59,10 +59,10 @@ export function PortfolioSummary({
             <div className="flex flex-wrap gap-x-4 gap-y-1">
               {tokenAllocation.slice(0, 6).map((tok, i) => (
                 <div key={tok.symbol} className="flex items-center gap-1.5">
-                  <span className={`inline-block size-2 rounded-full ${TOKEN_COLORS[i % TOKEN_COLORS.length]}`} />
-                  <span className="text-xs font-medium text-black/60">
-                    {tok.symbol}
-                  </span>
+                  <span
+                    className={`inline-block size-2 rounded-full ${TOKEN_COLORS[i % TOKEN_COLORS.length]}`}
+                  />
+                  <span className="text-xs font-medium text-black/60">{tok.symbol}</span>
                   <span className="font-mono text-xs tabular-nums text-black/35">
                     {tok.percent.toFixed(1)}%
                   </span>
@@ -96,7 +96,9 @@ export function PortfolioSummary({
                 const meta = CHAIN_META[ch.chain]
                 return (
                   <div key={ch.chain} className="flex items-center gap-1.5">
-                    <span className={`inline-block size-2 rounded-full ${meta?.color ?? 'bg-black/40'}`} />
+                    <span
+                      className={`inline-block size-2 rounded-full ${meta?.color ?? 'bg-black/40'}`}
+                    />
                     <span className="text-xs font-medium text-black/60">
                       {meta?.label ?? ch.chain}
                     </span>

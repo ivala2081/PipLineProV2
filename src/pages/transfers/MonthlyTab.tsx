@@ -109,28 +109,41 @@ function ChangeBadge({
 
 /* ── KPI Card ──────────────────────────────────────── */
 
+interface KpiBreakdownItem {
+  label: string
+  icon: React.ElementType
+  valueUsd: number
+}
+
 function KpiCard({
   label,
   icon: Icon,
   valueTry,
   valueUsd,
   prevValueTry,
+  prevValueUsd,
   suffix,
   color = 'neutral',
   lang,
   t,
+  primaryCurrency = 'try',
+  breakdown,
 }: {
   label: string
   icon: React.ElementType
   valueTry?: number
   valueUsd?: number
   prevValueTry?: number
+  prevValueUsd?: number
   suffix?: string
   color?: 'green' | 'red' | 'conditional' | 'neutral'
   lang: string
   t: (key: string) => string
+  primaryCurrency?: 'try' | 'usd'
+  breakdown?: KpiBreakdownItem[]
 }) {
-  const resolvedColor = color === 'conditional' ? ((valueTry ?? 0) >= 0 ? 'green' : 'red') : color
+  const referenceValue = primaryCurrency === 'usd' ? (valueUsd ?? 0) : (valueTry ?? 0)
+  const resolvedColor = color === 'conditional' ? (referenceValue >= 0 ? 'green' : 'red') : color
 
   const valueClass =
     resolvedColor === 'green'
@@ -138,6 +151,55 @@ function KpiCard({
       : resolvedColor === 'red'
         ? 'text-red'
         : 'text-black/80'
+
+  if (primaryCurrency === 'usd') {
+    return (
+      <div className="rounded-xl border border-black/10 bg-black/[0.015] px-4 py-3.5">
+        <div className="flex items-center gap-1.5">
+          <Icon size={14} className="text-black/30" />
+          <span className="text-[11px] font-medium uppercase tracking-wider text-black/40">
+            {label}
+          </span>
+        </div>
+        {/* USD — primary (large) */}
+        {valueUsd !== undefined && (
+          <p className={`mt-2 font-mono text-xl font-bold tabular-nums ${valueClass}`}>
+            {formatNumber(Math.abs(valueUsd), lang)}
+            <span className="ml-1 text-xs font-medium text-black/25">$</span>
+          </p>
+        )}
+        {/* TRY — secondary (small, muted) */}
+        {valueTry !== undefined && (
+          <p className="mt-0.5 font-mono text-[11px] tabular-nums text-black/30">
+            {formatNumber(Math.abs(valueTry), lang)} ₺
+          </p>
+        )}
+        {/* Breakdown rows */}
+        {breakdown && breakdown.length > 0 && (
+          <div className="mt-2.5 space-y-1 border-t border-black/[0.06] pt-2">
+            {breakdown.map((item) => (
+              <div key={item.label} className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1 min-w-0">
+                  <item.icon size={10} className="shrink-0 text-black/25" />
+                  <span className="truncate text-[10px] text-black/40">{item.label}</span>
+                </div>
+                <span className="shrink-0 font-mono text-[10px] font-semibold tabular-nums text-black/50">
+                  {formatNumber(Math.abs(item.valueUsd), lang)}&nbsp;$
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+        {valueUsd !== undefined && (
+          <ChangeBadge
+            current={Math.abs(valueUsd)}
+            previous={prevValueUsd !== undefined ? Math.abs(prevValueUsd) : undefined}
+            t={t}
+          />
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="rounded-xl border border-black/10 bg-black/[0.015] px-4 py-3.5">
@@ -196,7 +258,7 @@ function InsightPill({
 function KpiSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-md lg:grid-cols-4">
         {Array.from({ length: 8 }).map((_, i) => (
           <div key={i} className="rounded-xl border border-black/10 bg-black/[0.015] px-4 py-3.5">
             <Skeleton className="h-3 w-20 rounded" />
@@ -206,12 +268,12 @@ function KpiSkeleton() {
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-md lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <Skeleton key={i} className="h-14 rounded-lg" />
         ))}
       </div>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-md lg:grid-cols-2">
         <Skeleton className="h-[310px] rounded-xl" />
         <Skeleton className="h-[310px] rounded-xl" />
       </div>
@@ -253,12 +315,15 @@ export function MonthlyTab() {
     setIsUpdatingRate(true)
 
     try {
-      const { data: result, error } = await supabase.rpc('update_month_exchange_rate' as never, {
-        _org_id: currentOrg.id,
-        _year: year,
-        _month: month,
-        _new_rate: val,
-      } as never)
+      const { data: result, error } = await supabase.rpc(
+        'update_month_exchange_rate' as never,
+        {
+          _org_id: currentOrg.id,
+          _year: year,
+          _month: month,
+          _new_rate: val,
+        } as never,
+      )
 
       if (error) throw error
 
@@ -305,10 +370,10 @@ export function MonthlyTab() {
   const insights = data?.insights
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-lg">
       {/* Month picker + rate editor */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-sm">
           <Button variant="ghost" size="sm" onClick={goToPrevMonth} className="size-8 p-0">
             <CaretLeft size={16} weight="bold" />
           </Button>
@@ -328,16 +393,14 @@ export function MonthlyTab() {
 
         {/* Monthly rate editor */}
         {!isLoading && data && data.kpis.transfer_count > 0 && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-sm">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-black/30">
               {t('transfers.monthly.monthlyRate')}
             </span>
             {isUpdatingRate ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-sm">
                 <div className="size-3 animate-spin rounded-full border border-black/10 border-t-black/40" />
-                <span className="text-xs text-black/40">
-                  {t('transfers.monthly.rateUpdating')}
-                </span>
+                <span className="text-xs text-black/40">{t('transfers.monthly.rateUpdating')}</span>
               </div>
             ) : isEditingRate ? (
               <div className="flex items-center gap-1.5">
@@ -403,16 +466,30 @@ export function MonthlyTab() {
       {!isLoading && data && data.kpis.transfer_count > 0 && (
         <>
           {/* KPI cards */}
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-md lg:grid-cols-4">
             <KpiCard
               label={t('transfers.monthly.totalDeposits')}
               icon={ArrowDown}
               valueTry={data.kpis.total_deposits_try}
               valueUsd={data.kpis.total_deposits_usd}
               prevValueTry={prev?.total_deposits_try}
+              prevValueUsd={prev?.total_deposits_usd}
               color="green"
               lang={lang}
               t={t}
+              primaryCurrency="usd"
+              breakdown={[
+                {
+                  label: t('transfers.monthly.tether'),
+                  icon: CurrencyDollar,
+                  valueUsd: data.kpis.usdt_deposits_usd ?? 0,
+                },
+                {
+                  label: t('transfers.monthly.bankAndCC'),
+                  icon: Bank,
+                  valueUsd: data.kpis.bank_cc_deposits_usd ?? 0,
+                },
+              ]}
             />
             <KpiCard
               label={t('transfers.monthly.totalWithdrawals')}
@@ -420,9 +497,23 @@ export function MonthlyTab() {
               valueTry={data.kpis.total_withdrawals_try}
               valueUsd={data.kpis.total_withdrawals_usd}
               prevValueTry={prev?.total_withdrawals_try}
+              prevValueUsd={prev?.total_withdrawals_usd}
               color="red"
               lang={lang}
               t={t}
+              primaryCurrency="usd"
+              breakdown={[
+                {
+                  label: t('transfers.monthly.tether'),
+                  icon: CurrencyDollar,
+                  valueUsd: data.kpis.usdt_withdrawals_usd ?? 0,
+                },
+                {
+                  label: t('transfers.monthly.bankAndCC'),
+                  icon: Bank,
+                  valueUsd: data.kpis.bank_cc_withdrawals_usd ?? 0,
+                },
+              ]}
             />
             <KpiCard
               label={t('transfers.monthly.net')}
@@ -430,9 +521,26 @@ export function MonthlyTab() {
               valueTry={data.kpis.total_deposits_try - data.kpis.total_withdrawals_try}
               valueUsd={data.kpis.total_deposits_usd - data.kpis.total_withdrawals_usd}
               prevValueTry={prev ? prev.total_deposits_try - prev.total_withdrawals_try : undefined}
+              prevValueUsd={prev ? prev.total_deposits_usd - prev.total_withdrawals_usd : undefined}
               color="conditional"
               lang={lang}
               t={t}
+              primaryCurrency="usd"
+              breakdown={[
+                {
+                  label: t('transfers.monthly.tether'),
+                  icon: CurrencyDollar,
+                  valueUsd:
+                    (data.kpis.usdt_deposits_usd ?? 0) - (data.kpis.usdt_withdrawals_usd ?? 0),
+                },
+                {
+                  label: t('transfers.monthly.bankAndCC'),
+                  icon: Bank,
+                  valueUsd:
+                    (data.kpis.bank_cc_deposits_usd ?? 0) -
+                    (data.kpis.bank_cc_withdrawals_usd ?? 0),
+                },
+              ]}
             />
             <KpiCard
               label={t('transfers.monthly.bankVolume')}
@@ -453,12 +561,12 @@ export function MonthlyTab() {
               t={t}
             />
             <KpiCard
-              label={t('transfers.monthly.usdtVolume')}
+              label={t('transfers.monthly.usdtNet')}
               icon={CurrencyDollar}
-              valueTry={data.kpis.total_usdt_volume}
-              prevValueTry={prev?.total_usdt_volume}
+              valueTry={data.kpis.usdt_net}
+              prevValueTry={prev?.usdt_net}
               suffix="$"
-              color="neutral"
+              color="conditional"
               lang={lang}
               t={t}
             />
@@ -495,9 +603,49 @@ export function MonthlyTab() {
             </div>
           </div>
 
+          {/* USD summary row — USD ÇEVRİM / KOM. SON USD / FİNANS % */}
+          <div className="grid grid-cols-1 gap-md sm:grid-cols-3">
+            <KpiCard
+              label={t('transfers.monthly.usdCevirim')}
+              icon={CurrencyDollar}
+              valueUsd={data.kpis.usd_cevirim}
+              prevValueUsd={prev?.usd_cevirim}
+              color="conditional"
+              lang={lang}
+              t={t}
+              primaryCurrency="usd"
+            />
+            <KpiCard
+              label={t('transfers.monthly.komSonUsd')}
+              icon={CurrencyDollar}
+              valueUsd={data.kpis.kom_son_usd}
+              prevValueUsd={prev?.kom_son_usd}
+              color="conditional"
+              lang={lang}
+              t={t}
+              primaryCurrency="usd"
+            />
+            {/* Finans % — special card (no currency, shows percentage) */}
+            <div className="rounded-xl border border-black/10 bg-black/[0.015] px-4 py-3.5">
+              <div className="flex items-center gap-1.5">
+                <ChartLine size={14} className="text-black/30" />
+                <span className="text-[11px] font-medium uppercase tracking-wider text-black/40">
+                  {t('transfers.monthly.finansPct')}
+                </span>
+              </div>
+              <p className="mt-2 font-mono text-xl font-bold tabular-nums text-black/80">
+                {formatNumber(data.kpis.finans_pct, lang)}
+                <span className="ml-1 text-xs font-medium text-black/25">%</span>
+              </p>
+              {prev?.finans_pct !== undefined && (
+                <ChangeBadge current={data.kpis.finans_pct} previous={prev.finans_pct} t={t} />
+              )}
+            </div>
+          </div>
+
           {/* Insights strip */}
           {insights && (
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-md lg:grid-cols-4">
               <InsightPill
                 icon={Lightning}
                 label={t('transfers.monthly.peakDay')}

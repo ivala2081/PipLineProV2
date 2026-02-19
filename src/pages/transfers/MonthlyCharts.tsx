@@ -15,6 +15,7 @@ import { useTheme } from '@ds'
 import type {
   MonthlySummaryData,
   CategoryBreakdownItem,
+  DailyDetailedPoint,
 } from '@/hooks/queries/useMonthlyAnalysisQuery'
 
 function formatNumber(n: number, lang: string) {
@@ -89,7 +90,7 @@ function BreakdownRow({
           <span className="w-5 font-mono text-xs text-black/20">{rank}</span>
           <span className="text-[13px] font-medium text-black/70">{name}</span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-sm">
           <span className="font-mono text-[13px] font-semibold tabular-nums text-black/70">
             {formatNumber(value, lang)} {suffix}
           </span>
@@ -204,7 +205,7 @@ function CategoryBreakdownCard({
         {grouped.map((group) => (
           <div key={group.name} className="px-4 py-3">
             <p className="mb-2 text-sm font-medium text-black/70">{group.name}</p>
-            <div className="space-y-2">
+            <div className="space-y-sm">
               {/* Deposits */}
               {group.deposits > 0 && (
                 <div className="space-y-1">
@@ -261,6 +262,170 @@ function CategoryBreakdownCard({
   )
 }
 
+/* ── Daily breakdown table ─────────────────────────── */
+
+function fmtTry(n: number, lang: string) {
+  return n.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  })
+}
+
+function fmtUsd(n: number, lang: string) {
+  return n.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  })
+}
+
+function fmtPct(n: number | null) {
+  if (n === null || n === undefined) return '—'
+  return n.toFixed(2) + '%'
+}
+
+function fmtRate(n: number | null) {
+  if (n === null || n === undefined) return '—'
+  return n.toFixed(2)
+}
+
+function fmtDay(dateStr: string, lang: string) {
+  const d = new Date(dateStr + 'T00:00:00')
+  return d.toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+}
+
+interface DailyBreakdownTableProps {
+  rows: DailyDetailedPoint[]
+  lang: string
+}
+
+function DailyBreakdownTable({ rows, lang }: DailyBreakdownTableProps) {
+  const { t } = useTranslation('pages')
+
+  // Monthly totals (bottom row) — must be declared before any early return (Rules of Hooks)
+  const totals = useMemo(() => {
+    return (rows ?? []).reduce(
+      (acc, r) => ({
+        bank_try: acc.bank_try + r.bank_try,
+        kk_try: acc.kk_try + r.kk_try,
+        commission_try: acc.commission_try + r.commission_try,
+        usdt_net: acc.usdt_net + r.usdt_net,
+        usd_cevirim: acc.usd_cevirim + r.usd_cevirim,
+        kom_son_usd: acc.kom_son_usd + r.kom_son_usd,
+        commission_usd: acc.commission_usd + r.commission_usd,
+      }),
+      {
+        bank_try: 0,
+        kk_try: 0,
+        commission_try: 0,
+        usdt_net: 0,
+        usd_cevirim: 0,
+        kom_son_usd: 0,
+        commission_usd: 0,
+      },
+    )
+  }, [rows])
+
+  if (!rows || rows.length === 0) return null
+
+  const totalFinansPct =
+    totals.usd_cevirim > 0 ? (totals.commission_usd / totals.usd_cevirim) * 100 : null
+
+  const thCls =
+    'sticky top-0 z-10 bg-white/90 px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-black/40 whitespace-nowrap backdrop-blur'
+  const thClsLeft =
+    'sticky top-0 z-10 bg-white/90 px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-black/40 whitespace-nowrap backdrop-blur'
+  const tdCls =
+    'px-3 py-2 font-mono text-[12px] tabular-nums text-right text-black/70 whitespace-nowrap'
+  const tdClsLeft =
+    'px-3 py-2 font-mono text-[12px] tabular-nums text-left text-black/70 whitespace-nowrap'
+  const tdTotalCls =
+    'px-3 py-2 font-mono text-[12px] font-semibold tabular-nums text-right text-black/80 whitespace-nowrap bg-black/[0.02]'
+  const tdTotalClsLeft =
+    'px-3 py-2 font-mono text-[12px] font-semibold tabular-nums text-left text-black/80 whitespace-nowrap bg-black/[0.02]'
+
+  return (
+    <div>
+      <h3 className="mb-2 text-sm font-semibold text-black/60">
+        {t('transfers.monthly.dailyBreakdown')}
+      </h3>
+      <div className="overflow-x-auto rounded-xl border border-black/10">
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-black/[0.06]">
+              <th className={thClsLeft}>{t('transfers.monthly.date')}</th>
+              <th className={thCls}>{t('transfers.monthly.banka')}</th>
+              <th className={thCls}>{t('transfers.monthly.komisyon')}</th>
+              <th className={thCls}>{t('transfers.monthly.kk')}</th>
+              <th className={thCls}>{t('transfers.monthly.tether')}</th>
+              <th className={thCls}>{t('transfers.monthly.usdCevirim')}</th>
+              <th className={thCls}>{t('transfers.monthly.komSonUsd')}</th>
+              <th className={thCls}>{t('transfers.monthly.finansPct')}</th>
+              <th className={thCls}>{t('transfers.monthly.kur')}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-black/[0.04]">
+            {rows.map((row) => {
+              const isNegativeUsd = row.usd_cevirim < 0
+              return (
+                <tr key={row.day} className="hover:bg-black/[0.015] transition-colors">
+                  <td className={tdClsLeft}>{fmtDay(row.day, lang)}</td>
+                  <td className={tdCls}>
+                    {row.bank_try > 0 ? `₺${fmtTry(row.bank_try - row.kk_try, lang)}` : '—'}
+                  </td>
+                  <td className={tdCls}>
+                    {row.commission_try > 0 ? `₺${fmtTry(row.commission_try, lang)}` : '—'}
+                  </td>
+                  <td className={tdCls}>{row.kk_try > 0 ? `₺${fmtTry(row.kk_try, lang)}` : '—'}</td>
+                  <td
+                    className={`${tdCls} ${row.usdt_net < 0 ? 'text-red' : row.usdt_net > 0 ? 'text-black/70' : ''}`}
+                  >
+                    {row.usdt_net !== 0
+                      ? `${row.usdt_net < 0 ? '-' : ''}$${fmtUsd(Math.abs(row.usdt_net), lang)}`
+                      : '—'}
+                  </td>
+                  <td className={`${tdCls} ${isNegativeUsd ? 'text-red' : ''}`}>
+                    {`${row.usd_cevirim < 0 ? '-' : ''}$${fmtUsd(Math.abs(row.usd_cevirim), lang)}`}
+                  </td>
+                  <td className={`${tdCls} ${row.kom_son_usd < 0 ? 'text-red' : ''}`}>
+                    {`${row.kom_son_usd < 0 ? '-' : ''}$${fmtUsd(Math.abs(row.kom_son_usd), lang)}`}
+                  </td>
+                  <td className={tdCls}>{fmtPct(row.finans_pct)}</td>
+                  <td className={tdCls}>{fmtRate(row.avg_rate)}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+          <tfoot>
+            <tr className="border-t-2 border-black/10">
+              <td className={tdTotalClsLeft}>{t('transfers.monthly.total')}</td>
+              <td className={tdTotalCls}>{`₺${fmtTry(totals.bank_try - totals.kk_try, lang)}`}</td>
+              <td className={tdTotalCls}>{`₺${fmtTry(totals.commission_try, lang)}`}</td>
+              <td className={tdTotalCls}>
+                {totals.kk_try > 0 ? `₺${fmtTry(totals.kk_try, lang)}` : '—'}
+              </td>
+              <td className={`${tdTotalCls} ${totals.usdt_net < 0 ? 'text-red' : ''}`}>
+                {`${totals.usdt_net < 0 ? '-' : ''}$${fmtUsd(Math.abs(totals.usdt_net), lang)}`}
+              </td>
+              <td className={`${tdTotalCls} ${totals.usd_cevirim < 0 ? 'text-red' : ''}`}>
+                {`${totals.usd_cevirim < 0 ? '-' : ''}$${fmtUsd(Math.abs(totals.usd_cevirim), lang)}`}
+              </td>
+              <td className={`${tdTotalCls} ${totals.kom_son_usd < 0 ? 'text-red' : ''}`}>
+                {`${totals.kom_son_usd < 0 ? '-' : ''}$${fmtUsd(Math.abs(totals.kom_son_usd), lang)}`}
+              </td>
+              <td className={tdTotalCls}>{fmtPct(totalFinansPct)}</td>
+              <td className={tdTotalCls}>—</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 /* ── Main component ────────────────────────────────── */
 
 interface MonthlyChartsProps {
@@ -273,9 +438,12 @@ export function MonthlyCharts({ data, lang }: MonthlyChartsProps) {
   const ct = useChartTheme()
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-lg">
+      {/* Daily breakdown table */}
+      <DailyBreakdownTable rows={data.daily_detailed} lang={lang} />
+
       {/* Charts: Daily Volume + Daily Net */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-md lg:grid-cols-2">
         {/* Daily Volume Bar Chart */}
         <div>
           <h3 className="mb-2 text-sm font-semibold text-black/60">
@@ -362,7 +530,7 @@ export function MonthlyCharts({ data, lang }: MonthlyChartsProps) {
       </div>
 
       {/* Breakdowns */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-md lg:grid-cols-2">
         <BreakdownCard
           title={t('transfers.monthly.pspBreakdown')}
           items={data.psp_breakdown}

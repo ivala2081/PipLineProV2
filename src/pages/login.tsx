@@ -4,7 +4,16 @@ import { useTranslation } from 'react-i18next'
 import { Eye, EyeSlash, Sun, Moon, Globe } from '@phosphor-icons/react'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useToast } from '@/hooks/useToast'
-import { Button, Card, Input, FormMessage, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@ds'
+import {
+  Button,
+  Card,
+  Input,
+  FormMessage,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@ds'
 import { useTheme, useLocale } from '@ds/hooks'
 import { HCaptchaWidget } from '@/components/HCaptchaWidget'
 import { SuccessCheckmark } from '@/components/SuccessCheckmark'
@@ -205,177 +214,170 @@ export function LoginPage() {
   return (
     <TooltipProvider>
       <div className="relative flex min-h-screen items-center justify-center login-background px-4">
-      {/* Top-right controls */}
-      <div className="absolute right-4 top-4 flex items-center gap-2">
-        <Button
-          variant="gray"
-          size="sm"
-          onClick={toggleTheme}
-          aria-label="Toggle theme"
-        >
-          {resolvedTheme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-        </Button>
-        <Button
-          variant="gray"
-          size="sm"
-          onClick={() => changeLocale(nextLocale)}
-          aria-label="Change language"
-          leftContent={<Globe size={18} />}
-          label={localeNames[locale as keyof typeof localeNames]}
-        />
-      </div>
-
-      {/* Logo above card */}
-      <div className="flex w-full max-w-md flex-col items-center">
-        <img
-          src={resolvedTheme === 'dark' ? '/for-dark.png' : '/for-white.png'}
-          alt="PipLinePro"
-          className="mb-8 h-16 w-auto object-contain"
-        />
-
-      {/* Login card */}
-      <Card className="w-full space-y-6 bg-bg1 border border-black/10 shadow-lg">
-        {/* Header */}
-        <div className="space-y-2">
-          <h1 className="text-2xl font-semibold text-black">{t('login.title')}</h1>
-          <p className="text-sm text-black/60">{t('login.subtitle')}</p>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          {/* Email */}
-          <div className="space-y-1">
-            <Input
-              id="email"
-              type="email"
-              inputMode="email"
-              autoCapitalize="none"
-              autoCorrect="off"
-              placeholder={t('login.email')}
-              value={email}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                setEmail(e.target.value)
-                if (emailError) setEmailError(handleEmailValidation(e.target.value))
-              }}
-              onBlur={() => setEmailError(handleEmailValidation(email))}
-              required
-              autoComplete="email"
-              aria-invalid={!!emailError}
-              disabled={loading}
-              inputSize="lg"
-              className="bg-black/5"
-            />
-            {emailError && <FormMessage error>{emailError}</FormMessage>}
-            {emailSuggestion && !emailError && (
-              <p className="text-xs text-blue">
-                {t('login.emailSuggestion', { domain: emailSuggestion })}
-              </p>
-            )}
-          </div>
-
-          {/* Password */}
-          <div className="space-y-1">
-            <div className="relative">
-              <Input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                inputMode="text"
-                autoCapitalize="none"
-                autoCorrect="off"
-                placeholder={t('login.password')}
-                value={password}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setPassword(e.target.value)
-                  if (passwordError) setPasswordError(handlePasswordValidation(e.target.value))
-                }}
-                onBlur={() => setPasswordError(handlePasswordValidation(password))}
-                required
-                autoComplete="current-password"
-                inputSize="lg"
-                className="bg-black/5 pr-12"
-                aria-invalid={!!passwordError}
-                disabled={loading}
-              />
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-black/40 hover:text-black/80 transition-colors"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    disabled={loading}
-                  >
-                    {showPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {t('login.showPasswordTooltip')}
-                </TooltipContent>
-              </Tooltip>
-            </div>
-            {passwordError && <FormMessage error>{passwordError}</FormMessage>}
-          </div>
-
-          {/* Remember me */}
-          <label className="flex items-center gap-2 cursor-pointer select-none min-h-[44px]">
-            <input
-              type="checkbox"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              className="h-4 w-4 rounded border-black/20 accent-brand"
-              disabled={loading}
-            />
-            <span className="text-sm text-black/60">{t('login.rememberMe')}</span>
-          </label>
-
-          {/* CAPTCHA */}
-          {showCaptcha && (
-            <div className="flex justify-center">
-              <HCaptchaWidget
-                onVerify={handleCaptchaVerify}
-                onExpire={handleCaptchaExpire}
-                size="normal"
-              />
-            </div>
-          )}
-
-          {/* Server error / rate limit */}
-          {serverError && (
-            <FormMessage error>
-              {isLocked
-                ? t('login.errorRateLimit', { seconds: lockoutRemaining })
-                : serverError}
-            </FormMessage>
-          )}
-
-          {/* Submit */}
-          <Button
-            type="submit"
-            variant="filled"
-            size="lg"
-            disabled={loading || isLocked}
-            className="w-full transition-all hover:scale-[1.02]"
-          >
-            {loading ? (
-              <span className="font-semibold">{t('login.signingIn')}</span>
-            ) : (
-              <span className="font-semibold">{t('login.submit')}</span>
-            )}
+        {/* Top-right controls */}
+        <div className="absolute right-4 top-4 flex items-center gap-sm">
+          <Button variant="gray" size="sm" onClick={toggleTheme} aria-label="Toggle theme">
+            {resolvedTheme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </Button>
-        </form>
-
-        {/* Forgot password */}
-        <div className="text-center">
-          <Link
-            to="/forgot-password"
-            className="text-sm text-brand underline-offset-4 transition-colors hover:underline min-h-[44px] inline-flex items-center"
-          >
-            {t('login.forgotPassword')}
-          </Link>
+          <Button
+            variant="gray"
+            size="sm"
+            onClick={() => changeLocale(nextLocale)}
+            aria-label="Change language"
+            leftContent={<Globe size={18} />}
+            label={localeNames[locale as keyof typeof localeNames]}
+          />
         </div>
-      </Card>
-        <span className="mt-4 text-xs text-black/30">V2.1</span>
-      </div>
+
+        {/* Logo above card */}
+        <div className="flex w-full max-w-md flex-col items-center">
+          <img
+            src={resolvedTheme === 'dark' ? '/for-dark.png' : '/for-white.png'}
+            alt="PipLinePro"
+            className="mb-8 h-16 w-auto object-contain"
+          />
+
+          {/* Login card */}
+          <Card className="w-full space-y-lg bg-bg1 border border-black/10 shadow-lg">
+            {/* Header */}
+            <div className="space-y-sm">
+              <h1 className="text-2xl font-semibold text-black">{t('login.title')}</h1>
+              <p className="text-sm text-black/60">{t('login.subtitle')}</p>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-md" noValidate>
+              {/* Email */}
+              <div className="space-y-1">
+                <Input
+                  id="email"
+                  type="email"
+                  inputMode="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  placeholder={t('login.email')}
+                  value={email}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setEmail(e.target.value)
+                    if (emailError) setEmailError(handleEmailValidation(e.target.value))
+                  }}
+                  onBlur={() => setEmailError(handleEmailValidation(email))}
+                  required
+                  autoComplete="email"
+                  aria-invalid={!!emailError}
+                  disabled={loading}
+                  inputSize="lg"
+                  className="bg-black/5"
+                />
+                {emailError && <FormMessage error>{emailError}</FormMessage>}
+                {emailSuggestion && !emailError && (
+                  <p className="text-xs text-blue">
+                    {t('login.emailSuggestion', { domain: emailSuggestion })}
+                  </p>
+                )}
+              </div>
+
+              {/* Password */}
+              <div className="space-y-1">
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    inputMode="text"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    placeholder={t('login.password')}
+                    value={password}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      setPassword(e.target.value)
+                      if (passwordError) setPasswordError(handlePasswordValidation(e.target.value))
+                    }}
+                    onBlur={() => setPasswordError(handlePasswordValidation(password))}
+                    required
+                    autoComplete="current-password"
+                    inputSize="lg"
+                    className="bg-black/5 pr-12"
+                    aria-invalid={!!passwordError}
+                    disabled={loading}
+                  />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-black/40 hover:text-black/80 transition-colors"
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        disabled={loading}
+                      >
+                        {showPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>{t('login.showPasswordTooltip')}</TooltipContent>
+                  </Tooltip>
+                </div>
+                {passwordError && <FormMessage error>{passwordError}</FormMessage>}
+              </div>
+
+              {/* Remember me */}
+              <label className="flex items-center gap-sm cursor-pointer select-none min-h-[44px]">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 rounded border-black/20 accent-brand"
+                  disabled={loading}
+                />
+                <span className="text-sm text-black/60">{t('login.rememberMe')}</span>
+              </label>
+
+              {/* CAPTCHA */}
+              {showCaptcha && (
+                <div className="flex justify-center">
+                  <HCaptchaWidget
+                    onVerify={handleCaptchaVerify}
+                    onExpire={handleCaptchaExpire}
+                    size="normal"
+                  />
+                </div>
+              )}
+
+              {/* Server error / rate limit */}
+              {serverError && (
+                <FormMessage error>
+                  {isLocked
+                    ? t('login.errorRateLimit', { seconds: lockoutRemaining })
+                    : serverError}
+                </FormMessage>
+              )}
+
+              {/* Submit */}
+              <Button
+                type="submit"
+                variant="filled"
+                size="lg"
+                disabled={loading || isLocked}
+                className="w-full transition-all hover:scale-[1.02]"
+              >
+                {loading ? (
+                  <span className="font-semibold">{t('login.signingIn')}</span>
+                ) : (
+                  <span className="font-semibold">{t('login.submit')}</span>
+                )}
+              </Button>
+            </form>
+
+            {/* Forgot password */}
+            <div className="text-center">
+              <Link
+                to="/forgot-password"
+                className="text-sm text-brand underline-offset-4 transition-colors hover:underline min-h-[44px] inline-flex items-center"
+              >
+                {t('login.forgotPassword')}
+              </Link>
+            </div>
+          </Card>
+          <span className="mt-4 text-xs text-black/30">V2.1</span>
+        </div>
       </div>
     </TooltipProvider>
   )

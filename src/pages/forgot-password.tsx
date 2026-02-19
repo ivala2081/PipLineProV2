@@ -92,13 +92,8 @@ export function ForgotPasswordPage() {
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-bg1 px-4">
       {/* Top-right controls */}
-      <div className="absolute right-4 top-4 flex items-center gap-2">
-        <Button
-          variant="gray"
-          size="sm"
-          onClick={toggleTheme}
-          aria-label="Toggle theme"
-        >
+      <div className="absolute right-4 top-4 flex items-center gap-sm">
+        <Button variant="gray" size="sm" onClick={toggleTheme} aria-label="Toggle theme">
           {resolvedTheme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
         </Button>
         <Button
@@ -119,88 +114,88 @@ export function ForgotPasswordPage() {
           className="mb-8 h-16 w-auto object-contain"
         />
 
-      <Card className="w-full space-y-6 bg-bg1 border border-black/10">
-        {/* Header */}
-        <div className="space-y-2">
-          <h1 className="text-2xl font-semibold text-black">{t('forgotPassword.title')}</h1>
-          <p className="text-sm text-black/60">{t('forgotPassword.subtitle')}</p>
-        </div>
-
-        {sent ? (
-          <div className="space-y-4">
-            <FormMessage error={false}>{t('forgotPassword.success')}</FormMessage>
-
-            {/* Resend button with cooldown */}
-            <Button
-              variant="gray"
-              size="lg"
-              disabled={loading || cooldown > 0}
-              className="w-full"
-              onClick={handleResend}
-            >
-              {loading ? (
-                <CircleNotch size={20} className="animate-spin" />
-              ) : cooldown > 0 ? (
-                <span className="text-sm text-black/40">
-                  {t('forgotPassword.resendIn', { seconds: cooldown })}
-                </span>
-              ) : (
-                <span className="font-semibold">{t('forgotPassword.resend')}</span>
-              )}
-            </Button>
+        <Card className="w-full space-y-lg bg-bg1 border border-black/10">
+          {/* Header */}
+          <div className="space-y-sm">
+            <h1 className="text-2xl font-semibold text-black">{t('forgotPassword.title')}</h1>
+            <p className="text-sm text-black/60">{t('forgotPassword.subtitle')}</p>
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-            <div className="space-y-1">
-              <Input
-                id="email"
-                type="email"
-                inputMode="email"
-                autoCapitalize="none"
-                autoCorrect="off"
-                title={t('forgotPassword.email')}
-                placeholder=" "
-                value={email}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setEmail(e.target.value)
-                  if (emailError) setEmailError(validateEmail(e.target.value))
-                }}
-                onBlur={() => setEmailError(validateEmail(email))}
-                required
-                autoComplete="email"
-                aria-invalid={!!emailError}
-                inputSize="lg"
-                className="bg-black/5"
-              />
-              {emailError && <FormMessage error>{emailError}</FormMessage>}
+
+          {sent ? (
+            <div className="space-y-md">
+              <FormMessage error={false}>{t('forgotPassword.success')}</FormMessage>
+
+              {/* Resend button with cooldown */}
+              <Button
+                variant="gray"
+                size="lg"
+                disabled={loading || cooldown > 0}
+                className="w-full"
+                onClick={handleResend}
+              >
+                {loading ? (
+                  <CircleNotch size={20} className="animate-spin" />
+                ) : cooldown > 0 ? (
+                  <span className="text-sm text-black/40">
+                    {t('forgotPassword.resendIn', { seconds: cooldown })}
+                  </span>
+                ) : (
+                  <span className="font-semibold">{t('forgotPassword.resend')}</span>
+                )}
+              </Button>
             </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-md" noValidate>
+              <div className="space-y-1">
+                <Input
+                  id="email"
+                  type="email"
+                  inputMode="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  title={t('forgotPassword.email')}
+                  placeholder=" "
+                  value={email}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setEmail(e.target.value)
+                    if (emailError) setEmailError(validateEmail(e.target.value))
+                  }}
+                  onBlur={() => setEmailError(validateEmail(email))}
+                  required
+                  autoComplete="email"
+                  aria-invalid={!!emailError}
+                  inputSize="lg"
+                  className="bg-black/5"
+                />
+                {emailError && <FormMessage error>{emailError}</FormMessage>}
+              </div>
 
-            <Button
-              type="submit"
-              variant="filled"
-              size="lg"
-              disabled={loading}
-              className="w-full"
+              <Button
+                type="submit"
+                variant="filled"
+                size="lg"
+                disabled={loading}
+                className="w-full"
+              >
+                {loading ? (
+                  <CircleNotch size={20} className="animate-spin" />
+                ) : (
+                  <span className="font-semibold">{t('forgotPassword.submit')}</span>
+                )}
+              </Button>
+            </form>
+          )}
+
+          {/* Back to login */}
+          <div className="text-center">
+            <Link
+              to="/login"
+              className="text-sm text-brand underline-offset-4 transition-colors hover:underline"
             >
-              {loading ? (
-                <CircleNotch size={20} className="animate-spin" />
-              ) : (
-                <span className="font-semibold">{t('forgotPassword.submit')}</span>
-              )}
-            </Button>
-          </form>
-        )}
-
-        {/* Back to login */}
-        <div className="text-center">
-          <Link
-            to="/login"
-            className="text-sm text-brand underline-offset-4 transition-colors hover:underline"
-          >
-            {t('forgotPassword.backToLogin')}
-          </Link>
-        </div>
-      </Card>
+              {t('forgotPassword.backToLogin')}
+            </Link>
+          </div>
+        </Card>
       </div>
     </div>
   )

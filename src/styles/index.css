@@ -1,4 +1,7 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+
+/* Tailwind dark: variant – use data-theme so theme toggle affects all components */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
 /* ==========================================================================
    SnowUI / ByeWind Design System – Global Tokens
@@ -6,7 +9,68 @@
 
 @theme {
   /* ---- Font ---- */
-  --font-normal: "Inter", sans-serif;
+  --font-normal: 'Inter', sans-serif;
+
+  /* ---- Spacing scale (4px base unit) ----
+   * These generate Tailwind utilities automatically:
+   *   gap-xs, gap-sm, gap-md, gap-card, gap-lg, gap-xl, gap-2xl
+   *   p-xs, p-sm, p-md, p-card, p-lg, p-xl, p-2xl
+   *   space-x-*, space-y-*, m-*, w-*, h-* … all spacing utilities
+   *
+   * Usage rules:
+   *   xs   (4px)  — icon + label gap, tight inline elements
+   *   sm   (8px)  — button groups, action rows, row-level gaps
+   *   md   (16px) — filter grids, card inner sections, form columns
+   *   card (20px) — Card component default padding only
+   *   lg   (24px) — page-section gap, major vertical groups
+   *   xl   (32px) — page-level separation (rare)
+   *   2xl  (48px) — hero / major layout blocks (rare)
+   *
+   * Do NOT use bare numeric classes (gap-4, space-y-6, etc.) for
+   * structural spacing — use these named tokens instead.
+   * Fine-grained visual tweaks (gap-1.5, py-2.5) are acceptable.
+   * ------------------------------------------------------------ */
+  --spacing-xs: 0.25rem; /* 4px  */
+  --spacing-sm: 0.5rem; /* 8px  */
+  --spacing-md: 1rem; /* 16px */
+  --spacing-card: 1.25rem; /* 20px */
+  --spacing-lg: 1.5rem; /* 24px */
+  --spacing-xl: 2rem; /* 32px */
+  --spacing-2xl: 3rem; /* 48px */
+
+  /* ---- Container / max-width scale ----
+   * Named spacing tokens (--spacing-sm/md/lg/xl/2xl) collide with
+   * Tailwind v4's max-w-* lookup order (spacing > container).
+   * Defining explicit --max-width-* restores the correct container sizes.
+   * See: https://github.com/tailwindlabs/tailwindcss/discussions/17777
+   * ------------------------------------------------------------ */
+  --container-3xs: 16rem;
+  --container-2xs: 18rem;
+  --container-xs: 20rem;
+  --container-sm: 24rem;
+  --container-md: 28rem;
+  --container-lg: 32rem;
+  --container-xl: 36rem;
+  --container-2xl: 42rem;
+  --container-3xl: 48rem;
+  --container-4xl: 56rem;
+  --container-5xl: 64rem;
+  --container-6xl: 72rem;
+  --container-7xl: 80rem;
+
+  --max-width-3xs: var(--container-3xs);
+  --max-width-2xs: var(--container-2xs);
+  --max-width-xs: var(--container-xs);
+  --max-width-sm: var(--container-sm);
+  --max-width-md: var(--container-md);
+  --max-width-lg: var(--container-lg);
+  --max-width-xl: var(--container-xl);
+  --max-width-2xl: var(--container-2xl);
+  --max-width-3xl: var(--container-3xl);
+  --max-width-4xl: var(--container-4xl);
+  --max-width-5xl: var(--container-5xl);
+  --max-width-6xl: var(--container-6xl);
+  --max-width-7xl: var(--container-7xl);
 
   /* ---- Theme-aware colors (light-mode defaults, overridden at runtime for dark) ---- */
   --color-black: #000000;
@@ -52,78 +116,160 @@
    ========================================================================== */
 
 @keyframes accordion-down {
-  from { height: 0; opacity: 0; }
-  to { height: var(--radix-accordion-content-height); opacity: 1; }
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+    opacity: 1;
+  }
 }
 
 @keyframes accordion-up {
-  from { height: var(--radix-accordion-content-height); opacity: 1; }
-  to { height: 0; opacity: 0; }
+  from {
+    height: var(--radix-accordion-content-height);
+    opacity: 1;
+  }
+  to {
+    height: 0;
+    opacity: 0;
+  }
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes fade-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 @keyframes slide-in-from-top {
-  from { transform: translateY(-4px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(-4px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 @keyframes slide-in-from-right {
-  from { transform: translateX(4px); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from {
+    transform: translateX(4px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 @keyframes slide-in-from-left {
-  from { transform: translateX(-4px); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from {
+    transform: translateX(-4px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 @keyframes slide-in-from-bottom {
-  from { transform: translateY(4px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(4px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 @keyframes slide-out-to-top {
-  from { transform: translateY(0); opacity: 1; }
-  to { transform: translateY(-4px); opacity: 0; }
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-4px);
+    opacity: 0;
+  }
 }
 
 @keyframes slide-out-to-right {
-  from { transform: translateX(0); opacity: 1; }
-  to { transform: translateX(4px); opacity: 0; }
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(4px);
+    opacity: 0;
+  }
 }
 
 @keyframes slide-out-to-left {
-  from { transform: translateX(0); opacity: 1; }
-  to { transform: translateX(-4px); opacity: 0; }
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-4px);
+    opacity: 0;
+  }
 }
 
 @keyframes slide-out-to-bottom {
-  from { transform: translateY(0); opacity: 1; }
-  to { transform: translateY(4px); opacity: 0; }
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(4px);
+    opacity: 0;
+  }
 }
 
 @keyframes zoom-in-95 {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 @keyframes zoom-out-95 {
-  from { transform: scale(1); opacity: 1; }
-  to { transform: scale(0.95); opacity: 0; }
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.95);
+    opacity: 0;
+  }
 }
 
 /* Respect prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
-  *, ::before, ::after {
+  *,
+  ::before,
+  ::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -135,7 +281,7 @@
    ========================================================================== */
 
 @layer base {
-  [data-theme="dark"] {
+  [data-theme='dark'] {
     --color-black: #e6e9f2;
     --color-white: #0f141f;
     --color-brand: #5aa6c8;
@@ -147,12 +293,12 @@
     color-scheme: dark;
   }
 
-  [data-theme="light"] {
+  [data-theme='light'] {
     color-scheme: light;
   }
 
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
+    :root:not([data-theme='light']) {
       --color-black: #e6e9f2;
       --color-white: #0f141f;
       --color-brand: #5aa6c8;
@@ -180,7 +326,6 @@
   }
 }
 
-
 /* ==========================================================================
    Utility Overrides
    ========================================================================== */
@@ -191,27 +336,27 @@
   }
 
   /* Commission amount: solid text in dark mode (no transparency) */
-  [data-theme="dark"] .commission-amount {
+  [data-theme='dark'] .commission-amount {
     color: var(--color-black);
   }
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .commission-amount {
+    :root:not([data-theme='light']) .commission-amount {
       color: var(--color-black);
     }
   }
 
   /* Transfers table: light theme = black text, dark theme = light text (amount & net excluded) */
-  [data-theme="light"] .transfers-table-data,
-  [data-theme="light"] .transfers-table-data * {
+  [data-theme='light'] .transfers-table-data,
+  [data-theme='light'] .transfers-table-data * {
     color: var(--color-black);
   }
-  [data-theme="dark"] .transfers-table-data,
-  [data-theme="dark"] .transfers-table-data * {
+  [data-theme='dark'] .transfers-table-data,
+  [data-theme='dark'] .transfers-table-data * {
     color: var(--color-black);
   }
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .transfers-table-data,
-    :root:not([data-theme="light"]) .transfers-table-data * {
+    :root:not([data-theme='light']) .transfers-table-data,
+    :root:not([data-theme='light']) .transfers-table-data * {
       color: var(--color-black);
     }
   }
@@ -226,19 +371,19 @@
     background-color: var(--color-bg5);
   }
 
-  [data-theme="dark"] .ui-surface {
+  [data-theme='dark'] .ui-surface {
     background-color: color-mix(in srgb, var(--color-bg5) 90%, var(--color-bg2) 10%);
     box-shadow: 0 10px 26px rgba(2, 8, 20, 0.28);
   }
 
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .ui-surface {
+    :root:not([data-theme='light']) .ui-surface {
       background-color: color-mix(in srgb, var(--color-bg5) 90%, var(--color-bg2) 10%);
       box-shadow: 0 10px 26px rgba(2, 8, 20, 0.28);
     }
   }
 
-  input[type="search"]::-webkit-search-cancel-button {
+  input[type='search']::-webkit-search-cancel-button {
     -webkit-appearance: none;
     height: 16px;
     width: 16px;
@@ -247,12 +392,12 @@
     pointer-events: none;
   }
 
-  input[type="search"]:focus::-webkit-search-cancel-button {
+  input[type='search']:focus::-webkit-search-cancel-button {
     opacity: 0.2;
     pointer-events: all;
   }
 
-  input[type="number"]::-webkit-inner-spin-button {
+  input[type='number']::-webkit-inner-spin-button {
     appearance: none;
   }
 
@@ -263,14 +408,14 @@
       radial-gradient(circle at 80% 80%, rgba(146, 191, 255, 0.04) 0%, transparent 50%);
   }
 
-  [data-theme="dark"] .login-background {
+  [data-theme='dark'] .login-background {
     background-image:
       radial-gradient(circle at 20% 50%, rgba(90, 166, 200, 0.05) 0%, transparent 50%),
       radial-gradient(circle at 80% 80%, rgba(146, 191, 255, 0.03) 0%, transparent 50%);
   }
 
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .login-background {
+    :root:not([data-theme='light']) .login-background {
       background-image:
         radial-gradient(circle at 20% 50%, rgba(90, 166, 200, 0.05) 0%, transparent 50%),
         radial-gradient(circle at 80% 80%, rgba(146, 191, 255, 0.03) 0%, transparent 50%);

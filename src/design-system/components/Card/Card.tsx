@@ -2,9 +2,7 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import type { ComponentProps, FC } from 'react'
 import { cn } from '@ds/utils'
 
-const cardStyles = cva(
-  'ui-surface rounded-2xl border border-black/10 bg-bg5 text-black',
-  {
+const cardStyles = cva('ui-surface rounded-2xl border border-black/10 bg-bg5 text-black', {
   variants: {
     bordered: {
       true: 'border-black/25',
@@ -12,9 +10,9 @@ const cardStyles = cva(
     },
     padding: {
       none: '',
-      compact: 'p-4',
-      default: 'p-5',
-      spacious: 'p-6',
+      compact: 'p-md' /* 16px — data-dense panels */,
+      default: 'p-card' /* 20px — standard card */,
+      spacious: 'p-lg' /* 24px — content-heavy blocks */,
     },
   },
   defaultVariants: {

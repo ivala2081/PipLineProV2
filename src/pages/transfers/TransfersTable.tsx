@@ -32,7 +32,6 @@ import {
   Skeleton,
   Button,
   Input,
-  DateInput,
   Select,
   SelectTrigger,
   SelectContent,
@@ -44,6 +43,7 @@ import {
   PaginationLink,
   PaginationEllipsis,
   EmptyState,
+  DatePicker,
 } from '@ds'
 
 /* ── Props ──────────────────────────────────────────── */
@@ -250,10 +250,10 @@ export function TransfersTable({
   /* ── Filter bar ──────────────────────────────── */
 
   const filterBar = (
-    <div className="space-y-2 mb-4">
+    <div className="space-y-sm mb-md">
       {/* Search + toggle row */}
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1">
+      <div className="flex items-center gap-sm">
+        <div className="relative flex-1 min-w-[280px] sm:min-w-[320px]">
           <MagnifyingGlass
             size={15}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-black/35"
@@ -265,7 +265,7 @@ export function TransfersTable({
             placeholder={t('transfers.filters.search', 'Search name, CRM ID, META ID...')}
             value={filters.search ?? ''}
             onChange={(e) => onFilterChange('search', e.target.value || null)}
-            className="h-8 pl-8 pr-8 text-xs"
+            className="h-8 w-full pl-8 pr-8 text-xs"
           />
           {filters.search && (
             <button
@@ -277,27 +277,14 @@ export function TransfersTable({
             </button>
           )}
         </div>
-        {/* Quick date picker */}
-        {(() => {
-          const hasDate = filters.dateFrom != null && filters.dateFrom === filters.dateTo
-          return (
-            <DateInput
-              inputSize="sm"
-              autoComplete="off"
-              value={hasDate ? filters.dateFrom! : ''}
-              onChange={(e) => {
-                const v = e.target.value || null
-                onFilterChange('dateFrom', v)
-                onFilterChange('dateTo', v)
-              }}
-              onClear={() => {
-                onFilterChange('dateFrom', null)
-                onFilterChange('dateTo', null)
-              }}
-              className="h-8 w-[9.5rem] text-xs"
-            />
-          )
-        })()}
+        <DatePicker
+          dateFrom={filters.dateFrom}
+          dateTo={filters.dateTo}
+          onChange={(from, to) => {
+            onFilterChange('dateFrom', from)
+            onFilterChange('dateTo', to)
+          }}
+        />
 
         <Button
           variant={hasActiveFilters ? 'filled' : 'outline'}
@@ -329,7 +316,7 @@ export function TransfersTable({
       {/* Expanded filter dropdowns */}
       {filtersOpen && (
         <div className="rounded-lg border border-black/[0.08] bg-gradient-to-b from-black/[0.02] to-black/[0.015] p-4">
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-md md:grid-cols-2 lg:grid-cols-4">
             {/* Transaction Type */}
             <div className="space-y-1.5">
               <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
@@ -466,95 +453,13 @@ export function TransfersTable({
                 className="h-9 w-full text-xs"
               />
             </div>
-
-            {/* Date From */}
-            <div className="space-y-1.5">
-              <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
-                {t('transfers.filters.from', 'Date From')}
-              </label>
-              <DateInput
-                inputSize="sm"
-                autoComplete="off"
-                value={filters.dateFrom ?? ''}
-                onChange={(e) => onFilterChange('dateFrom', e.target.value || null)}
-                className="h-9 w-full text-xs"
-              />
-            </div>
-
-            {/* Date To */}
-            <div className="space-y-1.5">
-              <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
-                {t('transfers.filters.to', 'Date To')}
-              </label>
-              <DateInput
-                inputSize="sm"
-                autoComplete="off"
-                value={filters.dateTo ?? ''}
-                onChange={(e) => onFilterChange('dateTo', e.target.value || null)}
-                className="h-9 w-full text-xs"
-              />
-            </div>
           </div>
         </div>
       )}
     </div>
   )
 
-  /* ── Loading skeleton ─────────────────────────── */
-
-  if (isLoading) {
-    return (
-      <div className="space-y-3">
-        {filterBar}
-        {Array.from({ length: 2 }).map((_, g) => (
-          <div key={g} className="overflow-hidden rounded-xl border border-black/10">
-            <div className="flex items-center justify-between bg-black/[0.02] px-4 py-2.5">
-              <Skeleton className="h-4 w-48 rounded-md" />
-              <Skeleton className="h-7 w-20 rounded-md" />
-            </div>
-            <div className="divide-y divide-black/[0.04]">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-4 px-4 py-3.5">
-                  <Skeleton className="h-4 w-28 rounded-md" />
-                  <Skeleton className="h-4 w-20 rounded-md" />
-                  <Skeleton className="h-4 w-12 rounded-md" />
-                  <Skeleton className="h-5 w-16 rounded-full" />
-                  <Skeleton className="ml-auto h-4 w-20 rounded-md" />
-                  <Skeleton className="h-4 w-16 rounded-md" />
-                  <Skeleton className="h-4 w-20 rounded-md" />
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    )
-  }
-
-  /* ── Empty state ──────────────────────────────── */
-
-  if (transfers.length === 0) {
-    return (
-      <div className="space-y-3">
-        {filterBar}
-        <EmptyState
-          icon={ArrowUp}
-          title={
-            hasActiveFilters
-              ? t('transfers.filters.noResults', 'No matching transfers')
-              : t('transfers.empty.title')
-          }
-          description={
-            hasActiveFilters
-              ? t('transfers.filters.noResultsDescription', 'Try adjusting your filters.')
-              : t('transfers.empty.description')
-          }
-        />
-      </div>
-    )
-  }
-
-  /* ── Group transfers by date ──────────────────── */
+  /* ── Group transfers by date (for data view) ───── */
 
   const groups = groupByDate(transfers, lang)
 
@@ -575,123 +480,172 @@ export function TransfersTable({
 
   return (
     <>
-      {filterBar}
-      {/* Date-grouped cards */}
-      <div className="space-y-3">
-        {groups.map((group) => (
-          <div key={group.dateKey} className="overflow-hidden rounded-xl border border-black/10">
-            {/* Date header */}
-            <div className="flex items-center justify-between bg-black/[0.02] px-4 py-2.5">
-              <div className="flex items-center gap-2.5">
-                <span className="text-sm font-semibold text-black/70">{group.label}</span>
-                <Tag variant="default" className="h-5 text-xs">
-                  {dateCounts[group.dateKey] ?? group.transfers.length}{' '}
-                  {t('transfers.summary.transfersLabel')}
-                </Tag>
+      <div className="space-y-sm">
+        {filterBar}
+        {isLoading ? (
+          Array.from({ length: 2 }).map((_, g) => (
+            <div key={g} className="overflow-hidden rounded-xl border border-black/10">
+              <div className="flex items-center justify-between bg-black/[0.02] px-4 py-2.5">
+                <Skeleton className="h-4 w-48 rounded-md" />
+                <Skeleton className="h-7 w-20 rounded-md" />
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1.5 px-2.5 text-xs font-medium text-black/40 hover:text-black/70"
-                onClick={() => handleOpenSummary(group)}
+              <div className="divide-y divide-black/[0.04]">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 px-4 py-3.5">
+                    <Skeleton className="h-4 w-28 rounded-md" />
+                    <Skeleton className="h-4 w-20 rounded-md" />
+                    <Skeleton className="h-4 w-12 rounded-md" />
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                    <Skeleton className="ml-auto h-4 w-20 rounded-md" />
+                    <Skeleton className="h-4 w-16 rounded-md" />
+                    <Skeleton className="h-4 w-20 rounded-md" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))
+        ) : transfers.length === 0 ? (
+          <EmptyState
+            icon={ArrowUp}
+            title={
+              hasActiveFilters
+                ? t('transfers.filters.noResults', 'No matching transfers')
+                : t('transfers.empty.title')
+            }
+            description={
+              hasActiveFilters
+                ? t('transfers.filters.noResultsDescription', 'Try adjusting your filters.')
+                : t('transfers.empty.description')
+            }
+          />
+        ) : (
+          <>
+            {/* Date-grouped cards */}
+            {groups.map((group) => (
+              <div
+                key={group.dateKey}
+                className="overflow-hidden rounded-xl border border-black/10"
               >
-                <ChartBar size={14} />
-                {t('transfers.summary.label')}
-              </Button>
-            </div>
-
-            {/* Table for this date group */}
-            <div className="overflow-x-auto">
-              <Table className="min-w-[1000px]">
-                <TableHeader>
-                  <TableRow className="bg-black/[0.015] hover:bg-black/[0.015]">
-                    <TableHead className={TH_CLASS}>{t('transfers.columns.fullName')}</TableHead>
-                    <TableHead className={TH_CLASS}>
-                      {t('transfers.columns.paymentMethod')}
-                    </TableHead>
-                    <TableHead className={TH_CLASS}>{t('transfers.columns.category')}</TableHead>
-                    <TableHead className={`${TH_CLASS} text-right`}>
-                      {t('transfers.columns.amount')}
-                    </TableHead>
-                    <TableHead className={`${TH_CLASS} text-right`}>
-                      {t('transfers.columns.commission')}
-                    </TableHead>
-                    <TableHead className={`${TH_CLASS} text-right`}>
-                      {t('transfers.columns.net')}
-                    </TableHead>
-                    <TableHead className={TH_CLASS}>{t('transfers.columns.currency')}</TableHead>
-                    <TableHead className={TH_CLASS}>{t('transfers.columns.psp')}</TableHead>
-                    <TableHead className={TH_CLASS}>{t('transfers.columns.type')}</TableHead>
-                    <TableHead className="w-20 px-2" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody className="divide-y divide-black/[0.04]">
-                  {group.transfers.map((row) => (
-                    <TransferRowItem
-                      key={row.id}
-                      row={row}
-                      lang={lang}
-                      onView={handleView}
-                      onEdit={onEdit}
-                      onDelete={onDelete}
-                      onAudit={handleAudit}
-                    />
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Pagination footer */}
-      {(totalPages > 1 || total > 0) && (
-        <div className="flex items-center justify-between rounded-lg border border-black/10 bg-black/[0.015] px-4 py-2">
-          <span className="text-xs tabular-nums text-black/40">
-            {from}–{to} / {total}
-          </span>
-
-          {totalPages > 1 && (
-            <Pagination className="mx-0 w-auto">
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationLink
-                    onClick={() => onPageChange(Math.max(1, page - 1))}
-                    disabled={page <= 1}
-                    aria-label="Previous page"
+                {/* Date header */}
+                <div className="flex items-center justify-between bg-black/[0.02] px-4 py-2.5">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-sm font-semibold text-black/70">{group.label}</span>
+                    <Tag variant="default" className="h-5 text-xs">
+                      {dateCounts[group.dateKey] ?? group.transfers.length}{' '}
+                      {t('transfers.summary.transfersLabel')}
+                    </Tag>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 gap-1.5 px-2.5 text-xs font-medium text-black/40 hover:text-black/70"
+                    onClick={() => handleOpenSummary(group)}
                   >
-                    <CaretLeft size={14} weight="bold" />
-                  </PaginationLink>
-                </PaginationItem>
+                    <ChartBar size={14} />
+                    {t('transfers.summary.label')}
+                  </Button>
+                </div>
 
-                {getPageNumbers().map((p, i) =>
-                  p === 'ellipsis' ? (
-                    <PaginationItem key={`e-${i}`}>
-                      <PaginationEllipsis />
-                    </PaginationItem>
-                  ) : (
-                    <PaginationItem key={p}>
-                      <PaginationLink isActive={page === p} onClick={() => onPageChange(p)}>
-                        {p}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ),
+                {/* Table for this date group */}
+                <div className="overflow-x-auto">
+                  <Table className="min-w-[1000px]">
+                    <TableHeader>
+                      <TableRow className="bg-black/[0.015] hover:bg-black/[0.015]">
+                        <TableHead className={TH_CLASS}>
+                          {t('transfers.columns.fullName')}
+                        </TableHead>
+                        <TableHead className={TH_CLASS}>
+                          {t('transfers.columns.paymentMethod')}
+                        </TableHead>
+                        <TableHead className={TH_CLASS}>
+                          {t('transfers.columns.category')}
+                        </TableHead>
+                        <TableHead className={`${TH_CLASS} text-right`}>
+                          {t('transfers.columns.amount')}
+                        </TableHead>
+                        <TableHead className={`${TH_CLASS} text-right`}>
+                          {t('transfers.columns.commission')}
+                        </TableHead>
+                        <TableHead className={`${TH_CLASS} text-right`}>
+                          {t('transfers.columns.net')}
+                        </TableHead>
+                        <TableHead className={TH_CLASS}>
+                          {t('transfers.columns.currency')}
+                        </TableHead>
+                        <TableHead className={TH_CLASS}>{t('transfers.columns.psp')}</TableHead>
+                        <TableHead className={TH_CLASS}>{t('transfers.columns.type')}</TableHead>
+                        <TableHead className="w-20 px-2" />
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody className="divide-y divide-black/[0.04]">
+                      {group.transfers.map((row) => (
+                        <TransferRowItem
+                          key={row.id}
+                          row={row}
+                          lang={lang}
+                          onView={handleView}
+                          onEdit={onEdit}
+                          onDelete={onDelete}
+                          onAudit={handleAudit}
+                        />
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            ))}
+
+            {/* Pagination footer */}
+            {(totalPages > 1 || total > 0) && (
+              <div className="flex items-center justify-between rounded-lg border border-black/10 bg-black/[0.015] px-4 py-2">
+                <span className="text-xs tabular-nums text-black/40">
+                  {from}–{to} / {total}
+                </span>
+
+                {totalPages > 1 && (
+                  <Pagination className="mx-0 w-auto">
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationLink
+                          onClick={() => onPageChange(Math.max(1, page - 1))}
+                          disabled={page <= 1}
+                          aria-label="Previous page"
+                        >
+                          <CaretLeft size={14} weight="bold" />
+                        </PaginationLink>
+                      </PaginationItem>
+
+                      {getPageNumbers().map((p, i) =>
+                        p === 'ellipsis' ? (
+                          <PaginationItem key={`e-${i}`}>
+                            <PaginationEllipsis />
+                          </PaginationItem>
+                        ) : (
+                          <PaginationItem key={p}>
+                            <PaginationLink isActive={page === p} onClick={() => onPageChange(p)}>
+                              {p}
+                            </PaginationLink>
+                          </PaginationItem>
+                        ),
+                      )}
+
+                      <PaginationItem>
+                        <PaginationLink
+                          onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+                          disabled={page >= totalPages}
+                          aria-label="Next page"
+                        >
+                          <CaretRight size={14} weight="bold" />
+                        </PaginationLink>
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
                 )}
-
-                <PaginationItem>
-                  <PaginationLink
-                    onClick={() => onPageChange(Math.min(totalPages, page + 1))}
-                    disabled={page >= totalPages}
-                    aria-label="Next page"
-                  >
-                    <CaretRight size={14} weight="bold" />
-                  </PaginationLink>
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          )}
-        </div>
-      )}
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       {/* Daily Summary Dialog */}
       <DailySummaryDialog

@@ -1,0 +1,50 @@
+---
+description: Use the design-system DatePicker for all date selection across the app
+globs: "**/*.tsx"
+alwaysApply: false
+---
+
+# Date Picker – System Standard
+
+Use the **DatePicker** from `@ds` for all date filtering and selection. Do not create custom date pickers or use raw `DateInput` for filter bars.
+
+## Import
+
+```tsx
+import { DatePicker } from '@ds'
+```
+
+## Usage
+
+```tsx
+<DatePicker
+  dateFrom={filters.dateFrom}
+  dateTo={filters.dateTo}
+  onChange={(from, to) => {
+    setFilter('dateFrom', from)
+    setFilter('dateTo', to)
+  }}
+/>
+```
+
+## Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `dateFrom` | `string \| null` | Start date (YYYY-MM-DD) |
+| `dateTo` | `string \| null` | End date (YYYY-MM-DD). For single date, use same as dateFrom |
+| `onChange` | `(from, to) => void` | Called when selection changes |
+| `placeholder` | `string` | Optional placeholder when empty |
+| `className` | `string` | Optional trigger button classes |
+| `minWidth` | `string` | Optional min width (default: 10rem) |
+
+## Where to Use
+
+- Transfers filters
+- Accounting / ledger filters
+- Reports and dashboards
+- Any page needing date range or single-date selection
+
+## Locale
+
+Translations live in `components.json` under `datePicker` (Today, Yesterday, Last 7 days, etc.).

@@ -763,9 +763,9 @@ export function DashboardPage() {
 
   /* ── Render ──────────────────────────────────────── */
   return (
-    <div className="w-full max-w-full space-y-6">
+    <div className="w-full max-w-full space-y-lg">
       {/* ── Header ──────────────────────────────────── */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-md sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-black">
             {t('dashboard.welcome', { name: displayName })}
@@ -776,7 +776,7 @@ export function DashboardPage() {
               : t('dashboard.subtitle')}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-sm">
           {roleBadge && (
             <Tag variant={roleBadge.variant} className="text-xs">
               {roleBadge.label}
@@ -793,7 +793,7 @@ export function DashboardPage() {
       </div>
 
       {/* ── KPI Hero Row ────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-md lg:grid-cols-5">
         <StatCard
           icon={ArrowCircleDown}
           iconBg="bg-green/10"
@@ -857,7 +857,7 @@ export function DashboardPage() {
       </div>
 
       {/* ── Charts Section (2×2 grid) ───────────────── */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-md lg:grid-cols-2">
         {/* ─ Daily Volume Trend (AreaChart) ─────────── */}
         <ChartCard
           title={t('dashboard.charts.dailyVolume')}
@@ -1179,7 +1179,7 @@ export function DashboardPage() {
       </Card>
 
       {/* ── Top Customers + Activity Feed (2-column) ── */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-md lg:grid-cols-2">
         <Card padding="default" className="border border-black/10 bg-bg1">
           <div className="mb-3 flex items-center gap-2">
             <Trophy size={16} className="text-yellow" weight="duotone" />
@@ -1208,7 +1208,7 @@ export function DashboardPage() {
       </div>
 
       {/* ── Insights Footer (2-column) ────────────── */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-md lg:grid-cols-2">
         {/* Exchange Rate + Sparkline */}
         <Card padding="default" className="border border-black/10 bg-bg1">
           <div className="mb-3 flex items-center gap-2">
@@ -1238,7 +1238,7 @@ export function DashboardPage() {
 
       {/* ── Monthly Insights ────────────────────────── */}
       {monthlyData?.insights && (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-md lg:grid-cols-4">
           <InsightPill
             icon={CalendarStar}
             iconColor="text-yellow"

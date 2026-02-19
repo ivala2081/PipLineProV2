@@ -381,7 +381,7 @@ export function TransferDialog({
             submitModeRef.current = 'close'
             void handleSubmit(event)
           }}
-          className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+          className="grid grid-cols-1 gap-md sm:grid-cols-2"
         >
           {/* Full Name */}
           <div className="sm:col-span-2">

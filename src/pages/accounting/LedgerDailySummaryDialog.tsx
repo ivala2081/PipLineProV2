@@ -159,7 +159,7 @@ export function LedgerDailySummaryDialog({
             <DialogHeader>
               <DialogTitle className="text-sm font-semibold">{group.label}</DialogTitle>
             </DialogHeader>
-            <div className="mt-6 space-y-3">
+            <div className="mt-6 space-y-sm">
               <Skeleton className="h-8 w-48 rounded-md" />
               <Skeleton className="h-4 w-32 rounded-md" />
             </div>
@@ -274,7 +274,7 @@ export function LedgerDailySummaryDialog({
                 <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-black/40">
                   {t('accounting.dailySummary.byRegister', 'By Register')}
                 </p>
-                <div className="space-y-3">
+                <div className="space-y-sm">
                   {s.byRegister.map((rs) => {
                     const config = REGISTER_CONFIG[rs.register]
                     const Icon = config?.icon ?? Coins
@@ -286,7 +286,7 @@ export function LedgerDailySummaryDialog({
                             {config?.label ?? rs.register}
                           </span>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-sm">
                           <span className="flex items-center gap-1 font-mono text-xs tabular-nums text-green">
                             <ArrowUp size={10} weight="bold" />
                             {formatNumber(rs.totalIn, lang)}

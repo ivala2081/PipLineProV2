@@ -26,10 +26,7 @@ interface CreateOrganizationDialogProps {
   onClose: () => void
 }
 
-export function CreateOrganizationDialog({
-  open,
-  onClose,
-}: CreateOrganizationDialogProps) {
+export function CreateOrganizationDialog({ open, onClose }: CreateOrganizationDialogProps) {
   const { t } = useTranslation('pages')
   const { toast } = useToast()
   const { refreshOrgs } = useOrganization()
@@ -73,50 +70,42 @@ export function CreateOrganizationDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent size="md">
         <DialogHeader>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-sm">
             <div className="flex size-10 items-center justify-center rounded-lg bg-brand/10">
               <Buildings size={20} className="text-brand" />
             </div>
             <DialogTitle>{t('organizations.createDialog.title')}</DialogTitle>
           </div>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
+        <form onSubmit={handleSubmit} className="space-y-md">
+          <div className="space-y-sm">
             <Label>{t('organizations.createDialog.name')}</Label>
             <Input
               {...form.register('name')}
               placeholder={t('organizations.createDialog.namePlaceholder')}
             />
             {form.formState.errors.name && (
-              <p className="text-xs text-red">
-                {form.formState.errors.name.message}
-              </p>
+              <p className="text-xs text-red">{form.formState.errors.name.message}</p>
             )}
           </div>
-          <div className="space-y-2">
+          <div className="space-y-sm">
             <Label>{t('organizations.createDialog.slug')}</Label>
             <Input
               {...form.register('slug')}
               placeholder={t('organizations.createDialog.slugPlaceholder')}
               className="font-mono"
             />
-            <p className="text-xs text-black/40">
-              {t('organizations.createDialog.slugHint')}
-            </p>
+            <p className="text-xs text-black/40">{t('organizations.createDialog.slugHint')}</p>
             {slugValue && (
               <div className="rounded-lg bg-black/5 px-3 py-2">
                 <p className="text-xs text-black/40">
                   {t('organizations.createDialog.slugPreview')}
                 </p>
-                <p className="mt-0.5 font-mono text-sm font-medium">
-                  /{slugValue}
-                </p>
+                <p className="mt-0.5 font-mono text-sm font-medium">/{slugValue}</p>
               </div>
             )}
             {form.formState.errors.slug && (
-              <p className="text-xs text-red">
-                {form.formState.errors.slug.message}
-              </p>
+              <p className="text-xs text-red">{form.formState.errors.slug.message}</p>
             )}
           </div>
           <DialogFooter>
@@ -128,11 +117,7 @@ export function CreateOrganizationDialog({
             >
               {t('organizations.createDialog.cancel')}
             </Button>
-            <Button
-              type="submit"
-              variant="filled"
-              disabled={createOrg.isPending}
-            >
+            <Button type="submit" variant="filled" disabled={createOrg.isPending}>
               {createOrg.isPending
                 ? t('organizations.createDialog.creating')
                 : t('organizations.createDialog.create')}

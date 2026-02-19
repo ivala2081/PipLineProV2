@@ -26,12 +26,7 @@ interface WalletDialogProps {
   isSubmitting: boolean
 }
 
-export function WalletDialog({
-  open,
-  onClose,
-  onSubmit,
-  isSubmitting,
-}: WalletDialogProps) {
+export function WalletDialog({ open, onClose, onSubmit, isSubmitting }: WalletDialogProps) {
   const { t } = useTranslation('pages')
 
   const {
@@ -67,31 +62,27 @@ export function WalletDialog({
           <DialogTitle>{t('accounting.addWallet')}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={onFormSubmit} className="space-y-4">
-          <div className="space-y-2">
+        <form onSubmit={onFormSubmit} className="space-y-md">
+          <div className="space-y-sm">
             <Label>{t('accounting.wallets.form.label')}</Label>
             <Input
               {...register('label')}
               placeholder={t('accounting.wallets.form.labelPlaceholder')}
             />
-            {errors.label && (
-              <p className="text-xs text-red">{errors.label.message}</p>
-            )}
+            {errors.label && <p className="text-xs text-red">{errors.label.message}</p>}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-sm">
             <Label>{t('accounting.wallets.form.address')}</Label>
             <Input
               {...register('address')}
               placeholder={t('accounting.wallets.form.addressPlaceholder')}
               className="font-mono text-sm"
             />
-            {errors.address && (
-              <p className="text-xs text-red">{errors.address.message}</p>
-            )}
+            {errors.address && <p className="text-xs text-red">{errors.address.message}</p>}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-sm">
             <Label>{t('accounting.wallets.form.chain')}</Label>
             <Select
               value={watch('chain')}
@@ -115,9 +106,7 @@ export function WalletDialog({
               {t('accounting.form.cancel')}
             </Button>
             <Button type="submit" variant="filled" disabled={isSubmitting}>
-              {isSubmitting
-                ? t('accounting.form.saving')
-                : t('accounting.form.save')}
+              {isSubmitting ? t('accounting.form.saving') : t('accounting.form.save')}
             </Button>
           </DialogFooter>
         </form>

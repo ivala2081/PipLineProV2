@@ -97,7 +97,7 @@ export function WalletTransfersTable({
 
   if (isLoading && transfers.length === 0) {
     return (
-      <div className="space-y-2">
+      <div className="space-y-sm">
         {Array.from({ length: 5 }).map((_, i) => (
           <Skeleton key={i} className="h-10 w-full rounded-lg" />
         ))}

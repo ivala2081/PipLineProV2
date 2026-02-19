@@ -12,10 +12,7 @@ export const DialogPortal = DialogPrimitive.Portal
 export type DialogOverlayProps = ComponentProps<typeof DialogPrimitive.Overlay>
 export const DialogOverlay: FC<DialogOverlayProps> = ({ className, ...props }) => (
   <DialogPrimitive.Overlay
-    className={cn(
-      'fixed inset-0 z-50 bg-[rgba(4,8,16,0.72)]',
-      className,
-    )}
+    className={cn('fixed inset-0 z-50 bg-[rgba(4,8,16,0.72)]', className)}
     {...props}
   />
 )
@@ -45,7 +42,7 @@ export const DialogContent: FC<DialogContentProps> = ({
       <DialogOverlay />
       <DialogPrimitive.Content
         className={cn(
-          'ui-surface fixed left-1/2 top-1/2 z-50 grid w-full -translate-x-1/2 -translate-y-1/2 gap-4 rounded-2xl bg-bg1 p-5 shadow-lg sm:p-6',
+          'ui-surface fixed left-1/2 top-1/2 z-50 grid w-full -translate-x-1/2 -translate-y-1/2 gap-md rounded-2xl bg-bg1 p-card shadow-lg sm:p-lg',
           dialogSizeClasses[size],
           className,
         )}
@@ -70,13 +67,19 @@ DialogHeader.displayName = 'DialogHeader'
 
 export type DialogFooterProps = ComponentProps<'div'>
 export const DialogFooter: FC<DialogFooterProps> = ({ className, ...props }) => (
-  <div className={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:gap-2', className)} {...props} />
+  <div
+    className={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:gap-sm', className)}
+    {...props}
+  />
 )
 DialogFooter.displayName = 'DialogFooter'
 
 export type DialogTitleProps = ComponentProps<typeof DialogPrimitive.Title>
 export const DialogTitle: FC<DialogTitleProps> = ({ className, ...props }) => (
-  <DialogPrimitive.Title className={cn('text-lg font-semibold leading-none tracking-tight', className)} {...props} />
+  <DialogPrimitive.Title
+    className={cn('text-lg font-semibold leading-none tracking-tight', className)}
+    {...props}
+  />
 )
 DialogTitle.displayName = 'DialogTitle'
 

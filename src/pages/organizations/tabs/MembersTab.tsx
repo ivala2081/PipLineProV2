@@ -20,14 +20,8 @@ import {
 } from '@ds'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useToast } from '@/hooks/useToast'
-import {
-  useOrgMembersQuery,
-  type MemberWithProfile,
-} from '@/hooks/queries/useOrgMembersQuery'
-import {
-  useUpdateMemberRole,
-  useRemoveMember,
-} from '@/hooks/queries/useOrgMemberMutations'
+import { useOrgMembersQuery, type MemberWithProfile } from '@/hooks/queries/useOrgMembersQuery'
+import { useUpdateMemberRole, useRemoveMember } from '@/hooks/queries/useOrgMemberMutations'
 import { ConfirmDialog } from '../ConfirmDialog'
 import { AddMemberDialog } from '../AddMemberDialog'
 import { UserAvatar } from '@/components/UserAvatar'
@@ -48,9 +42,7 @@ export function MembersTab({ orgId, canManage }: MembersTabProps) {
   const updateRole = useUpdateMemberRole(orgId)
   const removeMember = useRemoveMember(orgId)
 
-  const [removeTarget, setRemoveTarget] = useState<MemberWithProfile | null>(
-    null,
-  )
+  const [removeTarget, setRemoveTarget] = useState<MemberWithProfile | null>(null)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
 
   // Subscribe to real-time presence updates
@@ -79,7 +71,7 @@ export function MembersTab({ orgId, canManage }: MembersTabProps) {
 
   if (isLoading) {
     return (
-      <div className="space-y-3 pt-4">
+      <div className="space-y-sm pt-md">
         {Array.from({ length: 3 }).map((_, i) => (
           <Skeleton key={i} className="h-14 w-full rounded-lg" />
         ))}
@@ -89,21 +81,14 @@ export function MembersTab({ orgId, canManage }: MembersTabProps) {
 
   return (
     <>
-      <div className="space-y-4 pt-4">
+      <div className="space-y-md pt-md">
         {canManage && (
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold">
-                {t('organizations.members.title')}
-              </h2>
-              <p className="text-sm text-black/60">
-                {t('organizations.members.subtitle')}
-              </p>
+              <h2 className="text-lg font-semibold">{t('organizations.members.title')}</h2>
+              <p className="text-sm text-black/60">{t('organizations.members.subtitle')}</p>
             </div>
-            <Button
-              variant="filled"
-              onClick={() => setAddDialogOpen(true)}
-            >
+            <Button variant="filled" onClick={() => setAddDialogOpen(true)}>
               <Plus size={16} weight="bold" />
               {t('organizations.members.addMember')}
             </Button>
@@ -111,35 +96,23 @@ export function MembersTab({ orgId, canManage }: MembersTabProps) {
         )}
 
         {members.length === 0 ? (
-          <EmptyState
-            icon={Users}
-            title={t('organizations.members.empty')}
-          />
+          <EmptyState icon={Users} title={t('organizations.members.empty')} />
         ) : (
           <div className="rounded-lg border border-black/5 bg-bg1">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>
-                    {t('organizations.members.columns.name')}
-                  </TableHead>
-                  <TableHead>
-                    {t('organizations.members.columns.status')}
-                  </TableHead>
-                  <TableHead>
-                    {t('organizations.members.columns.role')}
-                  </TableHead>
-                  <TableHead>
-                    {t('organizations.members.columns.joined')}
-                  </TableHead>
+                  <TableHead>{t('organizations.members.columns.name')}</TableHead>
+                  <TableHead>{t('organizations.members.columns.status')}</TableHead>
+                  <TableHead>{t('organizations.members.columns.role')}</TableHead>
+                  <TableHead>{t('organizations.members.columns.joined')}</TableHead>
                   {canManage && <TableHead className="w-12" />}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {members.map((member) => {
                   const isSelf = member.user_id === user?.id
-                  const displayName =
-                    member.profile?.display_name ?? member.user_id
+                  const displayName = member.profile?.display_name ?? member.user_id
 
                   return (
                     <TableRow
@@ -148,7 +121,7 @@ export function MembersTab({ orgId, canManage }: MembersTabProps) {
                       onClick={() => navigate(`/members/${member.user_id}`)}
                     >
                       <TableCell>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-sm">
                           <UserAvatar
                             src={member.profile?.avatar_url}
                             name={member.profile?.display_name ?? undefined}
@@ -163,11 +136,7 @@ export function MembersTab({ orgId, canManage }: MembersTabProps) {
                         <LastSeen lastSeenAt={member.profile?.last_seen_at} />
                       </TableCell>
                       <TableCell>
-                        <Tag
-                          variant={
-                            member.role === 'admin' ? 'green' : 'blue'
-                          }
-                        >
+                        <Tag variant={member.role === 'admin' ? 'green' : 'blue'}>
                           {member.role === 'admin' ? 'Admin' : 'Operation'}
                         </Tag>
                       </TableCell>
@@ -179,21 +148,19 @@ export function MembersTab({ orgId, canManage }: MembersTabProps) {
                           {!isSelf && (
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="borderless" size="sm" onClick={(e) => e.stopPropagation()}>
+                                <Button
+                                  variant="borderless"
+                                  size="sm"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
                                   <DotsThree size={18} weight="bold" />
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() => handleToggleRole(member)}
-                                >
+                                <DropdownMenuItem onClick={() => handleToggleRole(member)}>
                                   {member.role === 'admin'
-                                    ? t(
-                                        'organizations.members.actions.demoteToOperation',
-                                      )
-                                    : t(
-                                        'organizations.members.actions.promoteToAdmin',
-                                      )}
+                                    ? t('organizations.members.actions.demoteToOperation')
+                                    : t('organizations.members.actions.promoteToAdmin')}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   className="text-red"
@@ -221,10 +188,7 @@ export function MembersTab({ orgId, canManage }: MembersTabProps) {
         onConfirm={handleRemove}
         title={t('organizations.members.removeConfirm.title')}
         description={t('organizations.members.removeConfirm.description', {
-          name:
-            removeTarget?.profile?.display_name ??
-            removeTarget?.user_id ??
-            '',
+          name: removeTarget?.profile?.display_name ?? removeTarget?.user_id ?? '',
         })}
         confirmLabel={t('organizations.members.actions.remove')}
         cancelLabel={t('organizations.createDialog.cancel')}

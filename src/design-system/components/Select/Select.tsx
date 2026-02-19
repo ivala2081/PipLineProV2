@@ -32,12 +32,13 @@ export const SelectTrigger: FC<SelectTriggerProps> = ({
 }) => (
   <SelectPrimitive.Trigger
     className={cn(
-      'flex w-full items-center justify-between gap-2',
+      'flex w-full items-center justify-between gap-2 transition-all duration-200',
       basicInputClasses,
       focusInputClasses,
       disabledInputClasses,
       selectSizeClasses[selectSize],
       'data-[placeholder]:text-black/45',
+      'data-[state=open]:ring-2 data-[state=open]:ring-brand/20 data-[state=open]:border-brand/30',
       className,
     )}
     {...props}
@@ -60,9 +61,10 @@ export const SelectContent: FC<SelectContentProps> = ({
   <SelectPrimitive.Portal>
     <SelectPrimitive.Content
       className={cn(
-        'ui-surface relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-xl border border-black/15 bg-bg1 text-black shadow-md',
-        position === 'popper' &&
-          'data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1',
+        'ui-surface relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-2xl border border-black/10 bg-bg1/95 backdrop-blur-xl text-black shadow-xl shadow-black/10',
+        'ring-1 ring-black/5',
+        'animate-in fade-in duration-150',
+        position === 'popper' && 'data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1',
         className,
       )}
       position={position}
@@ -85,23 +87,19 @@ export const SelectContent: FC<SelectContentProps> = ({
 SelectContent.displayName = 'SelectContent'
 
 export type SelectItemProps = ComponentProps<typeof SelectPrimitive.Item>
-export const SelectItem: FC<SelectItemProps> = ({
-  className,
-  children,
-  ...props
-}) => (
+export const SelectItem: FC<SelectItemProps> = ({ className, children, ...props }) => (
   <SelectPrimitive.Item
     className={cn(
-      'relative flex w-full cursor-pointer select-none items-center rounded-lg py-1.5 pl-8 pr-2 text-sm outline-none',
-      'border-b-2 border-solid !border-[#666666] last:!border-b-0',
-      'focus:bg-black/5 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      'relative flex w-full cursor-pointer select-none items-center rounded-xl py-2 pl-9 pr-3 text-sm outline-none transition-colors duration-150',
+      'focus:bg-brand/10 focus:text-brand data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      'hover:bg-black/5 data-[highlighted]:bg-brand/10 data-[highlighted]:text-brand',
       className,
     )}
     {...props}
   >
-    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+    <span className="absolute left-2.5 flex h-4 w-4 items-center justify-center text-brand">
       <SelectPrimitive.ItemIndicator>
-        <Check size={16} />
+        <Check size={14} weight="bold" />
       </SelectPrimitive.ItemIndicator>
     </span>
     <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
@@ -119,14 +117,8 @@ export const SelectLabel: FC<SelectLabelProps> = ({ className, ...props }) => (
 SelectLabel.displayName = 'SelectLabel'
 
 export type SelectSeparatorProps = ComponentProps<typeof SelectPrimitive.Separator>
-export const SelectSeparator: FC<SelectSeparatorProps> = ({
-  className,
-  ...props
-}) => (
-  <SelectPrimitive.Separator
-    className={cn('-mx-1 my-1 h-px bg-black/10', className)}
-    {...props}
-  />
+export const SelectSeparator: FC<SelectSeparatorProps> = ({ className, ...props }) => (
+  <SelectPrimitive.Separator className={cn('-mx-1 my-1 h-px bg-black/10', className)} {...props} />
 )
 SelectSeparator.displayName = 'SelectSeparator'
 

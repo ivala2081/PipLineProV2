@@ -21,9 +21,9 @@ export function WalletsTab({ wallets }: WalletsTabProps) {
 
   if (wallets.isLoading) {
     return (
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="rounded-2xl border border-black/10 bg-bg1 p-5">
+          <div key={i} className="rounded-2xl border border-black/10 bg-bg1 p-card">
             <Skeleton className="mb-3 h-5 w-32 rounded" />
             <Skeleton className="mb-2 h-4 w-48 rounded" />
             <Skeleton className="mb-4 h-3 w-24 rounded" />
@@ -45,7 +45,7 @@ export function WalletsTab({ wallets }: WalletsTabProps) {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-lg">
       {/* Portfolio dashboard */}
       <PortfolioSummary
         totalUsd={portfolio.totalUsd}
@@ -55,7 +55,7 @@ export function WalletsTab({ wallets }: WalletsTabProps) {
       />
 
       {/* Wallet cards */}
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-md xl:grid-cols-2">
         {wallets.wallets.map((wallet) => (
           <WalletCard
             key={wallet.id}
@@ -66,10 +66,7 @@ export function WalletsTab({ wallets }: WalletsTabProps) {
         ))}
       </div>
 
-      <WalletDetailSheet
-        wallet={detailWallet}
-        onClose={() => setDetailWallet(null)}
-      />
+      <WalletDetailSheet wallet={detailWallet} onClose={() => setDetailWallet(null)} />
     </div>
   )
 }

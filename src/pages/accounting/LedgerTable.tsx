@@ -30,7 +30,7 @@ import {
   DropdownMenuItem,
   Button,
   Input,
-  DateInput,
+  DatePicker,
   Select,
   SelectTrigger,
   SelectContent,
@@ -156,10 +156,10 @@ export function LedgerTable({
   }, [])
 
   const filterBar = (
-    <div className="space-y-2 mb-4">
+    <div className="space-y-sm mb-md">
       {/* Search + toggle row */}
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1">
+      <div className="flex items-center gap-sm">
+        <div className="relative flex-1 min-w-[280px] sm:min-w-[320px]">
           <MagnifyingGlass
             size={15}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-black/35"
@@ -182,6 +182,14 @@ export function LedgerTable({
             </button>
           )}
         </div>
+        <DatePicker
+          dateFrom={filters.dateFrom}
+          dateTo={filters.dateTo}
+          onChange={(from, to) => {
+            onFilterChange('dateFrom', from)
+            onFilterChange('dateTo', to)
+          }}
+        />
         <Button
           variant={hasActiveFilters ? 'filled' : 'outline'}
           size="sm"
@@ -213,13 +221,13 @@ export function LedgerTable({
       {filtersOpen && (
         <div className="rounded-lg border border-black/[0.08] bg-gradient-to-b from-black/[0.02] to-black/[0.015] p-4">
           {/* Grid layout for better space utilization */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-md md:grid-cols-2 lg:grid-cols-3">
             {/* Type & Status Group */}
-            <div className="space-y-2">
+            <div className="space-y-sm">
               <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
                 {t('accounting.filters.typeStatus', 'Type & Status')}
               </label>
-              <div className="space-y-2">
+              <div className="space-y-sm">
                 <Select
                   value={filters.entryType ?? '__all__'}
                   onValueChange={(v) => onFilterChange('entryType', v === '__all__' ? null : v)}
@@ -250,11 +258,11 @@ export function LedgerTable({
             </div>
 
             {/* Financial Group */}
-            <div className="space-y-2">
+            <div className="space-y-sm">
               <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
                 {t('accounting.filters.financial', 'Financial')}
               </label>
-              <div className="space-y-2">
+              <div className="space-y-sm">
                 <Select
                   value={filters.register ?? '__all__'}
                   onValueChange={(v) => onFilterChange('register', v === '__all__' ? null : v)}
@@ -287,7 +295,7 @@ export function LedgerTable({
             </div>
 
             {/* Amount Range Group */}
-            <div className="space-y-2">
+            <div className="space-y-sm">
               <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
                 {t('accounting.filters.amountRange', 'Amount Range')}
               </label>
@@ -326,11 +334,11 @@ export function LedgerTable({
             </div>
 
             {/* Periods Group */}
-            <div className="space-y-2">
+            <div className="space-y-sm">
               <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
                 {t('accounting.filters.periods', 'Periods')}
               </label>
-              <div className="space-y-2">
+              <div className="space-y-sm">
                 <Input
                   type="text"
                   inputSize="sm"
@@ -355,86 +363,11 @@ export function LedgerTable({
                 />
               </div>
             </div>
-
-            {/* Date Range Group */}
-            <div className="space-y-2 md:col-span-2 lg:col-span-2">
-              <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
-                {t('accounting.filters.dateRange', 'Date Range')}
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <span className="text-[10px] font-medium text-black/40">
-                    {t('accounting.filters.from')}
-                  </span>
-                  <DateInput
-                    inputSize="sm"
-                    value={filters.dateFrom ?? ''}
-                    onChange={(e) => onFilterChange('dateFrom', e.target.value || null)}
-                    className="h-9 w-full text-xs"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <span className="text-[10px] font-medium text-black/40">
-                    {t('accounting.filters.to')}
-                  </span>
-                  <DateInput
-                    inputSize="sm"
-                    value={filters.dateTo ?? ''}
-                    onChange={(e) => onFilterChange('dateTo', e.target.value || null)}
-                    className="h-9 w-full text-xs"
-                  />
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       )}
     </div>
   )
-
-  if (isLoading) {
-    return (
-      <div className="space-y-3">
-        {filterBar}
-        {Array.from({ length: 2 }).map((_, g) => (
-          <div key={g} className="overflow-hidden rounded-xl border border-black/10">
-            <div className="flex items-center justify-between bg-black/[0.02] px-4 py-2.5">
-              <Skeleton className="h-4 w-48 rounded-md" />
-              <Skeleton className="h-7 w-20 rounded-md" />
-            </div>
-            <div className="divide-y divide-black/[0.04]">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-4 px-4 py-3.5">
-                  <Skeleton className="h-4 w-40 rounded-md" />
-                  <Skeleton className="h-4 w-16 rounded-md" />
-                  <Skeleton className="h-5 w-12 rounded-full" />
-                  <Skeleton className="ml-auto h-4 w-20 rounded-md" />
-                  <Skeleton className="h-4 w-14 rounded-md" />
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    )
-  }
-
-  if (entries.length === 0) {
-    return (
-      <div className="space-y-3">
-        {filterBar}
-        <EmptyState
-          icon={ArrowUp}
-          title={hasActiveFilters ? t('accounting.filters.noResults') : t('accounting.empty.title')}
-          description={
-            hasActiveFilters
-              ? t('accounting.filters.noResultsDescription')
-              : t('accounting.empty.description')
-          }
-        />
-      </div>
-    )
-  }
 
   const groups = groupByDate(entries, i18n.language)
 
@@ -448,159 +381,211 @@ export function LedgerTable({
 
   return (
     <>
-      {filterBar}
-      <div className="space-y-3">
-        {groups.map((group) => (
-          <div key={group.dateKey} className="overflow-hidden rounded-xl border border-black/10">
-            <div className="flex items-center justify-between bg-black/[0.02] px-4 py-2.5">
-              <div className="flex items-center gap-2.5">
-                <span className="text-sm font-semibold text-black/70">{group.label}</span>
-                <Tag variant="default" className="h-5 text-xs">
-                  {group.entries.length} {t('accounting.dailySummary.entries', 'entries')}
-                </Tag>
+      <div className="space-y-sm">
+        {filterBar}
+        {isLoading ? (
+          Array.from({ length: 2 }).map((_, g) => (
+            <div key={g} className="overflow-hidden rounded-xl border border-black/10">
+              <div className="flex items-center justify-between bg-black/[0.02] px-4 py-2.5">
+                <Skeleton className="h-4 w-48 rounded-md" />
+                <Skeleton className="h-7 w-20 rounded-md" />
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1.5 px-2.5 text-xs font-medium text-black/40 hover:text-black/70"
-                onClick={() => handleOpenSummary(group)}
+              <div className="divide-y divide-black/[0.04]">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 px-4 py-3.5">
+                    <Skeleton className="h-4 w-40 rounded-md" />
+                    <Skeleton className="h-4 w-16 rounded-md" />
+                    <Skeleton className="h-5 w-12 rounded-full" />
+                    <Skeleton className="ml-auto h-4 w-20 rounded-md" />
+                    <Skeleton className="h-4 w-14 rounded-md" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))
+        ) : entries.length === 0 ? (
+          <EmptyState
+            icon={ArrowUp}
+            title={
+              hasActiveFilters ? t('accounting.filters.noResults') : t('accounting.empty.title')
+            }
+            description={
+              hasActiveFilters
+                ? t('accounting.filters.noResultsDescription')
+                : t('accounting.empty.description')
+            }
+          />
+        ) : (
+          <>
+            {groups.map((group) => (
+              <div
+                key={group.dateKey}
+                className="overflow-hidden rounded-xl border border-black/10"
               >
-                <ChartBar size={14} />
-                {t('accounting.dailySummary.label', 'Summary')}
-              </Button>
-            </div>
+                <div className="flex items-center justify-between bg-black/[0.02] px-4 py-2.5">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-sm font-semibold text-black/70">{group.label}</span>
+                    <Tag variant="default" className="h-5 text-xs">
+                      {group.entries.length} {t('accounting.dailySummary.entries', 'entries')}
+                    </Tag>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 gap-1.5 px-2.5 text-xs font-medium text-black/40 hover:text-black/70"
+                    onClick={() => handleOpenSummary(group)}
+                  >
+                    <ChartBar size={14} />
+                    {t('accounting.dailySummary.label', 'Summary')}
+                  </Button>
+                </div>
 
-            <div className="overflow-x-auto">
-              <Table className="min-w-[900px]">
-                <TableHeader>
-                  <TableRow className="bg-black/[0.015] hover:bg-black/[0.015]">
-                    <TableHead className={TH_CLASS}>
-                      {t('accounting.columns.description')}
-                    </TableHead>
-                    <TableHead className={TH_CLASS}>{t('accounting.columns.type')}</TableHead>
-                    <TableHead className={TH_CLASS}>{t('accounting.columns.direction')}</TableHead>
-                    <TableHead className={`${TH_CLASS} text-right`}>
-                      {t('accounting.columns.amount')}
-                    </TableHead>
-                    <TableHead className={TH_CLASS}>{t('accounting.columns.currency')}</TableHead>
-                    <TableHead className={TH_CLASS}>{t('accounting.columns.register')}</TableHead>
-                    <TableHead className={TH_CLASS}>{t('accounting.columns.costPeriod')}</TableHead>
-                    <TableHead className="w-16 px-2" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody className="divide-y divide-black/[0.04]">
-                  {group.entries.map((row) => (
-                    <TableRow key={row.id} className="hover:bg-black/[0.015]">
-                      <TableCell className="whitespace-nowrap">
-                        <span className="text-sm font-medium text-black/90">{row.description}</span>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        <Tag variant="default">
-                          {row.entry_type === 'ODEME'
-                            ? t('accounting.entryTypes.ODEME')
-                            : t('accounting.entryTypes.TRANSFER')}
-                        </Tag>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        <Tag variant={row.direction === 'in' ? 'default' : 'red'}>
-                          {row.direction === 'in'
-                            ? t('accounting.directions.in')
-                            : t('accounting.directions.out')}
-                        </Tag>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-right">
-                        <span
-                          className={`font-mono text-sm font-medium tabular-nums ${row.direction === 'in' ? 'text-green' : 'text-red'}`}
-                        >
-                          {row.direction === 'in' ? '+' : '-'}
-                          {formatNumber(row.amount)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        <Tag variant="default">{row.currency}</Tag>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-sm text-black/60">
-                        {REGISTER_LABELS[row.register] || row.register}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-sm text-black/50">
-                        {row.cost_period || '—'}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap px-2">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              className="size-7 p-0 text-black/40 hover:text-black/70"
+                <div className="overflow-x-auto">
+                  <Table className="min-w-[900px]">
+                    <TableHeader>
+                      <TableRow className="bg-black/[0.015] hover:bg-black/[0.015]">
+                        <TableHead className={TH_CLASS}>
+                          {t('accounting.columns.description')}
+                        </TableHead>
+                        <TableHead className={TH_CLASS}>{t('accounting.columns.type')}</TableHead>
+                        <TableHead className={TH_CLASS}>
+                          {t('accounting.columns.direction')}
+                        </TableHead>
+                        <TableHead className={`${TH_CLASS} text-right`}>
+                          {t('accounting.columns.amount')}
+                        </TableHead>
+                        <TableHead className={TH_CLASS}>
+                          {t('accounting.columns.currency')}
+                        </TableHead>
+                        <TableHead className={TH_CLASS}>
+                          {t('accounting.columns.register')}
+                        </TableHead>
+                        <TableHead className={TH_CLASS}>
+                          {t('accounting.columns.costPeriod')}
+                        </TableHead>
+                        <TableHead className="w-16 px-2" />
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody className="divide-y divide-black/[0.04]">
+                      {group.entries.map((row) => (
+                        <TableRow key={row.id} className="hover:bg-black/[0.015]">
+                          <TableCell className="whitespace-nowrap">
+                            <span className="text-sm font-medium text-black/90">
+                              {row.description}
+                            </span>
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            <Tag variant="default">
+                              {row.entry_type === 'ODEME'
+                                ? t('accounting.entryTypes.ODEME')
+                                : t('accounting.entryTypes.TRANSFER')}
+                            </Tag>
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            <Tag variant={row.direction === 'in' ? 'default' : 'red'}>
+                              {row.direction === 'in'
+                                ? t('accounting.directions.in')
+                                : t('accounting.directions.out')}
+                            </Tag>
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-right">
+                            <span
+                              className={`font-mono text-sm font-medium tabular-nums ${row.direction === 'in' ? 'text-green' : 'text-red'}`}
                             >
-                              <DotsThree size={16} weight="bold" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" sideOffset={4}>
-                            <DropdownMenuItem onClick={() => onEdit(row)}>
-                              <PencilSimple size={14} />
-                              {t('accounting.actions.edit')}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="text-red" onClick={() => onDelete(row)}>
-                              <Trash size={14} />
-                              {t('accounting.actions.delete')}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        ))}
-      </div>
+                              {row.direction === 'in' ? '+' : '-'}
+                              {formatNumber(row.amount)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            <Tag variant="default">{row.currency}</Tag>
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-sm text-black/60">
+                            {REGISTER_LABELS[row.register] || row.register}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-sm text-black/50">
+                            {row.cost_period || '—'}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap px-2">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  className="size-7 p-0 text-black/40 hover:text-black/70"
+                                >
+                                  <DotsThree size={16} weight="bold" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" sideOffset={4}>
+                                <DropdownMenuItem onClick={() => onEdit(row)}>
+                                  <PencilSimple size={14} />
+                                  {t('accounting.actions.edit')}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-red"
+                                  onClick={() => onDelete(row)}
+                                >
+                                  <Trash size={14} />
+                                  {t('accounting.actions.delete')}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            ))}
 
-      {/* Pagination */}
-      {(totalPages > 1 || total > 0) && (
-        <div className="flex items-center justify-between rounded-lg border border-black/10 bg-black/[0.015] px-4 py-2">
-          <span className="text-xs tabular-nums text-black/40">
-            {from}–{to} / {total}
-          </span>
-          {totalPages > 1 && (
-            <Pagination className="mx-0 w-auto">
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationLink
-                    onClick={() => onPageChange(Math.max(1, page - 1))}
-                    disabled={page <= 1}
-                    aria-label="Previous page"
-                  >
-                    <CaretLeft size={14} weight="bold" />
-                  </PaginationLink>
-                </PaginationItem>
-                {getPageNumbers().map((p, i) =>
-                  p === 'ellipsis' ? (
-                    <PaginationItem key={`e-${i}`}>
-                      <PaginationEllipsis />
-                    </PaginationItem>
-                  ) : (
-                    <PaginationItem key={p}>
-                      <PaginationLink isActive={page === p} onClick={() => onPageChange(p)}>
-                        {p}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ),
+            {/* Pagination */}
+            {(totalPages > 1 || total > 0) && (
+              <div className="flex items-center justify-between rounded-lg border border-black/10 bg-black/[0.015] px-4 py-2">
+                <span className="text-xs tabular-nums text-black/40">
+                  {from}–{to} / {total}
+                </span>
+                {totalPages > 1 && (
+                  <Pagination className="mx-0 w-auto">
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationLink
+                          onClick={() => onPageChange(Math.max(1, page - 1))}
+                          disabled={page <= 1}
+                          aria-label="Previous page"
+                        >
+                          <CaretLeft size={14} weight="bold" />
+                        </PaginationLink>
+                      </PaginationItem>
+                      {getPageNumbers().map((p, i) =>
+                        p === 'ellipsis' ? (
+                          <PaginationItem key={`e-${i}`}>
+                            <PaginationEllipsis />
+                          </PaginationItem>
+                        ) : (
+                          <PaginationItem key={p}>
+                            <PaginationLink isActive={page === p} onClick={() => onPageChange(p)}>
+                              {p}
+                            </PaginationLink>
+                          </PaginationItem>
+                        ),
+                      )}
+                      <PaginationItem>
+                        <PaginationLink
+                          onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+                          disabled={page >= totalPages}
+                          aria-label="Next page"
+                        >
+                          <CaretRight size={14} weight="bold" />
+                        </PaginationLink>
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
                 )}
-                <PaginationItem>
-                  <PaginationLink
-                    onClick={() => onPageChange(Math.min(totalPages, page + 1))}
-                    disabled={page >= totalPages}
-                    aria-label="Next page"
-                  >
-                    <CaretRight size={14} weight="bold" />
-                  </PaginationLink>
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          )}
-        </div>
-      )}
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       {/* Daily Summary Dialog */}
       <LedgerDailySummaryDialog

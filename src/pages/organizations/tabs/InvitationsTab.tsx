@@ -1,12 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  Plus,
-  EnvelopeSimple,
-  Clock,
-  CheckCircle,
-  XCircle,
-} from '@phosphor-icons/react'
+import { Plus, EnvelopeSimple, Clock, CheckCircle, XCircle } from '@phosphor-icons/react'
 import {
   Table,
   TableHeader,
@@ -94,7 +88,7 @@ export function InvitationsTab({ orgId }: InvitationsTabProps) {
 
   if (isLoading) {
     return (
-      <div className="space-y-3 pt-4">
+      <div className="space-y-sm pt-md">
         {Array.from({ length: 3 }).map((_, i) => (
           <Skeleton key={i} className="h-14 w-full rounded-lg" />
         ))}
@@ -104,25 +98,18 @@ export function InvitationsTab({ orgId }: InvitationsTabProps) {
 
   return (
     <>
-      <div className="space-y-4 pt-4">
+      <div className="space-y-md pt-md">
         {/* Header */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-sm sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-semibold">
-              {t('organizations.invitations.title')}
-            </h2>
-            <p className="text-sm text-black/60">
-              {t('organizations.invitations.subtitle')}
-            </p>
+            <h2 className="text-lg font-semibold">{t('organizations.invitations.title')}</h2>
+            <p className="text-sm text-black/60">{t('organizations.invitations.subtitle')}</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-sm">
             <span className="text-sm text-black/40">
               {t('organizations.invitations.count', { count: invitations.length })}
             </span>
-            <Button
-              variant="filled"
-              onClick={() => setInviteDialogOpen(true)}
-            >
+            <Button variant="filled" onClick={() => setInviteDialogOpen(true)}>
               <Plus size={16} weight="bold" />
               {t('organizations.invitations.invite')}
             </Button>
@@ -145,7 +132,7 @@ export function InvitationsTab({ orgId }: InvitationsTabProps) {
 
         {/* Content */}
         {invitations.length === 0 ? (
-          <Card className="flex flex-col items-center justify-center gap-4 border border-black/5 bg-bg1 py-20">
+          <Card className="flex flex-col items-center justify-center gap-md border border-black/5 bg-bg1 py-20">
             <div className="flex size-14 items-center justify-center rounded-2xl bg-black/5">
               <EnvelopeSimple size={28} className="text-black/40" />
             </div>
@@ -159,31 +146,19 @@ export function InvitationsTab({ orgId }: InvitationsTabProps) {
             </div>
           </Card>
         ) : filtered.length === 0 ? (
-          <Card className="flex flex-col items-center justify-center gap-4 border border-black/5 bg-bg1 py-16">
-            <p className="text-sm text-black/40">
-              {t('organizations.invitations.empty')}
-            </p>
+          <Card className="flex flex-col items-center justify-center gap-md border border-black/5 bg-bg1 py-16">
+            <p className="text-sm text-black/40">{t('organizations.invitations.empty')}</p>
           </Card>
         ) : (
           <div className="rounded-lg border border-black/5 bg-bg1">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>
-                    {t('organizations.invitations.columns.email')}
-                  </TableHead>
-                  <TableHead>
-                    {t('organizations.invitations.columns.role')}
-                  </TableHead>
-                  <TableHead>
-                    {t('organizations.invitations.columns.status')}
-                  </TableHead>
-                  <TableHead>
-                    {t('organizations.invitations.columns.createdAt')}
-                  </TableHead>
-                  <TableHead>
-                    {t('organizations.invitations.columns.expiresAt')}
-                  </TableHead>
+                  <TableHead>{t('organizations.invitations.columns.email')}</TableHead>
+                  <TableHead>{t('organizations.invitations.columns.role')}</TableHead>
+                  <TableHead>{t('organizations.invitations.columns.status')}</TableHead>
+                  <TableHead>{t('organizations.invitations.columns.createdAt')}</TableHead>
+                  <TableHead>{t('organizations.invitations.columns.expiresAt')}</TableHead>
                   <TableHead className="w-24" />
                 </TableRow>
               </TableHeader>
@@ -216,9 +191,7 @@ export function InvitationsTab({ orgId }: InvitationsTabProps) {
                           variant="outline"
                           size="sm"
                           className="text-red hover:bg-red/5"
-                          onClick={() =>
-                            setRevokeTarget({ id: inv.id, email: inv.email })
-                          }
+                          onClick={() => setRevokeTarget({ id: inv.id, email: inv.email })}
                         >
                           {t('organizations.invitations.revoke')}
                         </Button>

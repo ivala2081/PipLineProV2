@@ -88,12 +88,12 @@ export function OrganizationDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-lg">
         <Skeleton className="h-8 w-32" />
         <Card padding="spacious" className="border border-black/5 bg-bg1">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-md">
             <Skeleton className="size-14 rounded-xl" />
-            <div className="space-y-2">
+            <div className="space-y-sm">
               <Skeleton className="h-6 w-48" />
               <Skeleton className="h-4 w-32" />
             </div>
@@ -107,7 +107,7 @@ export function OrganizationDetailPage() {
 
   if (!org) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 py-20">
+      <div className="flex flex-col items-center justify-center gap-md py-20">
         <div className="flex size-14 items-center justify-center rounded-2xl bg-black/5">
           <Buildings size={28} className="text-black/40" />
         </div>
@@ -124,7 +124,7 @@ export function OrganizationDetailPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-lg">
       {/* Back button */}
       <Button variant="gray" size="sm" onClick={() => navigate('/organizations')}>
         <ArrowLeft size={16} />
@@ -134,16 +134,16 @@ export function OrganizationDetailPage() {
       {/* Org header card */}
       <Card padding="spacious" className="border border-black/5 bg-bg1">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-md">
             <OrgDetailAvatar name={org.name} slug={org.slug} logoUrl={org.logo_url} />
             <div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-sm">
                 <h1 className="text-2xl font-semibold">{org.name}</h1>
                 <Tag variant={org.is_active ? 'green' : 'red'}>
                   {org.is_active ? t('organizations.active') : t('organizations.inactive')}
                 </Tag>
               </div>
-              <div className="mt-1 flex items-center gap-3">
+              <div className="mt-1 flex items-center gap-sm">
                 <span className="font-mono text-sm text-black/60">{org.slug}</span>
                 <span className="text-black/20">·</span>
                 <span className="text-sm text-black/40">{formatDate(org.created_at)}</span>

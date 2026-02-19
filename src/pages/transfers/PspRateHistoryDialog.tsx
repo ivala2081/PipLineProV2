@@ -13,7 +13,7 @@ import {
   DialogDescription,
   Button,
   Input,
-  DateInput,
+  DatePickerField,
   Label,
   Tag,
   Table,
@@ -143,7 +143,10 @@ export function PspRateHistoryDialog({ psp, open, onClose }: PspRateHistoryDialo
             <Label className="mb-1 text-xs font-medium">
               {t('transfers.settings.effectiveFrom')}
             </Label>
-            <DateInput value={effectiveFrom} onChange={(e) => setEffectiveFrom(e.target.value)} />
+            <DatePickerField
+              value={effectiveFrom}
+              onChange={(e) => setEffectiveFrom(e.target.value)}
+            />
           </div>
           <div className="w-28">
             <Label className="mb-1 text-xs font-medium">

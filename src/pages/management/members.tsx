@@ -82,12 +82,12 @@ export function MembersPage() {
 
   if (!currentOrg) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-lg">
         <div>
           <h1 className="text-2xl font-semibold">{t('members.title')}</h1>
           <p className="mt-1 text-sm text-black/60">{t('members.subtitle')}</p>
         </div>
-        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-black/10 bg-bg1 py-20">
+        <div className="flex flex-col items-center justify-center gap-sm rounded-xl border border-black/10 bg-bg1 py-20">
           <div className="flex size-12 items-center justify-center rounded-full bg-black/[0.04]">
             <Users size={20} className="text-black/30" />
           </div>
@@ -128,7 +128,7 @@ export function MembersPage() {
           </div>
         </div>
       ) : members.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-black/10 bg-bg1 py-20">
+        <div className="flex flex-col items-center justify-center gap-sm rounded-xl border border-black/10 bg-bg1 py-20">
           <div className="flex size-12 items-center justify-center rounded-full bg-black/[0.04]">
             <Users size={20} className="text-black/30" />
           </div>
@@ -166,7 +166,7 @@ export function MembersPage() {
                     onClick={() => navigate(`/members/${member.user_id}`)}
                   >
                     <TableCell className="px-4 py-3">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-sm">
                         <UserAvatar
                           src={member.profile?.avatar_url}
                           name={member.profile?.display_name ?? undefined}

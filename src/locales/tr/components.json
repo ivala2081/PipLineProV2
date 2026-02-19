@@ -1,4 +1,14 @@
 {
+  "datePicker": {
+    "placeholder": "Tarih seçin",
+    "today": "Bugün",
+    "yesterday": "Dün",
+    "last7Days": "Son 7 gün",
+    "last30Days": "Son 30 gün",
+    "thisMonth": "Bu ay",
+    "lastMonth": "Geçen ay",
+    "clear": "Temizle"
+  },
   "sidebar": {
     "toggle": "Kenar Çubuğunu Aç/Kapat"
   },

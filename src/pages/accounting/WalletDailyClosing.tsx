@@ -256,7 +256,7 @@ export function WalletDailyClosing({
 
   if (isLoading && transfers.length === 0) {
     return (
-      <div className="space-y-2">
+      <div className="space-y-sm">
         {Array.from({ length: 5 }).map((_, i) => (
           <Skeleton key={i} className="h-12 w-full rounded-lg" />
         ))}
@@ -317,7 +317,7 @@ export function WalletDailyClosing({
 
               {/* Transfer count */}
               <TableCell className="px-4 py-3">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-sm">
                   <span className="text-xs tabular-nums text-black/50">{day.totalCount}</span>
                   <span className="text-[10px] text-black/25">
                     ({day.inCount}↓ {day.outCount}↑)

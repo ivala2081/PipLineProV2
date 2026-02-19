@@ -59,7 +59,7 @@ export function AccountingPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-lg">
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
@@ -67,7 +67,7 @@ export function AccountingPage() {
           <p className="mt-1 text-sm text-black/60">{t('accounting.subtitle')}</p>
         </div>
         {activeTab === 'ledger' && (
-          <div className="flex gap-2">
+          <div className="flex gap-sm">
             <Button variant="ghost" onClick={handleExport} disabled={isExporting}>
               <DownloadSimple size={16} weight="bold" />
               {isExporting

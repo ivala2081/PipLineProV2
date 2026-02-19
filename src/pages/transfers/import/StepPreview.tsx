@@ -64,9 +64,9 @@ export function StepPreview({ parseResult, onConfirm, onBack }: StepPreviewProps
   )
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-md">
       {/* Summary cards */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-md">
         <SummaryCard
           label={t('transfers.import.preview.totalRows', 'Total')}
           value={parseResult.totalRows}
@@ -99,7 +99,7 @@ export function StepPreview({ parseResult, onConfirm, onBack }: StepPreviewProps
           <button
             type="button"
             onClick={() => setShowRates(!showRates)}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm font-medium text-black/60 hover:bg-black/[0.02]"
+            className="flex w-full items-center gap-sm px-3 py-2 text-left text-sm font-medium text-black/60 hover:bg-black/[0.02]"
           >
             {showRates ? <CaretDown size={14} /> : <CaretRight size={14} />}
             {t('transfers.import.preview.exchangeRates', 'Exchange Rates')} ({sortedRates.length})
@@ -182,7 +182,7 @@ export function StepPreview({ parseResult, onConfirm, onBack }: StepPreviewProps
 
       {/* Skip duplicates */}
       {parseResult.duplicateRows > 0 && (
-        <label className="flex items-center gap-2 text-sm text-black/60">
+        <label className="flex items-center gap-sm text-sm text-black/60">
           <input
             type="checkbox"
             checked={skipDuplicates}
@@ -291,12 +291,12 @@ function PreviewRow({
       {isExpanded && row.issues.length > 0 && (
         <tr className="bg-black/[0.02]">
           <td colSpan={8} className="px-4 py-2">
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-xs">
               {row.issues.map((issue, idx) => (
                 <div
                   key={idx}
                   className={cn(
-                    'flex items-center gap-2 text-xs',
+                    'flex items-center gap-sm text-xs',
                     issue.severity === 'error' ? 'text-red-600' : 'text-amber-600',
                   )}
                 >

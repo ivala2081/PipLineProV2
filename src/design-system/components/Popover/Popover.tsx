@@ -18,7 +18,7 @@ export const PopoverContent: FC<PopoverContentProps> = ({
       align={align}
       sideOffset={sideOffset}
       className={cn(
-        'ui-surface z-50 w-72 rounded-xl bg-bg1 p-4 text-black shadow-md outline-none',
+        'ui-surface z-50 w-72 rounded-2xl border border-black/10 bg-bg1/95 backdrop-blur-xl p-4 text-black shadow-xl shadow-black/10 ring-1 ring-black/5 outline-none animate-in fade-in duration-150',
         className,
       )}
       {...props}

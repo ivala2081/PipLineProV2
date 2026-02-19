@@ -10,20 +10,9 @@ import {
   Hash,
   Fingerprint,
 } from '@phosphor-icons/react'
-import {
-  Card,
-  Tag,
-  Separator,
-  Avatar,
-  AvatarImage,
-  AvatarFallback,
-  StatCard,
-} from '@ds'
+import { Card, Tag, Separator, Avatar, AvatarImage, AvatarFallback, StatCard } from '@ds'
 import { useLocale } from '@ds/hooks'
-import {
-  useOrgMembersQuery,
-  type MemberWithProfile,
-} from '@/hooks/queries/useOrgMembersQuery'
+import { useOrgMembersQuery, type MemberWithProfile } from '@/hooks/queries/useOrgMembersQuery'
 import type { Organization } from '@/lib/database.types'
 
 interface OverviewTabProps {
@@ -46,7 +35,7 @@ function DetailRow({
 }) {
   return (
     <div className="flex items-center justify-between py-3">
-      <div className="flex items-center gap-3 text-black/40">
+      <div className="flex items-center gap-sm text-black/40">
         {icon}
         <span className="text-sm">{label}</span>
       </div>
@@ -79,13 +68,11 @@ function MemberRow({
 
   return (
     <div
-      className="flex cursor-pointer items-center gap-3 rounded-lg px-2 -mx-2 py-3 transition-colors hover:bg-black/[0.02]"
+      className="flex cursor-pointer items-center gap-sm rounded-lg px-2 -mx-2 py-3 transition-colors hover:bg-black/[0.02]"
       onClick={onClick}
     >
       <Avatar className="size-8">
-        {member.profile?.avatar_url && (
-          <AvatarImage src={member.profile.avatar_url} />
-        )}
+        {member.profile?.avatar_url && <AvatarImage src={member.profile.avatar_url} />}
         <AvatarFallback className="text-xs">{initials}</AvatarFallback>
       </Avatar>
       <div className="min-w-0 flex-1">
@@ -94,9 +81,7 @@ function MemberRow({
       <Tag variant={member.role === 'admin' ? 'green' : 'blue'}>
         {t(`organizations.members.roles.${member.role}`)}
       </Tag>
-      <span className="hidden text-xs text-black/40 sm:block">
-        {formatDate(member.created_at)}
-      </span>
+      <span className="hidden text-xs text-black/40 sm:block">{formatDate(member.created_at)}</span>
     </div>
   )
 }
@@ -134,9 +119,9 @@ export function OverviewTab({ org, orgId }: OverviewTabProps) {
   const previewMembers = members.slice(0, 5)
 
   return (
-    <div className="space-y-4 pt-4">
+    <div className="space-y-md pt-md">
       {/* Metrics */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-md sm:grid-cols-3">
         <StatCard
           icon={Users}
           iconBg="bg-blue/10"
@@ -164,9 +149,7 @@ export function OverviewTab({ org, orgId }: OverviewTabProps) {
       {previewMembers.length > 0 && (
         <Card padding="default" className="border border-black/10 bg-bg1">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold">
-              {t('organizations.overview.teamPreview')}
-            </h3>
+            <h3 className="text-sm font-semibold">{t('organizations.overview.teamPreview')}</h3>
             <span className="text-xs text-black/40">
               {t('organizations.members.count', { count: members.length })}
             </span>
@@ -194,35 +177,23 @@ export function OverviewTab({ org, orgId }: OverviewTabProps) {
 
       {/* Organization Details */}
       <Card padding="default" className="border border-black/10 bg-bg1">
-        <h3 className="text-sm font-semibold">
-          {t('organizations.overview.details')}
-        </h3>
+        <h3 className="text-sm font-semibold">{t('organizations.overview.details')}</h3>
         <Separator className="mt-3" />
         <div className="divide-y divide-black/10">
-          <DetailRow
-            icon={<Fingerprint size={16} />}
-            label={t('organizations.overview.orgId')}
-          >
+          <DetailRow icon={<Fingerprint size={16} />} label={t('organizations.overview.orgId')}>
             <span className="font-mono text-xs text-black/60">{org.id}</span>
           </DetailRow>
-          <DetailRow
-            icon={<Hash size={16} />}
-            label={t('organizations.overview.slug')}
-          >
+          <DetailRow icon={<Hash size={16} />} label={t('organizations.overview.slug')}>
             <span className="font-mono">{org.slug}</span>
           </DetailRow>
           <DetailRow
             icon={
-              <div
-                className={`size-2 rounded-full ${org.is_active ? 'bg-green' : 'bg-red'}`}
-              />
+              <div className={`size-2 rounded-full ${org.is_active ? 'bg-green' : 'bg-red'}`} />
             }
             label={t('organizations.overview.status')}
           >
             <Tag variant={org.is_active ? 'green' : 'red'}>
-              {org.is_active
-                ? t('organizations.active')
-                : t('organizations.inactive')}
+              {org.is_active ? t('organizations.active') : t('organizations.inactive')}
             </Tag>
           </DetailRow>
           <DetailRow
@@ -231,10 +202,7 @@ export function OverviewTab({ org, orgId }: OverviewTabProps) {
           >
             {formatDate(org.created_at)}
           </DetailRow>
-          <DetailRow
-            icon={<Clock size={16} />}
-            label={t('organizations.overview.updatedAt')}
-          >
+          <DetailRow icon={<Clock size={16} />} label={t('organizations.overview.updatedAt')}>
             {formatDate(org.updated_at)}
           </DetailRow>
         </div>

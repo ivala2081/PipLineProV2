@@ -1,11 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import {
-  ArrowDown,
-  ArrowUp,
-  CurrencyDollar,
-  Money,
-  Coins,
-} from '@phosphor-icons/react'
+import { ArrowDown, ArrowUp, CurrencyDollar, Money, Coins } from '@phosphor-icons/react'
 import type { AccountingSummary } from '@/hooks/queries/useAccountingQuery'
 import { Card, Skeleton } from '@ds'
 
@@ -59,10 +53,10 @@ export function LedgerSummary({ summary, isLoading }: LedgerSummaryProps) {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-md sm:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => (
           <Card key={i} padding="default" className="border border-black/10 bg-bg1">
-            <div className="mb-4 flex items-center gap-3">
+            <div className="mb-4 flex items-center gap-sm">
               <Skeleton className="size-10 rounded-xl" />
               <Skeleton className="h-4 w-20 rounded" />
             </div>
@@ -103,7 +97,7 @@ export function LedgerSummary({ summary, isLoading }: LedgerSummaryProps) {
             className="group border border-black/10 bg-bg1 transition-shadow hover:shadow-sm"
           >
             {/* Header: icon + label */}
-            <div className="mb-4 flex items-center gap-3">
+            <div className="mb-4 flex items-center gap-sm">
               <div
                 className={`flex size-10 items-center justify-center rounded-xl ${config.iconBg}`}
               >

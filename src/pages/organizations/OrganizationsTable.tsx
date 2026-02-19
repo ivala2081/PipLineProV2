@@ -43,14 +43,15 @@ export function OrganizationsTable({
 
   if (error) {
     return (
-      <Card padding="none" className="flex flex-col items-center justify-center gap-4 border border-black/5 bg-bg1 py-20">
+      <Card
+        padding="none"
+        className="flex flex-col items-center justify-center gap-md border border-black/5 bg-bg1 py-20"
+      >
         <div className="flex size-14 items-center justify-center rounded-2xl bg-red/10">
           <WarningCircle size={28} className="text-red" />
         </div>
         <div className="text-center">
-          <p className="text-sm font-medium text-black/80">
-            {t('organizations.toast.error')}
-          </p>
+          <p className="text-sm font-medium text-black/80">{t('organizations.toast.error')}</p>
           <p className="mt-1 text-xs text-black/40">{error.message}</p>
         </div>
         {onRetry && (
@@ -78,11 +79,21 @@ export function OrganizationsTable({
           <TableBody>
             {Array.from({ length: 5 }).map((_, i) => (
               <TableRow key={i}>
-                <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                <TableCell className="text-center"><Skeleton className="mx-auto h-4 w-8" /></TableCell>
-                <TableCell><Skeleton className="h-5 w-16 rounded-md" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-32" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-24" />
+                </TableCell>
+                <TableCell className="text-center">
+                  <Skeleton className="mx-auto h-4 w-8" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-5 w-16 rounded-md" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-24" />
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -93,17 +104,16 @@ export function OrganizationsTable({
 
   if (organizations.length === 0) {
     return (
-      <Card padding="none" className="flex flex-col items-center justify-center gap-4 border border-black/5 bg-bg1 py-20">
+      <Card
+        padding="none"
+        className="flex flex-col items-center justify-center gap-md border border-black/5 bg-bg1 py-20"
+      >
         <div className="flex size-14 items-center justify-center rounded-2xl bg-black/5">
           <Buildings size={28} className="text-black/40" />
         </div>
         <div className="text-center">
-          <p className="text-sm font-medium text-black/60">
-            {t('organizations.empty.title')}
-          </p>
-          <p className="mt-1 text-xs text-black/40">
-            {t('organizations.empty.description')}
-          </p>
+          <p className="text-sm font-medium text-black/60">{t('organizations.empty.title')}</p>
+          <p className="mt-1 text-xs text-black/40">{t('organizations.empty.description')}</p>
         </div>
       </Card>
     )
@@ -116,9 +126,7 @@ export function OrganizationsTable({
           <TableRow>
             <TableHead>{t('organizations.columns.name')}</TableHead>
             <TableHead>{t('organizations.columns.slug')}</TableHead>
-            <TableHead className="text-center">
-              {t('organizations.columns.members')}
-            </TableHead>
+            <TableHead className="text-center">{t('organizations.columns.members')}</TableHead>
             <TableHead>{t('organizations.columns.status')}</TableHead>
             <TableHead>{t('organizations.columns.createdAt')}</TableHead>
           </TableRow>
@@ -131,7 +139,7 @@ export function OrganizationsTable({
               onClick={() => onRowClick(org)}
             >
               <TableCell>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-sm">
                   {org.logo_url ? (
                     <div className="flex size-8 items-center justify-center overflow-hidden rounded-md border border-black/10 bg-black/5">
                       <img
@@ -148,9 +156,7 @@ export function OrganizationsTable({
                   <span className="font-medium">{org.name}</span>
                 </div>
               </TableCell>
-              <TableCell className="font-mono text-sm text-black/60">
-                {org.slug}
-              </TableCell>
+              <TableCell className="font-mono text-sm text-black/60">{org.slug}</TableCell>
               <TableCell>
                 <div className="flex items-center justify-center gap-1.5 text-black/60">
                   <Users size={14} />
@@ -159,14 +165,10 @@ export function OrganizationsTable({
               </TableCell>
               <TableCell>
                 <Tag variant={org.is_active ? 'green' : 'red'}>
-                  {org.is_active
-                    ? t('organizations.active')
-                    : t('organizations.inactive')}
+                  {org.is_active ? t('organizations.active') : t('organizations.inactive')}
                 </Tag>
               </TableCell>
-              <TableCell className="text-sm text-black/60">
-                {formatDate(org.created_at)}
-              </TableCell>
+              <TableCell className="text-sm text-black/60">{formatDate(org.created_at)}</TableCell>
             </TableRow>
           ))}
         </TableBody>

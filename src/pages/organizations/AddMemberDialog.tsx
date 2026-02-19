@@ -59,8 +59,8 @@ export function AddMemberDialog({ open, onClose, orgId }: AddMemberDialogProps) 
         <DialogHeader>
           <DialogTitle>{t('organizations.addMemberDialog.title')}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
+        <form onSubmit={handleSubmit} className="space-y-md">
+          <div className="space-y-sm">
             <Label>{t('organizations.addMemberDialog.displayName')}</Label>
             <Input
               type="text"
@@ -69,7 +69,7 @@ export function AddMemberDialog({ open, onClose, orgId }: AddMemberDialogProps) 
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-sm">
             <Label>{t('organizations.addMemberDialog.email')}</Label>
             <Input
               type="email"
@@ -81,7 +81,7 @@ export function AddMemberDialog({ open, onClose, orgId }: AddMemberDialogProps) 
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-sm">
             <Label>{t('organizations.addMemberDialog.password')}</Label>
             <div className="relative">
               <Input
@@ -103,10 +103,10 @@ export function AddMemberDialog({ open, onClose, orgId }: AddMemberDialogProps) 
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-sm">
             <Label>{t('organizations.addMemberDialog.role')}</Label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2">
+            <div className="flex gap-md">
+              <label className="flex items-center gap-sm">
                 <input
                   type="radio"
                   value="operation"
@@ -115,11 +115,11 @@ export function AddMemberDialog({ open, onClose, orgId }: AddMemberDialogProps) 
                 />
                 <span className="text-sm">{t('organizations.addMemberDialog.roleOperation')}</span>
               </label>
-              <label className="flex items-center gap-2">
+              <label className="flex items-center gap-sm">
                 <input type="radio" value="manager" {...form.register('role')} className="size-4" />
                 <span className="text-sm">{t('organizations.addMemberDialog.roleManager')}</span>
               </label>
-              <label className="flex items-center gap-2">
+              <label className="flex items-center gap-sm">
                 <input type="radio" value="admin" {...form.register('role')} className="size-4" />
                 <span className="text-sm">{t('organizations.addMemberDialog.roleAdmin')}</span>
               </label>

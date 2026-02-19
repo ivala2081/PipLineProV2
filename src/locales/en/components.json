@@ -1,4 +1,14 @@
 {
+  "datePicker": {
+    "placeholder": "Select date",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "last7Days": "Last 7 days",
+    "last30Days": "Last 30 days",
+    "thisMonth": "This month",
+    "lastMonth": "Last month",
+    "clear": "Clear"
+  },
   "sidebar": {
     "toggle": "Toggle Sidebar"
   },

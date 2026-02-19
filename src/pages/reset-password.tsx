@@ -61,13 +61,13 @@ export function ResetPasswordPage() {
 
   /* ---- Check that the user arrived via a valid recovery link ------ */
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event) => {
-        if (event === 'PASSWORD_RECOVERY') {
-          setHasSession(true)
-        }
-      },
-    )
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setHasSession(true)
+      }
+    })
 
     // Also check if we already have a session (user may have already
     // been redirected and the event already fired before mount)
@@ -136,11 +136,9 @@ export function ResetPasswordPage() {
             alt="PipLinePro"
             className="mb-8 h-16 w-auto object-contain"
           />
-          <Card className="w-full space-y-6 bg-bg1 border border-black/10">
-            <div className="space-y-2">
-              <h1 className="text-2xl font-semibold text-black">
-                {t('resetPassword.title')}
-              </h1>
+          <Card className="w-full space-y-lg bg-bg1 border border-black/10">
+            <div className="space-y-sm">
+              <h1 className="text-2xl font-semibold text-black">{t('resetPassword.title')}</h1>
             </div>
             <FormMessage error>{t('resetPassword.errorExpired')}</FormMessage>
             <div className="text-center">
@@ -184,14 +182,10 @@ export function ResetPasswordPage() {
             alt="PipLinePro"
             className="mb-8 h-16 w-auto object-contain"
           />
-          <Card className="w-full space-y-6 bg-bg1 border border-black/10">
-            <div className="space-y-2">
-              <h1 className="text-2xl font-semibold text-black">
-                {t('resetPassword.success')}
-              </h1>
-              <p className="text-sm text-black/60">
-                {t('resetPassword.successMessage')}
-              </p>
+          <Card className="w-full space-y-lg bg-bg1 border border-black/10">
+            <div className="space-y-sm">
+              <h1 className="text-2xl font-semibold text-black">{t('resetPassword.success')}</h1>
+              <p className="text-sm text-black/60">{t('resetPassword.successMessage')}</p>
             </div>
             <Button
               variant="filled"
@@ -226,129 +220,121 @@ export function ResetPasswordPage() {
           className="mb-8 h-16 w-auto object-contain"
         />
 
-      <Card className="w-full space-y-6 bg-bg1 border border-black/10">
-        {/* Header */}
-        <div className="space-y-2">
-          <h1 className="text-2xl font-semibold text-black">
-            {t('resetPassword.title')}
-          </h1>
-          <p className="text-sm text-black/60">{t('resetPassword.subtitle')}</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          {/* New password */}
-          <div className="space-y-1">
-            <div className="relative">
-              <Input
-                id="new-password"
-                type={showPassword ? 'text' : 'password'}
-                title={t('resetPassword.newPassword')}
-                placeholder=" "
-                value={password}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setPassword(e.target.value)
-                }
-                required
-                autoComplete="new-password"
-                className="bg-black/5 pr-12"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-black/40 hover:text-black/80 transition-colors"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
-              </button>
-            </div>
-
-            {/* Strength checklist */}
-            {password.length > 0 && (
-              <ul className="mt-2 space-y-1">
-                {PASSWORD_RULES.map((rule) => {
-                  const passed = rule.test(password)
-                  return (
-                    <li
-                      key={rule.key}
-                      className={`flex items-center gap-1.5 text-xs ${
-                        passed ? 'text-green' : 'text-black/40'
-                      }`}
-                    >
-                      {passed ? (
-                        <CheckCircle size={14} weight="fill" />
-                      ) : (
-                        <XCircle size={14} />
-                      )}
-                      {t(rule.key)}
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
+        <Card className="w-full space-y-lg bg-bg1 border border-black/10">
+          {/* Header */}
+          <div className="space-y-sm">
+            <h1 className="text-2xl font-semibold text-black">{t('resetPassword.title')}</h1>
+            <p className="text-sm text-black/60">{t('resetPassword.subtitle')}</p>
           </div>
 
-          {/* Confirm password */}
-          <div className="space-y-1">
-            <div className="relative">
-              <Input
-                id="confirm-password"
-                type={showConfirm ? 'text' : 'password'}
-                title={t('resetPassword.confirmPassword')}
-                placeholder=" "
-                value={confirmPassword}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setConfirmPassword(e.target.value)
-                  if (confirmError) setConfirmError(validateConfirm(e.target.value))
-                }}
-                onBlur={() => {
-                  if (confirmPassword) setConfirmError(validateConfirm(confirmPassword))
-                }}
-                required
-                autoComplete="new-password"
-                className="bg-black/5 pr-12"
-                aria-invalid={!!confirmError}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirm(!showConfirm)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-black/40 hover:text-black/80 transition-colors"
-                aria-label={showConfirm ? 'Hide password' : 'Show password'}
-              >
-                {showConfirm ? <EyeSlash size={20} /> : <Eye size={20} />}
-              </button>
+          <form onSubmit={handleSubmit} className="space-y-md" noValidate>
+            {/* New password */}
+            <div className="space-y-1">
+              <div className="relative">
+                <Input
+                  id="new-password"
+                  type={showPassword ? 'text' : 'password'}
+                  title={t('resetPassword.newPassword')}
+                  placeholder=" "
+                  value={password}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                  className="bg-black/5 pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-black/40 hover:text-black/80 transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeSlash size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+
+              {/* Strength checklist */}
+              {password.length > 0 && (
+                <ul className="mt-2 space-y-1">
+                  {PASSWORD_RULES.map((rule) => {
+                    const passed = rule.test(password)
+                    return (
+                      <li
+                        key={rule.key}
+                        className={`flex items-center gap-1.5 text-xs ${
+                          passed ? 'text-green' : 'text-black/40'
+                        }`}
+                      >
+                        {passed ? <CheckCircle size={14} weight="fill" /> : <XCircle size={14} />}
+                        {t(rule.key)}
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
             </div>
-            {confirmError && <FormMessage error>{confirmError}</FormMessage>}
+
+            {/* Confirm password */}
+            <div className="space-y-1">
+              <div className="relative">
+                <Input
+                  id="confirm-password"
+                  type={showConfirm ? 'text' : 'password'}
+                  title={t('resetPassword.confirmPassword')}
+                  placeholder=" "
+                  value={confirmPassword}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setConfirmPassword(e.target.value)
+                    if (confirmError) setConfirmError(validateConfirm(e.target.value))
+                  }}
+                  onBlur={() => {
+                    if (confirmPassword) setConfirmError(validateConfirm(confirmPassword))
+                  }}
+                  required
+                  autoComplete="new-password"
+                  className="bg-black/5 pr-12"
+                  aria-invalid={!!confirmError}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm(!showConfirm)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-black/40 hover:text-black/80 transition-colors"
+                  aria-label={showConfirm ? 'Hide password' : 'Show password'}
+                >
+                  {showConfirm ? <EyeSlash size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+              {confirmError && <FormMessage error>{confirmError}</FormMessage>}
+            </div>
+
+            {/* Server error */}
+            {serverError && <FormMessage error>{serverError}</FormMessage>}
+
+            {/* Submit */}
+            <Button
+              type="submit"
+              variant="filled"
+              size="lg"
+              disabled={loading || !allRulesPassed}
+              className="w-full"
+            >
+              {loading ? (
+                <CircleNotch size={20} className="animate-spin" />
+              ) : (
+                <span className="font-semibold">{t('resetPassword.submit')}</span>
+              )}
+            </Button>
+          </form>
+
+          {/* Back to login */}
+          <div className="text-center">
+            <Link
+              to="/login"
+              className="text-sm text-brand underline-offset-4 transition-colors hover:underline"
+            >
+              {t('forgotPassword.backToLogin')}
+            </Link>
           </div>
-
-          {/* Server error */}
-          {serverError && <FormMessage error>{serverError}</FormMessage>}
-
-          {/* Submit */}
-          <Button
-            type="submit"
-            variant="filled"
-            size="lg"
-            disabled={loading || !allRulesPassed}
-            className="w-full"
-          >
-            {loading ? (
-              <CircleNotch size={20} className="animate-spin" />
-            ) : (
-              <span className="font-semibold">{t('resetPassword.submit')}</span>
-            )}
-          </Button>
-        </form>
-
-        {/* Back to login */}
-        <div className="text-center">
-          <Link
-            to="/login"
-            className="text-sm text-brand underline-offset-4 transition-colors hover:underline"
-          >
-            {t('forgotPassword.backToLogin')}
-          </Link>
-        </div>
-      </Card>
+        </Card>
       </div>
     </div>
   )
@@ -374,13 +360,8 @@ function TopRightControls({
   localeNames: Record<string, string>
 }) {
   return (
-    <div className="absolute right-4 top-4 flex items-center gap-2">
-      <Button
-        variant="gray"
-        size="sm"
-        onClick={toggleTheme}
-        aria-label="Toggle theme"
-      >
+    <div className="absolute right-4 top-4 flex items-center gap-sm">
+      <Button variant="gray" size="sm" onClick={toggleTheme} aria-label="Toggle theme">
         {resolvedTheme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
       </Button>
       <Button

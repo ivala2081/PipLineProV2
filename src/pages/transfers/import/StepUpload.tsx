@@ -7,10 +7,7 @@ import { parseCsvFile } from '@/lib/csvImport/parseCsv'
 import type { CsvRawRow } from '@/lib/csvImport/types'
 
 interface StepUploadProps {
-  onParsed: (result: {
-    rows: CsvRawRow[]
-    exchangeRates: Map<string, number>
-  }) => void
+  onParsed: (result: { rows: CsvRawRow[]; exchangeRates: Map<string, number> }) => void
 }
 
 export function StepUpload({ onParsed }: StepUploadProps) {
@@ -90,7 +87,7 @@ export function StepUpload({ onParsed }: StepUploadProps) {
   }
 
   return (
-    <div className="flex flex-col items-center gap-6 py-4">
+    <div className="flex flex-col items-center gap-lg py-4">
       {/* Drop zone */}
       <button
         type="button"
@@ -99,7 +96,7 @@ export function StepUpload({ onParsed }: StepUploadProps) {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={cn(
-          'flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-12 transition-colors',
+          'flex w-full flex-col items-center justify-center gap-sm rounded-xl border-2 border-dashed p-12 transition-colors',
           isDragging
             ? 'border-black/30 bg-black/5'
             : 'border-black/10 hover:border-black/20 hover:bg-black/[0.02]',
@@ -131,7 +128,7 @@ export function StepUpload({ onParsed }: StepUploadProps) {
 
       {/* File info */}
       {fileName && !error && (
-        <div className="flex w-full items-center gap-3 rounded-lg border border-black/10 bg-black/[0.02] px-4 py-3">
+        <div className="flex w-full items-center gap-sm rounded-lg border border-black/10 bg-black/[0.02] px-4 py-3">
           <File size={20} className="text-black/40" />
           <div className="flex-1">
             <p className="text-sm font-medium text-black/80">{fileName}</p>
@@ -144,7 +141,7 @@ export function StepUpload({ onParsed }: StepUploadProps) {
 
       {/* Error */}
       {error && (
-        <div className="flex w-full items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+        <div className="flex w-full items-start gap-sm rounded-lg border border-red-200 bg-red-50 px-4 py-3">
           <Warning size={20} className="mt-0.5 shrink-0 text-red-500" />
           <p className="text-sm text-red-700">{error}</p>
         </div>

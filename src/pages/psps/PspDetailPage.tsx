@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
@@ -14,7 +14,9 @@ import {
   Trash,
   Receipt,
   ArrowsDownUp,
+  ArrowsDownUp as SortIcon,
   SpinnerGap,
+  CaretDown,
 } from '@phosphor-icons/react'
 import {
   Button,
@@ -40,13 +42,18 @@ import {
   DialogTitle,
   DialogFooter,
   Input,
-  DateInput,
+  DatePickerField,
   Label,
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
+  DatePicker,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
 } from '@ds'
 import { useLocale } from '@ds/hooks'
 import { useAuth } from '@/app/providers/AuthProvider'
@@ -102,71 +109,107 @@ function SettlementFormDialog({
     formState: { errors },
   } = useForm<SettlementFormValues>({
     resolver: zodResolver(settlementFormSchema),
-    defaultValues: initialData ?? {
+    defaultValues: {
       settlement_date: new Date().toISOString().split('T')[0],
-      amount: 0,
+      amount: '' as unknown as number,
       currency: 'TL',
       notes: '',
     },
   })
 
+  // Re-populate form whenever the dialog opens (mirrors EntryDialog pattern)
+  useEffect(() => {
+    if (open) {
+      reset({
+        settlement_date: initialData?.settlement_date ?? new Date().toISOString().split('T')[0],
+        amount: (initialData?.amount || '') as unknown as number,
+        currency: (initialData?.currency ?? 'TL') as 'TL' | 'USD',
+        notes: initialData?.notes ?? '',
+      })
+    }
+  }, [open, initialData, reset])
+
   const currencyVal = watch('currency')
 
   const handleClose = () => {
-    reset()
     onClose()
   }
 
   const onSubmit = async (data: SettlementFormValues) => {
     await onSave(data)
-    reset()
   }
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>
             {isEdit ? t('psps.settlement.editTitle') : t('psps.settlement.title')}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
-          <div className="space-y-2">
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-md">
+          {/* Date */}
+          <div className="space-y-sm">
             <Label>{t('psps.settlement.date')}</Label>
-            <DateInput {...register('settlement_date')} />
+            <DatePickerField
+              value={watch('settlement_date')}
+              onChange={(e) => setValue('settlement_date', e.target.value)}
+            />
             {errors.settlement_date && (
               <p className="text-xs text-red-500">{errors.settlement_date.message}</p>
             )}
           </div>
-          <div className="space-y-2">
+
+          {/* Amount + Currency toggle */}
+          <div className="space-y-sm">
             <Label>{t('psps.settlement.amount')}</Label>
-            <Input type="number" step="0.01" min="0" {...register('amount')} />
+            <div className="flex items-start gap-sm">
+              <div className="flex-1">
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  className="text-lg font-semibold tabular-nums"
+                  {...register('amount')}
+                />
+              </div>
+              <div className="flex gap-1 pt-0.5">
+                <Button
+                  type="button"
+                  variant={currencyVal === 'TL' ? 'filled' : 'outline'}
+                  size="sm"
+                  className="w-14"
+                  onClick={() => setValue('currency', 'TL')}
+                >
+                  TL
+                </Button>
+                <Button
+                  type="button"
+                  variant={currencyVal === 'USD' ? 'filled' : 'outline'}
+                  size="sm"
+                  className="w-14"
+                  onClick={() => setValue('currency', 'USD')}
+                >
+                  USD
+                </Button>
+              </div>
+            </div>
             {errors.amount && <p className="text-xs text-red-500">{errors.amount.message}</p>}
           </div>
-          <div className="space-y-2">
-            <Label>{t('psps.settlement.currency')}</Label>
-            <Select
-              value={currencyVal}
-              onValueChange={(v) => setValue('currency', v as 'TL' | 'USD')}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="TL">TL</SelectItem>
-                <SelectItem value="USD">USD</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
+
+          {/* Notes */}
+          <div className="space-y-sm">
             <Label>{t('psps.settlement.notes')}</Label>
             <Input {...register('notes')} placeholder={t('psps.settlement.notesPlaceholder')} />
           </div>
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={handleClose} disabled={isSaving}>
               {t('psps.settlement.cancel')}
             </Button>
-            <Button type="submit" disabled={isSaving}>
+            <Button type="submit" variant="filled" disabled={isSaving}>
               {isSaving ? t('psps.settlement.saving') : t('psps.settlement.save')}
             </Button>
           </DialogFooter>
@@ -229,10 +272,52 @@ function DeleteConfirmDialog({
 /*  Ledger Tab                                                         */
 /* ------------------------------------------------------------------ */
 
-function LedgerTab({ pspId, currency }: { pspId: string; currency: string }) {
+function LedgerTab({
+  pspId,
+  currency,
+  dateFrom,
+  dateTo,
+  sortBy,
+  sortDir,
+  isAdmin,
+}: {
+  pspId: string
+  currency: string
+  dateFrom: string | null
+  dateTo: string | null
+  sortBy: PspLedgerSortKey
+  sortDir: 'asc' | 'desc'
+  isAdmin: boolean
+}) {
   const { t } = useTranslation('pages')
   const { locale } = useLocale()
   const { rows, isLoading } = usePspLedgerQuery(pspId)
+  const { createSettlement, isCreating } = usePspSettlementsQuery(pspId)
+  const { toast } = useToast()
+  const [quickFormOpen, setQuickFormOpen] = useState(false)
+  const [quickFormInitial, setQuickFormInitial] = useState<SettlementFormValues | undefined>(
+    undefined,
+  )
+
+  const handleQuickAdd = (date: string, net: number) => {
+    setQuickFormInitial({
+      settlement_date: date,
+      amount: net > 0 ? net : 0,
+      currency: (currency === 'USDT' ? 'USD' : currency) as 'TL' | 'USD',
+      notes: '',
+    })
+    setQuickFormOpen(true)
+  }
+
+  const handleQuickSave = async (data: SettlementFormValues) => {
+    try {
+      await createSettlement(data)
+      toast({ title: t('psps.toast.settlementCreated'), variant: 'success' })
+      setQuickFormOpen(false)
+    } catch {
+      toast({ title: t('psps.toast.error'), variant: 'error' })
+    }
+  }
 
   const localeTag = locale === 'tr' ? 'tr-TR' : 'en-US'
 
@@ -243,9 +328,23 @@ function LedgerTab({ pspId, currency }: { pspId: string; currency: string }) {
       year: 'numeric',
     })
 
+  const filteredAndSortedRows = useMemo(() => {
+    let result = [...rows]
+    if (dateFrom) result = result.filter((r) => r.date >= dateFrom)
+    if (dateTo) result = result.filter((r) => r.date <= dateTo)
+    result.sort((a, b) => {
+      const mul = sortDir === 'asc' ? 1 : -1
+      const av = a[sortBy as keyof typeof a]
+      const bv = b[sortBy as keyof typeof b]
+      if (typeof av === 'string' && typeof bv === 'string') return mul * av.localeCompare(bv)
+      return mul * (Number(av) - Number(bv))
+    })
+    return result
+  }, [rows, dateFrom, dateTo, sortBy, sortDir])
+
   if (isLoading) {
     return (
-      <div className="space-y-3 pt-4">
+      <div className="space-y-sm pt-md">
         {Array.from({ length: 5 }).map((_, i) => (
           <Skeleton key={i} className="h-10 w-full rounded" />
         ))}
@@ -267,120 +366,154 @@ function LedgerTab({ pspId, currency }: { pspId: string; currency: string }) {
 
   const cur = <span className="ml-1 text-[10px] font-normal text-black/30">{currency}</span>
 
-  return (
-    <div className="pt-4">
-      <div className="overflow-x-auto rounded-lg border border-black/10">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-black/[0.02]">
-              <TableHead className="w-[110px]">{t('psps.columns.date')}</TableHead>
-              <TableHead className="text-right">
-                {t('psps.columns.deposit')}
-                {cur}
-              </TableHead>
-              <TableHead className="text-right">
-                {t('psps.columns.withdrawal')}
-                {cur}
-              </TableHead>
-              <TableHead className="text-right">
-                {t('psps.columns.total')}
-                {cur}
-              </TableHead>
-              <TableHead className="text-right">
-                {t('psps.columns.commission')}
-                {cur}
-              </TableHead>
-              <TableHead className="text-right">
-                {t('psps.columns.net')}
-                {cur}
-              </TableHead>
-              <TableHead className="text-right">
-                {t('psps.columns.settlement')}
-                {cur}
-              </TableHead>
-              <TableHead className="text-right">
-                {t('psps.columns.kasaTop')}
-                {cur}
-              </TableHead>
-              <TableHead className="text-right">
-                {t('psps.columns.devir')}
-                {cur}
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((row) => (
-              <TableRow
-                key={row.date}
-                className={row.settlement > 0 ? 'bg-green/[0.03]' : 'hover:bg-black/[0.01]'}
-              >
-                <TableCell className="text-xs font-medium">{formatDate(row.date)}</TableCell>
-                {/* YATIRIM – deposits */}
-                <TableCell className="text-right tabular-nums text-sm text-green-600">
-                  {row.deposit > 0 ? formatCurrency(row.deposit) : '–'}
-                </TableCell>
-                {/* ÇEKME – withdrawals displayed as negative */}
-                <TableCell className="text-right tabular-nums text-sm text-red-500">
-                  {row.withdrawal > 0 ? `-${formatCurrency(row.withdrawal)}` : '–'}
-                </TableCell>
-                {/* TOPLAM = deposit - withdrawal */}
-                <TableCell className="text-right tabular-nums text-sm font-medium">
-                  <span
-                    className={
-                      row.total > 0
-                        ? 'text-green-600'
-                        : row.total < 0
-                          ? 'text-red-500'
-                          : 'text-black/40'
-                    }
-                  >
-                    {row.deposit > 0 || row.withdrawal > 0 ? formatCurrency(row.total) : '–'}
-                  </span>
-                </TableCell>
-                {/* KOMİSYON */}
-                <TableCell className="text-right tabular-nums text-sm text-black/50">
-                  {row.commission > 0 ? formatCurrency(row.commission) : '–'}
-                </TableCell>
-                {/* NET */}
-                <TableCell className="text-right tabular-nums text-sm font-medium">
-                  <span
-                    className={
-                      row.net > 0
-                        ? 'text-green-600'
-                        : row.net < 0
-                          ? 'text-red-500'
-                          : 'text-black/40'
-                    }
-                  >
-                    {row.deposit > 0 || row.withdrawal > 0 ? formatCurrency(row.net) : '–'}
-                  </span>
-                </TableCell>
-                {/* TAHS TUTARI */}
-                <TableCell className="text-right tabular-nums text-sm font-medium text-blue">
-                  {row.settlement > 0 ? formatCurrency(row.settlement) : '–'}
-                </TableCell>
-                {/* KASA TOP = devir + net */}
-                <TableCell
-                  className={`text-right tabular-nums text-sm font-semibold ${
-                    row.kasaTop > 0
-                      ? 'text-amber-600'
-                      : row.kasaTop < 0
-                        ? 'text-red-500'
-                        : 'text-green-600'
-                  }`}
-                >
-                  {formatCurrency(row.kasaTop)}
-                </TableCell>
-                {/* DEVİR – carry-over from previous day */}
-                <TableCell className="text-right tabular-nums text-sm text-black/40">
-                  {row.devir !== 0 ? formatCurrency(row.devir) : '–'}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+  if (filteredAndSortedRows.length === 0) {
+    return (
+      <div className="pt-4">
+        <EmptyState
+          icon={ArrowsDownUp}
+          title={t('psps.detail.noData')}
+          description={t('psps.ledger.noResultsForDate', 'No entries for the selected date range.')}
+        />
       </div>
-    </div>
+    )
+  }
+
+  return (
+    <>
+      <div className="pt-4">
+        <div className="overflow-x-auto rounded-lg border border-black/10">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-black/[0.02]">
+                <TableHead className="w-[110px]">{t('psps.columns.date')}</TableHead>
+                <TableHead className="text-right">
+                  {t('psps.columns.deposit')}
+                  {cur}
+                </TableHead>
+                <TableHead className="text-right">
+                  {t('psps.columns.withdrawal')}
+                  {cur}
+                </TableHead>
+                <TableHead className="text-right">
+                  {t('psps.columns.total')}
+                  {cur}
+                </TableHead>
+                <TableHead className="text-right">
+                  {t('psps.columns.commission')}
+                  {cur}
+                </TableHead>
+                <TableHead className="text-right">
+                  {t('psps.columns.net')}
+                  {cur}
+                </TableHead>
+                <TableHead className="text-right">
+                  {t('psps.columns.settlement')}
+                  {cur}
+                </TableHead>
+                <TableHead className="text-right">
+                  {t('psps.columns.kasaTop')}
+                  {cur}
+                </TableHead>
+                <TableHead className="text-right">
+                  {t('psps.columns.devir')}
+                  {cur}
+                </TableHead>
+                {isAdmin && <TableHead className="w-10" />}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredAndSortedRows.map((row) => (
+                <TableRow
+                  key={row.date}
+                  className={`group ${row.settlement > 0 ? 'bg-green/[0.03]' : 'hover:bg-black/[0.01]'}`}
+                >
+                  <TableCell className="text-xs font-medium">{formatDate(row.date)}</TableCell>
+                  {/* YATIRIM – deposits */}
+                  <TableCell className="text-right tabular-nums text-sm text-green-600">
+                    {row.deposit > 0 ? formatCurrency(row.deposit) : '–'}
+                  </TableCell>
+                  {/* ÇEKME – withdrawals displayed as negative */}
+                  <TableCell className="text-right tabular-nums text-sm text-red-500">
+                    {row.withdrawal > 0 ? `-${formatCurrency(row.withdrawal)}` : '–'}
+                  </TableCell>
+                  {/* TOPLAM = deposit - withdrawal */}
+                  <TableCell className="text-right tabular-nums text-sm font-medium">
+                    <span
+                      className={
+                        row.total > 0
+                          ? 'text-green-600'
+                          : row.total < 0
+                            ? 'text-red-500'
+                            : 'text-black/40'
+                      }
+                    >
+                      {row.deposit > 0 || row.withdrawal > 0 ? formatCurrency(row.total) : '–'}
+                    </span>
+                  </TableCell>
+                  {/* KOMİSYON */}
+                  <TableCell className="text-right tabular-nums text-sm text-black/50">
+                    {row.commission > 0 ? formatCurrency(row.commission) : '–'}
+                  </TableCell>
+                  {/* NET */}
+                  <TableCell className="text-right tabular-nums text-sm font-medium">
+                    <span
+                      className={
+                        row.net > 0
+                          ? 'text-green-600'
+                          : row.net < 0
+                            ? 'text-red-500'
+                            : 'text-black/40'
+                      }
+                    >
+                      {row.deposit > 0 || row.withdrawal > 0 ? formatCurrency(row.net) : '–'}
+                    </span>
+                  </TableCell>
+                  {/* TAHS TUTARI */}
+                  <TableCell className="text-right tabular-nums text-sm font-medium text-blue">
+                    {row.settlement > 0 ? formatCurrency(row.settlement) : '–'}
+                  </TableCell>
+                  {/* KASA TOP = devir + net */}
+                  <TableCell
+                    className={`text-right tabular-nums text-sm font-semibold ${
+                      row.kasaTop > 0
+                        ? 'text-amber-600'
+                        : row.kasaTop < 0
+                          ? 'text-red-500'
+                          : 'text-green-600'
+                    }`}
+                  >
+                    {formatCurrency(row.kasaTop)}
+                  </TableCell>
+                  {/* DEVİR – carry-over from previous day */}
+                  <TableCell className="text-right tabular-nums text-sm text-black/40">
+                    {row.devir !== 0 ? formatCurrency(row.devir) : '–'}
+                  </TableCell>
+                  {isAdmin && (
+                    <TableCell className="w-10 px-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="size-7 p-0 opacity-0 transition-opacity group-hover:opacity-100"
+                        onClick={() => handleQuickAdd(row.date, row.net)}
+                      >
+                        <Receipt size={13} />
+                      </Button>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+      <SettlementFormDialog
+        open={quickFormOpen}
+        onClose={() => setQuickFormOpen(false)}
+        onSave={handleQuickSave}
+        isSaving={isCreating}
+        initialData={quickFormInitial}
+      />
+    </>
   )
 }
 
@@ -996,7 +1129,7 @@ function SettingsTab({
                     <Label className="mb-1 text-xs font-medium">
                       {t('transfers.settings.effectiveFrom')}
                     </Label>
-                    <DateInput
+                    <DatePickerField
                       value={effectiveFrom}
                       onChange={(e) => setEffectiveFrom(e.target.value)}
                     />
@@ -1182,10 +1315,26 @@ function SettingsTab({
 /*  PSP Detail Page                                                    */
 /* ------------------------------------------------------------------ */
 
+type PspLedgerSortKey =
+  | 'date'
+  | 'deposit'
+  | 'withdrawal'
+  | 'total'
+  | 'commission'
+  | 'net'
+  | 'settlement'
+  | 'kasaTop'
+  | 'devir'
+
 export function PspDetailPage() {
   const { pspId } = useParams<{ pspId: string }>()
   const navigate = useNavigate()
   const { t } = useTranslation('pages')
+  const [activeTab, setActiveTab] = useState('ledger')
+  const [ledgerDateFrom, setLedgerDateFrom] = useState<string | null>(null)
+  const [ledgerDateTo, setLedgerDateTo] = useState<string | null>(null)
+  const [ledgerSortBy, setLedgerSortBy] = useState<PspLedgerSortKey>('date')
+  const [ledgerSortDir, setLedgerSortDir] = useState<'asc' | 'desc'>('desc')
   const { locale } = useLocale()
   const { isGod } = useAuth()
   const { membership } = useOrganization()
@@ -1260,33 +1409,60 @@ export function PspDetailPage() {
       </Button>
 
       {/* PSP Header Card */}
-      <Card padding="spacious" className="border border-black/5 bg-bg1">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex size-14 items-center justify-center rounded-xl bg-black/5">
-              <CreditCard size={24} className="text-black/40" />
-            </div>
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-semibold">{psp.psp_name}</h1>
-                <Tag variant={psp.is_active ? 'green' : 'red'}>
-                  {psp.is_active ? t('psps.card.active') : t('psps.card.inactive')}
-                </Tag>
-                {psp.is_internal && <Tag variant="blue">{t('psps.settings.internalTag')}</Tag>}
+      <Card padding="none" className="overflow-hidden border border-black/5 bg-bg1">
+        <div className="flex">
+          {/* Left accent stripe — blue for internal, balance-based for external */}
+          <div
+            className={`w-1 shrink-0 ${
+              psp.is_internal
+                ? 'bg-blue-400'
+                : psp.balance > 0
+                  ? 'bg-amber-400'
+                  : psp.balance < 0
+                    ? 'bg-red-400'
+                    : 'bg-green-400'
+            }`}
+          />
+          <div className="flex flex-1 items-center justify-between px-5 py-4">
+            <div className="flex items-center gap-4">
+              <div
+                className={`flex size-12 items-center justify-center rounded-xl ${
+                  psp.is_internal ? 'bg-blue-50' : 'bg-black/5'
+                }`}
+              >
+                <CreditCard
+                  size={22}
+                  className={psp.is_internal ? 'text-blue-400' : 'text-black/40'}
+                />
               </div>
-              <div className="mt-1 flex items-center gap-3">
-                <span className="text-sm text-black/60">
-                  {t('psps.card.commission')}:{' '}
-                  <span className="font-medium">{(psp.commission_rate * 100).toFixed(1)}%</span>
-                </span>
-                {psp.last_settlement_date && (
-                  <>
-                    <span className="text-black/20">·</span>
-                    <span className="text-sm text-black/40">
-                      {t('psps.card.lastSettlement')}: {formatDate(psp.last_settlement_date)}
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <h1 className="text-xl font-semibold">{psp.psp_name}</h1>
+                  <Tag variant={psp.is_active ? 'green' : 'red'} className="text-[11px]">
+                    {psp.is_active ? t('psps.card.active') : t('psps.card.inactive')}
+                  </Tag>
+                  {psp.is_internal && (
+                    <Tag variant="blue" className="text-[11px]">
+                      {t('psps.settings.internalTag')}
+                    </Tag>
+                  )}
+                </div>
+                <div className="mt-1 flex items-center gap-3">
+                  <span className="text-xs text-black/50">
+                    {t('psps.card.commission')}:{' '}
+                    <span className="font-semibold text-black/70">
+                      {(psp.commission_rate * 100).toFixed(1)}%
                     </span>
-                  </>
-                )}
+                  </span>
+                  {psp.last_settlement_date && (
+                    <>
+                      <span className="text-black/20">·</span>
+                      <span className="text-xs text-black/40">
+                        {t('psps.card.lastSettlement')}: {formatDate(psp.last_settlement_date)}
+                      </span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -1300,8 +1476,16 @@ export function PspDetailPage() {
         {!psp.is_internal && (
           <StatCard
             icon={Coins}
-            iconBg="bg-amber-100"
-            iconColor="text-amber-600"
+            iconBg={
+              psp.balance > 0 ? 'bg-amber-100' : psp.balance < 0 ? 'bg-red-100' : 'bg-green-100'
+            }
+            iconColor={
+              psp.balance > 0
+                ? 'text-amber-600'
+                : psp.balance < 0
+                  ? 'text-red-600'
+                  : 'text-green-600'
+            }
             label={t('psps.stats.outstanding')}
             value={formatCurrency(psp.balance)}
           />
@@ -1341,19 +1525,85 @@ export function PspDetailPage() {
       </div>
 
       {/* Tabs: Ledger + Settlements */}
-      <Tabs defaultValue="ledger">
-        <TabsList>
-          <TabsTrigger value="ledger">{t('psps.detail.tabs.ledger', 'Ledger')}</TabsTrigger>
-          {!psp.is_internal && (
-            <TabsTrigger value="settlements">
-              {t('psps.detail.tabs.settlements', 'Settlements')}
-            </TabsTrigger>
-          )}
-          <TabsTrigger value="settings">{t('psps.detail.tabs.settings', 'Settings')}</TabsTrigger>
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <TabsList>
+            <TabsTrigger value="ledger">{t('psps.detail.tabs.ledger', 'Ledger')}</TabsTrigger>
+            {!psp.is_internal && (
+              <TabsTrigger value="settlements">
+                {t('psps.detail.tabs.settlements', 'Settlements')}
+              </TabsTrigger>
+            )}
+            <TabsTrigger value="settings">{t('psps.detail.tabs.settings', 'Settings')}</TabsTrigger>
+          </TabsList>
+          <div className="flex items-center gap-2">
+            {activeTab === 'ledger' && psp && (
+              <>
+                <DatePicker
+                  dateFrom={ledgerDateFrom}
+                  dateTo={ledgerDateTo}
+                  onChange={(from, to) => {
+                    setLedgerDateFrom(from)
+                    setLedgerDateTo(to)
+                  }}
+                />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex h-8 min-w-[10rem] items-center gap-2 rounded-lg border border-black/10 bg-bg1 px-3 text-left text-xs font-medium transition-colors hover:border-black/20 hover:bg-black/[0.02]"
+                    >
+                      <SortIcon size={14} className="text-black/40" />
+                      <span className="flex-1 truncate">
+                        {t('psps.ledger.sortBy', 'Sort by')}:{' '}
+                        {t(`psps.ledger.sort.${ledgerSortBy}`)}
+                      </span>
+                      <CaretDown size={12} className="text-black/40" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="min-w-[11rem]">
+                    {(
+                      [
+                        'date',
+                        'deposit',
+                        'withdrawal',
+                        'total',
+                        'commission',
+                        'net',
+                        'settlement',
+                        'kasaTop',
+                        'devir',
+                      ] as const
+                    ).map((key) => (
+                      <DropdownMenuItem
+                        key={key}
+                        onClick={() => {
+                          setLedgerSortBy(key)
+                          setLedgerSortDir((d) =>
+                            ledgerSortBy === key ? (d === 'asc' ? 'desc' : 'asc') : 'desc',
+                          )
+                        }}
+                      >
+                        {t(`psps.ledger.sort.${key}`)}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
+          </div>
+        </div>
 
         <TabsContent value="ledger">
-          <LedgerTab pspId={pspId!} currency={psp.currency ?? 'TL'} />
+          <LedgerTab
+            pspId={pspId!}
+            currency={psp.currency ?? 'TL'}
+            dateFrom={ledgerDateFrom}
+            dateTo={ledgerDateTo}
+            sortBy={ledgerSortBy}
+            sortDir={ledgerSortDir}
+            isAdmin={isAdmin}
+          />
         </TabsContent>
 
         {!psp.is_internal && (

@@ -10,7 +10,7 @@ export type TabsListProps = ComponentProps<typeof TabsPrimitive.List>
 export const TabsList: FC<TabsListProps> = ({ className, ...props }) => (
   <TabsPrimitive.List
     className={cn(
-      'inline-flex h-10 items-center justify-center gap-1 rounded-xl bg-black/5 p-1 text-black/40',
+      'inline-flex h-10 items-center justify-center gap-xs rounded-xl bg-black/5 p-xs text-black/40',
       className,
     )}
     {...props}
@@ -37,7 +37,7 @@ export type TabsContentProps = ComponentProps<typeof TabsPrimitive.Content>
 export const TabsContent: FC<TabsContentProps> = ({ className, ...props }) => (
   <TabsPrimitive.Content
     className={cn(
-      'mt-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/5 focus-visible:ring-offset-2',
+      'mt-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/5 focus-visible:ring-offset-2',
       className,
     )}
     {...props}

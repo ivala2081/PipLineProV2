@@ -132,8 +132,8 @@ function AuditDetailButton({ log }: { log: GodAuditLog }) {
             <DialogTitle>{t('security.dialog.title')}</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-3 text-sm">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="space-y-sm text-sm">
+            <div className="flex flex-wrap items-center gap-sm">
               <Tag variant={getActionVariant(log.action)}>{log.action}</Tag>
               <span className="font-mono text-xs text-black/50">{log.table_name}</span>
               <span className="text-xs text-black/30">
@@ -271,7 +271,7 @@ export function SecurityDashboard() {
   const auditCount = godAudit?.length ?? 0
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-lg">
       {/* ── Header (standard pattern: matches transfers, accounting, psps) ── */}
       <div className="flex items-center justify-between">
         <div>
@@ -291,15 +291,15 @@ export function SecurityDashboard() {
         {/* ── Overview Tab ── */}
         <TabsContent value="overview">
           {metricsLoading ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-4">
               {[...Array(8)].map((_, i) => (
                 <StatCard key={i} icon={Lightning} label="" value="" isLoading />
               ))}
             </div>
           ) : metricsError || !metrics?.length ? (
             <Card padding="compact">
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2 text-sm text-black/40">
+              <div className="flex flex-col gap-xs">
+                <div className="flex items-center gap-sm text-sm text-black/40">
                   <Warning size={16} />
                   {t('security.metricsUnavailable')}
                 </div>
@@ -309,7 +309,7 @@ export function SecurityDashboard() {
               </div>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-4">
               {metrics.map((metric) => {
                 const mi = getMetricIcon(metric.metric)
                 return (
@@ -378,7 +378,7 @@ export function SecurityDashboard() {
               </Table>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-black/10 bg-bg1 py-20">
+            <div className="flex flex-col items-center justify-center gap-sm rounded-xl border border-black/10 bg-bg1 py-20">
               <div className="flex size-12 items-center justify-center rounded-full bg-black/[0.04]">
                 <Shield size={20} className="text-black/30" />
               </div>
@@ -442,7 +442,7 @@ export function SecurityDashboard() {
               </Table>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-black/10 bg-bg1 py-20">
+            <div className="flex flex-col items-center justify-center gap-sm rounded-xl border border-black/10 bg-bg1 py-20">
               <div className="flex size-12 items-center justify-center rounded-full bg-black/[0.04]">
                 <Eye size={20} className="text-black/30" />
               </div>

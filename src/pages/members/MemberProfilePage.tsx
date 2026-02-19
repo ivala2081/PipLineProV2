@@ -126,9 +126,9 @@ export function MemberProfilePage() {
           </div>
         </div>
 
-        <div className="pt-16 space-y-6">
+        <div className="pt-16 space-y-lg">
           <Skeleton className="h-12 w-64" />
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-lg lg:grid-cols-3">
             <Skeleton className="h-40 rounded-xl" />
             <Skeleton className="h-40 rounded-xl" />
             <Skeleton className="h-40 rounded-xl" />
@@ -141,7 +141,7 @@ export function MemberProfilePage() {
   /* ----- Not Found ----- */
   if (isError || !profileData) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 py-20">
+      <div className="flex flex-col items-center justify-center gap-md py-20">
         <EmptyState
           icon={User}
           title={t('memberProfile.notFound')}
@@ -165,7 +165,7 @@ export function MemberProfilePage() {
   }))
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-xl pb-12">
       {/* Back button */}
       <Button variant="gray" size="sm" onClick={() => navigate('/members')}>
         <ArrowLeft size={16} />
@@ -219,12 +219,12 @@ export function MemberProfilePage() {
           </div>
 
           {/* Name and basic info */}
-          <div className="space-y-4">
+          <div className="space-y-md">
             <h1 className="text-4xl font-bold tracking-tight text-black/90">{displayName}</h1>
 
             {/* Metadata row */}
-            <div className="flex flex-wrap items-center gap-4 text-sm text-black/60">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-md text-sm text-black/60">
+              <div className="flex items-center gap-sm">
                 <CalendarBlank size={16} />
                 <span>
                   {t('memberProfile.fields.memberSince')} {formatDate(profileData.created_at)}
@@ -234,7 +234,7 @@ export function MemberProfilePage() {
               {profileData.department && (
                 <>
                   <span className="text-black/20">|</span>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-sm">
                     <Briefcase size={16} />
                     <span>{profileData.department}</span>
                   </div>
@@ -243,11 +243,11 @@ export function MemberProfilePage() {
             </div>
 
             {/* Roles */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-sm">
               {roles.map((r) => (
                 <div
                   key={r.orgId}
-                  className="inline-flex items-center gap-2 rounded-lg border border-black/[0.08] bg-white px-3 py-1.5"
+                  className="inline-flex items-center gap-sm rounded-lg border border-black/[0.08] bg-white px-3 py-1.5"
                 >
                   <div
                     className={`size-1.5 rounded-full ${r.role === 'admin' ? 'bg-green' : r.role === 'manager' ? 'bg-purple' : 'bg-blue'}`}
@@ -265,7 +265,7 @@ export function MemberProfilePage() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-lg lg:grid-cols-3">
         {/* Left Column - Primary Info */}
         <div className="space-y-6 lg:col-span-2">
           {/* Contact Information */}
@@ -277,7 +277,7 @@ export function MemberProfilePage() {
             </div>
             <div className="p-6 space-y-6">
               {/* Phone */}
-              <div className="flex items-start gap-4">
+              <div className="flex items-start gap-md">
                 <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-black/[0.02]">
                   <Phone size={18} className="text-black/50" />
                 </div>
@@ -296,7 +296,7 @@ export function MemberProfilePage() {
               <Separator />
 
               {/* Department */}
-              <div className="flex items-start gap-4">
+              <div className="flex items-start gap-md">
                 <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-black/[0.02]">
                   <Briefcase size={18} className="text-black/50" />
                 </div>
@@ -337,7 +337,7 @@ export function MemberProfilePage() {
             <div className="group relative overflow-hidden rounded-xl border-2 border-dashed border-black/[0.12] bg-black/[0.01]">
               <div className="border-b border-black/[0.08] bg-black/[0.02] px-6 py-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-sm">
                     <ShieldCheck size={16} className="text-black/40" weight="fill" />
                     <h2 className="text-sm font-semibold uppercase tracking-wide text-black/50">
                       {t('memberProfile.sections.notes')}
@@ -380,7 +380,7 @@ export function MemberProfilePage() {
                     <button
                       key={m.organization_id}
                       onClick={() => navigate(`/organizations/${m.organization_id}`)}
-                      className="group flex w-full items-center gap-3 px-6 py-4 text-left transition-colors hover:bg-black/[0.01]"
+                      className="group flex w-full items-center gap-sm px-6 py-4 text-left transition-colors hover:bg-black/[0.01]"
                     >
                       <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-black/[0.06] bg-black/[0.01] transition-colors group-hover:border-brand group-hover:bg-brand/5">
                         <Buildings
@@ -410,7 +410,7 @@ export function MemberProfilePage() {
 
             {/* Info Card */}
             <div className="rounded-xl border border-black/[0.08] bg-gradient-to-br from-blue/[0.02] to-transparent p-6">
-              <div className="mb-3 flex items-center gap-2 text-blue">
+              <div className="mb-3 flex items-center gap-sm text-blue">
                 <Info size={18} weight="fill" />
                 <h3 className="text-sm font-semibold">{t('memberProfile.profileInfo')}</h3>
               </div>

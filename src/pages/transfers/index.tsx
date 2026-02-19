@@ -66,13 +66,13 @@ export function TransfersPage() {
   )
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-lg">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">{t('transfers.title')}</h1>
           <p className="mt-1 text-sm text-black/60">{t('transfers.subtitle')}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-sm">
           <Button variant="outline" onClick={() => setImportOpen(true)}>
             <UploadSimple size={16} weight="bold" />
             {t('transfers.importCsv')}

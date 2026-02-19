@@ -44,7 +44,7 @@ export function OrganizationsListPage() {
   }, [organizations, search, statusFilter])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-lg">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -60,7 +60,7 @@ export function OrganizationsListPage() {
       </div>
 
       {/* Search + Filter Bar (minimal) */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-sm">
         <div className="relative w-56">
           <MagnifyingGlass
             size={14}

@@ -57,9 +57,7 @@ export function LookupFormDialog({
           commission_rate: hasCommissionRate
             ? ((editingItem.commission_rate as number) ?? 0) * 100
             : undefined,
-          is_deposit: hasIsDeposit
-            ? ((editingItem.is_deposit as boolean) ?? true)
-            : undefined,
+          is_deposit: hasIsDeposit ? ((editingItem.is_deposit as boolean) ?? true) : undefined,
         })
       } else {
         form.reset({
@@ -91,11 +89,9 @@ export function LookupFormDialog({
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-md">
           <div>
-            <Label className="mb-1 text-sm font-medium">
-              {t('transfers.settings.name')}
-            </Label>
+            <Label className="mb-1 text-sm font-medium">{t('transfers.settings.name')}</Label>
             <Input
               {...form.register('name', { required: true })}
               placeholder={t('transfers.settings.namePlaceholder')}
@@ -122,7 +118,7 @@ export function LookupFormDialog({
           )}
 
           {hasIsDeposit && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-sm">
               <input
                 type="checkbox"
                 id="is-deposit"

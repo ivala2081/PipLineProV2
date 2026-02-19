@@ -320,7 +320,20 @@
       "editMonthlyRate": "Kuru Düzenle",
       "rateUpdating": "Güncelleniyor...",
       "rateUpdated": "Kur güncellendi ({{tl}} TL + {{usd}} USD transfer)",
-      "rateUpdateFailed": "Kur güncellenemedi"
+      "rateUpdateFailed": "Kur güncellenemedi",
+      "tether": "Tether (USDT)",
+      "bankAndCC": "Banka + Kart",
+      "usdtNet": "USDT Net",
+      "usdCevirim": "USD Çevrim",
+      "komSonUsd": "Kom. Son. USD",
+      "finansPct": "Finans Maliyeti",
+      "dailyBreakdown": "Günlük Dökümü",
+      "date": "Tarih",
+      "banka": "Banka (₺)",
+      "komisyon": "Komisyon (₺)",
+      "kk": "KK (₺)",
+      "kur": "Kur",
+      "total": "Toplam"
     },
     "settings": {
       "title": "Arama Ayarları",
@@ -730,6 +743,21 @@
         "ledger": "Hesap Defteri",
         "settlements": "Tahsilatlar",
         "settings": "Ayarlar"
+      }
+    },
+    "ledger": {
+      "sortBy": "Sırala",
+      "noResultsForDate": "Seçilen tarih aralığında kayıt yok.",
+      "sort": {
+        "date": "Tarih",
+        "deposit": "Yatırım",
+        "withdrawal": "Çekme",
+        "total": "Toplam",
+        "commission": "Komisyon",
+        "net": "Net",
+        "settlement": "Tahs. Tutarı",
+        "kasaTop": "Kasa Top.",
+        "devir": "Devir"
       }
     },
     "columns": {

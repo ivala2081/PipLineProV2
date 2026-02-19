@@ -17,12 +17,38 @@ export interface MonthlyKpis {
   transfer_count: number
   deposit_count: number
   withdrawal_count: number
+  // Per-direction USD breakdowns (migration 056)
+  usdt_deposits_usd: number
+  usdt_withdrawals_usd: number
+  bank_cc_deposits_usd: number
+  bank_cc_withdrawals_usd: number
+  // USD summary KPIs (migration 057)
+  usdt_net: number // deposits_usd − withdrawals_usd (can be negative)
+  commission_usd: number // total commission expressed in USD
+  bank_usd_gross: number // non-USDT transfers total in USD
+  usd_cevirim: number // bank_usd_gross + usdt_net
+  kom_son_usd: number // usd_cevirim − commission_usd
+  finans_pct: number // commission_usd / usd_cevirim × 100
 }
 
 export interface DailyVolumePoint {
   day: string
   deposits: number
   withdrawals: number
+}
+
+export interface DailyDetailedPoint {
+  day: string
+  bank_try: number
+  kk_try: number
+  commission_try: number
+  usdt_net: number
+  bank_usd: number
+  commission_usd: number
+  avg_rate: number | null
+  usd_cevirim: number
+  kom_son_usd: number
+  finans_pct: number | null // NULL when usd_cevirim <= 0
 }
 
 export interface DailyNetPoint {
@@ -65,6 +91,7 @@ export interface MonthlySummaryData {
   insights: MonthlyInsights
   daily_volume: DailyVolumePoint[]
   daily_net: DailyNetPoint[]
+  daily_detailed: DailyDetailedPoint[]
   psp_breakdown: BreakdownItem[]
   payment_method_breakdown: BreakdownItem[]
   category_breakdown: CategoryBreakdownItem[]

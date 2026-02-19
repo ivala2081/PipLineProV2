@@ -64,7 +64,7 @@ export function PspsPage() {
   const hasPsps = psps.length > 0
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-lg">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -95,7 +95,7 @@ export function PspsPage() {
           }
         />
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-md sm:grid-cols-2 lg:grid-cols-3">
           {isLoading
             ? Array.from({ length: 3 }).map((_, i) => (
                 <Card
@@ -109,11 +109,13 @@ export function PspsPage() {
             : psps.map((psp) => {
                 const accentColor = !psp.is_active
                   ? 'bg-black/20'
-                  : psp.balance > 0
-                    ? 'bg-amber-500'
-                    : psp.balance < 0
-                      ? 'bg-red-500'
-                      : 'bg-green-500'
+                  : psp.is_internal
+                    ? 'bg-blue-400'
+                    : psp.balance > 0
+                      ? 'bg-amber-500'
+                      : psp.balance < 0
+                        ? 'bg-red-500'
+                        : 'bg-green-500'
 
                 return (
                   <Card
@@ -128,7 +130,7 @@ export function PspsPage() {
                       {/* Left accent bar */}
                       <div className={`w-1 shrink-0 ${accentColor}`} />
 
-                      <div className="flex flex-1 flex-col gap-3 p-4">
+                      <div className="flex flex-1 flex-col gap-sm p-md">
                         {/* Top row: name + tags + arrow */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2.5">
@@ -170,7 +172,7 @@ export function PspsPage() {
                         </div>
 
                         {/* Subtle footer */}
-                        <div className="flex items-center gap-1 text-[11px] text-black/30">
+                        <div className="flex items-center gap-xs text-[11px] text-black/30">
                           <Clock size={10} />
                           {psp.last_settlement_date ?? t('psps.card.noSettlement')}
                         </div>
@@ -188,8 +190,8 @@ export function PspsPage() {
           <DialogHeader>
             <DialogTitle>{t('psps.addPsp')}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
+          <div className="space-y-md py-2">
+            <div className="space-y-sm">
               <Label>{t('psps.columns.name')}</Label>
               <Input
                 value={newName}
@@ -198,7 +200,7 @@ export function PspsPage() {
                 autoFocus
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-sm">
               <Label>{t('psps.card.commission')} (%)</Label>
               <Input
                 type="number"

@@ -201,9 +201,9 @@ export function CsvImportDialog({ open, onClose, lookupData }: CsvImportDialogPr
         </DialogHeader>
 
         {/* Step indicator */}
-        <div className="flex items-center justify-center gap-2 py-4">
+        <div className="flex items-center justify-center gap-sm py-4">
           {STEPS.map((s, idx) => (
-            <div key={s} className="flex items-center gap-2">
+            <div key={s} className="flex items-center gap-sm">
               <div
                 className={cn(
                   'flex size-7 items-center justify-center rounded-full text-xs font-medium transition-colors',
@@ -288,7 +288,7 @@ function MissingLookupsBanner({ missing }: { missing: MissingLookups }) {
 
   return (
     <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-sm">
         <Warning size={20} weight="fill" className="mt-0.5 shrink-0 text-red-500" />
         <div className="flex-1">
           <p className="text-sm font-medium text-red-800">Invalid lookup values in CSV</p>
@@ -297,7 +297,7 @@ function MissingLookupsBanner({ missing }: { missing: MissingLookups }) {
             update your CSV file to use the valid values listed below:
           </p>
 
-          <div className="mt-3 space-y-2">
+          <div className="mt-3 space-y-sm">
             {invalidValues.map((item, idx) => (
               <div key={idx} className="text-xs">
                 <p className="font-medium text-red-800">
