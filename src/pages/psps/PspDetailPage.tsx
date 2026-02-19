@@ -40,6 +40,7 @@ import {
   DialogTitle,
   DialogFooter,
   Input,
+  DateInput,
   Label,
   Select,
   SelectTrigger,
@@ -132,7 +133,7 @@ function SettlementFormDialog({
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
           <div className="space-y-2">
             <Label>{t('psps.settlement.date')}</Label>
-            <Input type="date" {...register('settlement_date')} />
+            <DateInput {...register('settlement_date')} />
             {errors.settlement_date && (
               <p className="text-xs text-red-500">{errors.settlement_date.message}</p>
             )}
@@ -995,8 +996,7 @@ function SettingsTab({
                     <Label className="mb-1 text-xs font-medium">
                       {t('transfers.settings.effectiveFrom')}
                     </Label>
-                    <Input
-                      type="date"
+                    <DateInput
                       value={effectiveFrom}
                       onChange={(e) => setEffectiveFrom(e.target.value)}
                     />

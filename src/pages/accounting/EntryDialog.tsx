@@ -12,6 +12,7 @@ import {
   DialogFooter,
   Button,
   Input,
+  DateInput,
   Select,
   SelectTrigger,
   SelectValue,
@@ -28,13 +29,7 @@ interface EntryDialogProps {
   isSubmitting: boolean
 }
 
-export function EntryDialog({
-  open,
-  onClose,
-  entry,
-  onSubmit,
-  isSubmitting,
-}: EntryDialogProps) {
+export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: EntryDialogProps) {
   const { t } = useTranslation('pages')
   const isEditing = !!entry
 
@@ -101,9 +96,7 @@ export function EntryDialog({
       <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>
-            {isEditing
-              ? t('accounting.editEntry')
-              : t('accounting.addEntry')}
+            {isEditing ? t('accounting.editEntry') : t('accounting.addEntry')}
           </DialogTitle>
         </DialogHeader>
 
@@ -115,9 +108,7 @@ export function EntryDialog({
               {...register('description')}
               placeholder={t('accounting.form.descriptionPlaceholder')}
             />
-            {errors.description && (
-              <p className="text-xs text-red">{errors.description.message}</p>
-            )}
+            {errors.description && <p className="text-xs text-red">{errors.description.message}</p>}
           </div>
 
           {/* Entry Type & Direction row */}
@@ -166,14 +157,8 @@ export function EntryDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>{t('accounting.form.amount')}</Label>
-              <Input
-                type="number"
-                step="0.01"
-                {...register('amount')}
-              />
-              {errors.amount && (
-                <p className="text-xs text-red">{errors.amount.message}</p>
-              )}
+              <Input type="number" step="0.01" {...register('amount')} />
+              {errors.amount && <p className="text-xs text-red">{errors.amount.message}</p>}
             </div>
             <div className="space-y-2">
               <Label>{t('accounting.form.currency')}</Label>
@@ -214,10 +199,8 @@ export function EntryDialog({
           {/* Date */}
           <div className="space-y-2">
             <Label>{t('accounting.form.date')}</Label>
-            <Input type="date" {...register('entry_date')} />
-            {errors.entry_date && (
-              <p className="text-xs text-red">{errors.entry_date.message}</p>
-            )}
+            <DateInput {...register('entry_date')} />
+            {errors.entry_date && <p className="text-xs text-red">{errors.entry_date.message}</p>}
           </div>
 
           {/* Cost Period & Payment Period */}
@@ -243,9 +226,7 @@ export function EntryDialog({
               {t('accounting.form.cancel')}
             </Button>
             <Button type="submit" variant="filled" disabled={isSubmitting}>
-              {isSubmitting
-                ? t('accounting.form.saving')
-                : t('accounting.form.save')}
+              {isSubmitting ? t('accounting.form.saving') : t('accounting.form.save')}
             </Button>
           </DialogFooter>
         </form>

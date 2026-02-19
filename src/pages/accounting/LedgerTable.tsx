@@ -30,6 +30,7 @@ import {
   DropdownMenuItem,
   Button,
   Input,
+  DateInput,
   Select,
   SelectTrigger,
   SelectContent,
@@ -365,8 +366,7 @@ export function LedgerTable({
                   <span className="text-[10px] font-medium text-black/40">
                     {t('accounting.filters.from')}
                   </span>
-                  <Input
-                    type="date"
+                  <DateInput
                     inputSize="sm"
                     value={filters.dateFrom ?? ''}
                     onChange={(e) => onFilterChange('dateFrom', e.target.value || null)}
@@ -377,8 +377,7 @@ export function LedgerTable({
                   <span className="text-[10px] font-medium text-black/40">
                     {t('accounting.filters.to')}
                   </span>
-                  <Input
-                    type="date"
+                  <DateInput
                     inputSize="sm"
                     value={filters.dateTo ?? ''}
                     onChange={(e) => onFilterChange('dateTo', e.target.value || null)}

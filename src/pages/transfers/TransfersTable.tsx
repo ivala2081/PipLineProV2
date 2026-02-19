@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   ArrowUp,
-  CalendarBlank,
   ChartBar,
   CaretLeft,
   CaretRight,
@@ -33,6 +32,7 @@ import {
   Skeleton,
   Button,
   Input,
+  DateInput,
   Select,
   SelectTrigger,
   SelectContent,
@@ -281,37 +281,21 @@ export function TransfersTable({
         {(() => {
           const hasDate = filters.dateFrom != null && filters.dateFrom === filters.dateTo
           return (
-            <div className="relative">
-              <CalendarBlank
-                size={14}
-                weight={hasDate ? 'fill' : 'regular'}
-                className={`pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 ${hasDate ? 'text-brand' : 'text-black/35'}`}
-              />
-              <Input
-                type="date"
-                inputSize="sm"
-                autoComplete="off"
-                value={hasDate ? filters.dateFrom! : ''}
-                onChange={(e) => {
-                  const v = e.target.value || null
-                  onFilterChange('dateFrom', v)
-                  onFilterChange('dateTo', v)
-                }}
-                className={`h-8 w-[9.5rem] cursor-pointer pl-8 text-xs transition-colors [&::-webkit-calendar-picker-indicator]:opacity-0 ${hasDate ? 'border-brand/30 pr-7' : 'pr-2.5'}`}
-              />
-              {hasDate && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onFilterChange('dateFrom', null)
-                    onFilterChange('dateTo', null)
-                  }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-black/30 transition-colors hover:bg-black/5 hover:text-black/60"
-                >
-                  <X size={12} />
-                </button>
-              )}
-            </div>
+            <DateInput
+              inputSize="sm"
+              autoComplete="off"
+              value={hasDate ? filters.dateFrom! : ''}
+              onChange={(e) => {
+                const v = e.target.value || null
+                onFilterChange('dateFrom', v)
+                onFilterChange('dateTo', v)
+              }}
+              onClear={() => {
+                onFilterChange('dateFrom', null)
+                onFilterChange('dateTo', null)
+              }}
+              className="h-8 w-[9.5rem] text-xs"
+            />
           )
         })()}
 
@@ -488,8 +472,7 @@ export function TransfersTable({
               <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
                 {t('transfers.filters.from', 'Date From')}
               </label>
-              <Input
-                type="date"
+              <DateInput
                 inputSize="sm"
                 autoComplete="off"
                 value={filters.dateFrom ?? ''}
@@ -503,8 +486,7 @@ export function TransfersTable({
               <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
                 {t('transfers.filters.to', 'Date To')}
               </label>
-              <Input
-                type="date"
+              <DateInput
                 inputSize="sm"
                 autoComplete="off"
                 value={filters.dateTo ?? ''}

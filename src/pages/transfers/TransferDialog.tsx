@@ -18,6 +18,7 @@ import {
   DialogDescription,
   Button,
   Input,
+  DateInput,
   Label,
   Select,
   SelectTrigger,
@@ -440,16 +441,7 @@ export function TransferDialog({
               <Label className="mb-1 text-xs font-medium tracking-wide text-black/75">
                 {t('transfers.form.date')}
               </Label>
-              <input
-                type="datetime-local"
-                {...form.register('transfer_date')}
-                className={cn(
-                  basicInputClasses,
-                  disabledInputClasses,
-                  focusInputClasses,
-                  'h-10 rounded-xl px-4 py-2 text-sm w-full',
-                )}
-              />
+              <DateInput type="datetime-local" {...form.register('transfer_date')} />
               {form.formState.errors.transfer_date && (
                 <p className={compactErrorClasses}>{form.formState.errors.transfer_date.message}</p>
               )}

@@ -13,6 +13,7 @@ import {
   DialogDescription,
   Button,
   Input,
+  DateInput,
   Label,
   Tag,
   Table,
@@ -31,17 +32,12 @@ interface PspRateHistoryDialogProps {
 
 const today = () => new Date().toISOString().slice(0, 10)
 
-export function PspRateHistoryDialog({
-  psp,
-  open,
-  onClose,
-}: PspRateHistoryDialogProps) {
+export function PspRateHistoryDialog({ psp, open, onClose }: PspRateHistoryDialogProps) {
   const { t } = useTranslation('pages')
   const { toast } = useToast()
 
-  const { rates, isLoading } = usePspRates(open ? psp?.id ?? null : null)
-  const { createRate, deleteRate, isCreating, isDeleting } =
-    usePspRateMutations()
+  const { rates, isLoading } = usePspRates(open ? (psp?.id ?? null) : null)
+  const { createRate, deleteRate, isCreating, isDeleting } = usePspRateMutations()
 
   const [effectiveFrom, setEffectiveFrom] = useState('')
   const [ratePercent, setRatePercent] = useState('')
@@ -109,8 +105,7 @@ export function PspRateHistoryDialog({
 
     const todayStr = today()
     const nonFutureRates = rates.filter((r) => r.effective_from <= todayStr)
-    const targetFrom =
-      rates.find((r) => r.id === rateId)?.effective_from ?? ''
+    const targetFrom = rates.find((r) => r.id === rateId)?.effective_from ?? ''
     const isNonFuture = targetFrom <= todayStr
     if (isNonFuture && nonFutureRates.length <= 1) {
       toast({
@@ -128,9 +123,7 @@ export function PspRateHistoryDialog({
   const todayStr = today()
 
   // Determine which rate is "current" (latest with effective_from <= today)
-  const currentRateId = rates.find(
-    (r) => r.effective_from <= todayStr,
-  )?.id
+  const currentRateId = rates.find((r) => r.effective_from <= todayStr)?.id
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -141,9 +134,7 @@ export function PspRateHistoryDialog({
               ? t('transfers.settings.rateHistoryTitle', { name: psp.name })
               : t('transfers.settings.rateHistory')}
           </DialogTitle>
-          <DialogDescription>
-            {t('transfers.settings.rateHistoryDescription')}
-          </DialogDescription>
+          <DialogDescription>{t('transfers.settings.rateHistoryDescription')}</DialogDescription>
         </DialogHeader>
 
         {/* Add rate form */}
@@ -152,11 +143,7 @@ export function PspRateHistoryDialog({
             <Label className="mb-1 text-xs font-medium">
               {t('transfers.settings.effectiveFrom')}
             </Label>
-            <Input
-              type="date"
-              value={effectiveFrom}
-              onChange={(e) => setEffectiveFrom(e.target.value)}
-            />
+            <DateInput value={effectiveFrom} onChange={(e) => setEffectiveFrom(e.target.value)} />
           </div>
           <div className="w-28">
             <Label className="mb-1 text-xs font-medium">
@@ -175,9 +162,7 @@ export function PspRateHistoryDialog({
           <Button
             size="sm"
             onClick={handleAddClick}
-            disabled={
-              isCreating || !effectiveFrom || !ratePercent
-            }
+            disabled={isCreating || !effectiveFrom || !ratePercent}
           >
             {isCreating ? (
               <SpinnerGap size={14} className="animate-spin" />
@@ -223,14 +208,10 @@ export function PspRateHistoryDialog({
                             {(rate.commission_rate * 100).toFixed(1)}%
                           </span>
                           {isCurrent && (
-                            <Tag variant="green">
-                              {t('transfers.settings.currentRate')}
-                            </Tag>
+                            <Tag variant="green">{t('transfers.settings.currentRate')}</Tag>
                           )}
                           {isFuture && (
-                            <Tag variant="blue">
-                              {t('transfers.settings.futureRate')}
-                            </Tag>
+                            <Tag variant="blue">{t('transfers.settings.futureRate')}</Tag>
                           )}
                         </div>
                       </TableCell>
