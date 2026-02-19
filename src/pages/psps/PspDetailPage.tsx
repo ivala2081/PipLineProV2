@@ -228,7 +228,7 @@ function DeleteConfirmDialog({
 /*  Ledger Tab                                                         */
 /* ------------------------------------------------------------------ */
 
-function LedgerTab({ pspId }: { pspId: string }) {
+function LedgerTab({ pspId, currency }: { pspId: string; currency: string }) {
   const { t } = useTranslation('pages')
   const { locale } = useLocale()
   const { rows, isLoading } = usePspLedgerQuery(pspId)
@@ -264,62 +264,115 @@ function LedgerTab({ pspId }: { pspId: string }) {
     )
   }
 
+  const cur = <span className="ml-1 text-[10px] font-normal text-black/30">{currency}</span>
+
   return (
     <div className="pt-4">
       <div className="overflow-x-auto rounded-lg border border-black/10">
         <Table>
           <TableHeader>
             <TableRow className="bg-black/[0.02]">
-              <TableHead className="w-[100px]">{t('psps.columns.date')}</TableHead>
-              <TableHead className="w-[80px]">{t('psps.columns.type')}</TableHead>
-              <TableHead className="text-right">{t('psps.columns.deposit')}</TableHead>
-              <TableHead className="text-right">{t('psps.columns.withdrawal')}</TableHead>
-              <TableHead className="text-right">{t('psps.columns.commission')}</TableHead>
-              <TableHead className="text-right">{t('psps.columns.net')}</TableHead>
-              <TableHead className="text-right">{t('psps.columns.settlement')}</TableHead>
-              <TableHead className="text-right">{t('psps.columns.balance')}</TableHead>
+              <TableHead className="w-[110px]">{t('psps.columns.date')}</TableHead>
+              <TableHead className="text-right">
+                {t('psps.columns.deposit')}
+                {cur}
+              </TableHead>
+              <TableHead className="text-right">
+                {t('psps.columns.withdrawal')}
+                {cur}
+              </TableHead>
+              <TableHead className="text-right">
+                {t('psps.columns.total')}
+                {cur}
+              </TableHead>
+              <TableHead className="text-right">
+                {t('psps.columns.commission')}
+                {cur}
+              </TableHead>
+              <TableHead className="text-right">
+                {t('psps.columns.net')}
+                {cur}
+              </TableHead>
+              <TableHead className="text-right">
+                {t('psps.columns.settlement')}
+                {cur}
+              </TableHead>
+              <TableHead className="text-right">
+                {t('psps.columns.kasaTop')}
+                {cur}
+              </TableHead>
+              <TableHead className="text-right">
+                {t('psps.columns.devir')}
+                {cur}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows.map((row) => (
               <TableRow
-                key={row.id}
-                className={row.type === 'settlement' ? 'bg-green-50/50' : 'hover:bg-black/[0.01]'}
+                key={row.date}
+                className={row.settlement > 0 ? 'bg-green/[0.03]' : 'hover:bg-black/[0.01]'}
               >
-                <TableCell className="text-xs">{formatDate(row.date)}</TableCell>
-                <TableCell>
-                  <Tag
-                    variant={row.type === 'settlement' ? 'green' : 'blue'}
-                    className="text-[10px]"
-                  >
-                    {t(`psps.rowType.${row.type}`)}
-                  </Tag>
-                </TableCell>
-                <TableCell className="text-right tabular-nums text-sm">
+                <TableCell className="text-xs font-medium">{formatDate(row.date)}</TableCell>
+                {/* YATIRIM – deposits */}
+                <TableCell className="text-right tabular-nums text-sm text-green-600">
                   {row.deposit > 0 ? formatCurrency(row.deposit) : '–'}
                 </TableCell>
-                <TableCell className="text-right tabular-nums text-sm">
-                  {row.withdrawal > 0 ? formatCurrency(row.withdrawal) : '–'}
+                {/* ÇEKME – withdrawals displayed as negative */}
+                <TableCell className="text-right tabular-nums text-sm text-red-500">
+                  {row.withdrawal > 0 ? `-${formatCurrency(row.withdrawal)}` : '–'}
                 </TableCell>
+                {/* TOPLAM = deposit - withdrawal */}
+                <TableCell className="text-right tabular-nums text-sm font-medium">
+                  <span
+                    className={
+                      row.total > 0
+                        ? 'text-green-600'
+                        : row.total < 0
+                          ? 'text-red-500'
+                          : 'text-black/40'
+                    }
+                  >
+                    {row.deposit > 0 || row.withdrawal > 0 ? formatCurrency(row.total) : '–'}
+                  </span>
+                </TableCell>
+                {/* KOMİSYON */}
                 <TableCell className="text-right tabular-nums text-sm text-black/50">
                   {row.commission > 0 ? formatCurrency(row.commission) : '–'}
                 </TableCell>
+                {/* NET */}
                 <TableCell className="text-right tabular-nums text-sm font-medium">
-                  {row.net !== 0 ? formatCurrency(row.net) : '–'}
+                  <span
+                    className={
+                      row.net > 0
+                        ? 'text-green-600'
+                        : row.net < 0
+                          ? 'text-red-500'
+                          : 'text-black/40'
+                    }
+                  >
+                    {row.deposit > 0 || row.withdrawal > 0 ? formatCurrency(row.net) : '–'}
+                  </span>
                 </TableCell>
-                <TableCell className="text-right tabular-nums text-sm text-green-600 font-medium">
+                {/* TAHS TUTARI */}
+                <TableCell className="text-right tabular-nums text-sm font-medium text-blue">
                   {row.settlement > 0 ? formatCurrency(row.settlement) : '–'}
                 </TableCell>
+                {/* KASA TOP = devir + net */}
                 <TableCell
                   className={`text-right tabular-nums text-sm font-semibold ${
-                    row.balance > 0
+                    row.kasaTop > 0
                       ? 'text-amber-600'
-                      : row.balance < 0
-                        ? 'text-red-600'
+                      : row.kasaTop < 0
+                        ? 'text-red-500'
                         : 'text-green-600'
                   }`}
                 >
-                  {formatCurrency(row.balance)}
+                  {formatCurrency(row.kasaTop)}
+                </TableCell>
+                {/* DEVİR – carry-over from previous day */}
+                <TableCell className="text-right tabular-nums text-sm text-black/40">
+                  {row.devir !== 0 ? formatCurrency(row.devir) : '–'}
                 </TableCell>
               </TableRow>
             ))}
@@ -575,12 +628,14 @@ function SettingsTab({
   currentRate,
   isActive,
   isInternal,
+  currency,
 }: {
   pspId: string
   pspName: string
   currentRate: number
   isActive: boolean
   isInternal: boolean
+  currency: string
 }) {
   const { t } = useTranslation('pages')
   const { toast } = useToast()
@@ -637,6 +692,20 @@ function SettingsTab({
       })
     }
     setPendingInternal(null)
+  }
+
+  // Currency change
+  const handleCurrencyChange = async (newCurrency: string) => {
+    if (newCurrency === currency) return
+    try {
+      await pspMutation.updateItem(pspId, { currency: newCurrency })
+      toast({ title: t('transfers.toast.lookupUpdated'), variant: 'success' })
+    } catch (error) {
+      toast({
+        title: (error as Error).message || t('transfers.toast.error'),
+        variant: 'error',
+      })
+    }
   }
 
   // Simple rate update
@@ -825,6 +894,26 @@ function SettingsTab({
               />
             </button>
           </div>
+        </div>
+      </Card>
+
+      {/* Currency */}
+      <Card padding="spacious" className="border border-black/5 bg-bg1">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold">{t('psps.settings.currency')}</h3>
+            <p className="mt-1 text-xs text-black/40">{t('psps.settings.currencyDesc')}</p>
+          </div>
+          <Select value={currency} onValueChange={handleCurrencyChange}>
+            <SelectTrigger selectSize="sm" className="w-28">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="TL">TL</SelectItem>
+              <SelectItem value="USD">USD</SelectItem>
+              <SelectItem value="USDT">USDT</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </Card>
 
@@ -1264,7 +1353,7 @@ export function PspDetailPage() {
         </TabsList>
 
         <TabsContent value="ledger">
-          <LedgerTab pspId={pspId!} />
+          <LedgerTab pspId={pspId!} currency={psp.currency ?? 'TL'} />
         </TabsContent>
 
         {!psp.is_internal && (
@@ -1280,6 +1369,7 @@ export function PspDetailPage() {
             currentRate={psp.commission_rate}
             isActive={psp.is_active}
             isInternal={psp.is_internal}
+            currency={psp.currency ?? 'TL'}
           />
         </TabsContent>
       </Tabs>

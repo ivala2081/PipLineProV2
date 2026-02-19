@@ -3,21 +3,17 @@ import { supabase } from '@/lib/supabase'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { queryKeys } from '@/lib/queryKeys'
 
-export type LedgerRowType = 'transfer' | 'settlement'
-
 export interface PspLedgerRow {
-  id: string
-  type: LedgerRowType
   date: string
-  deposit: number
-  withdrawal: number
-  commission: number
-  net: number
-  settlement: number
-  balance: number
-  currency: string
-  fullName?: string
-  notes?: string
+  deposit: number // YATIRIM – absolute deposit total
+  withdrawal: number // ÇEKME   – absolute withdrawal total (display as negative)
+  total: number // TOPLAM  = deposit - withdrawal
+  commission: number // KOMİSYON
+  net: number // NET     = total - commission
+  settlement: number // TAHS TUTARI
+  kasaTop: number // KASA TOP = devir + net
+  devir: number // DEVİR   = prev kasaTop - prev settlement (carry-over)
+  transferCount: number
 }
 
 interface UsePspLedgerReturn {
@@ -34,106 +30,55 @@ export function usePspLedgerQuery(pspId: string | undefined): UsePspLedgerReturn
     queryFn: async () => {
       if (!currentOrg || !pspId) throw new Error('Missing context')
 
-      // Fetch PSP commission rate as fallback for transfers with missing commission/net
-      const { data: pspData } = await supabase
-        .from('psps')
-        .select('commission_rate')
-        .eq('id', pspId)
-        .single()
-      const pspRate = Number(pspData?.commission_rate ?? 0)
-
-      // Fetch transfers with category and type join
-      const { data: rawTransfers, error: tErr } = await supabase
-        .from('transfers')
-        .select(
-          'id, transfer_date, amount, commission, net, commission_rate_snapshot, currency, full_name, category:transfer_categories(is_deposit), type:transfer_types(name)',
-        )
-        .eq('psp_id', pspId)
-        .eq('organization_id', currentOrg.id)
-        .order('transfer_date', { ascending: true })
-
-      if (tErr) throw tErr
-
-      // Exclude blocked transfers from ledger calculations
-      const transfers = (rawTransfers ?? []).filter((t) => {
-        const typeName = (t.type as unknown as { name: string } | null)?.name ?? ''
-        return !typeName.toLowerCase().includes('blocked')
+      // Use server-side RPC (SECURITY DEFINER) — same approach as get_psp_summary.
+      // This avoids PostgREST client-side join issues with transfer_categories.
+      const { data: rows, error: rpcErr } = await supabase.rpc('get_psp_ledger', {
+        _psp_id: pspId,
+        _org_id: currentOrg.id,
       })
 
-      // Fetch settlements
-      const { data: settlements, error: sErr } = await supabase
-        .from('psp_settlements')
-        .select('*')
-        .eq('psp_id', pspId)
-        .eq('organization_id', currentOrg.id)
-        .order('settlement_date', { ascending: true })
+      if (rpcErr) throw rpcErr
 
-      if (sErr) throw sErr
+      const rawRows = (rows ?? []) as Array<{
+        day: string
+        total_deposits: number
+        total_withdrawals: number
+        total_commission: number
+        total_net: number
+        total_settlement: number
+        transfer_count: number
+      }>
 
-      // Map transfers to ledger rows
-      const transferRows: Omit<PspLedgerRow, 'balance'>[] = (transfers ?? []).map((t) => {
-        const cat = t.category as unknown as { is_deposit: boolean } | null
-        const isDeposit = cat?.is_deposit ?? false
-        const absAmount = Math.abs(Number(t.amount))
-        const storedCommission = Number(t.commission)
-        const storedNet = Number(t.net)
-
-        // Recompute commission/net if stored values are 0 but amount is non-zero
-        // This handles transfers imported without commission/net computation
-        let commission = storedCommission
-        let net = storedNet
-        if (storedNet === 0 && absAmount > 0) {
-          const rate = Number(t.commission_rate_snapshot) || pspRate
-          commission = Math.round(absAmount * rate * 100) / 100
-          net = Number(t.amount) - (isDeposit ? commission : -commission)
-        }
+      // ── Build rows with running balance ──────────────────
+      // Formula matches the Excel ledger:
+      //   DEVİR    = carry-over from previous day (prev kasaTop - prev settlement)
+      //   KASA TOP = devir + net
+      //   next devir = kasaTop - settlement
+      let carryOver = 0
+      return rawRows.map((r): PspLedgerRow => {
+        const deposit = Number(r.total_deposits)
+        const withdrawal = Number(r.total_withdrawals)
+        const commission = Number(r.total_commission)
+        const net = Number(r.total_net)
+        const settlement = Number(r.total_settlement)
+        const total = deposit - withdrawal
+        const devir = carryOver
+        const kasaTop = devir + net
+        carryOver = kasaTop - settlement
 
         return {
-          id: t.id,
-          type: 'transfer' as const,
-          date: t.transfer_date,
-          deposit: isDeposit ? absAmount : 0,
-          withdrawal: !isDeposit ? absAmount : 0,
+          date: r.day.slice(0, 10),
+          deposit,
+          withdrawal,
+          total,
           commission,
           net,
-          settlement: 0,
-          currency: t.currency,
-          fullName: t.full_name,
+          settlement,
+          kasaTop,
+          devir,
+          transferCount: Number(r.transfer_count),
         }
       })
-
-      // Map settlements to ledger rows
-      const settlementRows: Omit<PspLedgerRow, 'balance'>[] = (settlements ?? []).map((s) => ({
-        id: s.id,
-        type: 'settlement' as const,
-        date: s.settlement_date,
-        deposit: 0,
-        withdrawal: 0,
-        commission: 0,
-        net: 0,
-        settlement: Number(s.amount),
-        currency: s.currency,
-        notes: s.notes ?? undefined,
-      }))
-
-      // Merge and sort by date ascending (for running balance calculation)
-      const merged = [...transferRows, ...settlementRows].sort((a, b) => {
-        const dateCompare = a.date.localeCompare(b.date)
-        if (dateCompare !== 0) return dateCompare
-        // Transfers before settlements on same date
-        if (a.type === 'transfer' && b.type === 'settlement') return -1
-        if (a.type === 'settlement' && b.type === 'transfer') return 1
-        return 0
-      })
-
-      // Calculate running balance
-      let runningBalance = 0
-      const withBalance: PspLedgerRow[] = merged.map((row) => {
-        runningBalance += row.net - row.settlement
-        return { ...row, balance: runningBalance }
-      })
-
-      return withBalance
     },
     enabled: !!currentOrg && !!pspId,
   })

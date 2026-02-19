@@ -280,6 +280,7 @@ export interface Database {
           commission_rate: number
           is_active: boolean
           is_internal: boolean
+          currency: string
           created_at: string
           updated_at: string
         }
@@ -290,6 +291,7 @@ export interface Database {
           commission_rate?: number
           is_active?: boolean
           is_internal?: boolean
+          currency?: string
           created_at?: string
           updated_at?: string
         }
@@ -300,6 +302,7 @@ export interface Database {
           commission_rate?: number
           is_active?: boolean
           is_internal?: boolean
+          currency?: string
           created_at?: string
           updated_at?: string
         }

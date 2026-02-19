@@ -75,6 +75,9 @@
       "withdrawals": "Çekimler",
       "net": "Net",
       "total": "Toplam",
+      "volume": "Hacim",
+      "count": "İşlem Sayısı",
+      "totalCount": "Toplam İşlem",
       "noData": "Bu dönem için veri yok"
     },
     "tables": {
@@ -733,9 +736,12 @@
       "date": "Tarih",
       "deposit": "Yatırım",
       "withdrawal": "Çekme",
+      "total": "Toplam",
       "commission": "Komisyon",
       "net": "Net",
-      "settlement": "Tahsilat",
+      "settlement": "Tahs. Tutarı",
+      "kasaTop": "Kasa Top.",
+      "devir": "Devir",
       "balance": "Bakiye",
       "type": "Tür",
       "notes": "Not",
@@ -791,6 +797,8 @@
       "internalTag": "Dahili",
       "externalTag": "Harici",
       "internalCommissionHint": "Dahili — her zaman %0",
+      "currency": "Çalışma Para Birimi",
+      "currencyDesc": "Bu kasanın yatırım, çekim ve komisyonlarında kullanılan para birimi.",
       "dangerZone": "Tehlikeli Bölge",
       "dangerZoneDesc": "Geri alınamayan kalıcı işlemler.",
       "deletePsp": "Kasayı Sil"

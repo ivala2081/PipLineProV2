@@ -75,6 +75,9 @@
       "withdrawals": "Withdrawals",
       "net": "Net",
       "total": "Total",
+      "volume": "Volume",
+      "count": "Transaction Count",
+      "totalCount": "Total Tx",
       "noData": "No data for this period"
     },
     "tables": {
@@ -733,9 +736,12 @@
       "date": "Date",
       "deposit": "Deposit",
       "withdrawal": "Withdrawal",
+      "total": "Gross",
       "commission": "Commission",
       "net": "Net",
       "settlement": "Settlement",
+      "kasaTop": "Balance",
+      "devir": "Carry Over",
       "balance": "Balance",
       "type": "Type",
       "notes": "Notes",
@@ -791,6 +797,8 @@
       "internalTag": "Internal",
       "externalTag": "External",
       "internalCommissionHint": "Internal — always 0%",
+      "currency": "Working Currency",
+      "currencyDesc": "The currency used for this PSP's deposits, withdrawals and commissions.",
       "dangerZone": "Danger Zone",
       "dangerZoneDesc": "Permanent actions that cannot be undone.",
       "deletePsp": "Delete PSP"

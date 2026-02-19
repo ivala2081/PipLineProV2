@@ -67,6 +67,7 @@ import {
   TableHead,
   TableCell,
 } from '@ds'
+import { UserAvatar } from '@/components/UserAvatar'
 import { useTheme } from '@ds'
 import { cn } from '@ds/utils'
 import type { ComponentType } from 'react'
@@ -354,11 +355,13 @@ function RecentTransfersTable({
 
 function TopCustomersList({
   customers,
+  prevCustomers,
   isLoading,
   lang,
   t,
 }: {
   customers: BreakdownItem[]
+  prevCustomers?: BreakdownItem[]
   isLoading: boolean
   lang: string
   t: (key: string) => string
@@ -392,16 +395,39 @@ function TopCustomersList({
           <div key={`${cust.name}-${i}`} className="py-2.5">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2.5">
-                <span className="w-5 font-mono text-[11px] font-semibold text-black/20">
+                <span className="w-4 font-mono text-[10px] font-semibold text-black/20">
                   {i + 1}
                 </span>
+                <UserAvatar
+                  name={cust.name}
+                  size="sm"
+                  className="bg-brand/5 border border-brand/10"
+                />
                 <span className="text-[13px] font-medium text-black/70">{cust.name}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="font-mono text-[12px] font-semibold tabular-nums text-black/60">
-                  {fmtMoney(cust.volume, lang)}
-                </span>
-                <span className="rounded bg-black/[0.04] px-1 py-0.5 text-[10px] font-medium tabular-nums text-black/25">
+                <div className="flex flex-col items-end">
+                  <span className="font-mono text-[12px] font-bold tabular-nums text-black/70">
+                    {fmtMoney(cust.volume, lang)}
+                  </span>
+                  {prevCustomers && (
+                    <span className="text-[10px] font-semibold flex items-center gap-0.5">
+                      {(() => {
+                        const prev = prevCustomers.find((c) => c.name === cust.name)
+                        if (!prev) return <span className="text-black/20 italic">New</span>
+                        const diff = ((cust.volume - prev.volume) / prev.volume) * 100
+                        if (Math.abs(diff) < 1) return null
+                        return (
+                          <span className={cn(diff > 0 ? 'text-green' : 'text-red')}>
+                            {diff > 0 ? '↑' : '↓'}
+                            {Math.abs(diff).toFixed(0)}%
+                          </span>
+                        )
+                      })()}
+                    </span>
+                  )}
+                </div>
+                <span className="rounded-full bg-black/[0.04] px-2 py-0.5 text-[10px] font-bold tabular-nums text-black/30">
                   {cust.count}x
                 </span>
               </div>
@@ -680,6 +706,7 @@ export function DashboardPage() {
 
   /* ── Data hooks ──────────────────────────────────── */
   const [period, setPeriod] = useState<DashboardPeriod>('today')
+  const [pmView, setPmView] = useState<'volume' | 'count'>('volume')
   const { kpis, prevKpis, isLoading } = useDashboardQuery(period)
   const { rate: exchangeRate } = useExchangeRateQuery()
 
@@ -687,6 +714,14 @@ export function DashboardPage() {
   const { data: monthlyData, isLoading: isMonthlyLoading } = useMonthlyAnalysisQuery(
     now.getFullYear(),
     now.getMonth() + 1,
+  )
+  const prevMonthDate = useMemo(() => {
+    const d = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    return d
+  }, [now])
+  const { data: prevMonthlyData } = useMonthlyAnalysisQuery(
+    prevMonthDate.getFullYear(),
+    prevMonthDate.getMonth() + 1,
   )
   const { recentTransfers, isTransfersLoading, activity, isActivityLoading } =
     useDashboardRecentQuery()
@@ -714,13 +749,16 @@ export function DashboardPage() {
 
   // Payment method donut data
   const paymentMethods = useMemo(
-    () => (monthlyData?.payment_method_breakdown ?? []).filter((pm) => pm.volume > 0),
-    [monthlyData?.payment_method_breakdown],
+    () =>
+      (monthlyData?.payment_method_breakdown ?? [])
+        .filter((pm) => (pmView === 'volume' ? pm.volume > 0 : pm.count > 0))
+        .sort((a, b) => (pmView === 'volume' ? b.volume - a.volume : b.count - a.count)),
+    [monthlyData?.payment_method_breakdown, pmView],
   )
 
   const pmTotal = useMemo(
-    () => paymentMethods.reduce((s, pm) => s + pm.volume, 0),
-    [paymentMethods],
+    () => paymentMethods.reduce((s, pm) => s + (pmView === 'volume' ? pm.volume : pm.count), 0),
+    [paymentMethods, pmView],
   )
 
   /* ── Render ──────────────────────────────────────── */
@@ -916,26 +954,46 @@ export function DashboardPage() {
             <ChartEmpty message={t('dashboard.charts.noData')} />
           ) : (
             <>
+              <div className="mb-4 flex justify-end">
+                <Tabs value={pmView} onValueChange={(v) => setPmView(v as 'volume' | 'count')}>
+                  <TabsList className="h-7 p-0.5">
+                    <TabsTrigger value="volume" className="px-2 py-1 text-[10px]">
+                      {t('dashboard.charts.volume')}
+                    </TabsTrigger>
+                    <TabsTrigger value="count" className="px-2 py-1 text-[10px]">
+                      {t('dashboard.charts.count')}
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
               <div className="relative">
                 <ResponsiveContainer width="100%" height={240}>
                   <PieChart>
                     <Pie
                       data={paymentMethods}
-                      dataKey="volume"
+                      dataKey={pmView === 'volume' ? 'volume' : 'count'}
                       nameKey="name"
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={90}
-                      paddingAngle={2}
+                      innerRadius={64}
+                      outerRadius={92}
+                      paddingAngle={3}
                       stroke="none"
+                      animationBegin={0}
+                      animationDuration={1200}
                     >
                       {paymentMethods.map((_, i) => (
-                        <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />
+                        <Cell
+                          key={i}
+                          fill={DONUT_COLORS[i % DONUT_COLORS.length]}
+                          className="hover:opacity-80 transition-opacity"
+                        />
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(value: number) => fmtMoney(value, lang)}
+                      formatter={(value: number) =>
+                        pmView === 'volume' ? fmtMoney(value, lang) : fmtCount(value, lang)
+                      }
                       contentStyle={ct.tooltipStyle}
                     />
                   </PieChart>
@@ -943,29 +1001,71 @@ export function DashboardPage() {
                 {/* Center label */}
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                   <div className="text-center">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-black/25">
-                      {t('dashboard.charts.total')}
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-black/30">
+                      {pmView === 'volume'
+                        ? t('dashboard.charts.total')
+                        : t('dashboard.charts.totalCount')}
                     </p>
-                    <p className="font-mono text-base font-bold tabular-nums text-black/70">
-                      {fmtCompact(pmTotal)} ₺
+                    <p className="mt-0.5 font-mono text-xl font-black tabular-nums text-black/80">
+                      {pmView === 'volume' ? fmtCompact(pmTotal) : pmTotal}
+                      {pmView === 'volume' && <span className="ml-0.5 text-sm font-medium">₺</span>}
                     </p>
                   </div>
                 </div>
               </div>
               {/* Legend */}
-              <div className="mt-1 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-                {paymentMethods.map((pm, i) => (
-                  <div key={pm.name} className="flex items-center gap-1.5">
+              <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 px-2">
+                {paymentMethods.map((pm, i) => {
+                  const val = pmView === 'volume' ? pm.volume : pm.count
+                  const pct = pmTotal > 0 ? ((val / pmTotal) * 100).toFixed(1) : '0'
+
+                  // Find previous month data for comparison
+                  const prevPm = prevMonthlyData?.payment_method_breakdown?.find(
+                    (p) => p.name === pm.name,
+                  )
+                  const prevVal = prevPm ? (pmView === 'volume' ? prevPm.volume : prevPm.count) : 0
+                  const diff = prevVal > 0 ? ((val - prevVal) / prevVal) * 100 : 0
+                  const avgVal = pm.count > 0 ? pm.volume / pm.count : 0
+
+                  return (
                     <div
-                      className="size-2.5 rounded-full"
-                      style={{
-                        background: DONUT_COLORS[i % DONUT_COLORS.length],
-                      }}
-                    />
-                    <span className="text-[11px] text-black/50">{pm.name}</span>
-                    <span className="font-mono text-[10px] text-black/25">{pm.count}x</span>
-                  </div>
-                ))}
+                      key={pm.name}
+                      className="flex flex-col border-b border-black/[0.03] pb-1.5 last:border-0 hover:bg-black/[0.01] transition-colors rounded-sm px-1 cursor-default group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="size-2 rounded-full ring-2 ring-white shadow-sm"
+                            style={{
+                              background: DONUT_COLORS[i % DONUT_COLORS.length],
+                            }}
+                          />
+                          <span className="text-[12px] font-medium text-black/60 truncate max-w-[80px]">
+                            {pm.name}
+                          </span>
+                        </div>
+                        <div className="flex flex-col items-end">
+                          <span className="font-mono text-[11px] font-bold text-black/70">
+                            {pmView === 'volume' ? fmtCompact(pm.volume) : pm.count}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mt-0.5 flex items-center justify-between pl-4">
+                        <span className="text-[9px] font-semibold text-black/25">
+                          {pct}%{' '}
+                          {diff !== 0 && (
+                            <span className={cn('ml-1', diff > 0 ? 'text-green' : 'text-red')}>
+                              {diff > 0 ? '↑' : '↓'} {Math.abs(diff).toFixed(0)}%
+                            </span>
+                          )}
+                        </span>
+                        <span className="text-[9px] font-medium text-black/20 group-hover:text-black/40 transition-colors">
+                          {pmView === 'volume' ? `${pm.count}x` : fmtMoney(avgVal, lang)}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </>
           )}
@@ -1089,6 +1189,7 @@ export function DashboardPage() {
           </div>
           <TopCustomersList
             customers={monthlyData?.top_customers ?? []}
+            prevCustomers={prevMonthlyData?.top_customers}
             isLoading={isMonthlyLoading}
             lang={lang}
             t={t}

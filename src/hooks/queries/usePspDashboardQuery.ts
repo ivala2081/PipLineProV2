@@ -9,6 +9,7 @@ export interface PspSummary {
   commission_rate: number
   is_active: boolean
   is_internal: boolean
+  currency: string
   total_deposits: number
   total_withdrawals: number
   total_commission: number
@@ -44,25 +45,29 @@ export function usePspDashboardQuery(): PspDashboardData {
 
       if (error) throw error
 
-      return (data as Array<{
-        psp_id: string
-        psp_name: string
-        commission_rate: number
-        is_active: boolean
-        is_internal: boolean
-        total_deposits: number
-        total_withdrawals: number
-        total_commission: number
-        total_net: number
-        total_settlements: number
-        last_settlement_date: string | null
-      }>) ?? []
+      return (
+        (data as Array<{
+          psp_id: string
+          psp_name: string
+          commission_rate: number
+          is_active: boolean
+          is_internal: boolean
+          currency: string
+          total_deposits: number
+          total_withdrawals: number
+          total_commission: number
+          total_net: number
+          total_settlements: number
+          last_settlement_date: string | null
+        }>) ?? []
+      )
     },
     enabled: !!currentOrg,
   })
 
   const psps: PspSummary[] = (data ?? []).map((row) => ({
     ...row,
+    currency: row.currency ?? 'TL',
     total_deposits: Number(row.total_deposits),
     total_withdrawals: Number(row.total_withdrawals),
     total_commission: Number(row.total_commission),
