@@ -14,13 +14,8 @@ import {
   ChartPie,
   ChartBar,
   Pulse,
-  Clock,
-  PencilSimple,
-  Plus,
   Trophy,
   ListBullets,
-  Lightning,
-  LinkSimple,
   CalendarStar,
   Fire,
   CalendarCheck,
@@ -45,13 +40,9 @@ import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { useDashboardQuery, type DashboardPeriod } from '@/hooks/queries/useDashboardQuery'
 import { useMonthlyAnalysisQuery } from '@/hooks/queries/useMonthlyAnalysisQuery'
-import { useExchangeRateQuery } from '@/hooks/queries/useExchangeRateQuery'
 import { useDashboardRecentQuery } from '@/hooks/queries/useDashboardRecentQuery'
-import type { RecentTransfer, ActivityEntry } from '@/hooks/queries/useDashboardRecentQuery'
+import type { RecentTransfer } from '@/hooks/queries/useDashboardRecentQuery'
 import type { BreakdownItem } from '@/hooks/queries/useMonthlyAnalysisQuery'
-import { useDashboardInsightsQuery } from '@/hooks/queries/useDashboardInsightsQuery'
-import type { RatePoint } from '@/hooks/queries/useDashboardInsightsQuery'
-import { useWalletsQuery } from '@/hooks/queries/useWalletsQuery'
 import {
   Tag,
   StatCard,
@@ -229,20 +220,6 @@ function ChartEmpty({ message }: { message: string }) {
       <p className="text-xs text-black/30">{message}</p>
     </div>
   )
-}
-
-/* ── Relative Time ────────────────────────────────────── */
-
-function relativeTime(dateStr: string, lang: string): string {
-  const diffMs = Date.now() - new Date(dateStr).getTime()
-  const m = Math.floor(diffMs / 60_000)
-  const h = Math.floor(diffMs / 3_600_000)
-  const d = Math.floor(diffMs / 86_400_000)
-
-  if (m < 1) return lang === 'tr' ? 'az önce' : 'just now'
-  if (m < 60) return `${m}${lang === 'tr' ? 'dk' : 'm'}`
-  if (h < 24) return `${h}${lang === 'tr' ? 'sa' : 'h'}`
-  return `${d}${lang === 'tr' ? 'g' : 'd'}`
 }
 
 function fmtTime(dateStr: string, lang: string): string {
@@ -445,230 +422,6 @@ function TopCustomersList({
   )
 }
 
-/* ── Activity Feed ────────────────────────────────────── */
-
-function ActivityFeed({
-  entries,
-  isLoading,
-  lang,
-  t,
-}: {
-  entries: ActivityEntry[]
-  isLoading: boolean
-  lang: string
-  t: (key: string) => string
-}) {
-  if (isLoading) {
-    return (
-      <div className="space-y-3">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-8 w-full rounded" />
-        ))}
-      </div>
-    )
-  }
-
-  if (entries.length === 0) {
-    return (
-      <div className="flex h-32 items-center justify-center rounded-lg border border-dashed border-black/10">
-        <p className="text-xs text-black/30">{t('dashboard.tables.noActivity')}</p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="divide-y divide-black/[0.06]">
-      {entries.map((entry) => {
-        const isCreated = entry.action === 'created'
-        return (
-          <div key={entry.id} className="flex items-start gap-3 py-2.5">
-            <div
-              className={cn(
-                'mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full',
-                isCreated ? 'bg-green/10' : 'bg-blue/10',
-              )}
-            >
-              {isCreated ? (
-                <Plus size={11} className="text-green" weight="bold" />
-              ) : (
-                <PencilSimple size={11} className="text-blue" weight="bold" />
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[13px] leading-tight text-black/70">
-                <span className="font-semibold">{entry.performerName}</span>{' '}
-                <span className="text-black/40">
-                  {isCreated ? t('dashboard.tables.actCreated') : t('dashboard.tables.actUpdated')}
-                </span>{' '}
-                <span className="font-medium text-black/60">
-                  &ldquo;{entry.transferName}&rdquo;
-                </span>
-              </p>
-            </div>
-            <span className="shrink-0 text-[11px] font-medium tabular-nums text-black/25">
-              {relativeTime(entry.created_at, lang)}
-            </span>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-/* ── Exchange Rate Sparkline ──────────────────────────── */
-
-function ExchangeRateSparkline({
-  rateHistory,
-  liveRate,
-  isLoading,
-}: {
-  rateHistory: RatePoint[]
-  liveRate: number | null
-  isLoading: boolean
-}) {
-  if (isLoading) {
-    return <Skeleton className="h-20 w-full rounded-lg" />
-  }
-
-  if (rateHistory.length < 2 && !liveRate) {
-    return (
-      <div className="flex h-20 items-center justify-center">
-        <p className="text-xs text-black/30">—</p>
-      </div>
-    )
-  }
-
-  const data =
-    rateHistory.length >= 2 ? rateHistory : liveRate ? [{ date: 'now', rate: liveRate }] : []
-
-  if (data.length < 2) {
-    return (
-      <div className="flex h-20 items-center justify-center">
-        <p className="font-mono text-2xl font-bold tabular-nums text-black/70">
-          {liveRate?.toFixed(4) ?? '—'}
-        </p>
-      </div>
-    )
-  }
-
-  const minRate = Math.min(...data.map((d) => d.rate))
-  const maxRate = Math.max(...data.map((d) => d.rate))
-  const delta = data.length >= 2 ? data[data.length - 1].rate - data[0].rate : 0
-  const isUp = delta >= 0
-
-  return (
-    <div>
-      <div className="mb-2 flex items-baseline gap-2">
-        <span className="font-mono text-lg font-bold tabular-nums text-black/70">
-          {(liveRate ?? data[data.length - 1].rate).toFixed(4)}
-        </span>
-        {data.length >= 2 && (
-          <span
-            className={cn(
-              'text-[11px] font-semibold tabular-nums',
-              isUp ? 'text-green' : 'text-red',
-            )}
-          >
-            {isUp ? '+' : ''}
-            {delta.toFixed(4)}
-          </span>
-        )}
-      </div>
-      <ResponsiveContainer width="100%" height={60}>
-        <LineChart data={data}>
-          <YAxis domain={[minRate * 0.999, maxRate * 1.001]} hide />
-          <Line
-            type="monotone"
-            dataKey="rate"
-            stroke={isUp ? GREEN : RED}
-            strokeWidth={1.5}
-            dot={false}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
-  )
-}
-
-/* ── Wallet Chain Distribution ────────────────────────── */
-
-const CHAIN_COLORS: Record<string, { bg: string; ring: string; label: string }> = {
-  tron: { bg: 'bg-red/20', ring: 'ring-red/30', label: 'Tron' },
-  ethereum: { bg: 'bg-indigo/20', ring: 'ring-indigo/30', label: 'Ethereum' },
-  bsc: { bg: 'bg-yellow/20', ring: 'ring-yellow/30', label: 'BSC' },
-  bitcoin: { bg: 'bg-orange/20', ring: 'ring-orange/30', label: 'Bitcoin' },
-  solana: { bg: 'bg-purple/20', ring: 'ring-purple/30', label: 'Solana' },
-}
-
-function WalletChainWidget({
-  wallets,
-  isLoading,
-  t,
-}: {
-  wallets: Array<{ chain: string }>
-  isLoading: boolean
-  t: (key: string, opts?: Record<string, unknown>) => string
-}) {
-  if (isLoading) {
-    return (
-      <div className="space-y-2">
-        <Skeleton className="h-6 w-full rounded" />
-        <Skeleton className="h-6 w-full rounded" />
-      </div>
-    )
-  }
-
-  if (wallets.length === 0) {
-    return (
-      <div className="flex h-24 items-center justify-center">
-        <p className="text-xs text-black/30">{t('dashboard.insights.noWallets')}</p>
-      </div>
-    )
-  }
-
-  const chainCounts = new Map<string, number>()
-  for (const w of wallets) {
-    chainCounts.set(w.chain, (chainCounts.get(w.chain) ?? 0) + 1)
-  }
-
-  const sorted = [...chainCounts.entries()].sort((a, b) => b[1] - a[1])
-  const total = wallets.length
-
-  return (
-    <div className="space-y-3">
-      {/* Stacked bar */}
-      <div className="flex h-3 overflow-hidden rounded-full">
-        {sorted.map(([chain, count]) => {
-          const style = CHAIN_COLORS[chain] ?? { bg: 'bg-black/10', ring: '', label: chain }
-          return (
-            <div
-              key={chain}
-              className={cn('h-full', style.bg)}
-              style={{ width: `${(count / total) * 100}%` }}
-            />
-          )
-        })}
-      </div>
-      {/* Legend */}
-      <div className="flex flex-wrap gap-x-3 gap-y-1.5">
-        {sorted.map(([chain, count]) => {
-          const style = CHAIN_COLORS[chain] ?? { bg: 'bg-black/10', ring: '', label: chain }
-          return (
-            <div key={chain} className="flex items-center gap-1.5">
-              <div className={cn('size-2.5 rounded-full', style.bg, style.ring, 'ring-1')} />
-              <span className="text-[11px] font-medium text-black/50">{style.label}</span>
-              <span className="font-mono text-[10px] text-black/25">{count}</span>
-            </div>
-          )
-        })}
-      </div>
-      <p className="text-[11px] text-black/30">
-        {t('dashboard.insights.totalWallets', { count: total })}
-      </p>
-    </div>
-  )
-}
-
 /* ── Monthly Insights Row ─────────────────────────────── */
 
 function InsightPill({
@@ -708,7 +461,6 @@ export function DashboardPage() {
   const [period, setPeriod] = useState<DashboardPeriod>('today')
   const [pmView, setPmView] = useState<'volume' | 'count'>('volume')
   const { kpis, prevKpis, isLoading } = useDashboardQuery(period)
-  const { rate: exchangeRate } = useExchangeRateQuery()
 
   const now = new Date()
   const { data: monthlyData, isLoading: isMonthlyLoading } = useMonthlyAnalysisQuery(
@@ -723,10 +475,7 @@ export function DashboardPage() {
     prevMonthDate.getFullYear(),
     prevMonthDate.getMonth() + 1,
   )
-  const { recentTransfers, isTransfersLoading, activity, isActivityLoading } =
-    useDashboardRecentQuery()
-  const { rateHistory, isRateHistoryLoading } = useDashboardInsightsQuery()
-  const { wallets, isLoading: isWalletsLoading } = useWalletsQuery()
+  const { recentTransfers, isTransfersLoading } = useDashboardRecentQuery()
 
   /* ── Derived values ──────────────────────────────── */
   const displayName = profile?.display_name || t('dashboard.defaultUser')
@@ -1171,70 +920,29 @@ export function DashboardPage() {
           </Link>
         </div>
         <RecentTransfersTable
-          transfers={recentTransfers}
+          transfers={recentTransfers.slice(0, 5)}
           isLoading={isTransfersLoading}
           lang={lang}
           t={t}
         />
       </Card>
 
-      {/* ── Top Customers + Activity Feed (2-column) ── */}
-      <div className="grid grid-cols-1 gap-md lg:grid-cols-2">
-        <Card padding="default" className="border border-black/10 bg-bg1">
-          <div className="mb-3 flex items-center gap-2">
-            <Trophy size={16} className="text-yellow" weight="duotone" />
-            <h2 className="text-sm font-semibold text-black/60">
-              {t('dashboard.tables.topCustomers')}
-            </h2>
-          </div>
-          <TopCustomersList
-            customers={monthlyData?.top_customers ?? []}
-            prevCustomers={prevMonthlyData?.top_customers}
-            isLoading={isMonthlyLoading}
-            lang={lang}
-            t={t}
-          />
-        </Card>
-
-        <Card padding="default" className="border border-black/10 bg-bg1">
-          <div className="mb-3 flex items-center gap-2">
-            <Clock size={16} className="text-indigo" weight="duotone" />
-            <h2 className="text-sm font-semibold text-black/60">
-              {t('dashboard.tables.activityFeed')}
-            </h2>
-          </div>
-          <ActivityFeed entries={activity} isLoading={isActivityLoading} lang={lang} t={t} />
-        </Card>
-      </div>
-
-      {/* ── Insights Footer (2-column) ────────────── */}
-      <div className="grid grid-cols-1 gap-md lg:grid-cols-2">
-        {/* Exchange Rate + Sparkline */}
-        <Card padding="default" className="border border-black/10 bg-bg1">
-          <div className="mb-3 flex items-center gap-2">
-            <Lightning size={16} className="text-yellow" weight="duotone" />
-            <h2 className="text-sm font-semibold text-black/60">
-              {t('dashboard.insights.exchangeRate')}
-            </h2>
-          </div>
-          <ExchangeRateSparkline
-            rateHistory={rateHistory}
-            liveRate={exchangeRate}
-            isLoading={isRateHistoryLoading}
-          />
-        </Card>
-
-        {/* Wallet Chain Distribution */}
-        <Card padding="default" className="border border-black/10 bg-bg1">
-          <div className="mb-3 flex items-center gap-2">
-            <LinkSimple size={16} className="text-cyan" weight="duotone" />
-            <h2 className="text-sm font-semibold text-black/60">
-              {t('dashboard.insights.walletChains')}
-            </h2>
-          </div>
-          <WalletChainWidget wallets={wallets} isLoading={isWalletsLoading} t={t} />
-        </Card>
-      </div>
+      {/* ── Top Customers ──────────────────────────── */}
+      <Card padding="default" className="border border-black/10 bg-bg1">
+        <div className="mb-3 flex items-center gap-2">
+          <Trophy size={16} className="text-yellow" weight="duotone" />
+          <h2 className="text-sm font-semibold text-black/60">
+            {t('dashboard.tables.topCustomers')}
+          </h2>
+        </div>
+        <TopCustomersList
+          customers={monthlyData?.top_customers ?? []}
+          prevCustomers={prevMonthlyData?.top_customers}
+          isLoading={isMonthlyLoading}
+          lang={lang}
+          t={t}
+        />
+      </Card>
 
       {/* ── Monthly Insights ────────────────────────── */}
       {monthlyData?.insights && (

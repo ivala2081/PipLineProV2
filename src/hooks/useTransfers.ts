@@ -89,6 +89,7 @@ export function computeTransfer(
   exchangeRate: number,
   currency: Currency,
   commissionRate = 0,
+  typeId?: string,
 ) {
   const amount = category.is_deposit ? rawAmount : -rawAmount
 
@@ -102,8 +103,9 @@ export function computeTransfer(
     amountTry = Math.round(amount * exchangeRate * 100) / 100
   }
 
-  // Calculate commission and net
-  const commission = Math.round(Math.abs(amount) * commissionRate * 100) / 100
+  // Blocked transfers always carry zero commission regardless of PSP rate
+  const effectiveRate = typeId === 'blocked' ? 0 : commissionRate
+  const commission = Math.round(Math.abs(amount) * effectiveRate * 100) / 100
   const net = amount - (category.is_deposit ? commission : -commission)
 
   return { amount, amountTry, amountUsd, commission, net }
@@ -184,6 +186,7 @@ export function useTransfers(): UseTransfersReturn {
         data.exchange_rate,
         data.currency,
         psp.commission_rate,
+        data.type_id,
       )
 
       const { error: insertError } = await supabase.from('transfers').insert({
@@ -227,6 +230,7 @@ export function useTransfers(): UseTransfersReturn {
         data.exchange_rate,
         data.currency,
         psp.commission_rate,
+        data.type_id,
       )
 
       const { error: updateError } = await supabase

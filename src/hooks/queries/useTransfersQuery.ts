@@ -228,7 +228,8 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
         .eq('id', data.psp_id)
         .single()
 
-      const commissionRate = pspData?.commission_rate ?? 0
+      const isBlocked = data.type_id === 'blocked'
+      const commissionRate = isBlocked ? 0 : (pspData?.commission_rate ?? 0)
 
       const { amount, amountTry, amountUsd, commission, net } = computeTransfer(
         data.raw_amount,
@@ -236,6 +237,7 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
         data.exchange_rate,
         data.currency,
         commissionRate,
+        data.type_id,
       )
 
       const { error } = await supabase.from('transfers').insert({
@@ -287,7 +289,8 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
         .eq('id', data.psp_id)
         .single()
 
-      const commissionRate = pspData?.commission_rate ?? 0
+      const isBlocked = data.type_id === 'blocked'
+      const commissionRate = isBlocked ? 0 : (pspData?.commission_rate ?? 0)
 
       const { amount, amountTry, amountUsd, commission, net } = computeTransfer(
         data.raw_amount,
@@ -295,6 +298,7 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
         data.exchange_rate,
         data.currency,
         commissionRate,
+        data.type_id,
       )
 
       const { error } = await supabase
