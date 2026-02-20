@@ -547,51 +547,43 @@ export function TransfersTable({
                 </div>
 
                 {/* Table for this date group */}
-                <div className="overflow-x-auto">
-                  <Table className="min-w-[1000px]">
-                    <TableHeader>
-                      <TableRow className="bg-black/[0.015] hover:bg-black/[0.015]">
-                        <TableHead className={TH_CLASS}>
-                          {t('transfers.columns.fullName')}
-                        </TableHead>
-                        <TableHead className={TH_CLASS}>
-                          {t('transfers.columns.paymentMethod')}
-                        </TableHead>
-                        <TableHead className={TH_CLASS}>
-                          {t('transfers.columns.category')}
-                        </TableHead>
-                        <TableHead className={`${TH_CLASS} text-right`}>
-                          {t('transfers.columns.amount')}
-                        </TableHead>
-                        <TableHead className={`${TH_CLASS} text-right`}>
-                          {t('transfers.columns.commission')}
-                        </TableHead>
-                        <TableHead className={`${TH_CLASS} text-right`}>
-                          {t('transfers.columns.net')}
-                        </TableHead>
-                        <TableHead className={TH_CLASS}>
-                          {t('transfers.columns.currency')}
-                        </TableHead>
-                        <TableHead className={TH_CLASS}>{t('transfers.columns.psp')}</TableHead>
-                        <TableHead className={TH_CLASS}>{t('transfers.columns.type')}</TableHead>
-                        <TableHead className="w-20 px-2" />
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody className="divide-y divide-black/[0.04]">
-                      {group.transfers.map((row) => (
-                        <TransferRowItem
-                          key={row.id}
-                          row={row}
-                          lang={lang}
-                          onView={handleView}
-                          onEdit={onEdit}
-                          onDelete={onDelete}
-                          onAudit={handleAudit}
-                        />
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                <Table cardOnMobile>
+                  <TableHeader>
+                    <TableRow className="bg-black/[0.015] hover:bg-black/[0.015]">
+                      <TableHead className={TH_CLASS}>{t('transfers.columns.fullName')}</TableHead>
+                      <TableHead className={TH_CLASS}>
+                        {t('transfers.columns.paymentMethod')}
+                      </TableHead>
+                      <TableHead className={TH_CLASS}>{t('transfers.columns.category')}</TableHead>
+                      <TableHead className={`${TH_CLASS} text-right`}>
+                        {t('transfers.columns.amount')}
+                      </TableHead>
+                      <TableHead className={`${TH_CLASS} text-right`}>
+                        {t('transfers.columns.commission')}
+                      </TableHead>
+                      <TableHead className={`${TH_CLASS} text-right`}>
+                        {t('transfers.columns.net')}
+                      </TableHead>
+                      <TableHead className={TH_CLASS}>{t('transfers.columns.currency')}</TableHead>
+                      <TableHead className={TH_CLASS}>{t('transfers.columns.psp')}</TableHead>
+                      <TableHead className={TH_CLASS}>{t('transfers.columns.type')}</TableHead>
+                      <TableHead className="w-20 px-2" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="divide-y divide-black/[0.04]">
+                    {group.transfers.map((row) => (
+                      <TransferRowItem
+                        key={row.id}
+                        row={row}
+                        lang={lang}
+                        onView={handleView}
+                        onEdit={onEdit}
+                        onDelete={onDelete}
+                        onAudit={handleAudit}
+                      />
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             ))}
 

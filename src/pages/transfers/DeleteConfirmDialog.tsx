@@ -18,11 +18,7 @@ interface DeleteConfirmDialogProps {
   onConfirm: () => Promise<void>
 }
 
-export function DeleteConfirmDialog({
-  transfer,
-  onClose,
-  onConfirm,
-}: DeleteConfirmDialogProps) {
+export function DeleteConfirmDialog({ transfer, onClose, onConfirm }: DeleteConfirmDialogProps) {
   const { t } = useTranslation('pages')
   const { toast } = useToast()
   const [deleting, setDeleting] = useState(false)

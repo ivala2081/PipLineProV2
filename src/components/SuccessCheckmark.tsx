@@ -27,18 +27,12 @@ export interface SuccessCheckmarkProps {
 
 export function SuccessCheckmark({ className, size = 48 }: SuccessCheckmarkProps) {
   return (
-    <div
-      className={cn(
-        'flex items-center justify-center',
-        'animate-zoom-in-95',
-        className
-      )}
-    >
+    <div className={cn('flex items-center justify-center', 'animate-zoom-in-95', className)}>
       <div
         className={cn(
           'flex items-center justify-center rounded-full',
           'bg-green shadow-lg',
-          'animate-pulse'
+          'animate-pulse',
         )}
         style={{
           width: size * 1.5,

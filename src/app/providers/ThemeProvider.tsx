@@ -1,5 +1,2 @@
-/**
- * Re-export ThemeProvider from the design system so the app can
- * import it from the providers folder.
- */
+/* eslint-disable react-refresh/only-export-components -- Re-export from design system */
 export { ThemeProvider, useTheme, type Theme } from '@ds/hooks/useTheme'

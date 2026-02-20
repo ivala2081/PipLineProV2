@@ -11,6 +11,10 @@ export * from './Tag'
 export * from './Link'
 export * from './Avatar'
 
+// Layout primitives (responsive by default)
+export * from './Grid'
+export * from './PageHeader'
+
 // Complex components
 export * from './Select'
 export * from './Table'

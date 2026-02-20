@@ -229,6 +229,7 @@ export function TransferDialog({
   }, [open, transfer, form, currentOrg?.id, normalizedFetchedRate])
 
   // Watch individual fields for submission computation
+  // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch
   const categoryId = form.watch('category_id')
   const currency = form.watch('currency')
   const watchedRawAmount = form.watch('raw_amount')

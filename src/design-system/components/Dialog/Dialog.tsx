@@ -1,5 +1,5 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog'
-import { X } from '@phosphor-icons/react'
+import { XIcon } from '@phosphor-icons/react'
 import type { ComponentProps, FC } from 'react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@ds/utils'
@@ -21,10 +21,10 @@ DialogOverlay.displayName = 'DialogOverlay'
 export type DialogSize = 'sm' | 'md' | 'lg' | 'xl'
 
 const dialogSizeClasses: Record<DialogSize, string> = {
-  sm: 'max-w-sm',
-  md: 'max-w-md',
-  lg: 'max-w-lg',
-  xl: 'max-w-xl',
+  sm: 'md:max-w-sm',
+  md: 'md:max-w-md',
+  lg: 'md:max-w-lg',
+  xl: 'md:max-w-xl',
 }
 
 export type DialogContentProps = ComponentProps<typeof DialogPrimitive.Content> & {
@@ -42,15 +42,33 @@ export const DialogContent: FC<DialogContentProps> = ({
       <DialogOverlay />
       <DialogPrimitive.Content
         className={cn(
-          'ui-surface fixed left-1/2 top-1/2 z-50 grid w-full -translate-x-1/2 -translate-y-1/2 gap-md rounded-2xl bg-bg1 p-card shadow-lg sm:p-lg',
+          'ui-surface fixed z-50 bg-bg1',
+          // Mobile: full-screen flex column
+          'inset-0 flex flex-col',
+          // Desktop: centered grid modal
+          'md:inset-auto md:left-1/2 md:top-1/2 md:w-full md:-translate-x-1/2 md:-translate-y-1/2',
+          'md:grid md:gap-md md:rounded-2xl md:p-lg md:shadow-lg md:max-h-[90dvh] md:overflow-y-auto',
           dialogSizeClasses[size],
           className,
         )}
         {...props}
       >
-        {children}
-        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-black/5 focus:ring-offset-2 disabled:pointer-events-none">
-          <X size={16} />
+        {/* Mobile: sticky top bar with close button */}
+        <div className="flex shrink-0 items-center justify-end border-b border-black/10 px-4 py-3 md:hidden">
+          <DialogPrimitive.Close className="rounded-sm opacity-70 hover:opacity-100 focus:outline-none">
+            <XIcon size={20} />
+            <span className="sr-only">{t('dialog.close')}</span>
+          </DialogPrimitive.Close>
+        </div>
+
+        {/* Content: scrollable on mobile, passthrough grid on desktop */}
+        <div className="flex-1 overflow-y-auto p-card grid gap-md content-start md:contents">
+          {children}
+        </div>
+
+        {/* Desktop: absolute close button */}
+        <DialogPrimitive.Close className="absolute right-4 top-4 hidden rounded-sm opacity-70 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-black/5 focus:ring-offset-2 disabled:pointer-events-none md:flex">
+          <XIcon size={16} />
           <span className="sr-only">{t('dialog.close')}</span>
         </DialogPrimitive.Close>
       </DialogPrimitive.Content>
@@ -61,14 +79,14 @@ DialogContent.displayName = 'DialogContent'
 
 export type DialogHeaderProps = ComponentProps<'div'>
 export const DialogHeader: FC<DialogHeaderProps> = ({ className, ...props }) => (
-  <div className={cn('flex flex-col gap-1.5 text-center sm:text-left', className)} {...props} />
+  <div className={cn('flex flex-col gap-1.5 text-left', className)} {...props} />
 )
 DialogHeader.displayName = 'DialogHeader'
 
 export type DialogFooterProps = ComponentProps<'div'>
 export const DialogFooter: FC<DialogFooterProps> = ({ className, ...props }) => (
   <div
-    className={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:gap-sm', className)}
+    className={cn('flex flex-col-reverse gap-sm md:flex-row md:justify-end', className)}
     {...props}
   />
 )

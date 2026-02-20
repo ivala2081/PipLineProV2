@@ -1,6 +1,13 @@
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { Copy, Camera, ArrowsClockwise, Trash, ArrowRight } from '@phosphor-icons/react'
+import {
+  Copy,
+  Camera,
+  ArrowsClockwise,
+  Trash,
+  ArrowRight,
+  PencilSimple,
+} from '@phosphor-icons/react'
 import type { Wallet } from '@/lib/database.types'
 import { useWalletBalanceQuery } from '@/hooks/queries/useWalletBalanceQuery'
 import { useWalletSnapshotsQuery } from '@/hooks/queries/useWalletSnapshotsQuery'
@@ -43,9 +50,10 @@ function formatUsd(value: number): string {
 interface WalletDetailSheetProps {
   wallet: Wallet | null
   onClose: () => void
+  onEdit?: (wallet: Wallet) => void
 }
 
-export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
+export function WalletDetailSheet({ wallet, onClose, onEdit }: WalletDetailSheetProps) {
   const { t } = useTranslation('pages')
   const navigate = useNavigate()
 
@@ -85,7 +93,20 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
     <Sheet open={wallet !== null} onOpenChange={(open) => !open && onClose()}>
       <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-2xl">
         <SheetHeader>
-          <SheetTitle>{wallet?.label ?? ''}</SheetTitle>
+          <div className="flex items-center justify-between">
+            <SheetTitle>{wallet?.label ?? ''}</SheetTitle>
+            {onEdit && wallet && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 text-xs text-black/50 hover:text-black/80"
+                onClick={() => onEdit(wallet)}
+              >
+                <PencilSimple size={14} />
+                {t('accounting.actions.edit')}
+              </Button>
+            )}
+          </div>
         </SheetHeader>
 
         {wallet && (
@@ -255,8 +276,8 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
               ) : snapshots.length === 0 ? (
                 <p className="text-xs text-black/40">{t('accounting.wallets.noSnapshots')}</p>
               ) : (
-                <div className="overflow-x-auto rounded-xl border border-black/10">
-                  <Table>
+                <div className="rounded-xl border border-black/10">
+                  <Table cardOnMobile>
                     <TableHeader>
                       <TableRow className="bg-black/[0.015]">
                         <TableHead className="text-xs font-semibold uppercase tracking-wider text-black/40">
@@ -274,16 +295,22 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
                     <TableBody>
                       {snapshots.map((snap) => (
                         <TableRow key={snap.id}>
-                          <TableCell className="text-sm text-black/70">
+                          <TableCell
+                            className="text-sm text-black/70"
+                            data-label={t('accounting.wallets.snapshotDate')}
+                          >
                             {new Date(snap.snapshot_date + 'T00:00:00').toLocaleDateString(
                               'tr-TR',
                               { day: 'numeric', month: 'short', year: 'numeric' },
                             )}
                           </TableCell>
-                          <TableCell className="text-right font-mono text-sm font-semibold tabular-nums text-black/80">
+                          <TableCell
+                            className="text-right font-mono text-sm font-semibold tabular-nums text-black/80"
+                            data-label="USD"
+                          >
                             {snap.total_usd > 0 ? `$${formatUsd(snap.total_usd)}` : '—'}
                           </TableCell>
-                          <TableCell>
+                          <TableCell data-label={t('accounting.wallets.tokens')}>
                             <div className="space-y-0.5">
                               {snap.balances.map((b, i) => (
                                 <div key={i} className="flex items-center gap-2 text-xs">
@@ -297,7 +324,7 @@ export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
                               ))}
                             </div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell isActions>
                             <Button
                               variant="borderless"
                               size="sm"

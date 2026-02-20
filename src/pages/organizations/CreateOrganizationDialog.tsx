@@ -37,6 +37,7 @@ export function CreateOrganizationDialog({ open, onClose }: CreateOrganizationDi
     defaultValues: { name: '', slug: '' },
   })
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch
   const nameValue = form.watch('name')
   const slugValue = form.watch('slug')
 

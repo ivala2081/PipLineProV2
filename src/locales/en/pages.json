@@ -465,6 +465,7 @@
     "addEntry": "Add Entry",
     "editEntry": "Edit Entry",
     "addWallet": "Add Wallet",
+    "editWallet": "Edit Wallet",
     "in": "In",
     "out": "Out",
     "tabs": {
@@ -661,7 +662,9 @@
         "labelPlaceholder": "e.g. Main USDT Wallet",
         "address": "Wallet Address",
         "addressPlaceholder": "Enter blockchain address",
-        "chain": "Blockchain"
+        "addressReadOnly": "Address cannot be changed after creation.",
+        "chain": "Blockchain",
+        "chainReadOnly": "Chain cannot be changed after creation."
       }
     },
     "portfolio": {
@@ -705,6 +708,7 @@
       "updated": "Entry updated successfully",
       "deleted": "Entry deleted successfully",
       "walletCreated": "Wallet added successfully",
+      "walletUpdated": "Wallet updated successfully",
       "walletDeleted": "Wallet removed successfully",
       "snapshotTaken": "Balance snapshot saved",
       "snapshotDeleted": "Snapshot removed",

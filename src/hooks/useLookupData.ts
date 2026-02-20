@@ -73,8 +73,7 @@ export function useLookupData(): LookupData {
         .order('name'),
     ])
 
-    const firstError =
-      pspsRes.error || categoriesRes.error || methodsRes.error || typesRes.error
+    const firstError = pspsRes.error || categoriesRes.error || methodsRes.error || typesRes.error
 
     if (firstError) {
       setError(firstError.message)
@@ -89,7 +88,7 @@ export function useLookupData(): LookupData {
   }, [currentOrg])
 
   useEffect(() => {
-    fetchAll()
+    queueMicrotask(() => fetchAll())
   }, [fetchAll])
 
   return {

@@ -9,5 +9,6 @@ export interface UseWalletsQueryReturn {
   updateWallet: (id: string, data: WalletFormValues) => Promise<void>
   deleteWallet: (id: string) => Promise<void>
   isCreating: boolean
+  isUpdating: boolean
   isDeleting: boolean
 }

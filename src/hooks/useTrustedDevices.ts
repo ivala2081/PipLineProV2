@@ -110,7 +110,7 @@ export function useTrustedDevices(): UseTrustedDevicesReturn {
           },
           {
             onConflict: 'user_id,device_id',
-          }
+          },
         )
 
         if (error) {
@@ -130,48 +130,51 @@ export function useTrustedDevices(): UseTrustedDevicesReturn {
         return { error: error as Error }
       }
     },
-    [deviceId]
+    [deviceId],
   )
 
   /**
    * Revoke trust for a device
    */
-  const revokeDevice = useCallback(async (targetDeviceId: string) => {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+  const revokeDevice = useCallback(
+    async (targetDeviceId: string) => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
 
-      if (!user) {
-        return { error: new Error('User not authenticated') }
+        if (!user) {
+          return { error: new Error('User not authenticated') }
+        }
+
+        const { error } = await supabase
+          .from('trusted_devices')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('device_id', targetDeviceId)
+
+        if (error) {
+          console.error('[useTrustedDevices] Error revoking device:', error)
+          return { error: new Error(error.message) }
+        }
+
+        // If revoking current device, update state
+        if (targetDeviceId === deviceId) {
+          setIsTrusted(false)
+        }
+
+        if (import.meta.env.DEV) {
+          console.log('[useTrustedDevices] Device revoked successfully')
+        }
+
+        return { error: null }
+      } catch (error) {
+        console.error('[useTrustedDevices] Error in revokeDevice:', error)
+        return { error: error as Error }
       }
-
-      const { error } = await supabase
-        .from('trusted_devices')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('device_id', targetDeviceId)
-
-      if (error) {
-        console.error('[useTrustedDevices] Error revoking device:', error)
-        return { error: new Error(error.message) }
-      }
-
-      // If revoking current device, update state
-      if (targetDeviceId === deviceId) {
-        setIsTrusted(false)
-      }
-
-      if (import.meta.env.DEV) {
-        console.log('[useTrustedDevices] Device revoked successfully')
-      }
-
-      return { error: null }
-    } catch (error) {
-      console.error('[useTrustedDevices] Error in revokeDevice:', error)
-      return { error: error as Error }
-    }
-  }, [deviceId])
+    },
+    [deviceId],
+  )
 
   /**
    * Get all trusted devices for current user

@@ -4,7 +4,7 @@ import { Plus, UploadSimple } from '@phosphor-icons/react'
 import { useLookupQueries } from '@/hooks/queries/useLookupQueries'
 import { useTransfersQuery } from '@/hooks/queries/useTransfersQuery'
 import type { TransferRow } from '@/hooks/useTransfers'
-import { Button, Tabs, TabsList, TabsTrigger, TabsContent } from '@ds'
+import { Button, Tabs, TabsList, TabsTrigger, TabsContent, PageHeader } from '@ds'
 import { TransfersTable } from './TransfersTable'
 import { TransferDialog } from './TransferDialog'
 import { DeleteConfirmDialog } from './DeleteConfirmDialog'
@@ -67,22 +67,22 @@ export function TransfersPage() {
 
   return (
     <div className="space-y-lg">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{t('transfers.title')}</h1>
-          <p className="mt-1 text-sm text-black/60">{t('transfers.subtitle')}</p>
-        </div>
-        <div className="flex items-center gap-sm">
-          <Button variant="outline" onClick={() => setImportOpen(true)}>
-            <UploadSimple size={16} weight="bold" />
-            {t('transfers.importCsv')}
-          </Button>
-          <Button variant="filled" onClick={handleAdd}>
-            <Plus size={16} weight="bold" />
-            {t('transfers.addTransfer')}
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title={t('transfers.title')}
+        subtitle={t('transfers.subtitle')}
+        actions={
+          <>
+            <Button variant="outline" onClick={() => setImportOpen(true)}>
+              <UploadSimple size={16} weight="bold" />
+              {t('transfers.importCsv')}
+            </Button>
+            <Button variant="filled" onClick={handleAdd}>
+              <Plus size={16} weight="bold" />
+              {t('transfers.addTransfer')}
+            </Button>
+          </>
+        }
+      />
 
       <Tabs defaultValue="transfers">
         <TabsList>

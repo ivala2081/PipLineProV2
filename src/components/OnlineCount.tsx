@@ -22,23 +22,33 @@ export function OnlineCount({ className, showTooltip = true }: OnlineCountProps)
   const { t } = useTranslation('components')
   const { currentOrg } = useOrganization()
 
-  // Fetch online members count
+  // Fetch online members count (two-step: get member IDs, then count online profiles)
   const { data: onlineCount = 0 } = useQuery({
     queryKey: queryKeys.presence.onlineCount(currentOrg?.id),
     queryFn: async () => {
       if (!currentOrg?.id) return 0
 
-      // Calculate the threshold for "online" (5 minutes ago)
+      const { data: members, error: membersError } = await supabase
+        .from('organization_members')
+        .select('user_id')
+        .eq('organization_id', currentOrg.id)
+
+      if (membersError) throw membersError
+      if (!members?.length) return 0
+
       const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
 
-      const { data, error } = await supabase
-        .from('organization_members')
-        .select('user_id, profiles!inner(last_seen_at)')
-        .eq('organization_id', currentOrg.id)
-        .gte('profiles.last_seen_at', fiveMinutesAgo)
+      const { count, error: countError } = await supabase
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .in(
+          'id',
+          members.map((m) => m.user_id),
+        )
+        .gte('last_seen_at', fiveMinutesAgo)
 
-      if (error) throw error
-      return data?.length ?? 0
+      if (countError) throw countError
+      return count ?? 0
     },
     enabled: !!currentOrg?.id,
     refetchInterval: 60000, // Refetch every minute

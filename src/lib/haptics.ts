@@ -34,9 +34,7 @@ function isVibrationSupported(): boolean {
  * Check if device is likely mobile (for selective haptic feedback)
  */
 function isMobileDevice(): boolean {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-    navigator.userAgent
-  )
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
 }
 
 /* ------------------------------------------------------------------ */
@@ -112,10 +110,7 @@ function cancelVibration(): void {
  * @param forceOnDesktop - Force haptic even on desktop (default: false)
  * @returns true if vibration was triggered
  */
-export function triggerHaptic(
-  type: HapticType,
-  forceOnDesktop: boolean = false
-): boolean {
+export function triggerHaptic(type: HapticType, forceOnDesktop: boolean = false): boolean {
   // Skip on desktop unless forced
   if (!forceOnDesktop && !isMobileDevice()) {
     return false
@@ -221,7 +216,7 @@ export async function testAllHaptics(): Promise<void> {
     console.log(`[Haptics] Testing ${type}`)
     triggerHaptic(type, true)
     // Wait between each test
-    await new Promise(resolve => setTimeout(resolve, 800))
+    await new Promise((resolve) => setTimeout(resolve, 800))
   }
 }
 

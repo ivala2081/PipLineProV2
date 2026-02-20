@@ -112,8 +112,16 @@ function getTimezoneOffset(): number {
 function getFontsFingerprint(): string {
   const baseFonts = ['monospace', 'sans-serif', 'serif']
   const testFonts = [
-    'Arial', 'Verdana', 'Times New Roman', 'Courier New', 'Georgia',
-    'Comic Sans MS', 'Impact', 'Trebuchet MS', 'Arial Black', 'Tahoma'
+    'Arial',
+    'Verdana',
+    'Times New Roman',
+    'Courier New',
+    'Georgia',
+    'Comic Sans MS',
+    'Impact',
+    'Trebuchet MS',
+    'Arial Black',
+    'Tahoma',
   ]
 
   const canvas = document.createElement('canvas')
@@ -122,9 +130,9 @@ function getFontsFingerprint(): string {
 
   // Measure text width with different fonts
   const detected: string[] = []
-  baseFonts.forEach(baseFont => {
+  baseFonts.forEach((baseFont) => {
     const baseWidth = ctx.measureText('mmmmmmmmmmlli').width
-    testFonts.forEach(testFont => {
+    testFonts.forEach((testFont) => {
       ctx.font = `72px "${testFont}", ${baseFont}`
       const testWidth = ctx.measureText('mmmmmmmmmmlli').width
       if (testWidth !== baseWidth) {
@@ -154,7 +162,7 @@ function collectDeviceCharacteristics(): string[] {
     // Check for touch support
     ('ontouchstart' in window).toString(),
     // Device memory (if available)
-    (navigator as any).deviceMemory?.toString() || 'unknown',
+    (navigator as Navigator & { deviceMemory?: number }).deviceMemory?.toString() || 'unknown',
   ]
 }
 

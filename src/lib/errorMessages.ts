@@ -48,11 +48,11 @@ const ERROR_PATTERNS: Record<string, { key: string; type: ParsedError['type'] }>
   },
 
   // Network errors
-  'fetch': {
+  fetch: {
     key: 'login.errors.network',
     type: 'network',
   },
-  'network': {
+  network: {
     key: 'login.errors.network',
     type: 'network',
   },

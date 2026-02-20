@@ -41,13 +41,16 @@ export const TransferRowItem = React.memo(function TransferRowItem({
 
   return (
     <TableRow className="hover:bg-black/[0.015]">
-      <TableCell className="whitespace-nowrap">
+      <TableCell className="whitespace-nowrap" data-label={t('transfers.columns.fullName')}>
         <span className="text-sm font-medium text-black/90">{row.full_name}</span>
       </TableCell>
-      <TableCell className="whitespace-nowrap text-sm text-black/60">
+      <TableCell
+        className="whitespace-nowrap text-sm text-black/60"
+        data-label={t('transfers.columns.paymentMethod')}
+      >
         {row.payment_method?.name ?? '—'}
       </TableCell>
-      <TableCell className="whitespace-nowrap">
+      <TableCell className="whitespace-nowrap" data-label={t('transfers.columns.category')}>
         <Tag variant={isDeposit ? 'default' : 'red'}>
           {row.category
             ? isDeposit
@@ -56,29 +59,35 @@ export const TransferRowItem = React.memo(function TransferRowItem({
             : '—'}
         </Tag>
       </TableCell>
-      <TableCell className="whitespace-nowrap text-right">
+      <TableCell
+        className="whitespace-nowrap text-right"
+        data-label={t('transfers.columns.amount')}
+      >
         <span
           className={`font-mono text-sm font-medium tabular-nums ${row.amount >= 0 ? 'text-green' : 'text-red'}`}
         >
           {formatNumber(Math.abs(row.amount), lang)}
         </span>
       </TableCell>
-      <TableCell className="whitespace-nowrap text-right">
+      <TableCell
+        className="whitespace-nowrap text-right"
+        data-label={t('transfers.columns.commission')}
+      >
         <span className="font-mono text-sm tabular-nums text-black/50">
           {formatNumber(commission, lang)}
         </span>
       </TableCell>
-      <TableCell className="whitespace-nowrap text-right">
+      <TableCell className="whitespace-nowrap text-right" data-label={t('transfers.columns.net')}>
         <span
           className={`font-mono text-sm font-medium tabular-nums ${net >= 0 ? 'text-green' : 'text-red'}`}
         >
           {formatNumber(Math.abs(net), lang)}
         </span>
       </TableCell>
-      <TableCell className="whitespace-nowrap">
+      <TableCell className="whitespace-nowrap" data-label={t('transfers.columns.currency')}>
         <Tag variant="default">{row.currency}</Tag>
       </TableCell>
-      <TableCell className="whitespace-nowrap text-sm">
+      <TableCell className="whitespace-nowrap text-sm" data-label={t('transfers.columns.psp')}>
         {row.psp ? (
           <Link
             to={`/psps/${row.psp_id}`}
@@ -90,14 +99,17 @@ export const TransferRowItem = React.memo(function TransferRowItem({
           <span className="text-black/40">—</span>
         )}
       </TableCell>
-      <TableCell className="whitespace-nowrap text-sm text-black/60">
+      <TableCell
+        className="whitespace-nowrap text-sm text-black/60"
+        data-label={t('transfers.columns.type')}
+      >
         {row.type?.name
           ? t(`transfers.typeValues.${row.type.name}`, {
               defaultValue: row.type.name,
             })
           : '—'}
       </TableCell>
-      <TableCell className="whitespace-nowrap px-2">
+      <TableCell className="whitespace-nowrap px-2" isActions>
         <div className="flex items-center justify-end gap-0.5">
           <Button
             variant="ghost"

@@ -440,101 +440,113 @@ export function LedgerTable({
                   </Button>
                 </div>
 
-                <div className="overflow-x-auto">
-                  <Table className="min-w-[900px]">
-                    <TableHeader>
-                      <TableRow className="bg-black/[0.015] hover:bg-black/[0.015]">
-                        <TableHead className={TH_CLASS}>
-                          {t('accounting.columns.description')}
-                        </TableHead>
-                        <TableHead className={TH_CLASS}>{t('accounting.columns.type')}</TableHead>
-                        <TableHead className={TH_CLASS}>
-                          {t('accounting.columns.direction')}
-                        </TableHead>
-                        <TableHead className={`${TH_CLASS} text-right`}>
-                          {t('accounting.columns.amount')}
-                        </TableHead>
-                        <TableHead className={TH_CLASS}>
-                          {t('accounting.columns.currency')}
-                        </TableHead>
-                        <TableHead className={TH_CLASS}>
-                          {t('accounting.columns.register')}
-                        </TableHead>
-                        <TableHead className={TH_CLASS}>
-                          {t('accounting.columns.costPeriod')}
-                        </TableHead>
-                        <TableHead className="w-16 px-2" />
+                <Table cardOnMobile>
+                  <TableHeader>
+                    <TableRow className="bg-black/[0.015] hover:bg-black/[0.015]">
+                      <TableHead className={TH_CLASS}>
+                        {t('accounting.columns.description')}
+                      </TableHead>
+                      <TableHead className={TH_CLASS}>{t('accounting.columns.type')}</TableHead>
+                      <TableHead className={TH_CLASS}>
+                        {t('accounting.columns.direction')}
+                      </TableHead>
+                      <TableHead className={`${TH_CLASS} text-right`}>
+                        {t('accounting.columns.amount')}
+                      </TableHead>
+                      <TableHead className={TH_CLASS}>{t('accounting.columns.currency')}</TableHead>
+                      <TableHead className={TH_CLASS}>{t('accounting.columns.register')}</TableHead>
+                      <TableHead className={TH_CLASS}>
+                        {t('accounting.columns.costPeriod')}
+                      </TableHead>
+                      <TableHead className="w-16 px-2" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="divide-y divide-black/[0.04]">
+                    {group.entries.map((row) => (
+                      <TableRow key={row.id} className="hover:bg-black/[0.015]">
+                        <TableCell
+                          className="whitespace-nowrap"
+                          data-label={t('accounting.columns.description')}
+                        >
+                          <span className="text-sm font-medium text-black/90">
+                            {row.description}
+                          </span>
+                        </TableCell>
+                        <TableCell
+                          className="whitespace-nowrap"
+                          data-label={t('accounting.columns.type')}
+                        >
+                          <Tag variant="default">
+                            {row.entry_type === 'ODEME'
+                              ? t('accounting.entryTypes.ODEME')
+                              : t('accounting.entryTypes.TRANSFER')}
+                          </Tag>
+                        </TableCell>
+                        <TableCell
+                          className="whitespace-nowrap"
+                          data-label={t('accounting.columns.direction')}
+                        >
+                          <Tag variant={row.direction === 'in' ? 'default' : 'red'}>
+                            {row.direction === 'in'
+                              ? t('accounting.directions.in')
+                              : t('accounting.directions.out')}
+                          </Tag>
+                        </TableCell>
+                        <TableCell
+                          className="whitespace-nowrap text-right"
+                          data-label={t('accounting.columns.amount')}
+                        >
+                          <span
+                            className={`font-mono text-sm font-medium tabular-nums ${row.direction === 'in' ? 'text-green' : 'text-red'}`}
+                          >
+                            {row.direction === 'in' ? '+' : '-'}
+                            {formatNumber(row.amount)}
+                          </span>
+                        </TableCell>
+                        <TableCell
+                          className="whitespace-nowrap"
+                          data-label={t('accounting.columns.currency')}
+                        >
+                          <Tag variant="default">{row.currency}</Tag>
+                        </TableCell>
+                        <TableCell
+                          className="whitespace-nowrap text-sm text-black/60"
+                          data-label={t('accounting.columns.register')}
+                        >
+                          {REGISTER_LABELS[row.register] || row.register}
+                        </TableCell>
+                        <TableCell
+                          className="whitespace-nowrap text-sm text-black/50"
+                          data-label={t('accounting.columns.costPeriod')}
+                        >
+                          {row.cost_period || '—'}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap px-2" isActions>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                className="size-7 p-0 text-black/40 hover:text-black/70"
+                              >
+                                <DotsThree size={16} weight="bold" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" sideOffset={4}>
+                              <DropdownMenuItem onClick={() => onEdit(row)}>
+                                <PencilSimple size={14} />
+                                {t('accounting.actions.edit')}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-red" onClick={() => onDelete(row)}>
+                                <Trash size={14} />
+                                {t('accounting.actions.delete')}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody className="divide-y divide-black/[0.04]">
-                      {group.entries.map((row) => (
-                        <TableRow key={row.id} className="hover:bg-black/[0.015]">
-                          <TableCell className="whitespace-nowrap">
-                            <span className="text-sm font-medium text-black/90">
-                              {row.description}
-                            </span>
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            <Tag variant="default">
-                              {row.entry_type === 'ODEME'
-                                ? t('accounting.entryTypes.ODEME')
-                                : t('accounting.entryTypes.TRANSFER')}
-                            </Tag>
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            <Tag variant={row.direction === 'in' ? 'default' : 'red'}>
-                              {row.direction === 'in'
-                                ? t('accounting.directions.in')
-                                : t('accounting.directions.out')}
-                            </Tag>
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap text-right">
-                            <span
-                              className={`font-mono text-sm font-medium tabular-nums ${row.direction === 'in' ? 'text-green' : 'text-red'}`}
-                            >
-                              {row.direction === 'in' ? '+' : '-'}
-                              {formatNumber(row.amount)}
-                            </span>
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            <Tag variant="default">{row.currency}</Tag>
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap text-sm text-black/60">
-                            {REGISTER_LABELS[row.register] || row.register}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap text-sm text-black/50">
-                            {row.cost_period || '—'}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap px-2">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  className="size-7 p-0 text-black/40 hover:text-black/70"
-                                >
-                                  <DotsThree size={16} weight="bold" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" sideOffset={4}>
-                                <DropdownMenuItem onClick={() => onEdit(row)}>
-                                  <PencilSimple size={14} />
-                                  {t('accounting.actions.edit')}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="text-red"
-                                  onClick={() => onDelete(row)}
-                                >
-                                  <Trash size={14} />
-                                  {t('accounting.actions.delete')}
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             ))}
 

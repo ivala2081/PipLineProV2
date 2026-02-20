@@ -1,11 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from 'react'
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 
 export type Theme = 'light' | 'dark' | 'system'
 
@@ -22,9 +15,7 @@ const ThemeContext = createContext<ThemeContextValue | null>(null)
 
 function getSystemTheme(): 'light' | 'dark' {
   if (typeof window === 'undefined') return 'light'
-  return window.matchMedia('(prefers-color-scheme: dark)').matches
-    ? 'dark'
-    : 'light'
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
 function resolveTheme(theme: Theme): 'light' | 'dark' {
@@ -43,9 +34,7 @@ export function ThemeProvider({
     return (localStorage.getItem(STORAGE_KEY) as Theme) || defaultTheme
   })
 
-  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() =>
-    resolveTheme(theme),
-  )
+  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() => resolveTheme(theme))
 
   const setTheme = useCallback((newTheme: Theme) => {
     setThemeState(newTheme)
@@ -56,11 +45,12 @@ export function ThemeProvider({
     setTheme(resolvedTheme === 'light' ? 'dark' : 'light')
   }, [resolvedTheme, setTheme])
 
-  // Apply data-theme attribute and track system changes
+  // Apply data-theme attribute and sync resolved theme
   useEffect(() => {
     const resolved = resolveTheme(theme)
-    setResolvedTheme(resolved)
     document.documentElement.setAttribute('data-theme', resolved)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing derived state with DOM
+    setResolvedTheme(resolved)
   }, [theme])
 
   // Listen for system theme changes when in "system" mode
@@ -78,12 +68,11 @@ export function ThemeProvider({
   }, [theme])
 
   return (
-    <ThemeContext value={{ theme, resolvedTheme, setTheme, toggleTheme }}>
-      {children}
-    </ThemeContext>
+    <ThemeContext value={{ theme, resolvedTheme, setTheme, toggleTheme }}>{children}</ThemeContext>
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- useTheme exports hook
 export function useTheme(): ThemeContextValue {
   const ctx = useContext(ThemeContext)
   if (!ctx) {

@@ -129,6 +129,7 @@ function SettlementFormDialog({
     }
   }, [open, initialData, reset])
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch
   const currencyVal = watch('currency')
 
   const handleClose = () => {
@@ -240,7 +241,7 @@ function DeleteConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle>{t('psps.deleteSettlement.title')}</DialogTitle>
         </DialogHeader>
@@ -381,8 +382,8 @@ function LedgerTab({
   return (
     <>
       <div className="pt-4">
-        <div className="overflow-x-auto rounded-lg border border-black/10">
-          <Table>
+        <div className="rounded-lg border border-black/10">
+          <Table cardOnMobile>
             <TableHeader>
               <TableRow className="bg-black/[0.02]">
                 <TableHead className="w-[110px]">{t('psps.columns.date')}</TableHead>
@@ -427,17 +428,28 @@ function LedgerTab({
                   key={row.date}
                   className={`group ${row.settlement > 0 ? 'bg-green/[0.03]' : 'hover:bg-black/[0.01]'}`}
                 >
-                  <TableCell className="text-xs font-medium">{formatDate(row.date)}</TableCell>
+                  <TableCell className="text-xs font-medium" data-label={t('psps.columns.date')}>
+                    {formatDate(row.date)}
+                  </TableCell>
                   {/* YATIRIM – deposits */}
-                  <TableCell className="text-right tabular-nums text-sm text-green-600">
+                  <TableCell
+                    className="text-right tabular-nums text-sm text-green-600"
+                    data-label={t('psps.columns.deposit')}
+                  >
                     {row.deposit > 0 ? formatCurrency(row.deposit) : '–'}
                   </TableCell>
                   {/* ÇEKME – withdrawals displayed as negative */}
-                  <TableCell className="text-right tabular-nums text-sm text-red-500">
+                  <TableCell
+                    className="text-right tabular-nums text-sm text-red-500"
+                    data-label={t('psps.columns.withdrawal')}
+                  >
                     {row.withdrawal > 0 ? `-${formatCurrency(row.withdrawal)}` : '–'}
                   </TableCell>
                   {/* TOPLAM = deposit - withdrawal */}
-                  <TableCell className="text-right tabular-nums text-sm font-medium">
+                  <TableCell
+                    className="text-right tabular-nums text-sm font-medium"
+                    data-label={t('psps.columns.total')}
+                  >
                     <span
                       className={
                         row.total > 0
@@ -451,11 +463,17 @@ function LedgerTab({
                     </span>
                   </TableCell>
                   {/* KOMİSYON */}
-                  <TableCell className="text-right tabular-nums text-sm text-black/50">
+                  <TableCell
+                    className="text-right tabular-nums text-sm text-black/50"
+                    data-label={t('psps.columns.commission')}
+                  >
                     {row.commission > 0 ? formatCurrency(row.commission) : '–'}
                   </TableCell>
                   {/* NET */}
-                  <TableCell className="text-right tabular-nums text-sm font-medium">
+                  <TableCell
+                    className="text-right tabular-nums text-sm font-medium"
+                    data-label={t('psps.columns.net')}
+                  >
                     <span
                       className={
                         row.net > 0
@@ -469,7 +487,10 @@ function LedgerTab({
                     </span>
                   </TableCell>
                   {/* TAHS TUTARI */}
-                  <TableCell className="text-right tabular-nums text-sm font-medium text-blue">
+                  <TableCell
+                    className="text-right tabular-nums text-sm font-medium text-blue"
+                    data-label={t('psps.columns.settlement')}
+                  >
                     {row.settlement > 0 ? formatCurrency(row.settlement) : '–'}
                   </TableCell>
                   {/* KASA TOP = devir + net */}
@@ -481,15 +502,19 @@ function LedgerTab({
                           ? 'text-red-500'
                           : 'text-green-600'
                     }`}
+                    data-label={t('psps.columns.kasaTop')}
                   >
                     {formatCurrency(row.kasaTop)}
                   </TableCell>
                   {/* DEVİR – carry-over from previous day */}
-                  <TableCell className="text-right tabular-nums text-sm text-black/40">
+                  <TableCell
+                    className="text-right tabular-nums text-sm text-black/40"
+                    data-label={t('psps.columns.devir')}
+                  >
                     {row.devir !== 0 ? formatCurrency(row.devir) : '–'}
                   </TableCell>
                   {isAdmin && (
-                    <TableCell className="w-10 px-2">
+                    <TableCell className="w-10 px-2" isActions>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -611,8 +636,8 @@ function SettlementsTab({ pspId, isAdmin }: { pspId: string; isAdmin: boolean })
           description={t('psps.detail.noDataDesc')}
         />
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-black/10">
-          <Table>
+        <div className="rounded-lg border border-black/10">
+          <Table cardOnMobile>
             <TableHeader>
               <TableRow className="bg-black/[0.02]">
                 <TableHead>{t('psps.columns.date')}</TableHead>
@@ -625,20 +650,28 @@ function SettlementsTab({ pspId, isAdmin }: { pspId: string; isAdmin: boolean })
             <TableBody>
               {settlements.map((s) => (
                 <TableRow key={s.id} className="hover:bg-black/[0.01]">
-                  <TableCell className="text-sm">{formatDate(s.settlement_date)}</TableCell>
-                  <TableCell className="text-right tabular-nums text-sm font-semibold text-green-600">
+                  <TableCell className="text-sm" data-label={t('psps.columns.date')}>
+                    {formatDate(s.settlement_date)}
+                  </TableCell>
+                  <TableCell
+                    className="text-right tabular-nums text-sm font-semibold text-green-600"
+                    data-label={t('psps.settlement.amount')}
+                  >
                     {formatCurrency(Number(s.amount))}
                   </TableCell>
-                  <TableCell>
+                  <TableCell data-label={t('psps.settlement.currency')}>
                     <Tag variant="default" className="text-xs">
                       {s.currency}
                     </Tag>
                   </TableCell>
-                  <TableCell className="max-w-[200px] truncate text-xs text-black/50">
+                  <TableCell
+                    className="max-w-[200px] truncate text-xs text-black/50"
+                    data-label={t('psps.columns.notes')}
+                  >
                     {s.notes || '–'}
                   </TableCell>
                   {isAdmin && (
-                    <TableCell>
+                    <TableCell isActions>
                       <div className="flex items-center gap-1">
                         <Button
                           variant="ghost"
@@ -726,7 +759,7 @@ function DeletePspDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>{t('psps.deletePsp.title')}</DialogTitle>
         </DialogHeader>
@@ -1174,8 +1207,8 @@ function SettingsTab({
                     {t('transfers.settings.noRateHistory')}
                   </p>
                 ) : (
-                  <div className="overflow-x-auto rounded-lg border border-black/10">
-                    <Table>
+                  <div className="rounded-lg border border-black/10">
+                    <Table cardOnMobile>
                       <TableHeader>
                         <TableRow className="bg-black/[0.02]">
                           <TableHead>{t('transfers.settings.effectiveFrom')}</TableHead>
@@ -1190,12 +1223,12 @@ function SettingsTab({
 
                           return (
                             <TableRow key={rate.id}>
-                              <TableCell>
+                              <TableCell data-label={t('transfers.settings.effectiveFrom')}>
                                 <span className="font-mono text-sm tabular-nums">
                                   {rate.effective_from}
                                 </span>
                               </TableCell>
-                              <TableCell>
+                              <TableCell data-label={t('transfers.settings.commissionRate')}>
                                 <div className="flex items-center gap-2">
                                   <span className="font-mono text-sm tabular-nums">
                                     {(rate.commission_rate * 100).toFixed(1)}%
@@ -1208,7 +1241,7 @@ function SettingsTab({
                                   )}
                                 </div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell isActions>
                                 <Button
                                   variant="borderless"
                                   size="sm"

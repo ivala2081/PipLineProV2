@@ -33,9 +33,7 @@ export function useProfileQuery(userId: string) {
 
       return {
         ...profile,
-        memberships:
-          (memberships as unknown as ProfileWithMemberships['memberships']) ??
-          [],
+        memberships: (memberships as unknown as ProfileWithMemberships['memberships']) ?? [],
       }
     },
     enabled: !!userId,

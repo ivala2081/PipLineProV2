@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { walletFormSchema, type WalletFormValues } from '@/schemas/accountingSchema'
+import type { Wallet } from '@/lib/database.types'
 import {
   Dialog,
   DialogContent,
@@ -24,10 +25,13 @@ interface WalletDialogProps {
   onClose: () => void
   onSubmit: (data: WalletFormValues) => Promise<void>
   isSubmitting: boolean
+  /** When provided, the dialog operates in edit mode */
+  wallet?: Wallet
 }
 
-export function WalletDialog({ open, onClose, onSubmit, isSubmitting }: WalletDialogProps) {
+export function WalletDialog({ open, onClose, onSubmit, isSubmitting, wallet }: WalletDialogProps) {
   const { t } = useTranslation('pages')
+  const isEditing = !!wallet
 
   const {
     register,
@@ -47,9 +51,16 @@ export function WalletDialog({ open, onClose, onSubmit, isSubmitting }: WalletDi
 
   useEffect(() => {
     if (open) {
-      reset({ label: '', address: '', chain: 'tron' })
+      if (wallet) {
+        reset({ label: wallet.label, address: wallet.address, chain: wallet.chain })
+      } else {
+        reset({ label: '', address: '', chain: 'tron' })
+      }
     }
-  }, [open, reset])
+  }, [open, wallet, reset])
+
+  // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch
+  const chainValue = watch('chain')
 
   const onFormSubmit = handleSubmit(async (data) => {
     await onSubmit(data)
@@ -59,7 +70,9 @@ export function WalletDialog({ open, onClose, onSubmit, isSubmitting }: WalletDi
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent size="md">
         <DialogHeader>
-          <DialogTitle>{t('accounting.addWallet')}</DialogTitle>
+          <DialogTitle>
+            {isEditing ? t('accounting.editWallet') : t('accounting.addWallet')}
+          </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={onFormSubmit} className="space-y-md">
@@ -78,15 +91,26 @@ export function WalletDialog({ open, onClose, onSubmit, isSubmitting }: WalletDi
               {...register('address')}
               placeholder={t('accounting.wallets.form.addressPlaceholder')}
               className="font-mono text-sm"
+              readOnly={isEditing}
+              disabled={isEditing}
             />
+            {isEditing && (
+              <p className="text-xs text-black/40">
+                {t(
+                  'accounting.wallets.form.addressReadOnly',
+                  'Address cannot be changed after creation.',
+                )}
+              </p>
+            )}
             {errors.address && <p className="text-xs text-red">{errors.address.message}</p>}
           </div>
 
           <div className="space-y-sm">
             <Label>{t('accounting.wallets.form.chain')}</Label>
             <Select
-              value={watch('chain')}
+              value={chainValue}
               onValueChange={(v) => setValue('chain', v as WalletFormValues['chain'])}
+              disabled={isEditing}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -99,6 +123,14 @@ export function WalletDialog({ open, onClose, onSubmit, isSubmitting }: WalletDi
                 <SelectItem value="solana">Solana</SelectItem>
               </SelectContent>
             </Select>
+            {isEditing && (
+              <p className="text-xs text-black/40">
+                {t(
+                  'accounting.wallets.form.chainReadOnly',
+                  'Chain cannot be changed after creation.',
+                )}
+              </p>
+            )}
           </div>
 
           <DialogFooter>

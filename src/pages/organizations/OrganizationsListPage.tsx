@@ -2,7 +2,16 @@ import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Plus, MagnifyingGlass } from '@phosphor-icons/react'
-import { Button, Input, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@ds'
+import {
+  Button,
+  Input,
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+  PageHeader,
+} from '@ds'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { canManageOrg } from '@/lib/roles'
@@ -46,18 +55,18 @@ export function OrganizationsListPage() {
   return (
     <div className="space-y-lg">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{t('organizations.title')}</h1>
-          <p className="mt-1 text-sm text-black/60">{t('organizations.subtitle')}</p>
-        </div>
-        {canManage && (
-          <Button variant="filled" onClick={() => setCreateDialogOpen(true)}>
-            <Plus size={16} weight="bold" />
-            {t('organizations.create')}
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title={t('organizations.title')}
+        subtitle={t('organizations.subtitle')}
+        actions={
+          canManage ? (
+            <Button variant="filled" onClick={() => setCreateDialogOpen(true)}>
+              <Plus size={16} weight="bold" />
+              {t('organizations.create')}
+            </Button>
+          ) : undefined
+        }
+      />
 
       {/* Search + Filter Bar (minimal) */}
       <div className="flex flex-wrap items-center gap-sm">

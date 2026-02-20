@@ -14,8 +14,18 @@ export type CalendarProps = ComponentProps<'div'> & {
 
 const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ]
 
 function getDaysInMonth(month: number, year: number) {
@@ -47,7 +57,7 @@ export const Calendar: FC<CalendarProps> = ({
   const prevMonth = () => {
     if (month === 0) {
       onMonthChange?.(11)
-      onYearChange?.((year) - 1)
+      onYearChange?.(year - 1)
     } else {
       onMonthChange?.(month - 1)
     }
@@ -56,7 +66,7 @@ export const Calendar: FC<CalendarProps> = ({
   const nextMonth = () => {
     if (month === 11) {
       onMonthChange?.(0)
-      onYearChange?.((year) + 1)
+      onYearChange?.(year + 1)
     } else {
       onMonthChange?.(month + 1)
     }
@@ -79,17 +89,29 @@ export const Calendar: FC<CalendarProps> = ({
     <div className={cn('w-[280px] rounded-2xl bg-bg1 p-4', className)} {...props}>
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
-        <Button variant="borderless" size="sm" onClick={prevMonth} leftContent={<CaretLeft size={16} />} />
+        <Button
+          variant="borderless"
+          size="sm"
+          onClick={prevMonth}
+          leftContent={<CaretLeft size={16} />}
+        />
         <span className="text-sm font-semibold">
           {MONTHS[month]} {year}
         </span>
-        <Button variant="borderless" size="sm" onClick={nextMonth} leftContent={<CaretRight size={16} />} />
+        <Button
+          variant="borderless"
+          size="sm"
+          onClick={nextMonth}
+          leftContent={<CaretRight size={16} />}
+        />
       </div>
 
       {/* Day headers */}
       <div className="mb-2 grid grid-cols-7 gap-1 text-center text-xs text-black/40">
         {DAYS.map((d) => (
-          <div key={d} className="py-1">{d}</div>
+          <div key={d} className="py-1">
+            {d}
+          </div>
         ))}
       </div>
 

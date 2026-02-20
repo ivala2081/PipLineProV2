@@ -88,10 +88,7 @@ function checkEmailTypo(email: string): string | undefined {
 /**
  * Validate email with locale-specific rules
  */
-export function validateEmail(
-  email: string,
-  locale: string = 'en'
-): EmailValidationResult {
+export function validateEmail(email: string, locale: string = 'en'): EmailValidationResult {
   // Check if empty
   if (!email || !email.trim()) {
     return {
@@ -137,9 +134,19 @@ export function isValidEmailFormat(email: string): boolean {
  * Common weak passwords to reject
  */
 const COMMON_PASSWORDS = [
-  'password', '12345678', '123456789', 'qwerty', 'abc123',
-  'password123', 'admin', 'letmein', 'welcome', 'monkey',
-  '1234567890', 'Password1', 'Password123'
+  'password',
+  '12345678',
+  '123456789',
+  'qwerty',
+  'abc123',
+  'password123',
+  'admin',
+  'letmein',
+  'welcome',
+  'monkey',
+  '1234567890',
+  'Password1',
+  'Password123',
 ]
 
 /**
@@ -350,8 +357,8 @@ export function levenshteinDistance(a: string, b: string): number {
       } else {
         matrix[i][j] = Math.min(
           matrix[i - 1][j - 1] + 1, // substitution
-          matrix[i][j - 1] + 1,     // insertion
-          matrix[i - 1][j] + 1      // deletion
+          matrix[i][j - 1] + 1, // insertion
+          matrix[i - 1][j] + 1, // deletion
         )
       }
     }

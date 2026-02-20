@@ -333,7 +333,14 @@ function UserMenu() {
                   <AvatarFallback className="text-xs font-medium">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">{displayName}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="truncate font-semibold">{displayName}</span>
+                    {roleBadge && (
+                      <Tag variant={roleBadge.variant} className="shrink-0 text-[9px]">
+                        {roleBadge.label}
+                      </Tag>
+                    )}
+                  </div>
                   <span className="truncate text-xs text-black/50">{email}</span>
                 </div>
                 <CaretUpDown size={16} className="ml-auto text-black/60" />

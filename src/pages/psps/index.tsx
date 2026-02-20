@@ -14,6 +14,7 @@ import {
   DialogFooter,
   Input,
   Label,
+  PageHeader,
 } from '@ds'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
@@ -66,18 +67,18 @@ export function PspsPage() {
   return (
     <div className="space-y-lg">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{t('psps.title')}</h1>
-          <p className="mt-1 text-sm text-black/60">{t('psps.subtitle')}</p>
-        </div>
-        {isAdmin && (
-          <Button size="sm" onClick={() => setAddDialogOpen(true)}>
-            <Plus size={16} weight="bold" className="mr-1.5" />
-            {t('psps.addPsp')}
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title={t('psps.title')}
+        subtitle={t('psps.subtitle')}
+        actions={
+          isAdmin ? (
+            <Button size="sm" onClick={() => setAddDialogOpen(true)}>
+              <Plus size={16} weight="bold" />
+              {t('psps.addPsp')}
+            </Button>
+          ) : undefined
+        }
+      />
 
       {/* PSP Cards */}
       {!isLoading && !hasPsps ? (
@@ -186,7 +187,7 @@ export function PspsPage() {
 
       {/* Add PSP Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent size="md">
           <DialogHeader>
             <DialogTitle>{t('psps.addPsp')}</DialogTitle>
           </DialogHeader>

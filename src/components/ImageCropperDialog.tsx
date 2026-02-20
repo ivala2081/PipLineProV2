@@ -17,10 +17,7 @@ interface ImageCropperDialogProps {
 /**
  * Creates a cropped image from canvas crop area
  */
-async function createCroppedImage(
-  imageSrc: string,
-  pixelCrop: Area
-): Promise<Blob> {
+async function createCroppedImage(imageSrc: string, pixelCrop: Area): Promise<Blob> {
   const image = await createImage(imageSrc)
   const canvas = document.createElement('canvas')
   const ctx = canvas.getContext('2d')
@@ -43,7 +40,7 @@ async function createCroppedImage(
     0,
     0,
     pixelCrop.width,
-    pixelCrop.height
+    pixelCrop.height,
   )
 
   // Convert canvas to blob with high quality
@@ -57,7 +54,7 @@ async function createCroppedImage(
         resolve(blob)
       },
       'image/jpeg',
-      0.98
+      0.98,
     )
   })
 }
@@ -100,12 +97,9 @@ export function ImageCropperDialog({
     setZoom(zoom)
   }, [])
 
-  const onCropAreaChange = useCallback(
-    (_croppedArea: Area, croppedAreaPixels: Area) => {
-      setCroppedAreaPixels(croppedAreaPixels)
-    },
-    []
-  )
+  const onCropAreaChange = useCallback((_croppedArea: Area, croppedAreaPixels: Area) => {
+    setCroppedAreaPixels(croppedAreaPixels)
+  }, [])
 
   const handleCrop = async () => {
     if (!croppedAreaPixels) return
@@ -134,9 +128,7 @@ export function ImageCropperDialog({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>
-            {title || t('imageCropper.title', 'Crop Image')}
-          </DialogTitle>
+          <DialogTitle>{title || t('imageCropper.title', 'Crop Image')}</DialogTitle>
         </DialogHeader>
 
         {/* Cropper Area */}
@@ -160,9 +152,7 @@ export function ImageCropperDialog({
         {/* Zoom Controls */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="font-medium text-black/60">
-              {t('imageCropper.zoom', 'Zoom')}
-            </span>
+            <span className="font-medium text-black/60">{t('imageCropper.zoom', 'Zoom')}</span>
             <span className="text-xs text-black/40">{Math.round(zoom * 100)}%</span>
           </div>
           <div className="flex items-center gap-3">
@@ -198,26 +188,16 @@ export function ImageCropperDialog({
         <p className="text-xs text-black/40">
           {t(
             'imageCropper.hint',
-            'Drag to reposition, use the slider or mouse wheel to zoom, then click Crop to apply.'
+            'Drag to reposition, use the slider or mouse wheel to zoom, then click Crop to apply.',
           )}
         </p>
 
         {/* Actions */}
         <div className="flex justify-end gap-2 pt-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            disabled={isProcessing}
-          >
+          <Button type="button" variant="outline" onClick={onClose} disabled={isProcessing}>
             {t('imageCropper.cancel', 'Cancel')}
           </Button>
-          <Button
-            type="button"
-            variant="filled"
-            onClick={handleCrop}
-            disabled={isProcessing}
-          >
+          <Button type="button" variant="filled" onClick={handleCrop} disabled={isProcessing}>
             <Scissors size={16} weight="bold" />
             {isProcessing
               ? t('imageCropper.processing', 'Processing...')

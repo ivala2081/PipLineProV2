@@ -38,11 +38,10 @@ const textStyles = cva(['font-normal transition-all'], {
   },
 })
 
-export type TextProps<C extends ElementType = typeof defaultTag> =
-  PolymorphicProps<C> &
-    VariantProps<typeof textStyles> & {
-      size?: TextSize
-    }
+export type TextProps<C extends ElementType = typeof defaultTag> = PolymorphicProps<C> &
+  VariantProps<typeof textStyles> & {
+    size?: TextSize
+  }
 
 export function Typography<C extends ElementType = typeof defaultTag>({
   as,
@@ -59,7 +58,10 @@ export function Typography<C extends ElementType = typeof defaultTag>({
 
   return (
     <Component
-      className={cn(textStyles({ size: size ?? 'default', semibold, align, italic, underline }), className)}
+      className={cn(
+        textStyles({ size: size ?? 'default', semibold, align, italic, underline }),
+        className,
+      )}
       {...props}
     >
       {children}

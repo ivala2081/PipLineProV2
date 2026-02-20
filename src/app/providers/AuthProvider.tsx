@@ -143,8 +143,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fetchWithRetry()
 
     return () => {
-      // Invalidate this fetch cycle on cleanup
-      profileFetchId.current++
+      const id = currentFetchId
+      profileFetchId.current = id + 1
     }
   }, [state.user?.id])
 
@@ -221,11 +221,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshProfile = useCallback(async () => {
     if (!state.user) return
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', state.user.id)
-      .single()
+    const { data } = await supabase.from('profiles').select('*').eq('id', state.user.id).single()
     if (data) {
       setState((prev) => ({ ...prev, profile: data as Profile }))
     }
@@ -250,6 +246,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 /*  Hook                                                               */
 /* ------------------------------------------------------------------ */
 
+// eslint-disable-next-line react-refresh/only-export-components -- AuthProvider exports provider + hook
 export function useAuth() {
   const context = useContext(AuthContext)
   if (context === undefined) {

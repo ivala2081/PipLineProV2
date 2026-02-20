@@ -8,13 +8,15 @@ Tabs.displayName = 'Tabs'
 
 export type TabsListProps = ComponentProps<typeof TabsPrimitive.List>
 export const TabsList: FC<TabsListProps> = ({ className, ...props }) => (
-  <TabsPrimitive.List
-    className={cn(
-      'inline-flex h-10 items-center justify-center gap-xs rounded-xl bg-black/5 p-xs text-black/40',
-      className,
-    )}
-    {...props}
-  />
+  <div className="w-full overflow-x-auto tabs-list-scroll">
+    <TabsPrimitive.List
+      className={cn(
+        'inline-flex h-10 w-max min-w-full items-center justify-center gap-xs rounded-xl bg-black/5 p-xs text-black/40',
+        className,
+      )}
+      {...props}
+    />
+  </div>
 )
 TabsList.displayName = 'TabsList'
 

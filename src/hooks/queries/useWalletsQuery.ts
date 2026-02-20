@@ -103,6 +103,7 @@ export function useWalletsQuery(): UseWalletsQueryReturn {
     updateWallet: async (id, data) => updateMutation.mutateAsync({ id, data }),
     deleteWallet: deleteMutation.mutateAsync,
     isCreating: createMutation.isPending,
+    isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
   }
 }

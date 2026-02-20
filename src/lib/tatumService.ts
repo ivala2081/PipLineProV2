@@ -128,10 +128,7 @@ async function tatumFetch<T>(
 }
 
 /** Fetch from TronGrid API (no API key required, free tier) */
-async function tronGridFetch<T>(
-  path: string,
-  params: Record<string, string> = {},
-): Promise<T> {
+async function tronGridFetch<T>(path: string, params: Record<string, string> = {}): Promise<T> {
   const raw = `${TRONGRID_BASE}${path}`
   const url = raw.startsWith('http') ? new URL(raw) : new URL(raw, window.location.origin)
   for (const [key, value] of Object.entries(params)) {
@@ -180,12 +177,12 @@ const EVM_KNOWN_TOKENS: Record<string, Record<string, string>> = {
     '0x8f3cf7ad23cd3cadbd9735aff958023239c6a063': 'DAI',
   },
   tron: {
-    'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t': 'USDT',
-    'TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8': 'USDC',
-    'TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR': 'WTRX',
-    'TSSMHYeV2uE9qYH95DqyoCuNCzEL1NvU3S': 'SUN',
-    'TAFjULxiVgT4qWk6UZwjqwZXTSaGaqnVp4': 'BTT',
-    'TUpMhErZL2fhh4sVNULAbNKLokS4GjC1F4': 'TUSD',
+    TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t: 'USDT',
+    TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8: 'USDC',
+    TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR: 'WTRX',
+    TSSMHYeV2uE9qYH95DqyoCuNCzEL1NvU3S: 'SUN',
+    TAFjULxiVgT4qWk6UZwjqwZXTSaGaqnVp4: 'BTT',
+    TUpMhErZL2fhh4sVNULAbNKLokS4GjC1F4: 'TUSD',
   },
   bitcoin: {},
 }
@@ -413,10 +410,7 @@ interface TronTrc20Tx {
 /** Minimum TRX amount to display – filters out smart-contract dust */
 const TRON_NATIVE_DUST_THRESHOLD = 0.001 // 1000 sun
 
-function normalizeTronNativeTxs(
-  rawTxs: TronRawTx[],
-  address: string,
-): NormalizedTransfer[] {
+function normalizeTronNativeTxs(rawTxs: TronRawTx[], address: string): NormalizedTransfer[] {
   const txs: NormalizedTransfer[] = []
   for (const tx of rawTxs) {
     const contract = tx.rawData?.contract?.[0]
@@ -456,10 +450,7 @@ function normalizeTronNativeTxs(
   return txs
 }
 
-function normalizeTronTrc20Txs(
-  rawTxs: TronTrc20Tx[],
-  address: string,
-): NormalizedTransfer[] {
+function normalizeTronTrc20Txs(rawTxs: TronTrc20Tx[], address: string): NormalizedTransfer[] {
   const txs: NormalizedTransfer[] = []
   for (const tx of rawTxs) {
     if (!tx.transaction_id) continue
@@ -553,18 +544,18 @@ async function fetchTronTransfers(
         )
       : Promise.resolve({ transactions: [] as TronRawTx[], next: undefined }),
     shouldFetchTrc20
-      ? tronGridFetch<TronGridTrc20Response>(
-          `/accounts/${address}/transactions/trc20`,
-          trc20Params,
-        )
-      : Promise.resolve({ data: [] as TronTrc20Tx[], success: true, meta: undefined } as TronGridTrc20Response),
+      ? tronGridFetch<TronGridTrc20Response>(`/accounts/${address}/transactions/trc20`, trc20Params)
+      : Promise.resolve({
+          data: [] as TronTrc20Tx[],
+          success: true,
+          meta: undefined,
+        } as TronGridTrc20Response),
   ])
 
   const newNativeNext = nativeRes.status === 'fulfilled' ? nativeRes.value.next : undefined
   // TronGrid returns fingerprint for pagination (undefined when no more pages)
-  const newTrc20Next = trc20Res.status === 'fulfilled'
-    ? trc20Res.value.meta?.fingerprint
-    : undefined
+  const newTrc20Next =
+    trc20Res.status === 'fulfilled' ? trc20Res.value.meta?.fingerprint : undefined
 
   // Log errors so we know when an endpoint fails
   if (nativeRes.status === 'rejected') {
@@ -583,9 +574,7 @@ async function fetchTronTransfers(
 
   // Step 2: Normalize native TRX transfers (only real TransferContract, filtered)
   // and deduplicate against TRC-20 results
-  const rawNativeTxs = nativeRes.status === 'fulfilled'
-    ? (nativeRes.value.transactions ?? [])
-    : []
+  const rawNativeTxs = nativeRes.status === 'fulfilled' ? (nativeRes.value.transactions ?? []) : []
   const trc20Hashes = new Set(trc20Txs.map((tx) => tx.hash))
   const nativeTxs: NormalizedTransfer[] = []
   for (const tx of normalizeTronNativeTxs(rawNativeTxs, address)) {
@@ -616,11 +605,10 @@ async function fetchBitcoinTransfers(
   pageSize = 50,
   offset = 0,
 ): Promise<{ txs: NormalizedTransfer[]; hasMore: boolean }> {
-  const data = await tatumFetch<BtcTx[]>(
-    BASE_V3,
-    `/bitcoin/transaction/address/${address}`,
-    { pageSize: String(pageSize), offset: String(offset) },
-  )
+  const data = await tatumFetch<BtcTx[]>(BASE_V3, `/bitcoin/transaction/address/${address}`, {
+    pageSize: String(pageSize),
+    offset: String(offset),
+  })
 
   const txs: NormalizedTransfer[] = []
 
@@ -668,12 +656,12 @@ async function fetchBitcoinTransfers(
 function normalizeV4Transfers(
   v4Txs: TatumTransaction[],
   chain: string,
-  address: string,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- API consistency with other normalizers
+  _address: string,
 ): NormalizedTransfer[] {
   return v4Txs.map((tx) => {
     // V4 uses transactionSubtype: 'incoming' | 'outgoing' | 'zero-transfer'
-    const direction: 'in' | 'out' =
-      tx.transactionSubtype === 'outgoing' ? 'out' : 'in'
+    const direction: 'in' | 'out' = tx.transactionSubtype === 'outgoing' ? 'out' : 'in'
 
     // Amount can be negative for outgoing — normalize to absolute value
     const rawAmount = parseFloat(tx.amount) || 0
@@ -790,16 +778,11 @@ export async function getTransferHistory(
 /** @deprecated Use getTransferHistory instead */
 export const getTransactionHistory = getTransferHistory
 
-
-export async function getTokenRate(
-  symbol: string,
-  basePair = 'USD',
-): Promise<number> {
-  const data = await tatumFetch<{ value: string }>(
-    BASE_V4,
-    '/data/rate/symbol',
-    { symbol, basePair },
-  )
+export async function getTokenRate(symbol: string, basePair = 'USD'): Promise<number> {
+  const data = await tatumFetch<{ value: string }>(BASE_V4, '/data/rate/symbol', {
+    symbol,
+    basePair,
+  })
 
   return parseFloat(data.value) || 0
 }

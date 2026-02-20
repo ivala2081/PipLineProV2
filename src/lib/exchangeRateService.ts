@@ -7,9 +7,7 @@ const API_KEY = 'b8042fdeb5c8caf372397081'
 function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
-  return fetch(url, { signal: controller.signal }).finally(() =>
-    clearTimeout(timer),
-  )
+  return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer))
 }
 
 /* ── Provider: ExchangeRate-API (pair conversion) ─────────────────── */
@@ -24,8 +22,7 @@ async function fetchFromExchangeRateApi(currency: string): Promise<number> {
   if (json?.result !== 'success')
     throw new Error(`exchangerate-api error: ${json?.['error-type'] ?? 'unknown'}`)
   const rate = json?.conversion_rate
-  if (typeof rate !== 'number' || rate <= 0)
-    throw new Error('Invalid rate from exchangerate-api')
+  if (typeof rate !== 'number' || rate <= 0) throw new Error('Invalid rate from exchangerate-api')
   return rate
 }
 
@@ -35,10 +32,7 @@ function getCachedRate(currency: string): number | null {
   try {
     const raw = localStorage.getItem(CACHE_KEY)
     if (!raw) return null
-    const cache = JSON.parse(raw) as Record<
-      string,
-      { rate: number; timestamp: number }
-    >
+    const cache = JSON.parse(raw) as Record<string, { rate: number; timestamp: number }>
     const entry = cache[currency]
     if (!entry) return null
     // Accept cache up to 24 hours
@@ -52,9 +46,7 @@ function getCachedRate(currency: string): number | null {
 function setCachedRate(currency: string, rate: number): void {
   try {
     const raw = localStorage.getItem(CACHE_KEY)
-    const cache: Record<string, { rate: number; timestamp: number }> = raw
-      ? JSON.parse(raw)
-      : {}
+    const cache: Record<string, { rate: number; timestamp: number }> = raw ? JSON.parse(raw) : {}
     cache[currency] = { rate, timestamp: Date.now() }
     localStorage.setItem(CACHE_KEY, JSON.stringify(cache))
   } catch {

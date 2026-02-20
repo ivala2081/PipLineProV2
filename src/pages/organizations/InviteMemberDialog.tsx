@@ -70,6 +70,7 @@ export function InviteMemberDialog({ open, onClose, orgId }: InviteMemberDialogP
     defaultValues: { email: '', role: 'operation', password: '', displayName: '' },
   })
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch
   const selectedRole = form.watch('role')
 
   // Reset form when dialog opens

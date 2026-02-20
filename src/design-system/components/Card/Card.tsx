@@ -10,9 +10,9 @@ const cardStyles = cva('ui-surface rounded-2xl border border-black/10 bg-bg5 tex
     },
     padding: {
       none: '',
-      compact: 'p-md' /* 16px — data-dense panels */,
-      default: 'p-card' /* 20px — standard card */,
-      spacious: 'p-lg' /* 24px — content-heavy blocks */,
+      compact: 'p-3 md:p-md' /* 12→16px — data-dense panels */,
+      default: 'p-3 md:p-card' /* 12→20px — standard card */,
+      spacious: 'p-md md:p-lg' /* 16→24px — content-heavy blocks */,
     },
   },
   defaultVariants: {

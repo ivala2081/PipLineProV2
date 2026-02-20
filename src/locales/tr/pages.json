@@ -465,6 +465,7 @@
     "addEntry": "Kayıt Ekle",
     "editEntry": "Kayıt Düzenle",
     "addWallet": "Cüzdan Ekle",
+    "editWallet": "Cüzdan Düzenle",
     "in": "Giriş",
     "out": "Çıkış",
     "tabs": {
@@ -661,7 +662,9 @@
         "labelPlaceholder": "örn. Ana USDT Cüzdanı",
         "address": "Cüzdan Adresi",
         "addressPlaceholder": "Blockchain adresi girin",
-        "chain": "Blok Zinciri"
+        "addressReadOnly": "Adres oluşturulduktan sonra değiştirilemez.",
+        "chain": "Blok Zinciri",
+        "chainReadOnly": "Blok zinciri oluşturulduktan sonra değiştirilemez."
       }
     },
     "portfolio": {
@@ -705,6 +708,7 @@
       "updated": "Kayıt başarıyla güncellendi",
       "deleted": "Kayıt başarıyla silindi",
       "walletCreated": "Cüzdan başarıyla eklendi",
+      "walletUpdated": "Cüzdan başarıyla güncellendi",
       "walletDeleted": "Cüzdan başarıyla kaldırıldı",
       "snapshotTaken": "Bakiye anlık görüntüsü kaydedildi",
       "snapshotDeleted": "Anlık görüntü kaldırıldı",

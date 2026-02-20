@@ -1,13 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import type { AccountingEntry } from '@/lib/database.types'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  Button,
-} from '@ds'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Button } from '@ds'
 
 interface DeleteEntryDialogProps {
   entry: AccountingEntry | null
@@ -15,11 +8,7 @@ interface DeleteEntryDialogProps {
   onConfirm: () => Promise<void>
 }
 
-export function DeleteEntryDialog({
-  entry,
-  onClose,
-  onConfirm,
-}: DeleteEntryDialogProps) {
+export function DeleteEntryDialog({ entry, onClose, onConfirm }: DeleteEntryDialogProps) {
   const { t } = useTranslation('pages')
 
   return (
@@ -37,11 +26,7 @@ export function DeleteEntryDialog({
           <Button variant="outline" onClick={onClose}>
             {t('accounting.delete.cancel')}
           </Button>
-          <Button
-            variant="filled"
-            className="bg-red hover:bg-red/90"
-            onClick={onConfirm}
-          >
+          <Button variant="filled" className="bg-red hover:bg-red/90" onClick={onConfirm}>
             {t('accounting.delete.confirm')}
           </Button>
         </DialogFooter>

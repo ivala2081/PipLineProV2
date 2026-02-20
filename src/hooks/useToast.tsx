@@ -41,7 +41,15 @@ export function AppToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([])
 
   const toast = useCallback(
-    ({ title, description, variant = 'default' }: { title?: string; description?: string; variant?: ToastVariant }) => {
+    ({
+      title,
+      description,
+      variant = 'default',
+    }: {
+      title?: string
+      description?: string
+      variant?: ToastVariant
+    }) => {
       const id = `toast-${++toastCounter}`
       setToasts((prev) => [...prev, { id, title, description, variant }])
 
@@ -86,6 +94,7 @@ export function AppToastProvider({ children }: { children: ReactNode }) {
 /*  Hook                                                               */
 /* ------------------------------------------------------------------ */
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useToast() {
   const context = useContext(ToastContext)
   if (context === undefined) {

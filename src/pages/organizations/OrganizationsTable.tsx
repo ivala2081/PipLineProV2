@@ -121,7 +121,7 @@ export function OrganizationsTable({
 
   return (
     <div className="rounded-lg border border-black/5 bg-bg1">
-      <Table>
+      <Table cardOnMobile>
         <TableHeader>
           <TableRow>
             <TableHead>{t('organizations.columns.name')}</TableHead>
@@ -138,7 +138,7 @@ export function OrganizationsTable({
               className="cursor-pointer transition-colors hover:bg-black/4"
               onClick={() => onRowClick(org)}
             >
-              <TableCell>
+              <TableCell data-label={t('organizations.columns.name')}>
                 <div className="flex items-center gap-sm">
                   {org.logo_url ? (
                     <div className="flex size-8 items-center justify-center overflow-hidden rounded-md border border-black/10 bg-black/5">
@@ -156,19 +156,29 @@ export function OrganizationsTable({
                   <span className="font-medium">{org.name}</span>
                 </div>
               </TableCell>
-              <TableCell className="font-mono text-sm text-black/60">{org.slug}</TableCell>
-              <TableCell>
+              <TableCell
+                className="font-mono text-sm text-black/60"
+                data-label={t('organizations.columns.slug')}
+              >
+                {org.slug}
+              </TableCell>
+              <TableCell data-label={t('organizations.columns.members')}>
                 <div className="flex items-center justify-center gap-1.5 text-black/60">
                   <Users size={14} />
                   <span>{org.member_count}</span>
                 </div>
               </TableCell>
-              <TableCell>
+              <TableCell data-label={t('organizations.columns.status')}>
                 <Tag variant={org.is_active ? 'green' : 'red'}>
                   {org.is_active ? t('organizations.active') : t('organizations.inactive')}
                 </Tag>
               </TableCell>
-              <TableCell className="text-sm text-black/60">{formatDate(org.created_at)}</TableCell>
+              <TableCell
+                className="text-sm text-black/60"
+                data-label={t('organizations.columns.createdAt')}
+              >
+                {formatDate(org.created_at)}
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>

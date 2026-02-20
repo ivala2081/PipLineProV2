@@ -9,9 +9,7 @@ interface StepImportProps {
 export function StepImport({ progress }: StepImportProps) {
   const { t } = useTranslation('pages')
   const pct =
-    progress.totalRows > 0
-      ? Math.round((progress.insertedRows / progress.totalRows) * 100)
-      : 0
+    progress.totalRows > 0 ? Math.round((progress.insertedRows / progress.totalRows) * 100) : 0
 
   return (
     <div className="flex flex-col items-center gap-6 py-12">
@@ -46,9 +44,7 @@ export function StepImport({ progress }: StepImportProps) {
       </div>
 
       {progress.failedRows > 0 && (
-        <p className="text-sm text-red-600">
-          {progress.failedRows} rows failed
-        </p>
+        <p className="text-sm text-red-600">{progress.failedRows} rows failed</p>
       )}
     </div>
   )

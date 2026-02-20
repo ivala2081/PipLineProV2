@@ -14,13 +14,13 @@ export function useOrganizationsQuery() {
   return useQuery({
     queryKey: queryKeys.organizations.list(),
     queryFn: async () => {
-      const { data: orgs, error } = await supabase
-        .from('organizations')
-        .select('*')
-        .order('name')
+      const { data: orgs, error } = await supabase.from('organizations').select('*').order('name')
 
       if (import.meta.env.DEV) {
-        console.debug('[useOrganizationsQuery] result:', { orgs: orgs?.length, error: error?.message })
+        console.debug('[useOrganizationsQuery] result:', {
+          orgs: orgs?.length,
+          error: error?.message,
+        })
       }
       if (error) throw error
 

@@ -29,16 +29,7 @@ export type InputProps = ComponentProps<'input'> & {
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  {
-    className,
-    value,
-    defaultValue,
-    id,
-    title,
-    placeholder,
-    inputSize = 'md',
-    ...props
-  },
+  { className, value, defaultValue, id, title, placeholder, inputSize = 'md', ...props },
   ref,
 ) {
   return (

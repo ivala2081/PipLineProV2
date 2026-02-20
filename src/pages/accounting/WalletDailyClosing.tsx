@@ -273,8 +273,8 @@ export function WalletDailyClosing({
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-black/10">
-      <Table className="min-w-[850px]">
+    <div className="rounded-xl border border-black/10">
+      <Table cardOnMobile>
         <TableHeader>
           <TableRow className="bg-black/[0.02]">
             <TableHead className={TH}>{t('accounting.dailyClosing.date')}</TableHead>
@@ -306,7 +306,7 @@ export function WalletDailyClosing({
           {closings.map((day) => (
             <TableRow key={day.dateKey} className="hover:bg-black/[0.01]">
               {/* Date */}
-              <TableCell className="px-4 py-3">
+              <TableCell className="px-4 py-3" data-label={t('accounting.dailyClosing.date')}>
                 <div>
                   <span className="text-sm font-medium text-black/80">{day.label}</span>
                   <span className="ml-2 text-[10px] text-black/25">
@@ -316,7 +316,7 @@ export function WalletDailyClosing({
               </TableCell>
 
               {/* Transfer count */}
-              <TableCell className="px-4 py-3">
+              <TableCell className="px-4 py-3" data-label={t('accounting.dailyClosing.tx')}>
                 <div className="flex items-center gap-sm">
                   <span className="text-xs tabular-nums text-black/50">{day.totalCount}</span>
                   <span className="text-[10px] text-black/25">
@@ -326,22 +326,34 @@ export function WalletDailyClosing({
               </TableCell>
 
               {/* IN */}
-              <TableCell className="px-4 py-3 text-right">
+              <TableCell
+                className="px-4 py-3 text-right"
+                data-label={t('accounting.dailyClosing.in')}
+              >
                 <TokenAmountList byToken={day.inByToken} color="text-green" prefix="+" />
               </TableCell>
 
               {/* OUT */}
-              <TableCell className="px-4 py-3 text-right">
+              <TableCell
+                className="px-4 py-3 text-right"
+                data-label={t('accounting.dailyClosing.out')}
+              >
                 <TokenAmountList byToken={day.outByToken} color="text-red" prefix="-" />
               </TableCell>
 
               {/* NET */}
-              <TableCell className="px-4 py-3 text-right">
+              <TableCell
+                className="px-4 py-3 text-right"
+                data-label={t('accounting.dailyClosing.net')}
+              >
                 <TokenAmountList byToken={day.netByToken} color="" prefix="" perTokenSign />
               </TableCell>
 
               {/* BALANCE */}
-              <TableCell className="px-4 py-3 text-right">
+              <TableCell
+                className="px-4 py-3 text-right"
+                data-label={t('accounting.dailyClosing.balance')}
+              >
                 <BalanceList balanceByToken={day.balanceByToken} />
               </TableCell>
             </TableRow>

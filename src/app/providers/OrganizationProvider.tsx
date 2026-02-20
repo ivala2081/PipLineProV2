@@ -22,7 +22,7 @@ interface OrganizationState {
   isLoading: boolean
 }
 
-interface OrganizationDataContextValue extends OrganizationState {}
+type OrganizationDataContextValue = OrganizationState
 
 interface OrganizationActionsContextValue {
   selectOrg: (orgId: string) => void
@@ -40,7 +40,9 @@ const STORAGE_KEY = 'piplinepro-org'
 /* ------------------------------------------------------------------ */
 
 const OrganizationDataContext = createContext<OrganizationDataContextValue | undefined>(undefined)
-const OrganizationActionsContext = createContext<OrganizationActionsContextValue | undefined>(undefined)
+const OrganizationActionsContext = createContext<OrganizationActionsContextValue | undefined>(
+  undefined,
+)
 
 /* ------------------------------------------------------------------ */
 /*  Provider                                                           */
@@ -87,10 +89,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 
     if (currentIsGod) {
       // Gods can see all organizations
-      const { data } = await supabase
-        .from('organizations')
-        .select('*')
-        .order('name')
+      const { data } = await supabase.from('organizations').select('*').order('name')
       orgs = (data ?? []) as Organization[]
     } else {
       // Normal users see only their orgs via the join table
@@ -99,9 +98,9 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
         .select('organization:organizations(*)')
         .eq('user_id', currentUser.id)
 
-      orgs = ((data ?? [])
+      orgs = (data ?? [])
         .map((row) => (row as unknown as { organization: Organization }).organization)
-        .filter(Boolean)) as Organization[]
+        .filter(Boolean) as Organization[]
     }
 
     // Bail if a newer fetch cycle started
@@ -211,6 +210,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 /*  Hooks                                                              */
 /* ------------------------------------------------------------------ */
 
+// eslint-disable-next-line react-refresh/only-export-components -- OrganizationProvider exports provider + hooks
 export function useOrgData() {
   const context = useContext(OrganizationDataContext)
   if (context === undefined) {
@@ -219,6 +219,7 @@ export function useOrgData() {
   return context
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useOrgActions() {
   const context = useContext(OrganizationActionsContext)
   if (context === undefined) {
@@ -228,6 +229,7 @@ export function useOrgActions() {
 }
 
 /** Backward-compatible hook — returns both data and actions */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useOrganization() {
   return { ...useOrgData(), ...useOrgActions() }
 }

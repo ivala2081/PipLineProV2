@@ -1,10 +1,17 @@
 import type { ComponentProps, FC } from 'react'
 import { cn } from '@ds/utils'
 
-export type TableProps = ComponentProps<'table'>
-export const Table: FC<TableProps> = ({ className, ...props }) => (
+export type TableProps = ComponentProps<'table'> & {
+  /** Renders each row as a card on screens smaller than md (768px). Add data-label to TableCell and isActions to the actions cell. */
+  cardOnMobile?: boolean
+}
+export const Table: FC<TableProps> = ({ className, cardOnMobile, ...props }) => (
   <div className="relative w-full overflow-auto">
-    <table className={cn('w-full caption-bottom text-sm', className)} {...props} />
+    <table
+      className={cn('w-full caption-bottom text-sm', className)}
+      {...(cardOnMobile ? { 'data-card-mobile': '' } : {})}
+      {...props}
+    />
   </div>
 )
 Table.displayName = 'Table'
@@ -41,9 +48,16 @@ export const TableHead: FC<TableHeadProps> = ({ className, ...props }) => (
 )
 TableHead.displayName = 'TableHead'
 
-export type TableCellProps = ComponentProps<'td'>
-export const TableCell: FC<TableCellProps> = ({ className, ...props }) => (
-  <td className={cn('px-4 py-3 align-middle [&:has([role=checkbox])]:pr-0', className)} {...props} />
+export type TableCellProps = ComponentProps<'td'> & {
+  /** Renders this cell as the actions row at the bottom of a card (use with cardOnMobile on Table). */
+  isActions?: boolean
+}
+export const TableCell: FC<TableCellProps> = ({ className, isActions, ...props }) => (
+  <td
+    className={cn('px-4 py-3 align-middle [&:has([role=checkbox])]:pr-0', className)}
+    {...(isActions ? { 'data-actions': '' } : {})}
+    {...props}
+  />
 )
 TableCell.displayName = 'TableCell'
 

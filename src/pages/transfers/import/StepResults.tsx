@@ -45,9 +45,7 @@ export function StepResults({ progress, onClose }: StepResultsProps) {
       {/* Error list */}
       {progress.errors.length > 0 && (
         <div className="max-h-[200px] w-full overflow-auto rounded-lg border border-red-200 bg-red-50 p-3">
-          <p className="mb-2 text-xs font-medium text-red-700">
-            Failed rows:
-          </p>
+          <p className="mb-2 text-xs font-medium text-red-700">Failed rows:</p>
           <div className="flex flex-col gap-1">
             {progress.errors.slice(0, 20).map((err, idx) => (
               <p key={idx} className="text-xs text-red-600">
@@ -55,9 +53,7 @@ export function StepResults({ progress, onClose }: StepResultsProps) {
               </p>
             ))}
             {progress.errors.length > 20 && (
-              <p className="text-xs text-red-500">
-                ...and {progress.errors.length - 20} more
-              </p>
+              <p className="text-xs text-red-500">...and {progress.errors.length - 20} more</p>
             )}
           </div>
         </div>

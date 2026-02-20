@@ -19,11 +19,7 @@ interface ManagerPinDialogProps {
   onConfirm: () => void
 }
 
-export function ManagerPinDialog({
-  open,
-  onClose,
-  onConfirm,
-}: ManagerPinDialogProps) {
+export function ManagerPinDialog({ open, onClose, onConfirm }: ManagerPinDialogProps) {
   const { t } = useTranslation('pages')
   const [pin, setPin] = useState('')
   const [error, setError] = useState('')
@@ -50,16 +46,12 @@ export function ManagerPinDialog({
       <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle>{t('transfers.settings.pinDialogTitle')}</DialogTitle>
-          <DialogDescription>
-            {t('transfers.settings.settingsChangeWarning')}
-          </DialogDescription>
+          <DialogDescription>{t('transfers.settings.settingsChangeWarning')}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div>
-            <Label className="mb-1 text-sm font-medium">
-              {t('transfers.settings.managerPin')}
-            </Label>
+            <Label className="mb-1 text-sm font-medium">{t('transfers.settings.managerPin')}</Label>
             <Input
               type="password"
               inputMode="numeric"
@@ -73,9 +65,7 @@ export function ManagerPinDialog({
               }}
               onKeyDown={(e) => e.key === 'Enter' && handleConfirm()}
             />
-            {error && (
-              <p className="mt-1 text-xs text-red">{error}</p>
-            )}
+            {error && <p className="mt-1 text-xs text-red">{error}</p>}
           </div>
         </div>
 
@@ -83,12 +73,7 @@ export function ManagerPinDialog({
           <Button type="button" variant="outline" onClick={handleClose}>
             {t('transfers.settings.cancel')}
           </Button>
-          <Button
-            type="button"
-            variant="filled"
-            onClick={handleConfirm}
-            disabled={!pin}
-          >
+          <Button type="button" variant="filled" onClick={handleConfirm} disabled={!pin}>
             {t('transfers.settings.pinConfirm')}
           </Button>
         </DialogFooter>

@@ -13,10 +13,7 @@ import type { PspCommissionRate } from '@/lib/database.types'
  * Given a list of rates sorted by effective_from DESC,
  * return the commission_rate in effect on `targetDate`.
  */
-export function resolveRateForDate(
-  rates: PspCommissionRate[],
-  targetDate: string,
-): number | null {
+export function resolveRateForDate(rates: PspCommissionRate[], targetDate: string): number | null {
   for (const r of rates) {
     if (r.effective_from <= targetDate) {
       return r.commission_rate
@@ -138,10 +135,7 @@ export function usePspRateMutations() {
 
   const deleteRate = useMutation({
     mutationFn: async (params: { id: string; pspId: string }) => {
-      const { error } = await supabase
-        .from('psp_commission_rates')
-        .delete()
-        .eq('id', params.id)
+      const { error } = await supabase.from('psp_commission_rates').delete().eq('id', params.id)
       if (error) throw error
     },
     onSuccess: (_data, variables) => invalidateAll(variables.pspId),

@@ -74,6 +74,7 @@ export function WalletTransfersPage() {
     if (view === 'daily' && txQuery.hasMore && !txQuery.isLoading) {
       txQuery.loadMore()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- txQuery object identity changes; we only care about hasMore, isLoading, loadMore
   }, [view, txQuery.hasMore, txQuery.isLoading])
 
   const totalLoaded = txQuery.transfers.length
@@ -90,7 +91,8 @@ export function WalletTransfersPage() {
     if (end > totalLoaded && txQuery.hasMore && !txQuery.isLoading) {
       txQuery.loadMore()
     }
-  }, [currentPage, totalLoaded, txQuery.hasMore, txQuery.isLoading])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- txQuery/end intentionally partial
+  }, [currentPage, totalLoaded, end, txQuery.hasMore, txQuery.isLoading])
 
   const handleCopy = () => {
     if (wallet) navigator.clipboard.writeText(wallet.address)

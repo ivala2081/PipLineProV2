@@ -65,7 +65,7 @@ export function useLookupManagement(table: LookupTable): UseLookupManagementRetu
   }, [currentOrg, table])
 
   useEffect(() => {
-    fetchItems()
+    queueMicrotask(() => fetchItems())
   }, [fetchItems])
 
   const createItem = useCallback(
@@ -85,10 +85,7 @@ export function useLookupManagement(table: LookupTable): UseLookupManagementRetu
 
   const updateItem = useCallback(
     async (id: string, data: Record<string, unknown>): Promise<{ error: string | null }> => {
-      const { error: updateError } = await supabase
-        .from(table)
-        .update(data)
-        .eq('id', id)
+      const { error: updateError } = await supabase.from(table).update(data).eq('id', id)
 
       if (!updateError) await fetchItems()
       return { error: updateError?.message ?? null }
@@ -98,10 +95,7 @@ export function useLookupManagement(table: LookupTable): UseLookupManagementRetu
 
   const deleteItem = useCallback(
     async (id: string): Promise<{ error: string | null }> => {
-      const { error: deleteError } = await supabase
-        .from(table)
-        .delete()
-        .eq('id', id)
+      const { error: deleteError } = await supabase.from(table).delete().eq('id', id)
 
       if (!deleteError) await fetchItems()
       return { error: deleteError?.message ?? null }

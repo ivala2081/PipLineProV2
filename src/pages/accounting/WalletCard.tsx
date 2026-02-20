@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Copy, Eye, Trash, Camera, ArrowsClockwise } from '@phosphor-icons/react'
+import { Copy, Eye, Trash, Camera, ArrowsClockwise, PencilSimple } from '@phosphor-icons/react'
 import type { Wallet } from '@/lib/database.types'
 import { useWalletBalanceQuery } from '@/hooks/queries/useWalletBalanceQuery'
 import { useWalletSnapshotsQuery } from '@/hooks/queries/useWalletSnapshotsQuery'
@@ -56,10 +56,11 @@ function fmt(value: number, decimals = 2): string {
 interface WalletCardProps {
   wallet: Wallet
   onViewDetail: () => void
+  onEdit: () => void
   onDelete: () => void
 }
 
-export function WalletCard({ wallet, onViewDetail, onDelete }: WalletCardProps) {
+export function WalletCard({ wallet, onViewDetail, onEdit, onDelete }: WalletCardProps) {
   const { t } = useTranslation('pages')
   const {
     assets,
@@ -154,13 +155,22 @@ export function WalletCard({ wallet, onViewDetail, onDelete }: WalletCardProps) 
             >
               {chainInfo.label}
             </span>
-            <Button
-              variant="ghost"
-              className="ml-auto size-6 shrink-0 p-0 text-black/15 opacity-0 transition group-hover:opacity-100 hover:text-red"
-              onClick={onDelete}
-            >
-              <Trash size={13} />
-            </Button>
+            <div className="ml-auto flex shrink-0 items-center gap-1 opacity-0 transition group-hover:opacity-100">
+              <Button
+                variant="ghost"
+                className="size-6 p-0 text-black/15 hover:text-black/60"
+                onClick={onEdit}
+              >
+                <PencilSimple size={13} />
+              </Button>
+              <Button
+                variant="ghost"
+                className="size-6 p-0 text-black/15 hover:text-red"
+                onClick={onDelete}
+              >
+                <Trash size={13} />
+              </Button>
+            </div>
           </div>
           <div className="mt-1 flex items-center gap-1.5">
             <code className="text-[11px] text-black/30">{truncAddr(wallet.address)}</code>

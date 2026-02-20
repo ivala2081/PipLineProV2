@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  PageHeader,
 } from '@ds'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
@@ -83,10 +84,7 @@ export function MembersPage() {
   if (!currentOrg) {
     return (
       <div className="space-y-lg">
-        <div>
-          <h1 className="text-2xl font-semibold">{t('members.title')}</h1>
-          <p className="mt-1 text-sm text-black/60">{t('members.subtitle')}</p>
-        </div>
+        <PageHeader title={t('members.title')} subtitle={t('members.subtitle')} />
         <div className="flex flex-col items-center justify-center gap-sm rounded-xl border border-black/10 bg-bg1 py-20">
           <div className="flex size-12 items-center justify-center rounded-full bg-black/[0.04]">
             <Users size={20} className="text-black/30" />
@@ -99,18 +97,18 @@ export function MembersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{t('members.title')}</h1>
-          <p className="mt-1 text-sm text-black/60">{t('members.subtitle')}</p>
-        </div>
-        {canManage && (
-          <Button variant="filled" onClick={() => setAddDialogOpen(true)}>
-            <Plus size={16} weight="bold" />
-            {t('members.addMember')}
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title={t('members.title')}
+        subtitle={t('members.subtitle')}
+        actions={
+          canManage ? (
+            <Button variant="filled" onClick={() => setAddDialogOpen(true)}>
+              <Plus size={16} weight="bold" />
+              {t('members.addMember')}
+            </Button>
+          ) : undefined
+        }
+      />
 
       {isLoading ? (
         <div className="overflow-hidden rounded-xl border border-black/10">
@@ -136,7 +134,7 @@ export function MembersPage() {
         </div>
       ) : (
         <div className="overflow-hidden rounded-xl border border-black/10">
-          <Table>
+          <Table cardOnMobile>
             <TableHeader>
               <TableRow className="bg-black/[0.015] hover:bg-black/[0.015]">
                 <TableHead className="h-10 px-4 text-xs font-semibold uppercase tracking-wider text-black/40">
@@ -165,7 +163,10 @@ export function MembersPage() {
                     className="cursor-pointer hover:bg-black/[0.015]"
                     onClick={() => navigate(`/members/${member.user_id}`)}
                   >
-                    <TableCell className="px-4 py-3">
+                    <TableCell
+                      className="px-4 py-3"
+                      data-label={t('organizations.members.columns.name')}
+                    >
                       <div className="flex items-center gap-sm">
                         <UserAvatar
                           src={member.profile?.avatar_url}
@@ -177,10 +178,16 @@ export function MembersPage() {
                         <span className="text-sm font-medium text-black/90">{displayName}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="px-4 py-3">
+                    <TableCell
+                      className="px-4 py-3"
+                      data-label={t('organizations.members.columns.status')}
+                    >
                       <LastSeen lastSeenAt={member.profile?.last_seen_at} />
                     </TableCell>
-                    <TableCell className="px-4 py-3">
+                    <TableCell
+                      className="px-4 py-3"
+                      data-label={t('organizations.members.columns.role')}
+                    >
                       <Tag
                         variant={
                           member.role === 'admin'
@@ -193,13 +200,16 @@ export function MembersPage() {
                         {t(`memberProfile.roles.${member.role}`)}
                       </Tag>
                     </TableCell>
-                    <TableCell className="px-4 py-3 text-sm text-black/50">
+                    <TableCell
+                      className="px-4 py-3 text-sm text-black/50"
+                      data-label={t('organizations.members.columns.joined')}
+                    >
                       {new Date(member.created_at).toLocaleDateString(
                         i18n.language === 'tr' ? 'tr-TR' : 'en-US',
                       )}
                     </TableCell>
                     {canManage && (
-                      <TableCell className="px-2 py-3">
+                      <TableCell className="px-2 py-3" isActions>
                         {!isSelf && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>

@@ -113,8 +113,8 @@ export function WalletTransfersTable({
 
   return (
     <div>
-      <div className="overflow-x-auto rounded-xl border border-black/10">
-        <Table className="min-w-[820px]">
+      <div className="rounded-xl border border-black/10">
+        <Table cardOnMobile>
           <TableHeader>
             <TableRow className="bg-black/[0.015]">
               <TableHead className={TH}>{t('accounting.transactions.hash')}</TableHead>
@@ -141,7 +141,7 @@ export function WalletTransfersTable({
               return (
                 <TableRow key={`${tx.hash}-${idx}`} className="hover:bg-black/[0.01]">
                   {/* Tx Hash */}
-                  <TableCell className="px-3 py-2">
+                  <TableCell className="px-3 py-2" data-label={t('accounting.transactions.hash')}>
                     <a
                       href={`${explorerBase}${tx.hash}`}
                       target="_blank"
@@ -154,12 +154,15 @@ export function WalletTransfersTable({
                   </TableCell>
 
                   {/* Age / Date */}
-                  <TableCell className="px-3 py-2 text-xs text-black/50">
+                  <TableCell
+                    className="px-3 py-2 text-xs text-black/50"
+                    data-label={t('accounting.transactions.date')}
+                  >
                     {relativeTime(tx.timestamp, i18n.language)}
                   </TableCell>
 
                   {/* From */}
-                  <TableCell className="px-3 py-2">
+                  <TableCell className="px-3 py-2" data-label={t('accounting.transactions.from')}>
                     <span
                       className={`font-mono text-xs ${isFromWallet ? 'font-medium text-black/70' : 'text-black/40'}`}
                       title={from}
@@ -174,7 +177,7 @@ export function WalletTransfersTable({
                   </TableCell>
 
                   {/* To */}
-                  <TableCell className="px-3 py-2">
+                  <TableCell className="px-3 py-2" data-label={t('accounting.transactions.to')}>
                     <span
                       className={`font-mono text-xs ${isToWallet ? 'font-medium text-black/70' : 'text-black/40'}`}
                       title={to}
@@ -184,7 +187,10 @@ export function WalletTransfersTable({
                   </TableCell>
 
                   {/* Amount */}
-                  <TableCell className="px-3 py-2 text-right">
+                  <TableCell
+                    className="px-3 py-2 text-right"
+                    data-label={t('accounting.transactions.amount')}
+                  >
                     <span
                       className={`font-mono text-xs font-semibold tabular-nums ${
                         tx.direction === 'in' ? 'text-green' : 'text-red'
@@ -195,7 +201,7 @@ export function WalletTransfersTable({
                   </TableCell>
 
                   {/* Token */}
-                  <TableCell className="px-3 py-2">
+                  <TableCell className="px-3 py-2" data-label={t('accounting.transactions.token')}>
                     <div className="flex flex-col">
                       <span className="text-xs font-semibold text-black/70">{tx.symbol}</span>
                       {tx.tokenAddress && (

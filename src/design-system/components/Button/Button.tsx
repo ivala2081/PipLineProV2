@@ -16,8 +16,7 @@ const buttonVariants = cva(
         gray: 'bg-black/10 hover:bg-black/20 disabled:bg-black/5 focus:ring-offset-2',
         outline:
           'bg-transparent border border-black/20 border-solid hover:bg-black/8 disabled:border-black/10',
-        filled:
-          'text-white bg-brand hover:bg-brand-hover disabled:bg-black/4',
+        filled: 'text-white bg-brand hover:bg-brand-hover disabled:bg-black/4',
       },
       size: {
         sm: 'text-sm py-1 px-2 rounded-lg gap-1',
@@ -38,16 +37,15 @@ const iconButtonPaddings: Record<Size, string> = {
   lg: 'p-4',
 }
 
-export type ButtonProps<C extends ElementType = typeof defaultTag> =
-  PolymorphicProps<C> &
-    VariantProps<typeof buttonVariants> & {
-      as?: C
-      label?: string
-      leftContent?: JSX.Element
-      rightContent?: JSX.Element
-      textSize?: TextSize
-      variant?: ButtonVariant
-    }
+export type ButtonProps<C extends ElementType = typeof defaultTag> = PolymorphicProps<C> &
+  VariantProps<typeof buttonVariants> & {
+    as?: C
+    label?: string
+    leftContent?: JSX.Element
+    rightContent?: JSX.Element
+    textSize?: TextSize
+    variant?: ButtonVariant
+  }
 
 export function Button<C extends ElementType = typeof defaultTag>({
   as,
@@ -87,4 +85,5 @@ export function Button<C extends ElementType = typeof defaultTag>({
 
 Button.displayName = 'Button'
 
+// eslint-disable-next-line react-refresh/only-export-components -- Button exports component + shared variants
 export { buttonVariants }

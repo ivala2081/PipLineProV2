@@ -99,21 +99,14 @@ export function PasswordStrengthIndicator({
       {/* Strength bar */}
       <div className="space-y-1">
         <div className="flex items-center justify-between text-xs">
-          <span className="text-black/60">
-            {t('passwordStrength.label')}
-          </span>
-          <span className={cn('font-medium', config.textColor)}>
-            {t(config.label)}
-          </span>
+          <span className="text-black/60">{t('passwordStrength.label')}</span>
+          <span className={cn('font-medium', config.textColor)}>{t(config.label)}</span>
         </div>
 
         {/* Progress bar */}
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-black/5">
           <div
-            className={cn(
-              'h-full transition-all duration-300 ease-out',
-              config.barColor
-            )}
+            className={cn('h-full transition-all duration-300 ease-out', config.barColor)}
             style={{ width: `${result.score}%` }}
           />
         </div>
@@ -122,26 +115,11 @@ export function PasswordStrengthIndicator({
       {/* Requirements checklist */}
       {showRequirements && (
         <div className="space-y-1 rounded-md bg-black/5 p-3 text-xs">
-          <RequirementItem
-            met={result.hasMinLength}
-            label={t('passwordStrength.minLength')}
-          />
-          <RequirementItem
-            met={result.hasUppercase}
-            label={t('passwordStrength.uppercase')}
-          />
-          <RequirementItem
-            met={result.hasLowercase}
-            label={t('passwordStrength.lowercase')}
-          />
-          <RequirementItem
-            met={result.hasNumber}
-            label={t('passwordStrength.number')}
-          />
-          <RequirementItem
-            met={result.hasSpecialChar}
-            label={t('passwordStrength.special')}
-          />
+          <RequirementItem met={result.hasMinLength} label={t('passwordStrength.minLength')} />
+          <RequirementItem met={result.hasUppercase} label={t('passwordStrength.uppercase')} />
+          <RequirementItem met={result.hasLowercase} label={t('passwordStrength.lowercase')} />
+          <RequirementItem met={result.hasNumber} label={t('passwordStrength.number')} />
+          <RequirementItem met={result.hasSpecialChar} label={t('passwordStrength.special')} />
         </div>
       )}
     </div>
@@ -160,9 +138,7 @@ function RequirementItem({ met, label }: { met: boolean; label: string }) {
       ) : (
         <X size={14} weight="bold" className="text-black/30 shrink-0" />
       )}
-      <span className={cn(met ? 'text-black/80' : 'text-black/50')}>
-        {label}
-      </span>
+      <span className={cn(met ? 'text-black/80' : 'text-black/50')}>{label}</span>
     </div>
   )
 }

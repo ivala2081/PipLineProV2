@@ -27,7 +27,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../Too
 const SIDEBAR_COOKIE_NAME = 'sidebar:state'
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = '14rem'
-const SIDEBAR_WIDTH_MOBILE = '17rem'
 const SIDEBAR_WIDTH_ICON = '2.75rem'
 const SIDEBAR_KEYBOARD_SHORTCUT = 'b'
 
@@ -43,6 +42,7 @@ type SidebarContextType = {
 
 const SidebarContext = createContext<SidebarContextType | null>(null)
 
+// eslint-disable-next-line react-refresh/only-export-components -- Sidebar exports provider + hooks + components
 export function useSidebar() {
   const context = useContext(SidebarContext)
   if (!context) throw new Error('useSidebar must be used within a SidebarProvider.')
@@ -108,8 +108,17 @@ export const SidebarProvider: FC<SidebarProviderProps> = ({
     <SidebarContext value={contextValue}>
       <TooltipProvider delayDuration={0}>
         <div
-          style={{ '--sidebar-width': SIDEBAR_WIDTH, '--sidebar-width-icon': SIDEBAR_WIDTH_ICON, ...style } as CSSProperties}
-          className={cn('group/sidebar-wrapper flex min-h-svh w-full bg-bg1 has-[[data-variant=inset]]:bg-bg2', className)}
+          style={
+            {
+              '--sidebar-width': SIDEBAR_WIDTH,
+              '--sidebar-width-icon': SIDEBAR_WIDTH_ICON,
+              ...style,
+            } as CSSProperties
+          }
+          className={cn(
+            'group/sidebar-wrapper flex min-h-svh w-full bg-bg1 has-[[data-variant=inset]]:bg-bg2',
+            className,
+          )}
           {...props}
         >
           {children}
@@ -138,7 +147,10 @@ export const Sidebar: FC<SidebarProps> = ({
 
   if (collapsible === 'none') {
     return (
-      <div className={cn('flex h-full w-[--sidebar-width] flex-col bg-bg2 text-black', className)} {...props}>
+      <div
+        className={cn('flex h-full w-[--sidebar-width] flex-col bg-bg2 text-black', className)}
+        {...props}
+      >
         {children}
       </div>
     )
@@ -147,7 +159,12 @@ export const Sidebar: FC<SidebarProps> = ({
   if (isMobile) {
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile}>
-        <SheetContent data-sidebar="sidebar" data-mobile="true" className="w-[--sidebar-width] bg-bg2 p-0 [&>button]:hidden" side={side}>
+        <SheetContent
+          data-sidebar="sidebar"
+          data-mobile="true"
+          className="w-[--sidebar-width] bg-bg2 p-0 [&>button]:hidden"
+          side={side}
+        >
           <div className="flex h-full w-full flex-col">{children}</div>
         </SheetContent>
       </Sheet>
@@ -167,9 +184,32 @@ export const Sidebar: FC<SidebarProps> = ({
       data-variant={variant}
       data-side={side}
     >
-      <div className={cn('relative h-svh w-[var(--sidebar-width)] bg-bg1', 'group-data-[collapsible=offcanvas]:w-0', 'group-data-[side=right]:rotate-180', variant === 'floating' || variant === 'inset' ? 'group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]' : 'group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)]')} />
-      <div className={cn('fixed inset-y-0 z-10 hidden h-svh w-[var(--sidebar-width)] md:flex', side === 'left' ? 'left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]' : 'right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]', variant === 'floating' || variant === 'inset' ? 'p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]' : 'group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)]', className)}>
-        <div data-sidebar="sidebar" className="flex h-full w-full flex-col bg-bg2 group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-black/10 group-data-[variant=floating]:shadow">
+      <div
+        className={cn(
+          'relative h-svh w-[var(--sidebar-width)] bg-bg1',
+          'group-data-[collapsible=offcanvas]:w-0',
+          'group-data-[side=right]:rotate-180',
+          variant === 'floating' || variant === 'inset'
+            ? 'group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]'
+            : 'group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)]',
+        )}
+      />
+      <div
+        className={cn(
+          'fixed inset-y-0 z-10 hidden h-svh w-[var(--sidebar-width)] md:flex',
+          side === 'left'
+            ? 'left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]'
+            : 'right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]',
+          variant === 'floating' || variant === 'inset'
+            ? 'p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]'
+            : 'group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)]',
+          className,
+        )}
+      >
+        <div
+          data-sidebar="sidebar"
+          className="flex h-full w-full flex-col bg-bg2 group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-black/10 group-data-[variant=floating]:shadow"
+        >
           {children}
         </div>
       </div>
@@ -187,7 +227,10 @@ export const SidebarTrigger: FC<SidebarTriggerProps> = ({ className, onClick, ..
       variant="borderless"
       size="sm"
       className={cn('h-7 w-7', className)}
-      onClick={(event: React.MouseEvent<HTMLButtonElement>) => { onClick?.(event); toggleSidebar() }}
+      onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+        onClick?.(event)
+        toggleSidebar()
+      }}
       leftContent={<SidebarSimple size={16} />}
       {...props}
     >
@@ -199,7 +242,14 @@ SidebarTrigger.displayName = 'SidebarTrigger'
 
 export type SidebarInsetProps = ComponentProps<'main'>
 export const SidebarInset: FC<SidebarInsetProps> = ({ className, ...props }) => (
-  <main className={cn('relative flex min-h-svh min-w-0 flex-1 flex-col bg-bg1', 'peer-data-[variant=inset]:min-h-[calc(100svh-theme(spacing.4))] md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow', className)} {...props} />
+  <main
+    className={cn(
+      'relative flex min-h-svh min-w-0 flex-1 flex-col bg-bg1',
+      'peer-data-[variant=inset]:min-h-[calc(100svh-theme(spacing.4))] md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow',
+      className,
+    )}
+    {...props}
+  />
 )
 SidebarInset.displayName = 'SidebarInset'
 
@@ -223,7 +273,13 @@ SidebarSeparator.displayName = 'SidebarSeparator'
 
 export type SidebarContentProps = ComponentProps<'div'>
 export const SidebarContent: FC<SidebarContentProps> = ({ className, ...props }) => (
-  <div className={cn('flex min-h-0 flex-1 flex-col gap-2 overflow-auto group-data-[collapsible=icon]:overflow-hidden', className)} {...props} />
+  <div
+    className={cn(
+      'flex min-h-0 flex-1 flex-col gap-2 overflow-auto group-data-[collapsible=icon]:overflow-hidden',
+      className,
+    )}
+    {...props}
+  />
 )
 SidebarContent.displayName = 'SidebarContent'
 
@@ -234,10 +290,20 @@ export const SidebarGroup: FC<SidebarGroupProps> = ({ className, ...props }) => 
 SidebarGroup.displayName = 'SidebarGroup'
 
 export type SidebarGroupLabelProps = ComponentProps<'div'> & { asChild?: boolean }
-export const SidebarGroupLabel: FC<SidebarGroupLabelProps> = ({ className, asChild = false, ...props }) => {
+export const SidebarGroupLabel: FC<SidebarGroupLabelProps> = ({
+  className,
+  asChild = false,
+  ...props
+}) => {
   const Comp = asChild ? Slot : 'div'
   return (
-    <Comp className={cn('flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-black/40 outline-none [&>svg]:size-4 [&>svg]:shrink-0 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0', className)} {...props} />
+    <Comp
+      className={cn(
+        'flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-black/40 outline-none [&>svg]:size-4 [&>svg]:shrink-0 group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0',
+        className,
+      )}
+      {...props}
+    />
   )
 }
 SidebarGroupLabel.displayName = 'SidebarGroupLabel'
@@ -297,7 +363,13 @@ export const SidebarMenuButton: FC<SidebarMenuButtonProps> = ({
   const { isMobile, state } = useSidebar()
 
   const button = (
-    <Comp data-sidebar="menu-button" data-size={size} data-active={isActive} className={cn(sidebarMenuButtonVariants({ variant, size }), className)} {...props} />
+    <Comp
+      data-sidebar="menu-button"
+      data-size={size}
+      data-active={isActive}
+      className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
+      {...props}
+    />
   )
 
   if (!tooltip) return button
@@ -307,7 +379,12 @@ export const SidebarMenuButton: FC<SidebarMenuButtonProps> = ({
   return (
     <Tooltip>
       <TooltipTrigger asChild>{button}</TooltipTrigger>
-      <TooltipContent side="right" align="center" hidden={state !== 'collapsed' || isMobile} {...tooltipProps} />
+      <TooltipContent
+        side="right"
+        align="center"
+        hidden={state !== 'collapsed' || isMobile}
+        {...tooltipProps}
+      />
     </Tooltip>
   )
 }
@@ -315,7 +392,13 @@ SidebarMenuButton.displayName = 'SidebarMenuButton'
 
 export type SidebarMenuSubProps = ComponentProps<'ul'>
 export const SidebarMenuSub: FC<SidebarMenuSubProps> = ({ className, ...props }) => (
-  <ul className={cn('mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 border-l border-black/10 px-2.5 py-0.5', className)} {...props} />
+  <ul
+    className={cn(
+      'mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 border-l border-black/10 px-2.5 py-0.5',
+      className,
+    )}
+    {...props}
+  />
 )
 SidebarMenuSub.displayName = 'SidebarMenuSub'
 
@@ -337,27 +420,50 @@ export const SidebarMenuSubButton: FC<SidebarMenuSubButtonProps> = ({
 }) => {
   const Comp = asChild ? Slot : 'a'
   return (
-    <Comp data-sidebar="menu-sub-button" data-size={size} data-active={isActive} className={cn('flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-black/40 outline-none hover:bg-black/4 hover:text-black focus-visible:ring-2 active:bg-black/4 active:text-black disabled:pointer-events-none disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-black/40', 'data-[active=true]:text-black', size === 'sm' && 'text-xs', size === 'md' && 'text-sm', className)} {...props} />
+    <Comp
+      data-sidebar="menu-sub-button"
+      data-size={size}
+      data-active={isActive}
+      className={cn(
+        'flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-black/40 outline-none hover:bg-black/4 hover:text-black focus-visible:ring-2 active:bg-black/4 active:text-black disabled:pointer-events-none disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-black/40',
+        'data-[active=true]:text-black',
+        size === 'sm' && 'text-xs',
+        size === 'md' && 'text-sm',
+        className,
+      )}
+      {...props}
+    />
   )
 }
 SidebarMenuSubButton.displayName = 'SidebarMenuSubButton'
 
 export type SidebarInputProps = InputProps
 export const SidebarInput: FC<SidebarInputProps> = ({ className, ...props }) => (
-  <Input className={cn('h-8 w-full bg-bg1 shadow-none focus-visible:ring-2 focus-visible:ring-black/5', className)} {...props} />
+  <Input
+    className={cn(
+      'h-8 w-full bg-bg1 shadow-none focus-visible:ring-2 focus-visible:ring-black/5',
+      className,
+    )}
+    {...props}
+  />
 )
 SidebarInput.displayName = 'SidebarInput'
 
 export type SidebarMenuSkeletonProps = ComponentProps<'div'> & { showIcon?: boolean }
-export const SidebarMenuSkeleton: FC<SidebarMenuSkeletonProps> = ({ className, showIcon = false, ...props }) => {
-  const width = useMemo(() => `${Math.floor(Math.random() * 40) + 50}%`, [])
-  return (
-    <div className={cn('flex h-8 items-center gap-2 rounded-md px-2', className)} {...props}>
-      {showIcon && <Skeleton className="size-4 rounded-md" data-sidebar="menu-skeleton-icon" />}
-      <Skeleton className="h-4 max-w-[--skeleton-width] flex-1" data-sidebar="menu-skeleton-text" style={{ '--skeleton-width': width } as CSSProperties} />
-    </div>
-  )
-}
+export const SidebarMenuSkeleton: FC<SidebarMenuSkeletonProps> = ({
+  className,
+  showIcon = false,
+  ...props
+}) => (
+  <div className={cn('flex h-8 items-center gap-2 rounded-md px-2', className)} {...props}>
+    {showIcon && <Skeleton className="size-4 rounded-md" data-sidebar="menu-skeleton-icon" />}
+    <Skeleton
+      className="h-4 max-w-[--skeleton-width] flex-1"
+      data-sidebar="menu-skeleton-text"
+      style={{ '--skeleton-width': '70%' } as CSSProperties}
+    />
+  </div>
+)
 SidebarMenuSkeleton.displayName = 'SidebarMenuSkeleton'
 
 export type SidebarRailProps = ComponentProps<'button'>
@@ -371,7 +477,12 @@ export const SidebarRail: FC<SidebarRailProps> = ({ className, ...props }) => {
       tabIndex={-1}
       onClick={toggleSidebar}
       title={t('sidebar.toggle')}
-      className={cn('absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] hover:after:bg-black/10 group-data-[side=left]:-right-4 group-data-[side=right]:left-0 sm:flex', '[[data-side=left]_&]:cursor-w-resize [[data-side=right]_&]:cursor-e-resize', '[[data-side=left][data-state=collapsed]_&]:cursor-e-resize [[data-side=right][data-state=collapsed]_&]:cursor-w-resize', className)}
+      className={cn(
+        'absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] hover:after:bg-black/10 group-data-[side=left]:-right-4 group-data-[side=right]:left-0 sm:flex',
+        '[[data-side=left]_&]:cursor-w-resize [[data-side=right]_&]:cursor-e-resize',
+        '[[data-side=left][data-state=collapsed]_&]:cursor-e-resize [[data-side=right][data-state=collapsed]_&]:cursor-w-resize',
+        className,
+      )}
       {...props}
     />
   )

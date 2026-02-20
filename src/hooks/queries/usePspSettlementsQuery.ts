@@ -43,7 +43,9 @@ export function usePspSettlementsQuery(pspId: string | undefined): UsePspSettlem
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.pspSettlements.byPsp(pspId ?? '') })
-    queryClient.invalidateQueries({ queryKey: queryKeys.pspDashboard.summary(currentOrg?.id ?? '') })
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.pspDashboard.summary(currentOrg?.id ?? ''),
+    })
     queryClient.invalidateQueries({ queryKey: queryKeys.pspDashboard.ledger(pspId ?? '') })
   }
 

@@ -6,11 +6,7 @@ export type BadgeComponentProps = ComponentProps<'span'> & {
   content?: string
 }
 
-export const BadgeComponent: FC<BadgeComponentProps> = ({
-  content,
-  className,
-  ...props
-}) => (
+export const BadgeComponent: FC<BadgeComponentProps> = ({ content, className, ...props }) => (
   <span
     className={cn(
       'absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red px-1',
@@ -30,17 +26,10 @@ export type BadgeProps = ComponentProps<'div'> & {
   content?: string
 }
 
-export const Badge: FC<BadgeProps> = ({
-  content,
-  children,
-  className,
-  ...props
-}) => (
+export const Badge: FC<BadgeProps> = ({ content, children, className, ...props }) => (
   <div className={cn('relative inline-flex', className)} {...props}>
     {children}
-    {content != null && content !== '' ? (
-      <BadgeComponent content={content} />
-    ) : null}
+    {content != null && content !== '' ? <BadgeComponent content={content} /> : null}
   </div>
 )
 

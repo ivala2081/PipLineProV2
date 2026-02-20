@@ -28,9 +28,7 @@ export const EmptyState: FC<EmptyStateProps> = ({
     </div>
     <div className="text-center">
       <p className="text-sm font-medium text-black/60">{title}</p>
-      {description && (
-        <p className="mt-1 text-xs text-black/40">{description}</p>
-      )}
+      {description && <p className="mt-1 text-xs text-black/40">{description}</p>}
     </div>
     {action}
   </div>

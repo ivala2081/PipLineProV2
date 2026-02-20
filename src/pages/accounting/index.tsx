@@ -4,7 +4,7 @@ import { Plus, UploadSimple, DownloadSimple } from '@phosphor-icons/react'
 import { useAccountingQuery } from '@/hooks/queries/useAccountingQuery'
 import { useWalletsQuery } from '@/hooks/queries/useWalletsQuery'
 import type { AccountingEntry } from '@/lib/database.types'
-import { Button, Tabs, TabsList, TabsTrigger, TabsContent } from '@ds'
+import { Button, Tabs, TabsList, TabsTrigger, TabsContent, PageHeader } from '@ds'
 import { LedgerTable } from './LedgerTable'
 import { WalletsTab } from './WalletsTab'
 import { EntryDialog } from './EntryDialog'
@@ -61,36 +61,35 @@ export function AccountingPage() {
   return (
     <div className="space-y-lg">
       {/* Page header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{t('accounting.title')}</h1>
-          <p className="mt-1 text-sm text-black/60">{t('accounting.subtitle')}</p>
-        </div>
-        {activeTab === 'ledger' && (
-          <div className="flex gap-sm">
-            <Button variant="ghost" onClick={handleExport} disabled={isExporting}>
-              <DownloadSimple size={16} weight="bold" />
-              {isExporting
-                ? t('accounting.export.exporting', 'Exporting...')
-                : t('accounting.export.button', 'Export CSV')}
-            </Button>
-            <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
-              <UploadSimple size={16} weight="bold" />
-              {t('accounting.import.button', 'Import CSV')}
-            </Button>
-            <Button variant="filled" onClick={handleAddEntry}>
+      <PageHeader
+        title={t('accounting.title')}
+        subtitle={t('accounting.subtitle')}
+        actions={
+          activeTab === 'ledger' ? (
+            <>
+              <Button variant="ghost" onClick={handleExport} disabled={isExporting}>
+                <DownloadSimple size={16} weight="bold" />
+                {isExporting
+                  ? t('accounting.export.exporting', 'Exporting...')
+                  : t('accounting.export.button', 'Export CSV')}
+              </Button>
+              <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
+                <UploadSimple size={16} weight="bold" />
+                {t('accounting.import.button', 'Import CSV')}
+              </Button>
+              <Button variant="filled" onClick={handleAddEntry}>
+                <Plus size={16} weight="bold" />
+                {t('accounting.addEntry')}
+              </Button>
+            </>
+          ) : activeTab === 'wallets' ? (
+            <Button variant="filled" onClick={() => setWalletDialogOpen(true)}>
               <Plus size={16} weight="bold" />
-              {t('accounting.addEntry')}
+              {t('accounting.addWallet')}
             </Button>
-          </div>
-        )}
-        {activeTab === 'wallets' && (
-          <Button variant="filled" onClick={() => setWalletDialogOpen(true)}>
-            <Plus size={16} weight="bold" />
-            {t('accounting.addWallet')}
-          </Button>
-        )}
-      </div>
+          ) : undefined
+        }
+      />
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>

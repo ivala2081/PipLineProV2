@@ -7,7 +7,7 @@
  * @module HCaptchaWidget
  */
 
-import { useRef, useCallback } from 'react'
+import { useRef, useCallback, useImperativeHandle, forwardRef } from 'react'
 import HCaptcha from '@hcaptcha/react-hcaptcha'
 import { useTheme } from '@ds/hooks'
 
@@ -32,81 +32,77 @@ export interface HCaptchaWidgetProps {
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export function HCaptchaWidget({
-  onVerify,
-  onExpire,
-  onError,
-  size = 'normal',
-  className,
-}: HCaptchaWidgetProps) {
-  const captchaRef = useRef<HCaptcha>(null)
-  const { resolvedTheme } = useTheme()
-
-  // Get site key from environment
-  const siteKey = import.meta.env.VITE_HCAPTCHA_SITE_KEY
-
-  // Handle verification success
-  const handleVerify = useCallback(
-    (token: string) => {
-      if (import.meta.env.DEV) {
-        console.log('[HCaptcha] Verification successful')
-      }
-      onVerify(token)
-    },
-    [onVerify]
-  )
-
-  // Handle expiration
-  const handleExpire = useCallback(() => {
-    if (import.meta.env.DEV) {
-      console.log('[HCaptcha] Token expired')
-    }
-    onExpire?.()
-  },  [onExpire])
-
-  // Handle error
-  const handleError = useCallback(
-    (error: string) => {
-      console.error('[HCaptcha] Error:', error)
-      onError?.(error)
-    },
-    [onError]
-  )
-
-  // Reset CAPTCHA (expose via ref if needed)
-  const resetCaptcha = useCallback(() => {
-    captchaRef.current?.resetCaptcha()
-  }, [])
-
-  // Show error if site key is missing
-  if (!siteKey) {
-    if (import.meta.env.DEV) {
-      return (
-        <div className="rounded-md border border-red/20 bg-red/5 p-4 text-sm text-red">
-          <strong>Missing CAPTCHA Site Key</strong>
-          <br />
-          Add <code>VITE_HCAPTCHA_SITE_KEY</code> to your <code>.env</code> file.
-        </div>
-      )
-    }
-    console.error('[HCaptcha] Missing VITE_HCAPTCHA_SITE_KEY')
-    return null
-  }
-
-  return (
-    <div className={className}>
-      <HCaptcha
-        ref={captchaRef}
-        sitekey={siteKey}
-        onVerify={handleVerify}
-        onExpire={handleExpire}
-        onError={handleError}
-        size={size}
-        theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
-      />
-    </div>
-  )
+export interface HCaptchaWidgetRef {
+  reset: () => void
 }
 
-// Export reset function for external use if needed
-HCaptchaWidget.displayName = 'HCaptchaWidget'
+export const HCaptchaWidget = forwardRef<HCaptchaWidgetRef, HCaptchaWidgetProps>(
+  function HCaptchaWidget({ onVerify, onExpire, onError, size = 'normal', className }, ref) {
+    const captchaRef = useRef<HCaptcha>(null)
+    const { resolvedTheme } = useTheme()
+
+    // Get site key from environment
+    const siteKey = import.meta.env.VITE_HCAPTCHA_SITE_KEY
+
+    // Handle verification success
+    const handleVerify = useCallback(
+      (token: string) => {
+        if (import.meta.env.DEV) {
+          console.log('[HCaptcha] Verification successful')
+        }
+        onVerify(token)
+      },
+      [onVerify],
+    )
+
+    // Handle expiration
+    const handleExpire = useCallback(() => {
+      if (import.meta.env.DEV) {
+        console.log('[HCaptcha] Token expired')
+      }
+      onExpire?.()
+    }, [onExpire])
+
+    // Handle error
+    const handleError = useCallback(
+      (error: string) => {
+        console.error('[HCaptcha] Error:', error)
+        onError?.(error)
+      },
+      [onError],
+    )
+
+    useImperativeHandle(ref, () => ({
+      reset: () => captchaRef.current?.resetCaptcha(),
+    }))
+
+    // Show error if site key is missing
+    if (!siteKey) {
+      if (import.meta.env.DEV) {
+        return (
+          <div className="rounded-md border border-red/20 bg-red/5 p-4 text-sm text-red">
+            <strong>Missing CAPTCHA Site Key</strong>
+            <br />
+            Add <code>VITE_HCAPTCHA_SITE_KEY</code> to your <code>.env</code> file.
+          </div>
+        )
+      }
+      console.error('[HCaptcha] Missing VITE_HCAPTCHA_SITE_KEY')
+      return null
+    }
+
+    return (
+      <div className={className}>
+        <HCaptcha
+          ref={captchaRef}
+          sitekey={siteKey}
+          onVerify={handleVerify}
+          onExpire={handleExpire}
+          onError={handleError}
+          size={size}
+          theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
+        />
+      </div>
+    )
+  },
+)

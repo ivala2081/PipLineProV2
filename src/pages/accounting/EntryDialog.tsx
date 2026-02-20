@@ -85,6 +85,7 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
     }
   }, [open, entry, reset])
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch is intentional
   const direction = watch('direction')
 
   const onFormSubmit = handleSubmit(async (data) => {

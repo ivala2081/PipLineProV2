@@ -2,7 +2,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { queryKeys } from '@/lib/queryKeys'
-import type { CreateOrganizationValues, UpdateOrganizationValues } from '@/schemas/organizationSchema'
+import type {
+  CreateOrganizationValues,
+  UpdateOrganizationValues,
+} from '@/schemas/organizationSchema'
 
 export function useCreateOrganization() {
   const { user } = useAuth()
@@ -43,10 +46,7 @@ export function useUpdateOrganization(orgId: string) {
         updateData.logo_url = data.logo_url
       }
 
-      const { error } = await supabase
-        .from('organizations')
-        .update(updateData)
-        .eq('id', orgId)
+      const { error } = await supabase.from('organizations').update(updateData).eq('id', orgId)
 
       if (error) throw error
     },

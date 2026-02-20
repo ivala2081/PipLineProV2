@@ -26,11 +26,7 @@ export const PaginationItem: FC<PaginationItemProps> = (props) => <li {...props}
 PaginationItem.displayName = 'PaginationItem'
 
 export type PaginationLinkProps = ButtonProps & { isActive?: boolean }
-export const PaginationLink: FC<PaginationLinkProps> = ({
-  className,
-  isActive,
-  ...props
-}) => (
+export const PaginationLink: FC<PaginationLinkProps> = ({ className, isActive, ...props }) => (
   <Button
     aria-current={isActive ? 'page' : undefined}
     variant={isActive ? 'filled' : 'borderless'}
@@ -45,7 +41,11 @@ export type PaginationPreviousProps = PaginationLinkProps
 export const PaginationPrevious: FC<PaginationPreviousProps> = ({ className, ...props }) => {
   const { t } = useTranslation('components')
   return (
-    <PaginationLink aria-label={t('pagination.goToPrevious')} className={cn('gap-1 pl-2.5', className)} {...props}>
+    <PaginationLink
+      aria-label={t('pagination.goToPrevious')}
+      className={cn('gap-1 pl-2.5', className)}
+      {...props}
+    >
       <CaretLeft size={16} />
       <span>{t('pagination.previous')}</span>
     </PaginationLink>
@@ -57,7 +57,11 @@ export type PaginationNextProps = PaginationLinkProps
 export const PaginationNext: FC<PaginationNextProps> = ({ className, ...props }) => {
   const { t } = useTranslation('components')
   return (
-    <PaginationLink aria-label={t('pagination.goToNext')} className={cn('gap-1 pr-2.5', className)} {...props}>
+    <PaginationLink
+      aria-label={t('pagination.goToNext')}
+      className={cn('gap-1 pr-2.5', className)}
+      {...props}
+    >
       <span>{t('pagination.next')}</span>
       <CaretRight size={16} />
     </PaginationLink>
@@ -69,7 +73,11 @@ export type PaginationEllipsisProps = ComponentProps<'span'>
 export const PaginationEllipsis: FC<PaginationEllipsisProps> = ({ className, ...props }) => {
   const { t } = useTranslation('components')
   return (
-    <span aria-hidden className={cn('flex h-9 w-9 items-center justify-center', className)} {...props}>
+    <span
+      aria-hidden
+      className={cn('flex h-9 w-9 items-center justify-center', className)}
+      {...props}
+    >
       <DotsThree size={16} />
       <span className="sr-only">{t('pagination.morePages')}</span>
     </span>

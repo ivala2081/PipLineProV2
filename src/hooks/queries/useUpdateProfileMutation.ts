@@ -15,10 +15,7 @@ export function useUpdateProfileMutation(userId: string) {
 
   return useMutation({
     mutationFn: async (data: UpdateProfileData) => {
-      const { error } = await supabase
-        .from('profiles')
-        .update(data)
-        .eq('id', userId)
+      const { error } = await supabase.from('profiles').update(data).eq('id', userId)
 
       if (error) throw error
     },

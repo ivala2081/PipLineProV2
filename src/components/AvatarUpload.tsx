@@ -133,9 +133,9 @@ export function AvatarUpload({
       }
 
       // Get public URL with cache busting
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName)
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('avatars').getPublicUrl(fileName)
 
       // Add timestamp to prevent caching
       const publicUrlWithTimestamp = `${publicUrl}?t=${Date.now()}`
@@ -158,11 +158,12 @@ export function AvatarUpload({
       })
 
       onUploadSuccess(publicUrlWithTimestamp)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error uploading avatar:', error)
       toast({
         title: 'Upload failed',
-        description: error.message || 'Failed to upload avatar. Please try again.',
+        description:
+          error instanceof Error ? error.message : 'Failed to upload avatar. Please try again.',
         variant: 'error',
       })
     } finally {
@@ -218,11 +219,12 @@ export function AvatarUpload({
       })
 
       onRemoveSuccess()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error removing avatar:', error)
       toast({
         title: 'Remove failed',
-        description: error.message || 'Failed to remove avatar. Please try again.',
+        description:
+          error instanceof Error ? error.message : 'Failed to remove avatar. Please try again.',
         variant: 'error',
       })
     } finally {
@@ -232,11 +234,13 @@ export function AvatarUpload({
 
   return (
     <div className="relative inline-block">
-      <Avatar className={`${sizeClasses[size]} rounded-3xl border-[6px] border-bg1 bg-white shadow-xl`}>
-        {currentAvatarUrl && (
-          <AvatarImage src={currentAvatarUrl} className="rounded-3xl" />
-        )}
-        <AvatarFallback className={`rounded-3xl bg-gradient-to-br from-black/5 to-black/10 ${sizeTextClasses[size]} font-bold text-black/60`}>
+      <Avatar
+        className={`${sizeClasses[size]} rounded-3xl border-[6px] border-bg1 bg-white shadow-xl`}
+      >
+        {currentAvatarUrl && <AvatarImage src={currentAvatarUrl} className="rounded-3xl" />}
+        <AvatarFallback
+          className={`rounded-3xl bg-gradient-to-br from-black/5 to-black/10 ${sizeTextClasses[size]} font-bold text-black/60`}
+        >
           {fallbackText}
         </AvatarFallback>
       </Avatar>
@@ -259,10 +263,7 @@ export function AvatarUpload({
           {/* Menu */}
           {showMenu && !isUploading && !isRemoving && (
             <>
-              <div
-                className="fixed inset-0 z-40"
-                onClick={() => setShowMenu(false)}
-              />
+              <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
               <div className="absolute bottom-12 right-0 z-50 w-48 overflow-hidden rounded-xl border border-black/10 bg-white shadow-xl">
                 <button
                   onClick={() => {

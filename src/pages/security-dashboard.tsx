@@ -408,7 +408,7 @@ export function SecurityDashboard() {
             </div>
           ) : auditCount > 0 ? (
             <div className="overflow-hidden rounded-xl border border-black/10">
-              <Table className="min-w-[700px]">
+              <Table cardOnMobile>
                 <TableHeader>
                   <TableRow className="bg-black/[0.015] hover:bg-black/[0.015]">
                     <TableHead className={TH}>{t('security.columns.time')}</TableHead>
@@ -423,17 +423,28 @@ export function SecurityDashboard() {
                 <TableBody className="divide-y divide-black/[0.04]">
                   {godAudit!.map((log) => (
                     <TableRow key={log.id}>
-                      <TableCell className="whitespace-nowrap px-4 py-3 text-sm text-black/50">
+                      <TableCell
+                        className="whitespace-nowrap px-4 py-3 text-sm text-black/50"
+                        data-label={t('security.columns.time')}
+                      >
                         {new Date(log.created_at).toLocaleString(locale)}
                       </TableCell>
-                      <TableCell className="px-4 py-3 text-sm">{log.god_email}</TableCell>
-                      <TableCell className="px-4 py-3">
+                      <TableCell
+                        className="px-4 py-3 text-sm"
+                        data-label={t('security.columns.user')}
+                      >
+                        {log.god_email}
+                      </TableCell>
+                      <TableCell className="px-4 py-3" data-label={t('security.columns.action')}>
                         <Tag variant={getActionVariant(log.action)}>{log.action}</Tag>
                       </TableCell>
-                      <TableCell className="px-4 py-3 font-mono text-sm text-black/50">
+                      <TableCell
+                        className="px-4 py-3 font-mono text-sm text-black/50"
+                        data-label={t('security.columns.table')}
+                      >
                         {log.table_name}
                       </TableCell>
-                      <TableCell className="px-4 py-3 text-right">
+                      <TableCell className="px-4 py-3 text-right" isActions>
                         <AuditDetailButton log={log} />
                       </TableCell>
                     </TableRow>

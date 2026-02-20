@@ -3,23 +3,23 @@
  * Avatar component with optional online presence indicator
  */
 
-import { Avatar, AvatarImage, AvatarFallback } from '@ds';
-import { OnlineIndicator } from './OnlineIndicator';
-import { cn } from '@ds/utils';
+import { Avatar, AvatarImage, AvatarFallback } from '@ds'
+import { OnlineIndicator } from './OnlineIndicator'
+import { cn } from '@ds/utils'
 
 interface UserAvatarProps {
   /** Avatar image URL */
-  src?: string | null;
+  src?: string | null
   /** User's name for fallback initials */
-  name?: string;
+  name?: string
   /** Size variant */
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl'
   /** Show online presence indicator */
-  showPresence?: boolean;
+  showPresence?: boolean
   /** User's last_seen_at timestamp (required if showPresence is true) */
-  lastSeenAt?: string | null;
+  lastSeenAt?: string | null
   /** Additional CSS classes */
-  className?: string;
+  className?: string
 }
 
 const sizeClasses = {
@@ -27,27 +27,27 @@ const sizeClasses = {
   md: 'h-10 w-10 text-sm',
   lg: 'h-12 w-12 text-base',
   xl: 'h-16 w-16 text-lg',
-};
+}
 
 const indicatorSizeClasses = {
   sm: 'h-2 w-2 border',
   md: 'h-2.5 w-2.5 border-2',
   lg: 'h-3 w-3 border-2',
   xl: 'h-4 w-4 border-2',
-};
+}
 
 /**
  * Get initials from name (first letter of first and last name)
  */
 function getInitials(name?: string): string {
-  if (!name) return '?';
+  if (!name) return '?'
 
-  const parts = name.trim().split(/\s+/);
+  const parts = name.trim().split(/\s+/)
   if (parts.length === 1) {
-    return parts[0].charAt(0).toUpperCase();
+    return parts[0].charAt(0).toUpperCase()
   }
 
-  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
 }
 
 export function UserAvatar({
@@ -58,7 +58,7 @@ export function UserAvatar({
   lastSeenAt,
   className,
 }: UserAvatarProps) {
-  const initials = getInitials(name);
+  const initials = getInitials(name)
 
   return (
     <div className="relative inline-block">
@@ -77,5 +77,5 @@ export function UserAvatar({
         </div>
       )}
     </div>
-  );
+  )
 }

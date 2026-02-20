@@ -3,22 +3,22 @@
  * Subscribes to real-time presence updates for organization members
  */
 
-import { useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
-import { useOrganization } from '@/app/providers/OrganizationProvider';
-import { queryKeys } from '@/lib/queryKeys';
+import { useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase'
+import { useOrganization } from '@/app/providers/OrganizationProvider'
+import { queryKeys } from '@/lib/queryKeys'
 
 /**
  * Hook to subscribe to real-time presence updates
  * Automatically invalidates relevant queries when presence changes
  */
 export function usePresenceSubscription() {
-  const queryClient = useQueryClient();
-  const { currentOrg } = useOrganization();
+  const queryClient = useQueryClient()
+  const { currentOrg } = useOrganization()
 
   useEffect(() => {
-    if (!currentOrg?.id) return;
+    if (!currentOrg?.id) return
 
     // Subscribe to profile updates (presence changes)
     const channel = supabase
@@ -32,30 +32,30 @@ export function usePresenceSubscription() {
           filter: `id=in.(${currentOrg.id})`, // Will be filtered by RLS
         },
         (payload) => {
-          console.log('Presence update:', payload);
+          console.log('Presence update:', payload)
 
           // Invalidate online count query
           queryClient.invalidateQueries({
             queryKey: queryKeys.presence.onlineCount(currentOrg.id),
-          });
+          })
 
           // Invalidate organization members query (to update presence in lists)
           queryClient.invalidateQueries({
             queryKey: queryKeys.organizations.members(currentOrg.id),
-          });
+          })
 
           // Invalidate profiles query
           if (payload.new && 'id' in payload.new) {
             queryClient.invalidateQueries({
               queryKey: queryKeys.profiles.detail(payload.new.id as string),
-            });
+            })
           }
-        }
+        },
       )
-      .subscribe();
+      .subscribe()
 
     return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [currentOrg?.id, queryClient]);
+      supabase.removeChannel(channel)
+    }
+  }, [currentOrg?.id, queryClient])
 }

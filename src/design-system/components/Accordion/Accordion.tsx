@@ -12,11 +12,7 @@ export const AccordionItem: FC<AccordionItemProps> = ({ className, ...props }) =
 AccordionItem.displayName = 'AccordionItem'
 
 export type AccordionTriggerProps = ComponentProps<typeof AccordionPrimitive.Trigger>
-export const AccordionTrigger: FC<AccordionTriggerProps> = ({
-  className,
-  children,
-  ...props
-}) => (
+export const AccordionTrigger: FC<AccordionTriggerProps> = ({ className, children, ...props }) => (
   <AccordionPrimitive.Header className="flex">
     <AccordionPrimitive.Trigger
       className={cn(
@@ -33,15 +29,8 @@ export const AccordionTrigger: FC<AccordionTriggerProps> = ({
 AccordionTrigger.displayName = 'AccordionTrigger'
 
 export type AccordionContentProps = ComponentProps<typeof AccordionPrimitive.Content>
-export const AccordionContent: FC<AccordionContentProps> = ({
-  className,
-  children,
-  ...props
-}) => (
-  <AccordionPrimitive.Content
-    className="overflow-hidden text-sm"
-    {...props}
-  >
+export const AccordionContent: FC<AccordionContentProps> = ({ className, children, ...props }) => (
+  <AccordionPrimitive.Content className="overflow-hidden text-sm" {...props}>
     <div className={cn('pb-4 pt-0', className)}>{children}</div>
   </AccordionPrimitive.Content>
 )

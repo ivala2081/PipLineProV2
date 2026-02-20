@@ -1,9 +1,4 @@
-import type {
-  ComponentPropsWithoutRef,
-  ElementType,
-  JSX,
-  PropsWithChildren,
-} from 'react'
+import type { ComponentPropsWithoutRef, ElementType, JSX, PropsWithChildren } from 'react'
 
 /* ------------------------------------------------------------------ */
 /*  Polymorphic component helpers                                     */
@@ -72,5 +67,4 @@ export type ModifiedNavigationItem = NavigationItem & {
 /*  Generic utility types                                             */
 /* ------------------------------------------------------------------ */
 
-export type PickAndPartialOmit<T, K extends keyof T> = Pick<T, K> &
-  Partial<Omit<T, K>>
+export type PickAndPartialOmit<T, K extends keyof T> = Pick<T, K> & Partial<Omit<T, K>>

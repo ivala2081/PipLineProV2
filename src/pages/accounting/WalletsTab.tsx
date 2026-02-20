@@ -5,6 +5,7 @@ import type { UseWalletsQueryReturn } from './walletTypes'
 import { Skeleton, EmptyState } from '@ds'
 import { WalletCard } from './WalletCard'
 import { WalletDetailSheet } from './WalletDetailSheet'
+import { WalletDialog } from './WalletDialog'
 import { PortfolioSummary } from './PortfolioSummary'
 import { usePortfolioQuery } from '@/hooks/queries/usePortfolioQuery'
 import type { Wallet } from '@/lib/database.types'
@@ -16,6 +17,7 @@ interface WalletsTabProps {
 export function WalletsTab({ wallets }: WalletsTabProps) {
   const { t } = useTranslation('pages')
   const [detailWallet, setDetailWallet] = useState<Wallet | null>(null)
+  const [editingWallet, setEditingWallet] = useState<Wallet | null>(null)
 
   const portfolio = usePortfolioQuery(wallets.wallets)
 
@@ -61,12 +63,30 @@ export function WalletsTab({ wallets }: WalletsTabProps) {
             key={wallet.id}
             wallet={wallet}
             onViewDetail={() => setDetailWallet(wallet)}
+            onEdit={() => setEditingWallet(wallet)}
             onDelete={() => wallets.deleteWallet(wallet.id)}
           />
         ))}
       </div>
 
-      <WalletDetailSheet wallet={detailWallet} onClose={() => setDetailWallet(null)} />
+      <WalletDetailSheet
+        wallet={detailWallet}
+        onClose={() => setDetailWallet(null)}
+        onEdit={(w) => setEditingWallet(w)}
+      />
+
+      <WalletDialog
+        open={!!editingWallet}
+        wallet={editingWallet ?? undefined}
+        onClose={() => setEditingWallet(null)}
+        onSubmit={async (data) => {
+          if (editingWallet) {
+            await wallets.updateWallet(editingWallet.id, data)
+            setEditingWallet(null)
+          }
+        }}
+        isSubmitting={wallets.isUpdating}
+      />
     </div>
   )
 }

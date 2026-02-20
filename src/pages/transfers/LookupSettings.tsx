@@ -1,16 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Lock, CreditCard, Tag as TagIcon, GitBranch } from '@phosphor-icons/react'
 import type { useLookupQueries } from '@/hooks/queries/useLookupQueries'
-import {
-  Card,
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-  Tag,
-} from '@ds'
+import { Card, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Tag } from '@ds'
 
 interface LookupSettingsProps {
   lookupData: ReturnType<typeof useLookupQueries>
@@ -25,9 +16,7 @@ export function LookupSettings({ lookupData }: LookupSettingsProps) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold">{t('transfers.settings.title')}</h2>
-          <p className="mt-1 text-sm text-black/40">
-            {t('transfers.settings.subtitleReadOnly')}
-          </p>
+          <p className="mt-1 text-sm text-black/40">{t('transfers.settings.subtitleReadOnly')}</p>
         </div>
         <div className="flex items-center gap-1.5 rounded-full bg-black/[0.04] px-3 py-1.5 text-xs text-black/40">
           <Lock size={12} weight="bold" />

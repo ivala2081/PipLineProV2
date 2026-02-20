@@ -17,10 +17,13 @@ function formatShortDate(dateStr: string): string {
 }
 
 function formatUsd(value: number): string {
-  return '$' + value.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
+  return (
+    '$' +
+    value.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+  )
 }
 
 interface WalletBalanceChartProps {
