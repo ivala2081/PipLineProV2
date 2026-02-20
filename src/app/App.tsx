@@ -57,6 +57,7 @@ const OrganizationDetailPage = lazy(() =>
   })),
 )
 const SecurityDashboard = lazy(() => import('@/pages/security-dashboard'))
+const HrPage = lazy(() => import('@/pages/hr').then((m) => ({ default: m.HrPage })))
 
 /* ------------------------------------------------------------------ */
 /*  Route guards                                                       */
@@ -240,6 +241,14 @@ export function App() {
                             element={
                               <PageSuspense>
                                 <SecurityDashboard />
+                              </PageSuspense>
+                            }
+                          />
+                          <Route
+                            path="/hr"
+                            element={
+                              <PageSuspense>
+                                <HrPage />
                               </PageSuspense>
                             }
                           />

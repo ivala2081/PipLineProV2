@@ -9,6 +9,7 @@ import {
   Buildings,
   Brain,
   Shield,
+  IdentificationCard,
 } from '@phosphor-icons/react'
 
 export type NavItem = {
@@ -46,6 +47,12 @@ export const navGroups: NavGroup[] = [
         roles: ['god', 'admin', 'manager'],
       },
       { titleKey: 'nav.psps', href: '/psps', icon: CreditCard, roles: ['god', 'admin', 'manager'] },
+      {
+        titleKey: 'nav.hr',
+        href: '/hr',
+        icon: IdentificationCard,
+        roles: ['god', 'admin', 'manager'],
+      },
     ],
   },
   {

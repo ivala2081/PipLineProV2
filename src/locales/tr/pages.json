@@ -14,7 +14,8 @@
     "future": "Gelecek",
     "members": "Üyeler",
     "organizations": "Organizasyonlar",
-    "security": "Güvenlik"
+    "security": "Güvenlik",
+    "hr": "İnsan Kaynakları"
   },
   "layout": {
     "noOrganization": "Organizasyon Yok",
@@ -494,7 +495,11 @@
     },
     "form": {
       "description": "Açıklama",
+      "descriptionOther": "Diğer (Serbest Metin)",
       "descriptionPlaceholder": "örn. Maaş ödemesi",
+      "advanceEmployee": "Çalışan",
+      "advanceEmployeePlaceholder": "Çalışan seçin",
+      "advancePeriod": "Dönem",
       "entryType": "Kayıt Türü",
       "direction": "Yön",
       "amount": "Tutar",
@@ -1151,6 +1156,38 @@
       "details": "Detaylar",
       "view": "Görüntüle"
     }
+  },
+  "hr": {
+    "title": "İnsan Kaynakları",
+    "subtitle": "Çalışanları yönetin ve belgelerini takip edin",
+    "addEmployee": "Çalışan Ekle",
+    "searchPlaceholder": "Ad veya e-posta ara...",
+    "filterByRole": "Role göre filtrele",
+    "allRoles": "Tüm Roller",
+    "active": "Aktif",
+    "inactive": "Pasif",
+    "edit": "Düzenle",
+    "delete": "Sil",
+    "stats": {
+      "total": "Toplam Çalışan",
+      "active": "Aktif"
+    },
+    "table": {
+      "employee": "Çalışan",
+      "email": "E-posta",
+      "salary": "Maaş",
+      "role": "Rol",
+      "status": "Durum",
+      "hireDate": "İşe Giriş"
+    },
+    "empty": "Henüz çalışan eklenmedi",
+    "emptyDesc": "Çalışan eklemek için \"Çalışan Ekle\" butonuna tıklayın.",
+    "noResults": "Arama ile eşleşen çalışan bulunamadı"
+  },
+  "bonuses": {
+    "title": "Primler",
+    "subtitle": "Çalışan prim anlaşmalarını ve ödemelerini yönetin (USDT)",
+    "addAgreement": "Prim Anlaşması Ekle"
   },
   "memberProfile": {
     "title": "Üye Profili",

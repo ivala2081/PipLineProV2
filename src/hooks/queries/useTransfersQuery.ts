@@ -4,10 +4,44 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { queryKeys } from '@/lib/queryKeys'
+import { hrKeys, DEFAULT_MT_CONFIG, type MtTier } from '@/hooks/queries/useHrQuery'
 import { computeTransfer } from '@/hooks/useTransfers'
 import type { TransferRow, TransferFormData } from '@/hooks/useTransfers'
 import type { TransferCategory } from '@/lib/database.types'
 import { TRANSFER_CATEGORIES, PAYMENT_METHODS, TRANSFER_TYPES } from '@/lib/transferLookups'
+
+/* ------------------------------------------------------------------ */
+/*  Auto-bonus calculation helpers                                      */
+/* ------------------------------------------------------------------ */
+
+function getMtDepositBonus(amountUsd: number, tiers: MtTier[]): number {
+  for (const tier of tiers) {
+    if (amountUsd >= tier.min) return tier.bonus
+  }
+  return 0
+}
+
+const RE_BONUS_RATE = 0.0575
+
+/** Returns the auto-bonus USDT amount for a transfer.
+ *  Marketing: per-deposit tier bonus (deposit only, always positive).
+ *  Re-attention: amount_usd × 5.75% — positive for deposit, negative for withdrawal.
+ *  Returns 0 if no bonus applies. */
+function calcAutoBonus(
+  role: string,
+  isDeposit: boolean,
+  amountUsd: number,
+  depositTiers: MtTier[],
+): number {
+  if (role === 'Marketing' && isDeposit) {
+    return getMtDepositBonus(Math.abs(amountUsd), depositTiers)
+  }
+  if (role === 'Re-attention') {
+    const sign = isDeposit ? 1 : -1
+    return Math.round(Math.abs(amountUsd) * RE_BONUS_RATE * sign * 100) / 100
+  }
+  return 0
+}
 
 const PAGE_SIZE = 25
 
@@ -240,32 +274,74 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
         data.type_id,
       )
 
-      const { error } = await supabase.from('transfers').insert({
-        organization_id: currentOrg.id,
-        full_name: data.full_name,
-        payment_method_id: data.payment_method_id,
-        psp_id: data.psp_id,
-        transfer_date: data.transfer_date,
-        category_id: data.category_id,
-        amount,
-        commission,
-        net,
-        currency: data.currency,
-        type_id: data.type_id,
-        crm_id: data.crm_id || null,
-        meta_id: data.meta_id || null,
-        created_by: user.id,
-        exchange_rate: data.exchange_rate,
-        amount_try: amountTry,
-        amount_usd: amountUsd,
-        commission_rate_snapshot: commissionRate,
-      } as never)
+      const { data: newTransfer, error } = await supabase
+        .from('transfers')
+        .insert({
+          organization_id: currentOrg.id,
+          full_name: data.full_name,
+          payment_method_id: data.payment_method_id,
+          psp_id: data.psp_id,
+          transfer_date: data.transfer_date,
+          category_id: data.category_id,
+          amount,
+          commission,
+          net,
+          currency: data.currency,
+          type_id: data.type_id,
+          crm_id: data.crm_id || null,
+          meta_id: data.meta_id || null,
+          employee_id: data.employee_id || null,
+          is_first_deposit: data.is_first_deposit ?? false,
+          created_by: user.id,
+          exchange_rate: data.exchange_rate,
+          amount_try: amountTry,
+          amount_usd: amountUsd,
+          commission_rate_snapshot: commissionRate,
+        } as never)
+        .select('id')
+        .single()
 
       if (error) throw error
+
+      // Auto-bonus: Marketing / Re-attention
+      if (data.employee_id && newTransfer) {
+        const { data: emp } = await supabase
+          .from('hr_employees')
+          .select('role')
+          .eq('id', data.employee_id)
+          .single()
+
+        if (emp) {
+          // Fetch org-specific MT config; fall back to defaults if not configured yet
+          const { data: mtCfg } = await supabase
+            .from('hr_mt_config')
+            .select('deposit_tiers')
+            .eq('organization_id', currentOrg.id)
+            .maybeSingle()
+          const depositTiers =
+            (mtCfg?.deposit_tiers as MtTier[] | null) ?? DEFAULT_MT_CONFIG.deposit_tiers
+
+          const bonusAmount = calcAutoBonus(emp.role, category.is_deposit, amountUsd, depositTiers)
+          if (bonusAmount !== 0) {
+            const period = new Date(data.transfer_date).toISOString().slice(0, 7)
+            await supabase.from('hr_bonus_payments').insert({
+              agreement_id: null,
+              employee_id: data.employee_id,
+              organization_id: currentOrg.id,
+              period,
+              amount_usdt: bonusAmount,
+              notes: `Otomatik: ${emp.role}`,
+              transfer_id: (newTransfer as { id: string }).id,
+              created_by: user.id,
+            } as never)
+          }
+        }
+      }
     },
     onSuccess: () => {
       // Invalidate both transfers list and date counts
       queryClient.invalidateQueries({ queryKey: queryKeys.transfers.lists() })
+      queryClient.invalidateQueries({ queryKey: hrKeys.bonusPayments(currentOrg?.id ?? '') })
     },
   })
 
@@ -316,6 +392,8 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
           type_id: data.type_id,
           crm_id: data.crm_id || null,
           meta_id: data.meta_id || null,
+          employee_id: data.employee_id || null,
+          is_first_deposit: data.is_first_deposit ?? false,
           exchange_rate: data.exchange_rate,
           amount_try: amountTry,
           amount_usd: amountUsd,
@@ -324,21 +402,65 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
         .eq('id', id)
 
       if (error) throw error
+
+      // Re-calculate auto-bonus: delete existing auto-payment then recreate
+      await supabase
+        .from('hr_bonus_payments')
+        .delete()
+        .eq('transfer_id', id)
+        .eq('organization_id', currentOrg.id)
+
+      if (data.employee_id) {
+        const { data: emp } = await supabase
+          .from('hr_employees')
+          .select('role')
+          .eq('id', data.employee_id)
+          .single()
+
+        if (emp) {
+          const { data: mtCfg } = await supabase
+            .from('hr_mt_config')
+            .select('deposit_tiers')
+            .eq('organization_id', currentOrg.id)
+            .maybeSingle()
+          const depositTiers =
+            (mtCfg?.deposit_tiers as MtTier[] | null) ?? DEFAULT_MT_CONFIG.deposit_tiers
+
+          const bonusAmount = calcAutoBonus(emp.role, category.is_deposit, amountUsd, depositTiers)
+          if (bonusAmount !== 0) {
+            const period = new Date(data.transfer_date).toISOString().slice(0, 7)
+            await supabase.from('hr_bonus_payments').insert({
+              agreement_id: null,
+              employee_id: data.employee_id,
+              organization_id: currentOrg.id,
+              period,
+              amount_usdt: bonusAmount,
+              notes: `Otomatik: ${emp.role}`,
+              transfer_id: id,
+              created_by: user?.id ?? null,
+            } as never)
+          }
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.transfers.lists() })
+      queryClient.invalidateQueries({ queryKey: hrKeys.bonusPayments(currentOrg?.id ?? '') })
     },
   })
 
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      // hr_bonus_payments.transfer_id FK has ON DELETE CASCADE,
+      // so the auto-bonus payment is automatically deleted with the transfer.
       const { error } = await supabase.from('transfers').delete().eq('id', id)
 
       if (error) throw error
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.transfers.lists() })
+      queryClient.invalidateQueries({ queryKey: hrKeys.bonusPayments(currentOrg?.id ?? '') })
     },
   })
 

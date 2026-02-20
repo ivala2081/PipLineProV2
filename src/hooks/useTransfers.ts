@@ -27,6 +27,7 @@ export interface TransferRow {
   exchange_rate: number
   amount_try: number
   amount_usd: number
+  is_first_deposit: boolean
   created_by: string | null
   created_at: string
   updated_at: string
@@ -49,6 +50,8 @@ export interface TransferFormData {
   type_id: string
   crm_id?: string
   meta_id?: string
+  employee_id?: string
+  is_first_deposit?: boolean
 }
 
 interface UseTransfersReturn {

@@ -2,11 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
+import { UserCircle } from '@phosphor-icons/react'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import type { TransferRow } from '@/hooks/useTransfers'
 import type { useLookupQueries } from '@/hooks/queries/useLookupQueries'
 import type { useTransfersQuery } from '@/hooks/queries/useTransfersQuery'
 import { useExchangeRateQuery } from '@/hooks/queries/useExchangeRateQuery'
+import { useHrEmployeesQuery } from '@/hooks/queries/useHrQuery'
 import { useToast } from '@/hooks/useToast'
 import { transferFormSchema, type TransferFormValues } from '@/schemas/transferSchema'
 import { basicInputClasses, disabledInputClasses, focusInputClasses } from '@ds/components/Input'
@@ -72,6 +74,8 @@ function getDefaultFormValues(): TransferFormValues {
     exchange_rate: 1,
     crm_id: '',
     meta_id: '',
+    employee_id: '',
+    is_first_deposit: false,
   }
 }
 
@@ -178,11 +182,15 @@ export function TransferDialog({
   lookupData,
   onSubmit,
 }: TransferDialogProps) {
-  const { t } = useTranslation('pages')
+  const { t, i18n } = useTranslation('pages')
   const { toast } = useToast()
   const { currentOrg } = useOrganization()
   const isEdit = !!transfer
   const submitModeRef = useRef<'close' | 'new'>('close')
+  const lang = i18n.language === 'tr' ? 'tr' : 'en'
+
+  // HR employees for employee selector
+  const { data: employees = [] } = useHrEmployeesQuery()
 
   const form = useForm<TransferFormValues>({
     resolver: zodResolver(transferFormSchema),
@@ -214,6 +222,9 @@ export function TransferDialog({
           exchange_rate: transfer.exchange_rate ?? 1,
           crm_id: transfer.crm_id ?? '',
           meta_id: transfer.meta_id ?? '',
+          employee_id: (transfer as TransferRow & { employee_id?: string }).employee_id ?? '',
+          is_first_deposit:
+            (transfer as TransferRow & { is_first_deposit?: boolean }).is_first_deposit ?? false,
         })
       } else {
         const defaults = getDefaultFormValues()
@@ -237,6 +248,18 @@ export function TransferDialog({
   const paymentMethodId = form.watch('payment_method_id')
   const pspId = form.watch('psp_id')
   const typeId = form.watch('type_id')
+  const employeeId = form.watch('employee_id')
+
+  // Only Marketing and Re-attention employees are eligible for auto-bonus tracking
+  const AUTO_BONUS_ROLES = ['Marketing', 'Re-attention'] as const
+
+  const employeeOptions = useMemo(
+    () =>
+      employees
+        .filter((e) => e.is_active && (AUTO_BONUS_ROLES as readonly string[]).includes(e.role))
+        .map((e) => ({ value: e.id, label: `${e.full_name} · ${e.role}` })),
+    [employees],
+  )
 
   // Ensure watched numeric values are always numbers (register can return strings)
   const rawAmount = Number(watchedRawAmount) || 0
@@ -267,6 +290,12 @@ export function TransferDialog({
     () => lookupData.categories.find((c) => c.id === categoryId),
     [lookupData.categories, categoryId],
   )
+
+  const selectedType = useMemo(
+    () => lookupData.transferTypes.find((tt) => tt.id === typeId),
+    [lookupData.transferTypes, typeId],
+  )
+  const showEmployeeSection = !!typeId && selectedType?.name?.toLowerCase() === 'client'
 
   const paymentMethodOptions = useMemo<SelectOption[]>(
     () =>
@@ -552,7 +581,15 @@ export function TransferDialog({
             </Label>
             <SearchableSelectField
               value={typeId}
-              onValueChange={(value) => form.setValue('type_id', value)}
+              onValueChange={(value) => {
+                form.setValue('type_id', value)
+                const typeName = lookupData.transferTypes
+                  .find((tt) => tt.id === value)
+                  ?.name?.toLowerCase()
+                if (typeName !== 'client') {
+                  form.setValue('employee_id', '')
+                }
+              }}
               placeholder={t('transfers.form.selectType')}
               options={transferTypeOptions}
               searchPlaceholder={t('transfers.form.searchInList')}
@@ -562,6 +599,46 @@ export function TransferDialog({
               <p className={compactErrorClasses}>{form.formState.errors.type_id.message}</p>
             )}
           </div>
+
+          {/* Employee (sadece "client" türü seçildiğinde) */}
+          {showEmployeeSection && (
+            <div className="sm:col-span-2">
+              <Label className="mb-1 text-xs font-medium tracking-wide text-black/75">
+                <span className="flex items-center gap-1">
+                  <UserCircle size={13} className="text-black/40" />
+                  {lang === 'tr' ? 'Çalışan' : 'Employee'}
+                </span>
+              </Label>
+              {employeeOptions.length === 0 ? (
+                <p className="rounded-lg border border-black/[0.07] bg-black/[0.02] px-3 py-2.5 text-xs text-black/40">
+                  {lang === 'tr'
+                    ? 'İK modülünde aktif Marketing veya Re-attention çalışanı yok'
+                    : 'No active Marketing or Re-attention employees in HR module'}
+                </p>
+              ) : (
+                <SearchableSelectField
+                  value={employeeId ? employeeId : '__none__'}
+                  onValueChange={(value) => {
+                    form.setValue('employee_id', value === '__none__' ? '' : value)
+                  }}
+                  placeholder={
+                    lang === 'tr'
+                      ? 'MT / Re-attention seç (isteğe bağlı)'
+                      : 'Select MT / Re-attention (optional)'
+                  }
+                  options={[
+                    {
+                      value: '__none__',
+                      label: lang === 'tr' ? '— Çalışan yok —' : '— No employee —',
+                    },
+                    ...employeeOptions,
+                  ]}
+                  searchPlaceholder={t('transfers.form.searchInList')}
+                  noResultsText={t('transfers.form.noResults')}
+                />
+              )}
+            </div>
+          )}
 
           {/* CRM + META */}
           <div className="sm:col-span-2 grid grid-cols-1 gap-3 sm:grid-cols-2">

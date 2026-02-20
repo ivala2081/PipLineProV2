@@ -12,6 +12,24 @@ export type SystemRole = 'god' | 'user'
 export type OrgMemberRole = 'admin' | 'manager' | 'operation'
 export type InvitationStatus = 'pending' | 'accepted' | 'expired'
 export type Currency = 'TL' | 'USD'
+export type HrEmployeeRole =
+  | 'Manager'
+  | 'Marketing'
+  | 'Operation'
+  | 'Re-attention'
+  | 'Project Management'
+  | 'Social Media'
+  | 'Sales Development'
+  | 'Programmer'
+export type HrBonusType = 'fixed' | 'percentage' | 'tiered' | 'custom'
+export type HrAttendanceStatus = 'present' | 'absent' | 'late' | 'half_day'
+export type HrDocumentType =
+  | 'ikametgah'
+  | 'adli_sicil'
+  | 'diploma'
+  | 'saglik_raporu'
+  | 'kimlik_on'
+  | 'kimlik_arka'
 
 export interface Database {
   public: {
@@ -200,6 +218,394 @@ export interface Database {
             columns: ['invited_by']
             isOneToOne: false
             referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      /* ──────────── HR Module ──────────── */
+      hr_employees: {
+        Row: {
+          id: string
+          organization_id: string
+          full_name: string
+          email: string
+          role: HrEmployeeRole
+          salary_tl: number
+          is_insured: boolean
+          is_active: boolean
+          hire_date: string | null
+          notes: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          full_name: string
+          email: string
+          role: HrEmployeeRole
+          salary_tl?: number
+          is_insured?: boolean
+          is_active?: boolean
+          hire_date?: string | null
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          full_name?: string
+          email?: string
+          role?: HrEmployeeRole
+          salary_tl?: number
+          is_insured?: boolean
+          is_active?: boolean
+          hire_date?: string | null
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'hr_employees_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      hr_employee_documents: {
+        Row: {
+          id: string
+          employee_id: string
+          organization_id: string
+          document_type: HrDocumentType
+          file_name: string
+          file_url: string
+          storage_path: string
+          uploaded_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          employee_id: string
+          organization_id: string
+          document_type: HrDocumentType
+          file_name: string
+          file_url: string
+          storage_path: string
+          uploaded_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          employee_id?: string
+          organization_id?: string
+          document_type?: HrDocumentType
+          file_name?: string
+          file_url?: string
+          storage_path?: string
+          uploaded_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'hr_employee_documents_employee_id_fkey'
+            columns: ['employee_id']
+            isOneToOne: false
+            referencedRelation: 'hr_employees'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'hr_employee_documents_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      /* ──────────── HR Bonuses ──────────── */
+      hr_bonus_agreements: {
+        Row: {
+          id: string
+          employee_id: string
+          organization_id: string
+          title: string
+          description: string | null
+          bonus_type: HrBonusType
+          currency: string
+          fixed_amount: number
+          percentage_rate: number
+          percentage_base: string | null
+          tier_rules: Json
+          is_active: boolean
+          effective_from: string | null
+          effective_until: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          employee_id: string
+          organization_id: string
+          title: string
+          description?: string | null
+          bonus_type: HrBonusType
+          currency?: string
+          fixed_amount?: number
+          percentage_rate?: number
+          percentage_base?: string | null
+          tier_rules?: Json
+          is_active?: boolean
+          effective_from?: string | null
+          effective_until?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          employee_id?: string
+          organization_id?: string
+          title?: string
+          description?: string | null
+          bonus_type?: HrBonusType
+          currency?: string
+          fixed_amount?: number
+          percentage_rate?: number
+          percentage_base?: string | null
+          tier_rules?: Json
+          is_active?: boolean
+          effective_from?: string | null
+          effective_until?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'hr_bonus_agreements_employee_id_fkey'
+            columns: ['employee_id']
+            isOneToOne: false
+            referencedRelation: 'hr_employees'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'hr_bonus_agreements_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      hr_bonus_payments: {
+        Row: {
+          id: string
+          agreement_id: string | null
+          employee_id: string
+          organization_id: string
+          period: string
+          amount_usdt: number
+          notes: string | null
+          paid_at: string | null
+          transfer_id: string | null
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          agreement_id?: string | null
+          employee_id: string
+          organization_id: string
+          period: string
+          amount_usdt: number
+          notes?: string | null
+          paid_at?: string | null
+          transfer_id?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          agreement_id?: string | null
+          employee_id?: string
+          organization_id?: string
+          period?: string
+          amount_usdt?: number
+          notes?: string | null
+          paid_at?: string | null
+          transfer_id?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'hr_bonus_payments_agreement_id_fkey'
+            columns: ['agreement_id']
+            isOneToOne: false
+            referencedRelation: 'hr_bonus_agreements'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'hr_bonus_payments_employee_id_fkey'
+            columns: ['employee_id']
+            isOneToOne: false
+            referencedRelation: 'hr_employees'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'hr_bonus_payments_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      /* ──────────── HR Salary Payments ──────────── */
+      hr_salary_payments: {
+        Row: {
+          id: string
+          employee_id: string
+          organization_id: string
+          period: string
+          amount_tl: number
+          paid_at: string
+          notes: string | null
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          employee_id: string
+          organization_id: string
+          period: string
+          amount_tl: number
+          paid_at: string
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          employee_id?: string
+          organization_id?: string
+          period?: string
+          amount_tl?: number
+          paid_at?: string
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      /* ──────────── HR MT Config ──────────── */
+      hr_mt_config: {
+        Row: {
+          id: string
+          organization_id: string
+          deposit_tiers: Json
+          count_tiers: Json
+          volume_tiers: Json
+          weekly_prize_amount: number
+          weekly_prize_min_sales: number
+          monthly_prize_amount: number
+          monthly_prize_min_sales: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          deposit_tiers?: Json
+          count_tiers?: Json
+          volume_tiers?: Json
+          weekly_prize_amount?: number
+          weekly_prize_min_sales?: number
+          monthly_prize_amount?: number
+          monthly_prize_min_sales?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          deposit_tiers?: Json
+          count_tiers?: Json
+          volume_tiers?: Json
+          weekly_prize_amount?: number
+          weekly_prize_min_sales?: number
+          monthly_prize_amount?: number
+          monthly_prize_min_sales?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'hr_mt_config_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: true
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      /* ──────────── HR Attendance ──────────── */
+      hr_attendance: {
+        Row: {
+          id: string
+          employee_id: string
+          organization_id: string
+          date: string
+          status: HrAttendanceStatus
+          check_in: string | null
+          check_out: string | null
+          notes: string | null
+          recorded_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          employee_id: string
+          organization_id: string
+          date: string
+          status?: HrAttendanceStatus
+          check_in?: string | null
+          check_out?: string | null
+          notes?: string | null
+          recorded_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          employee_id?: string
+          organization_id?: string
+          date?: string
+          status?: HrAttendanceStatus
+          check_in?: string | null
+          check_out?: string | null
+          notes?: string | null
+          recorded_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'hr_attendance_employee_id_fkey'
+            columns: ['employee_id']
+            isOneToOne: false
+            referencedRelation: 'hr_employees'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'hr_attendance_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
             referencedColumns: ['id']
           },
         ]
@@ -450,6 +856,8 @@ export interface Database {
           amount_try: number
           amount_usd: number
           commission_rate_snapshot: number | null
+          employee_id: string | null
+          is_first_deposit: boolean
           created_by: string | null
           updated_by: string | null
           created_at: string
@@ -474,6 +882,8 @@ export interface Database {
           amount_try?: number
           amount_usd?: number
           commission_rate_snapshot?: number | null
+          employee_id?: string | null
+          is_first_deposit?: boolean
           created_by?: string | null
           updated_by?: string | null
           created_at?: string
@@ -498,6 +908,8 @@ export interface Database {
           amount_try?: number
           amount_usd?: number
           commission_rate_snapshot?: number | null
+          employee_id?: string | null
+          is_first_deposit?: boolean
           created_by?: string | null
           updated_by?: string | null
           created_at?: string
@@ -653,6 +1065,10 @@ export interface Database {
           entry_date: string
           payment_period: string | null
           register: string
+          hr_employee_id: string | null
+          advance_type: 'salary' | 'bonus' | null
+          hr_payment_id: string | null
+          hr_payment_type: 'bonus' | 'salary' | null
           created_by: string | null
           created_at: string
           updated_at: string
@@ -669,6 +1085,10 @@ export interface Database {
           entry_date?: string
           payment_period?: string | null
           register: string
+          hr_employee_id?: string | null
+          advance_type?: 'salary' | 'bonus' | null
+          hr_payment_id?: string | null
+          hr_payment_type?: 'bonus' | 'salary' | null
           created_by?: string | null
           created_at?: string
           updated_at?: string
@@ -685,6 +1105,10 @@ export interface Database {
           entry_date?: string
           payment_period?: string | null
           register?: string
+          hr_employee_id?: string | null
+          advance_type?: 'salary' | 'bonus' | null
+          hr_payment_id?: string | null
+          hr_payment_type?: 'bonus' | 'salary' | null
           created_by?: string | null
           created_at?: string
           updated_at?: string
@@ -1029,6 +1453,7 @@ export type Transfer = Database['public']['Tables']['transfers']['Row']
 export type TransferAuditLog = Database['public']['Tables']['transfer_audit_log']['Row']
 export type ExchangeRate = Database['public']['Tables']['exchange_rates']['Row']
 export type AccountingEntry = Database['public']['Tables']['accounting_entries']['Row']
+export type HrSalaryPayment = Database['public']['Tables']['hr_salary_payments']['Row']
 export type Wallet = Database['public']['Tables']['wallets']['Row']
 export type WalletSnapshot = Database['public']['Tables']['wallet_snapshots']['Row']
 export type AccountingMonthlyConfig =

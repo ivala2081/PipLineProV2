@@ -12,6 +12,8 @@ export const transferFormSchema = z.object({
   exchange_rate: z.coerce.number().positive().default(1),
   crm_id: z.string().optional(),
   meta_id: z.string().optional(),
+  employee_id: z.string().optional(),
+  is_first_deposit: z.boolean().optional().default(false),
 })
 
 export type TransferFormValues = z.infer<typeof transferFormSchema>

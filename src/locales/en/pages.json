@@ -14,7 +14,8 @@
     "future": "Future",
     "members": "Members",
     "organizations": "Organizations",
-    "security": "Security"
+    "security": "Security",
+    "hr": "Human Resources"
   },
   "layout": {
     "noOrganization": "No Organization",
@@ -494,7 +495,11 @@
     },
     "form": {
       "description": "Description",
+      "descriptionOther": "Other (Free Text)",
       "descriptionPlaceholder": "e.g. Salary payment",
+      "advanceEmployee": "Employee",
+      "advanceEmployeePlaceholder": "Select employee",
+      "advancePeriod": "Period",
       "entryType": "Entry Type",
       "direction": "Direction",
       "amount": "Amount",
@@ -1151,6 +1156,38 @@
       "details": "Details",
       "view": "View"
     }
+  },
+  "hr": {
+    "title": "Human Resources",
+    "subtitle": "Manage employees and track their documents",
+    "addEmployee": "Add Employee",
+    "searchPlaceholder": "Search by name or email...",
+    "filterByRole": "Filter by role",
+    "allRoles": "All Roles",
+    "active": "Active",
+    "inactive": "Inactive",
+    "edit": "Edit",
+    "delete": "Delete",
+    "stats": {
+      "total": "Total Employees",
+      "active": "Active"
+    },
+    "table": {
+      "employee": "Employee",
+      "email": "Email",
+      "salary": "Salary",
+      "role": "Role",
+      "status": "Status",
+      "hireDate": "Hire Date"
+    },
+    "empty": "No employees added yet",
+    "emptyDesc": "Click \"Add Employee\" to add your first employee.",
+    "noResults": "No employees match your search"
+  },
+  "bonuses": {
+    "title": "Bonuses",
+    "subtitle": "Manage employee bonus agreements and payments (USDT)",
+    "addAgreement": "Add Bonus Agreement"
   },
   "memberProfile": {
     "title": "Member Profile",

@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { entryFormSchema, type EntryFormValues } from '@/schemas/accountingSchema'
 import type { AccountingEntry } from '@/lib/database.types'
+import { useHrEmployeesQuery } from '@/hooks/queries/useHrQuery'
 import {
   Dialog,
   DialogContent,
@@ -33,6 +34,9 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
   const { t } = useTranslation('pages')
   const isEditing = !!entry
 
+  // For employee selector in advance entries
+  const { data: employees = [] } = useHrEmployeesQuery()
+
   const {
     register,
     handleSubmit,
@@ -43,6 +47,7 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
   } = useForm<EntryFormValues>({
     resolver: zodResolver(entryFormSchema),
     defaultValues: {
+      description_preset: 'diger',
       description: '',
       entry_type: 'ODEME',
       direction: 'out',
@@ -52,13 +57,21 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
       entry_date: new Date().toISOString().slice(0, 10),
       payment_period: '',
       register: 'USDT',
+      hr_employee_id: null,
+      advance_type: null,
     },
   })
 
   useEffect(() => {
     if (open) {
       if (entry) {
+        // Detect preset from existing entry
+        let preset: EntryFormValues['description_preset'] = 'diger'
+        if (entry.advance_type === 'salary') preset = 'maas_avans'
+        else if (entry.advance_type === 'bonus') preset = 'prim_avans'
+
         reset({
+          description_preset: preset,
           description: entry.description,
           entry_type: entry.entry_type,
           direction: entry.direction,
@@ -68,9 +81,12 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
           entry_date: entry.entry_date,
           payment_period: entry.payment_period ?? '',
           register: entry.register as EntryFormValues['register'],
+          hr_employee_id: entry.hr_employee_id ?? null,
+          advance_type: (entry.advance_type as EntryFormValues['advance_type']) ?? null,
         })
       } else {
         reset({
+          description_preset: 'diger',
           description: '',
           entry_type: 'ODEME',
           direction: 'out',
@@ -80,6 +96,8 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
           entry_date: new Date().toISOString().slice(0, 10),
           payment_period: '',
           register: 'USDT',
+          hr_employee_id: null,
+          advance_type: null,
         })
       }
     }
@@ -87,6 +105,24 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
 
   // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch is intentional
   const direction = watch('direction')
+  const descriptionPreset = watch('description_preset')
+  const isAdvance = descriptionPreset === 'maas_avans' || descriptionPreset === 'prim_avans'
+
+  // When preset changes, sync advance_type and description
+  const handlePresetChange = (val: EntryFormValues['description_preset']) => {
+    setValue('description_preset', val)
+    if (val === 'maas_avans') {
+      setValue('advance_type', 'salary')
+      setValue('description', 'Maaş Avans Ödemesi')
+    } else if (val === 'prim_avans') {
+      setValue('advance_type', 'bonus')
+      setValue('description', 'Prim Avans Ödemesi')
+    } else {
+      setValue('advance_type', null)
+      setValue('hr_employee_id', null)
+      // Keep description as-is for free text
+    }
+  }
 
   const onFormSubmit = handleSubmit(async (data) => {
     await onSubmit(data)
@@ -102,15 +138,70 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
         </DialogHeader>
 
         <form onSubmit={onFormSubmit} className="space-y-md">
-          {/* Description */}
+          {/* Description preset selector */}
           <div className="space-y-sm">
             <Label>{t('accounting.form.description')}</Label>
-            <Input
-              {...register('description')}
-              placeholder={t('accounting.form.descriptionPlaceholder')}
-            />
+            <Select
+              value={descriptionPreset}
+              onValueChange={(v) => handlePresetChange(v as EntryFormValues['description_preset'])}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="maas_avans">Maaş Avans Ödemesi</SelectItem>
+                <SelectItem value="prim_avans">Prim Avans Ödemesi</SelectItem>
+                <SelectItem value="diger">{t('accounting.form.descriptionOther')}</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Free text only when "Diğer" is selected */}
+            {descriptionPreset === 'diger' && (
+              <Input
+                {...register('description')}
+                placeholder={t('accounting.form.descriptionPlaceholder')}
+                className="mt-1"
+              />
+            )}
             {errors.description && <p className="text-xs text-red">{errors.description.message}</p>}
           </div>
+
+          {/* Advance employee + period selectors */}
+          {isAdvance && (
+            <div className="grid grid-cols-2 gap-md rounded-xl border border-brand/20 bg-brand/5 p-md">
+              <div className="space-y-sm">
+                <Label className="text-xs text-black/60">
+                  {t('accounting.form.advanceEmployee')}
+                </Label>
+                <Select
+                  value={watch('hr_employee_id') ?? ''}
+                  onValueChange={(v) => setValue('hr_employee_id', v || null)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('accounting.form.advanceEmployeePlaceholder')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employees
+                      .filter((e) => e.is_active)
+                      .map((emp) => (
+                        <SelectItem key={emp.id} value={emp.id}>
+                          {emp.full_name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-sm">
+                <Label className="text-xs text-black/60">
+                  {t('accounting.form.advancePeriod')}
+                </Label>
+                <Input
+                  {...register('payment_period')}
+                  placeholder={t('accounting.form.costPeriodPlaceholder')}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Entry Type & Direction row */}
           <div className="grid grid-cols-2 gap-md">
@@ -208,22 +299,24 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
           </div>
 
           {/* Cost Period & Payment Period */}
-          <div className="grid grid-cols-2 gap-md">
-            <div className="space-y-sm">
-              <Label>{t('accounting.form.costPeriod')}</Label>
-              <Input
-                {...register('cost_period')}
-                placeholder={t('accounting.form.costPeriodPlaceholder')}
-              />
+          {!isAdvance && (
+            <div className="grid grid-cols-2 gap-md">
+              <div className="space-y-sm">
+                <Label>{t('accounting.form.costPeriod')}</Label>
+                <Input
+                  {...register('cost_period')}
+                  placeholder={t('accounting.form.costPeriodPlaceholder')}
+                />
+              </div>
+              <div className="space-y-sm">
+                <Label>{t('accounting.form.paymentPeriod')}</Label>
+                <Input
+                  {...register('payment_period')}
+                  placeholder={t('accounting.form.paymentPeriodPlaceholder')}
+                />
+              </div>
             </div>
-            <div className="space-y-sm">
-              <Label>{t('accounting.form.paymentPeriod')}</Label>
-              <Input
-                {...register('payment_period')}
-                placeholder={t('accounting.form.paymentPeriodPlaceholder')}
-              />
-            </div>
-          </div>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>

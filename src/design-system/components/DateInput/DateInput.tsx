@@ -65,7 +65,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(function D
         weight={hasValue ? 'fill' : 'regular'}
         className={cn(
           'pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 transition-colors',
-          hasValue ? 'text-brand' : 'text-black/35',
+          hasValue ? 'text-brand' : 'text-black/35 dark:text-white/35',
         )}
       />
       <input
@@ -90,7 +90,7 @@ export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(function D
         <button
           type="button"
           onClick={onClear}
-          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-black/30 transition-colors hover:bg-black/5 hover:text-black/60"
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-black/30 dark:text-white/30 transition-colors hover:bg-black/5 dark:hover:bg-white/5 hover:text-black/60 dark:hover:text-white/60"
         >
           <X size={12} />
         </button>

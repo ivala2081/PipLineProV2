@@ -194,6 +194,8 @@ export function useAccountingQuery(): UseAccountingQueryReturn {
         entry_date: data.entry_date,
         payment_period: data.payment_period || null,
         register: data.register,
+        hr_employee_id: data.hr_employee_id ?? null,
+        advance_type: data.advance_type ?? null,
         created_by: user.id,
       } as never)
       if (error) throw error
@@ -222,6 +224,8 @@ export function useAccountingQuery(): UseAccountingQueryReturn {
           entry_date: data.entry_date,
           payment_period: data.payment_period || null,
           register: data.register,
+          hr_employee_id: data.hr_employee_id ?? null,
+          advance_type: data.advance_type ?? null,
         } as never)
         .eq('id', id)
       if (error) throw error
@@ -234,17 +238,43 @@ export function useAccountingQuery(): UseAccountingQueryReturn {
     },
   })
 
-  // Delete
+  // Delete (with cascade to linked HR payments)
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      // Fetch the entry first to check for linked HR payment
+      const { data: entryRaw, error: fetchError } = await supabase
+        .from('accounting_entries')
+        .select('hr_payment_id, hr_payment_type')
+        .eq('id', id)
+        .single()
+      if (fetchError) throw fetchError
+      const entry = entryRaw as {
+        hr_payment_id: string | null
+        hr_payment_type: 'bonus' | 'salary' | null
+      } | null
+
+      // Delete the accounting entry
       const { error } = await supabase.from('accounting_entries').delete().eq('id', id)
       if (error) throw error
+
+      // Cascade delete the linked HR payment if present
+      if (entry?.hr_payment_id && entry?.hr_payment_type) {
+        const table: 'hr_bonus_payments' | 'hr_salary_payments' =
+          entry.hr_payment_type === 'bonus' ? 'hr_bonus_payments' : 'hr_salary_payments'
+        const { error: hrError } = await supabase.from(table).delete().eq('id', entry.hr_payment_id)
+        if (hrError) {
+          // Non-fatal: log but don't block (payment may have been manually deleted)
+          console.warn('Could not cascade delete HR payment:', hrError.message)
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.accounting.lists() })
       queryClient.invalidateQueries({
         queryKey: queryKeys.accounting.summary(currentOrg?.id ?? ''),
       })
+      // Also invalidate HR payment queries so UI reflects deletion
+      queryClient.invalidateQueries({ queryKey: ['hr'] })
     },
   })
 

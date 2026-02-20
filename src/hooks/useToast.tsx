@@ -29,7 +29,7 @@ interface ToastContextValue {
 /*  Context                                                            */
 /* ------------------------------------------------------------------ */
 
-const ToastContext = createContext<ToastContextValue | undefined>(undefined)
+const ToastContext = createContext<ToastContextValue>({ toast: () => {} })
 
 /* ------------------------------------------------------------------ */
 /*  Provider                                                           */
@@ -96,9 +96,5 @@ export function AppToastProvider({ children }: { children: ReactNode }) {
 
 // eslint-disable-next-line react-refresh/only-export-components
 export function useToast() {
-  const context = useContext(ToastContext)
-  if (context === undefined) {
-    throw new Error('useToast must be used within an AppToastProvider')
-  }
-  return context
+  return useContext(ToastContext)
 }
