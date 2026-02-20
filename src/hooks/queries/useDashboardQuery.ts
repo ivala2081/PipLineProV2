@@ -33,7 +33,7 @@ export interface DashboardKpis {
 
 /* ── Date range helpers ────────────────────────────── */
 
-function getDateRange(period: DashboardPeriod): { from: string; to: string } {
+export function getDateRange(period: DashboardPeriod): { from: string; to: string } {
   const now = new Date()
   const todayStr = now.toISOString().slice(0, 10)
   const to = `${todayStr}T23:59:59`
@@ -53,7 +53,7 @@ function getDateRange(period: DashboardPeriod): { from: string; to: string } {
   }
 }
 
-function getPreviousDateRange(period: DashboardPeriod): { from: string; to: string } {
+export function getPreviousDateRange(period: DashboardPeriod): { from: string; to: string } {
   const current = getDateRange(period)
   const fromDate = new Date(current.from)
 
@@ -123,8 +123,9 @@ function computeKpis(rows: RawTransferRow[]): DashboardKpis {
   }
 
   for (const row of rows) {
-    const amount = Number(row.amount) || 0
-    const amountTry = Number(row.amount_try) || amount
+    // DB stores withdrawal amounts as negative; use abs() to normalise (mirrors SQL abs() in get_monthly_summary)
+    const amount = Math.abs(Number(row.amount) || 0)
+    const amountTry = Math.abs(Number(row.amount_try) || amount)
     const commission = Number(row.commission) || 0
     const isDeposit = row.category_id === 'dep'
     const isTry = row.currency === 'TL'

@@ -70,6 +70,7 @@
       "dailyVolume": "Günlük Hacim Trendi",
       "paymentMethods": "Ödeme Yöntemleri",
       "pspVolume": "Kasaya Göre Hacim",
+      "pspCommission": "Kasaya Göre Komisyon",
       "dailyNet": "Günlük Net Akış",
       "deposits": "Yatırımlar",
       "withdrawals": "Çekimler",

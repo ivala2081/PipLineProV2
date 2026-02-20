@@ -13,7 +13,7 @@ import {
   TrendDown,
   ChartLine,
   ChartPie,
-  ChartBar,
+  Coins,
   Pulse,
   Trophy,
   ListBullets,
@@ -37,7 +37,12 @@ import {
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { supabase } from '@/lib/supabase'
-import { useDashboardQuery, type DashboardPeriod } from '@/hooks/queries/useDashboardQuery'
+import {
+  useDashboardQuery,
+  getDateRange,
+  getPreviousDateRange,
+  type DashboardPeriod,
+} from '@/hooks/queries/useDashboardQuery'
 import { useMonthlyAnalysisQuery } from '@/hooks/queries/useMonthlyAnalysisQuery'
 import { useDashboardRecentQuery } from '@/hooks/queries/useDashboardRecentQuery'
 import type { RecentTransfer } from '@/hooks/queries/useDashboardRecentQuery'
@@ -566,73 +571,102 @@ export function DashboardPage() {
   )
   const { recentTransfers, isTransfersLoading } = useDashboardRecentQuery()
 
-  /* ── PSP Currency Split (TL vs USD→TL per PSP) ───── */
-  const monthStartStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
-  const todayStr = now.toISOString().slice(0, 10)
-  const { data: pspCurrencySplit } = useQuery({
-    queryKey: ['dashboard', 'pspCurrencySplit', currentOrg?.id, monthStartStr],
+  /* ── PSP Commission by Period ────────────────────── */
+  const currentRange = useMemo(() => getDateRange(period), [period])
+  const prevRange = useMemo(() => getPreviousDateRange(period), [period])
+
+  /* ── PSP metadata (name / rate / is_internal) ────── */
+  const { data: pspMeta } = useQuery({
+    queryKey: ['dashboard', 'pspMeta', currentOrg?.id],
+    queryFn: async () => {
+      if (!currentOrg) throw new Error('No org')
+      const { data, error } = await supabase
+        .from('psps')
+        .select('id, name, commission_rate, is_internal')
+        .eq('organization_id', currentOrg.id)
+      if (error) throw error
+      return new Map(
+        (
+          data as Array<{
+            id: string
+            name: string
+            commission_rate: number
+            is_internal: boolean
+          }>
+        ).map((p) => [p.id, p]),
+      )
+    },
+    enabled: !!currentOrg,
+    staleTime: 10 * 60_000,
+  })
+
+  const { data: pspCommissionData, isLoading: isCommissionLoading } = useQuery({
+    queryKey: ['dashboard', 'pspCommission', currentOrg?.id, currentRange.from],
     queryFn: async () => {
       if (!currentOrg) throw new Error('No org')
       const { data, error } = await supabase
         .from('transfers')
-        .select('psp_id, currency, amount_try, psp:psps!psp_id(name, is_internal)')
+        .select('psp_id, commission')
         .eq('organization_id', currentOrg.id)
-        .gte('transfer_date', `${monthStartStr}T00:00:00`)
-        .lte('transfer_date', `${todayStr}T23:59:59`)
+        .gte('transfer_date', currentRange.from)
+        .lte('transfer_date', currentRange.to)
       if (error) throw error
 
-      const map = new Map<
-        string,
-        { name: string; try_volume: number; usd_volume: number; is_internal: boolean }
-      >()
-      for (const row of (data ?? []) as Array<{
-        psp_id: string
-        currency: string
-        amount_try: number
-        psp: { name: string; is_internal: boolean } | null
-      }>) {
-        const psp = row.psp as { name: string; is_internal: boolean } | null
-        const name = psp?.name ?? row.psp_id
-        const isInternal = psp?.is_internal ?? false
-        if (!map.has(name))
-          map.set(name, { name, try_volume: 0, usd_volume: 0, is_internal: isInternal })
-        const entry = map.get(name)!
-        const amtTry = Number(row.amount_try) || 0
-        if (row.currency === 'TL') entry.try_volume += amtTry
-        else entry.usd_volume += amtTry
+      const commMap = new Map<string, { commission: number; count: number }>()
+      for (const row of (data ?? []) as Array<{ psp_id: string; commission: number }>) {
+        const id = row.psp_id
+        if (!commMap.has(id)) commMap.set(id, { commission: 0, count: 0 })
+        const entry = commMap.get(id)!
+        entry.commission += Number(row.commission) || 0
+        entry.count++
       }
 
-      const all = [...map.values()]
-      const external = all
-        .filter((p) => !p.is_internal)
-        .sort((a, b) => b.try_volume + b.usd_volume - (a.try_volume + a.usd_volume))
-      const internal = all
-        .filter((p) => p.is_internal)
-        .sort((a, b) => b.try_volume + b.usd_volume - (a.try_volume + a.usd_volume))
-
-      const top = external.slice(0, 8)
-      const rest = external.slice(8)
-      if (rest.length > 0) {
-        top.push({
-          name: `Other (${rest.length})`,
-          try_volume: rest.reduce((s, r) => s + r.try_volume, 0),
-          usd_volume: rest.reduce((s, r) => s + r.usd_volume, 0),
-          is_internal: false,
+      const top3 = [...commMap.entries()]
+        .map(([psp_id, { commission, count }]) => {
+          const psp = pspMeta?.get(psp_id)
+          return {
+            name: psp?.name ?? psp_id,
+            commission_rate: Number(psp?.commission_rate ?? 0),
+            commission,
+            count,
+            is_internal: psp?.is_internal ?? false,
+          }
         })
-      }
-      return { external: top, internal }
+        .filter((p) => !p.is_internal)
+        .sort((a, b) => b.commission - a.commission)
+        .slice(0, 3)
+
+      return top3
     },
-    enabled: !!currentOrg,
+    enabled: !!currentOrg && !!pspMeta,
+    staleTime: 5 * 60_000,
+  })
+
+  const { data: prevPspCommissionMap } = useQuery({
+    queryKey: ['dashboard', 'prevPspCommission', currentOrg?.id, prevRange.from],
+    queryFn: async () => {
+      if (!currentOrg) throw new Error('No org')
+      const { data, error } = await supabase
+        .from('transfers')
+        .select('psp_id, commission')
+        .eq('organization_id', currentOrg.id)
+        .gte('transfer_date', prevRange.from)
+        .lte('transfer_date', prevRange.to)
+      if (error) throw error
+
+      const map = new Map<string, number>()
+      for (const row of (data ?? []) as Array<{ psp_id: string; commission: number }>) {
+        const name = pspMeta?.get(row.psp_id)?.name ?? row.psp_id
+        map.set(name, (map.get(name) ?? 0) + (Number(row.commission) || 0))
+      }
+      return map
+    },
+    enabled: !!currentOrg && !!pspMeta,
     staleTime: 5 * 60_000,
   })
 
   /* ── Derived values ──────────────────────────────── */
   const displayName = profile?.display_name || t('dashboard.defaultUser')
-
-  const topPsps = useMemo(
-    () => (monthlyData?.psp_breakdown ?? []).slice(0, 8),
-    [monthlyData?.psp_breakdown],
-  )
 
   const paymentMethods = useMemo(
     () =>
@@ -1030,175 +1064,88 @@ export function DashboardPage() {
           )}
         </ChartCard>
 
-        {/* ─ Volume by PSP (Ranked Leaderboard) ─────── */}
-        <ChartCard title={t('dashboard.charts.pspVolume')} icon={ChartBar} iconColor="text-blue">
-          {isMonthlyLoading || !pspCurrencySplit ? (
+        {/* ─ Commission by PSP (Top 3) ────────────────── */}
+        <ChartCard title={t('dashboard.charts.pspCommission')} icon={Coins} iconColor="text-orange">
+          {isCommissionLoading || !pspCommissionData ? (
             <ChartSkeleton />
-          ) : !pspCurrencySplit.external.length && !pspCurrencySplit.internal.length ? (
+          ) : !pspCommissionData.length ? (
             <ChartEmpty message={t('dashboard.charts.noData')} />
           ) : (
-            <>
-              {/* ── External (ranked) ── */}
-              {pspCurrencySplit.external.length > 0 &&
-                (() => {
-                  const maxTotal =
-                    pspCurrencySplit.external[0].try_volume +
-                    pspCurrencySplit.external[0].usd_volume
-                  return (
-                    <div className="space-y-0.5">
-                      {pspCurrencySplit.external.map((psp, i) => {
-                        const total = psp.try_volume + psp.usd_volume
-                        const widthPct = maxTotal > 0 ? (total / maxTotal) * 100 : 0
-                        const tryPct = total > 0 ? (psp.try_volume / total) * 100 : 100
-                        const isOther = psp.name.startsWith('Other (')
-                        const prevPsp = isOther
-                          ? null
-                          : prevMonthlyData?.psp_breakdown?.find((p) => p.name === psp.name)
-                        const diff =
-                          prevPsp && prevPsp.volume > 0
-                            ? ((total - prevPsp.volume) / prevPsp.volume) * 100
-                            : null
-                        const rankBadge = isOther
-                          ? 'bg-black/[0.03] text-black/20'
-                          : i === 0
-                            ? 'bg-yellow/20 text-yellow'
-                            : i === 1
-                              ? 'bg-black/[0.07] text-black/40'
-                              : i === 2
-                                ? 'bg-orange/15 text-orange'
-                                : 'bg-black/[0.04] text-black/25'
+            <div className="space-y-0.5">
+              {(() => {
+                const maxCommission = pspCommissionData[0].commission
+                const rankBadge = [
+                  'bg-yellow/20 text-yellow',
+                  'bg-black/[0.07] text-black/40',
+                  'bg-orange/15 text-orange',
+                ]
+                return pspCommissionData.map((psp, i) => {
+                  const widthPct = maxCommission > 0 ? (psp.commission / maxCommission) * 100 : 0
+                  const prevCommission = prevPspCommissionMap?.get(psp.name) ?? null
+                  const diff =
+                    prevCommission != null && prevCommission > 0
+                      ? ((psp.commission - prevCommission) / prevCommission) * 100
+                      : null
 
-                        return (
-                          <div
-                            key={psp.name}
-                            className={cn(
-                              'rounded-xl px-2 py-2 transition-colors hover:bg-black/[0.025]',
-                              isOther && 'mt-1 border-t border-dashed border-black/[0.05] pt-3',
-                            )}
-                          >
-                            <div className="flex items-center gap-2.5">
-                              <span
-                                className={cn(
-                                  'flex size-6 shrink-0 items-center justify-center rounded-lg font-mono text-[10px] font-black',
-                                  rankBadge,
-                                )}
-                              >
-                                {isOther ? '···' : i + 1}
+                  return (
+                    <div
+                      key={psp.name}
+                      className="rounded-xl px-2 py-2 transition-colors hover:bg-black/[0.025]"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span
+                          className={cn(
+                            'flex size-6 shrink-0 items-center justify-center rounded-lg font-mono text-[10px] font-black',
+                            rankBadge[i] ?? 'bg-black/[0.04] text-black/25',
+                          )}
+                        >
+                          {i + 1}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex min-w-0 items-center gap-1.5">
+                              <span className="truncate text-[13px] font-semibold text-black/70">
+                                {psp.name}
                               </span>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="truncate text-[13px] font-semibold text-black/70">
-                                    {psp.name}
-                                  </span>
-                                  <div className="flex shrink-0 items-center gap-2">
-                                    {diff !== null && (
-                                      <span
-                                        className={cn(
-                                          'text-[10px] font-bold',
-                                          diff >= 0 ? 'text-green' : 'text-red',
-                                        )}
-                                      >
-                                        {diff >= 0 ? '↑' : '↓'}
-                                        {Math.abs(diff).toFixed(0)}%
-                                      </span>
-                                    )}
-                                    <span className="font-mono text-[12px] font-bold tabular-nums text-black/70">
-                                      {fmtMoney(total, lang)}
-                                    </span>
-                                    <span className="rounded-full bg-black/[0.04] px-1.5 py-0.5 text-[10px] font-bold text-black/25">
-                                      {topPsps.find((p) => p.name === psp.name)?.count ?? 0}x
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-black/[0.04]">
-                                  <div className="flex h-full" style={{ width: `${widthPct}%` }}>
-                                    <div
-                                      className="h-full bg-[#6366f1] transition-all duration-700"
-                                      style={{ width: `${tryPct}%` }}
-                                    />
-                                    <div
-                                      className="h-full bg-[#06b6d4] transition-all duration-700"
-                                      style={{ width: `${100 - tryPct}%` }}
-                                    />
-                                  </div>
-                                </div>
-                              </div>
+                              {psp.commission_rate > 0 && (
+                                <span className="shrink-0 rounded-full bg-orange/10 px-1.5 py-0.5 text-[9px] font-bold text-orange">
+                                  {(psp.commission_rate * 100).toFixed(1)}%
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex shrink-0 items-center gap-2">
+                              {diff !== null && (
+                                <span
+                                  className={cn(
+                                    'text-[10px] font-bold',
+                                    diff >= 0 ? 'text-green' : 'text-red',
+                                  )}
+                                >
+                                  {diff >= 0 ? '↑' : '↓'}
+                                  {Math.abs(diff).toFixed(0)}%
+                                </span>
+                              )}
+                              <span className="font-mono text-[12px] font-bold tabular-nums text-black/70">
+                                {fmtMoney(psp.commission, lang)}
+                              </span>
+                              <span className="rounded-full bg-black/[0.04] px-1.5 py-0.5 text-[10px] font-bold text-black/25">
+                                {psp.count}x
+                              </span>
                             </div>
                           </div>
-                        )
-                      })}
-                    </div>
-                  )
-                })()}
-
-              {/* ── Internal (reference only) ── */}
-              {pspCurrencySplit.internal.length > 0 &&
-                (() => {
-                  const intMaxTotal =
-                    pspCurrencySplit.internal[0].try_volume +
-                    pspCurrencySplit.internal[0].usd_volume
-                  return (
-                    <div className="mt-3 border-t border-black/[0.05] pt-3">
-                      <p className="mb-1.5 px-2 text-[10px] font-bold uppercase tracking-widest text-black/20">
-                        Internal
-                      </p>
-                      <div className="space-y-0.5">
-                        {pspCurrencySplit.internal.map((psp) => {
-                          const total = psp.try_volume + psp.usd_volume
-                          const widthPct = intMaxTotal > 0 ? (total / intMaxTotal) * 100 : 0
-                          const tryPct = total > 0 ? (psp.try_volume / total) * 100 : 100
-                          return (
+                          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-black/[0.04]">
                             <div
-                              key={psp.name}
-                              className="rounded-xl px-2 py-1.5 transition-colors hover:bg-black/[0.015]"
-                            >
-                              <div className="flex items-center gap-2.5">
-                                <span className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-black/[0.03] font-mono text-[9px] font-bold text-black/20">
-                                  INT
-                                </span>
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center justify-between gap-2">
-                                    <span className="truncate text-[12px] font-medium text-black/40">
-                                      {psp.name}
-                                    </span>
-                                    <span className="font-mono text-[11px] font-semibold tabular-nums text-black/35">
-                                      {fmtMoney(total, lang)}
-                                    </span>
-                                  </div>
-                                  <div className="mt-1 h-1 overflow-hidden rounded-full bg-black/[0.03]">
-                                    <div className="flex h-full" style={{ width: `${widthPct}%` }}>
-                                      <div
-                                        className="h-full bg-[#6366f1]/40"
-                                        style={{ width: `${tryPct}%` }}
-                                      />
-                                      <div
-                                        className="h-full bg-[#06b6d4]/40"
-                                        style={{ width: `${100 - tryPct}%` }}
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )
-                        })}
+                              className="h-full rounded-full bg-[#f97316]/60 transition-all duration-700"
+                              style={{ width: `${widthPct}%` }}
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )
-                })()}
-
-              {/* Legend */}
-              <div className="mt-3 flex items-center justify-center gap-5 border-t border-black/[0.04] pt-3">
-                <div className="flex items-center gap-1.5">
-                  <div className="size-2 rounded-full bg-[#6366f1]" />
-                  <span className="text-[11px] text-black/35">₺ TL</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="size-2 rounded-full bg-[#06b6d4]" />
-                  <span className="text-[11px] text-black/35">$ USD → ₺</span>
-                </div>
-              </div>
-            </>
+                })
+              })()}
+            </div>
           )}
         </ChartCard>
 

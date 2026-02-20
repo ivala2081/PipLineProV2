@@ -70,6 +70,7 @@
       "dailyVolume": "Daily Volume Trend",
       "paymentMethods": "Payment Methods",
       "pspVolume": "Volume by PSP",
+      "pspCommission": "Commission by PSP",
       "dailyNet": "Daily Net Flow",
       "deposits": "Deposits",
       "withdrawals": "Withdrawals",

@@ -75,7 +75,11 @@
       "Bash(SUPABASE_ACCESS_TOKEN=sbp_4282054627a0941ea1fff0add7f33598e25a3b14 npx supabase:*)",
       "Bash(du:*)",
       "Bash(git var:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "mcp__claude_ai_Supabase__list_projects",
+      "mcp__claude_ai_Supabase__execute_sql",
+      "mcp__claude_ai_Supabase__get_logs",
+      "Bash(python:*)"
     ]
   }
 }
