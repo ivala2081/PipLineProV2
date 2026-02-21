@@ -157,7 +157,7 @@ export const DatePickerField = forwardRef<HTMLInputElement, DatePickerFieldProps
           weight={hasValue ? 'fill' : 'regular'}
           className={cn(
             'pointer-events-none absolute left-2.5 top-1/2 z-10 -translate-y-1/2 transition-colors',
-            hasValue ? 'text-brand' : 'text-black/35 dark:text-white/35',
+            hasValue ? 'text-brand' : 'text-black/35',
           )}
         />
 
@@ -177,10 +177,7 @@ export const DatePickerField = forwardRef<HTMLInputElement, DatePickerFieldProps
               )}
             >
               <span
-                className={cn(
-                  'flex-1 truncate text-left text-sm dark:text-white',
-                  !hasValue && 'text-black/45 dark:text-white/45',
-                )}
+                className={cn('flex-1 truncate text-left text-sm', !hasValue && 'text-black/45')}
               >
                 {displayText ?? placeholder ?? t('datePicker.placeholder')}
               </span>
@@ -198,11 +195,11 @@ export const DatePickerField = forwardRef<HTMLInputElement, DatePickerFieldProps
                 onYearChange={setCalYear}
                 className="border-0 bg-transparent p-2 shadow-none"
               />
-              <div className="border-t border-black/8 dark:border-white/8 px-2 pb-1 pt-1">
+              <div className="border-t border-black/8 px-2 pb-1 pt-1">
                 <button
                   type="button"
                   onClick={() => handleSelect(new Date())}
-                  className="w-full rounded-lg px-3 py-1.5 text-xs font-medium text-black/60 dark:text-white/60 transition-colors hover:bg-black/5 dark:hover:bg-white/5 hover:text-black dark:hover:text-white"
+                  className="w-full rounded-lg px-3 py-1.5 text-xs font-medium text-black/60 transition-colors hover:bg-black/5 hover:text-black"
                 >
                   {t('datePicker.today')}
                 </button>
@@ -216,7 +213,7 @@ export const DatePickerField = forwardRef<HTMLInputElement, DatePickerFieldProps
           <button
             type="button"
             onClick={handleClear}
-            className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full p-0.5 text-black/30 dark:text-white/30 transition-colors hover:bg-black/5 dark:hover:bg-white/5 hover:text-black/60 dark:hover:text-white/60"
+            className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full p-0.5 text-black/30 transition-colors hover:bg-black/5 hover:text-black/60"
           >
             <X size={12} />
           </button>

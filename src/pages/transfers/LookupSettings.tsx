@@ -1,7 +1,22 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Lock, CreditCard, Tag as TagIcon, GitBranch } from '@phosphor-icons/react'
+import { Lock, CreditCard, Tag as TagIcon, GitBranch, Trash, Warning } from '@phosphor-icons/react'
 import type { useLookupQueries } from '@/hooks/queries/useLookupQueries'
-import { Card, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, Tag } from '@ds'
+import { useAuth } from '@/app/providers/AuthProvider'
+import { useTransfersQuery } from '@/hooks/queries/useTransfersQuery'
+import { useToast } from '@/hooks/useToast'
+import { BulkDeleteConfirmDialog } from './BulkDeleteConfirmDialog'
+import {
+  Card,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  Tag,
+  Button,
+} from '@ds'
 
 interface LookupSettingsProps {
   lookupData: ReturnType<typeof useLookupQueries>
@@ -9,6 +24,10 @@ interface LookupSettingsProps {
 
 export function LookupSettings({ lookupData }: LookupSettingsProps) {
   const { t } = useTranslation('pages')
+  const { isGod } = useAuth()
+  const transfers = useTransfersQuery()
+  const { toast } = useToast()
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
 
   return (
     <div className="space-y-5">
@@ -112,6 +131,72 @@ export function LookupSettings({ lookupData }: LookupSettingsProps) {
           </TableBody>
         </Table>
       </Card>
+
+      {/* Danger Zone — Admin only */}
+      {isGod && (
+        <Card padding="spacious" className="border border-red/20 bg-red/[0.02]">
+          <div className="mb-4 flex items-center gap-2.5">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-red/10 text-red">
+              <Warning size={16} weight="duotone" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-red">
+                {t('transfers.bulkDelete.dangerZone', 'Danger Zone')}
+              </h3>
+              <p className="text-xs text-black/40">
+                {t(
+                  'transfers.bulkDelete.dangerDescription',
+                  'Destructive actions that cannot be undone.',
+                )}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border border-red/10 bg-white px-4 py-3">
+            <div>
+              <p className="text-sm font-medium text-black/80">
+                {t('transfers.bulkDelete.deleteAll', 'Delete all transfers')}
+              </p>
+              <p className="text-xs text-black/40">
+                {t(
+                  'transfers.bulkDelete.deleteAllDescription',
+                  'Permanently remove all {{count}} transfers from the database.',
+                  { count: transfers.total },
+                )}
+              </p>
+            </div>
+            <Button
+              variant="filled"
+              size="sm"
+              className="gap-1.5 bg-red hover:bg-red/80"
+              onClick={() => setBulkDeleteOpen(true)}
+              disabled={transfers.total === 0}
+            >
+              <Trash size={14} />
+              {t('transfers.bulkDelete.deleteAllButton', 'Delete All Transfers')}
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Bulk Delete Confirmation Dialog */}
+      {isGod && (
+        <BulkDeleteConfirmDialog
+          ids={bulkDeleteOpen ? ['__all__'] : null}
+          count={transfers.total}
+          onClose={() => setBulkDeleteOpen(false)}
+          onConfirm={async () => {
+            const count = transfers.total
+            await transfers.bulkDeleteTransfers(['__all__'])
+            toast({
+              title: t('transfers.toast.bulkDeleted', { count }),
+              variant: 'success',
+            })
+            setBulkDeleteOpen(false)
+          }}
+          isDeleting={transfers.isBulkDeleting}
+        />
+      )}
     </div>
   )
 }

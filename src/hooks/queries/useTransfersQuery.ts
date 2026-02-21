@@ -464,6 +464,33 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
     },
   })
 
+  // Bulk delete mutation — pass ['__all__'] to delete all org transfers
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      if (ids.length === 1 && ids[0] === '__all__') {
+        // Delete ALL transfers for this organization
+        if (!currentOrg) throw new Error('No organization selected')
+        const { error } = await supabase
+          .from('transfers')
+          .delete()
+          .eq('organization_id', currentOrg.id)
+        if (error) throw error
+        return
+      }
+
+      // Delete in batches of 50 to avoid query size limits
+      for (let i = 0; i < ids.length; i += 50) {
+        const batch = ids.slice(i, i + 50)
+        const { error } = await supabase.from('transfers').delete().in('id', batch)
+        if (error) throw error
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.transfers.lists() })
+      queryClient.invalidateQueries({ queryKey: hrKeys.bonusPayments(currentOrg?.id ?? '') })
+    },
+  })
+
   // Function to fetch all transfers for a specific date
   const fetchTransfersByDate = async (dateKey: string): Promise<TransferRow[]> => {
     if (!currentOrg) throw new Error('No organization selected')
@@ -510,8 +537,10 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
     updateTransfer: async (id, data, category) =>
       updateMutation.mutateAsync({ id, data, category }),
     deleteTransfer: deleteMutation.mutateAsync,
+    bulkDeleteTransfers: bulkDeleteMutation.mutateAsync,
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
+    isBulkDeleting: bulkDeleteMutation.isPending,
   }
 }

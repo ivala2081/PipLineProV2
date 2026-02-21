@@ -10,12 +10,12 @@
     "dashboard": "Kontrol Paneli",
     "transfers": "Transferler",
     "accounting": "Muhasebe",
-    "psps": "Kasalar",
+    "psps": "PSP",
     "future": "Gelecek",
     "members": "Üyeler",
     "organizations": "Organizasyonlar",
     "security": "Güvenlik",
-    "hr": "İnsan Kaynakları"
+    "hr": "İK"
   },
   "layout": {
     "noOrganization": "Organizasyon Yok",
@@ -248,6 +248,20 @@
       "confirm": "Sil",
       "cancel": "İptal"
     },
+    "bulkDelete": {
+      "title": "{{count}} Transfer Sil",
+      "description": "{{count}} transferi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.",
+      "confirm": "Tümünü Sil",
+      "cancel": "İptal",
+      "deleting": "Siliniyor...",
+      "selected": "{{count}} seçili",
+      "pinLabel": "Onaylamak için güvenlik PIN'ini girin",
+      "dangerZone": "Tehlikeli Bölge",
+      "dangerDescription": "Geri alınamaz yıkıcı işlemler.",
+      "deleteAll": "Tüm transferleri sil",
+      "deleteAllDescription": "Veritabanından tüm {{count}} transferi kalıcı olarak kaldır.",
+      "deleteAllButton": "Tüm Transferleri Sil"
+    },
     "detail": {
       "title": "Transfer Detayı"
     },
@@ -395,6 +409,7 @@
       "created": "Transfer başarıyla oluşturuldu",
       "updated": "Transfer başarıyla güncellendi",
       "deleted": "Transfer başarıyla silindi",
+      "bulkDeleted": "{{count}} transfer başarıyla silindi",
       "error": "Bir hata oluştu. Lütfen tekrar deneyin.",
       "lookupCreated": "Öğe başarıyla oluşturuldu",
       "lookupUpdated": "Öğe başarıyla güncellendi",

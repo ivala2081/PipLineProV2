@@ -79,7 +79,9 @@
       "mcp__claude_ai_Supabase__list_projects",
       "mcp__claude_ai_Supabase__execute_sql",
       "mcp__claude_ai_Supabase__get_logs",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(git -C /home/ivala/Documents/GitHub/PipLineProV2 log --oneline -15)",
+      "Bash(git -C /home/ivala/Documents/GitHub/PipLineProV2 diff HEAD --name-only)"
     ]
   }
 }

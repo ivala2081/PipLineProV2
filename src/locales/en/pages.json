@@ -10,12 +10,12 @@
     "dashboard": "Dashboard",
     "transfers": "Transfers",
     "accounting": "Accounting",
-    "psps": "PSPs",
+    "psps": "PSP",
     "future": "Future",
     "members": "Members",
     "organizations": "Organizations",
     "security": "Security",
-    "hr": "Human Resources"
+    "hr": "HR"
   },
   "layout": {
     "noOrganization": "No Organization",
@@ -248,6 +248,20 @@
       "confirm": "Delete",
       "cancel": "Cancel"
     },
+    "bulkDelete": {
+      "title": "Delete {{count}} Transfers",
+      "description": "Are you sure you want to delete {{count}} transfers? This action cannot be undone.",
+      "confirm": "Delete All",
+      "cancel": "Cancel",
+      "deleting": "Deleting...",
+      "selected": "{{count}} selected",
+      "pinLabel": "Enter security PIN to confirm",
+      "dangerZone": "Danger Zone",
+      "dangerDescription": "Destructive actions that cannot be undone.",
+      "deleteAll": "Delete all transfers",
+      "deleteAllDescription": "Permanently remove all {{count}} transfers from the database.",
+      "deleteAllButton": "Delete All Transfers"
+    },
     "detail": {
       "title": "Transfer Details"
     },
@@ -395,6 +409,7 @@
       "created": "Transfer created successfully",
       "updated": "Transfer updated successfully",
       "deleted": "Transfer deleted successfully",
+      "bulkDeleted": "{{count}} transfers deleted successfully",
       "error": "An error occurred. Please try again.",
       "lookupCreated": "Item created successfully",
       "lookupUpdated": "Item updated successfully",

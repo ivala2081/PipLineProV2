@@ -185,9 +185,9 @@ export function DatePicker({
         <button
           type="button"
           className={cn(
-            'flex h-8 items-center gap-2 rounded-lg border border-black/10 dark:border-white/10 bg-bg1 px-3 text-left text-xs font-medium text-black dark:text-white transition-colors',
-            'hover:border-black/20 dark:hover:border-white/20 hover:bg-black/[0.02] dark:hover:bg-white/[0.02]',
-            hasDate && 'border-brand/30 bg-brand/5 text-black dark:text-white',
+            'flex h-8 items-center gap-2 rounded-lg border border-black/10 bg-bg1 px-3 text-left text-xs font-medium text-black transition-colors',
+            'hover:border-black/20 hover:bg-black/[0.02]',
+            hasDate && 'border-brand/30 bg-brand/5 text-black',
             className,
           )}
           style={{ minWidth }}
@@ -195,21 +195,21 @@ export function DatePicker({
           <CalendarBlank
             size={14}
             weight={hasDate ? 'fill' : 'regular'}
-            className={hasDate ? 'text-brand' : 'text-black/40 dark:text-white/40'}
+            className={hasDate ? 'text-brand' : 'text-black/40'}
           />
           <span className="flex-1 truncate">{formatDisplay()}</span>
-          <CaretDown size={12} className="shrink-0 text-black/40 dark:text-white/40" />
+          <CaretDown size={12} className="shrink-0 text-black/40" />
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-auto p-0" sideOffset={6}>
         <div className="flex">
-          <div className="flex flex-col border-r border-black/10 dark:border-white/10 py-2">
+          <div className="flex flex-col border-r border-black/10 py-2">
             {PRESETS.map((p) => (
               <button
                 key={p.id}
                 type="button"
                 onClick={() => handlePreset(p.getRange)}
-                className="mx-1 rounded-xl px-3 py-2 text-left text-xs font-medium text-black/80 dark:text-white/80 transition-colors duration-150 hover:bg-brand/10 hover:text-brand"
+                className="mx-1 rounded-xl px-3 py-2 text-left text-xs font-medium text-black/80 transition-colors duration-150 hover:bg-brand/10 hover:text-brand"
               >
                 {t(p.labelKey)}
               </button>
@@ -218,7 +218,7 @@ export function DatePicker({
               <button
                 type="button"
                 onClick={handleClear}
-                className="mx-1 mt-1 rounded-xl border-t border-black/10 dark:border-white/10 px-3 py-2 text-left text-xs font-medium text-red/80 transition-colors duration-150 hover:bg-red/10"
+                className="mx-1 mt-1 rounded-xl border-t border-black/10 px-3 py-2 text-left text-xs font-medium text-red/80 transition-colors duration-150 hover:bg-red/10"
               >
                 {t('datePicker.clear')}
               </button>

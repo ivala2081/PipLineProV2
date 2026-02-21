@@ -95,7 +95,7 @@ export const Calendar: FC<CalendarProps> = ({
           onClick={prevMonth}
           leftContent={<CaretLeft size={16} />}
         />
-        <span className="text-sm font-semibold text-black dark:text-white">
+        <span className="text-sm font-semibold text-black">
           {MONTHS[month]} {year}
         </span>
         <Button
@@ -107,7 +107,7 @@ export const Calendar: FC<CalendarProps> = ({
       </div>
 
       {/* Day headers */}
-      <div className="mb-2 grid grid-cols-7 gap-1 text-center text-xs text-black/40 dark:text-white/40">
+      <div className="mb-2 grid grid-cols-7 gap-1 text-center text-xs text-black/40">
         {DAYS.map((d) => (
           <div key={d} className="py-1">
             {d}
@@ -116,7 +116,7 @@ export const Calendar: FC<CalendarProps> = ({
       </div>
 
       {/* Day cells */}
-      <div className="grid grid-cols-7 gap-1 text-center text-sm text-black dark:text-white">
+      <div className="grid grid-cols-7 gap-1 text-center text-sm text-black">
         {days.map((day, i) => (
           <button
             key={i}
@@ -126,7 +126,7 @@ export const Calendar: FC<CalendarProps> = ({
             className={cn(
               'flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
               day === null && 'invisible',
-              day !== null && 'hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer',
+              day !== null && 'hover:bg-black/5 cursor-pointer',
               isCurrentMonth && day === today && !isSelected(day!) && 'font-semibold text-brand',
               day !== null && isSelected(day) && 'bg-brand text-white hover:bg-brand-hover',
             )}
