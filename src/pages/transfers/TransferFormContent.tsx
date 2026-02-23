@@ -3,7 +3,16 @@ import type { ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
-import { UserCircle } from '@phosphor-icons/react'
+import {
+  ArrowsDownUp,
+  ArrowCircleDown,
+  ArrowCircleUp,
+  User,
+  CreditCard,
+  CurrencyCircleDollar,
+  Tag,
+  UserCircle,
+} from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import type { TransferRow } from '@/hooks/useTransfers'
@@ -106,9 +115,10 @@ function saveRememberedFields(orgId: string | undefined, v: RememberedTransferFi
 
 /* ── Small UI components ──────────────────────────────────────────── */
 
-function SectionHeader({ children }: { children: ReactNode }) {
+function SectionHeader({ icon, children }: { icon?: ReactNode; children: ReactNode }) {
   return (
-    <div className="mb-4 flex items-center gap-3">
+    <div className="mb-4 flex items-center gap-2">
+      {icon && <span className="text-black/30">{icon}</span>}
       <p className="shrink-0 text-[10px] font-semibold uppercase tracking-widest text-black/35">
         {children}
       </p>
@@ -220,7 +230,7 @@ export function TransferFormContent({
   const lang = i18n.language === 'tr' ? 'tr' : 'en'
 
   const [manualRate, setManualRate] = useState(false)
-  const manualFtdRef = useRef(false) // tracks if user manually toggled FTD/STD
+  const manualFtdRef = useRef(false)
 
   const { data: employees = [] } = useHrEmployeesQuery()
 
@@ -331,14 +341,11 @@ export function TransferFormContent({
         .limit(1)
 
       if (data && data.length > 0) {
-        // Returning client → STD
         if (!manualFtdRef.current) form.setValue('is_first_deposit', false)
-        // Auto-fill CRM/META only if currently empty
         const cur = form.getValues()
         if (!cur.crm_id && data[0].crm_id) form.setValue('crm_id', data[0].crm_id)
         if (!cur.meta_id && data[0].meta_id) form.setValue('meta_id', data[0].meta_id)
       } else {
-        // New client → FTD
         if (!manualFtdRef.current) form.setValue('is_first_deposit', true)
       }
     }, 600)
@@ -429,11 +436,11 @@ export function TransferFormContent({
 
   /* ── Section labels ───────────────────────────────────────── */
   const s = {
+    direction: lang === 'tr' ? 'Transfer Yönü' : 'Transfer Direction',
     client: lang === 'tr' ? 'Müşteri' : 'Client',
     payment: lang === 'tr' ? 'Ödeme Bilgileri' : 'Payment',
     amount: lang === 'tr' ? 'Tutar' : 'Amount',
-    classification: lang === 'tr' ? 'Sınıflandırma' : 'Classification',
-    references: lang === 'tr' ? 'Referanslar' : 'References',
+    details: lang === 'tr' ? 'Detaylar' : 'Details',
   }
 
   /* ── Render ───────────────────────────────────────────────── */
@@ -443,27 +450,168 @@ export function TransferFormContent({
         submitModeRef.current = 'close'
         void handleSubmit(e)
       }}
-      className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-5"
+      className="space-y-3 lg:space-y-5"
     >
-      {/* ═══ LEFT COLUMN ═══════════════════════════════════════ */}
-      <div className="space-y-3">
-        {/* Client */}
-        <Card padding="spacious">
-          <SectionHeader>{s.client}</SectionHeader>
-          <Field
-            label={t('transfers.form.fullName')}
-            error={form.formState.errors.full_name?.message}
-          >
-            <Input
-              {...form.register('full_name')}
-              placeholder={t('transfers.form.fullNamePlaceholder')}
-            />
-          </Field>
-        </Card>
+      {/* ═══ TRANSFER DIRECTION — full-width banner ═══════════ */}
+      <div>
+        <div className="mb-2 flex items-center gap-2">
+          <ArrowsDownUp size={14} weight="bold" className="text-black/30" />
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-black/35">
+            {s.direction}
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {categoryOptions.map((cat) => {
+            const selected = categoryId === cat.id
+            const isDep = cat.is_deposit
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => form.setValue('category_id', cat.id)}
+                className={cn(
+                  'group relative flex items-center gap-3 rounded-2xl border-2 px-5 py-4 text-left transition-all',
+                  selected && isDep && 'border-green-500/50 bg-green-500/10 shadow-sm',
+                  selected && !isDep && 'border-red-500/50 bg-red-500/10 shadow-sm',
+                  !selected &&
+                    'border-black/[0.08] bg-black/[0.02] hover:border-black/15 hover:bg-black/[0.04]',
+                )}
+              >
+                <div
+                  className={cn(
+                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors',
+                    selected && isDep && 'bg-green-500/20 text-green-600',
+                    selected && !isDep && 'bg-red-500/20 text-red-500',
+                    !selected && 'bg-black/[0.04] text-black/25 group-hover:text-black/40',
+                  )}
+                >
+                  {isDep ? (
+                    <ArrowCircleDown size={22} weight={selected ? 'fill' : 'bold'} />
+                  ) : (
+                    <ArrowCircleUp size={22} weight={selected ? 'fill' : 'bold'} />
+                  )}
+                </div>
+                <div>
+                  <span
+                    className={cn(
+                      'block text-base font-bold leading-tight',
+                      selected && isDep && 'text-green-700',
+                      selected && !isDep && 'text-red-600',
+                      !selected && 'text-black/40',
+                    )}
+                  >
+                    {cat.name}
+                  </span>
+                  <span
+                    className={cn(
+                      'block text-[11px] leading-tight',
+                      selected && isDep && 'text-green-600/60',
+                      selected && !isDep && 'text-red-500/60',
+                      !selected && 'text-black/25',
+                    )}
+                  >
+                    {isDep
+                      ? lang === 'tr'
+                        ? 'Gelen Transfer'
+                        : 'Incoming transfer'
+                      : lang === 'tr'
+                        ? 'Giden Transfer'
+                        : 'Outgoing transfer'}
+                  </span>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+        {form.formState.errors.category_id && (
+          <p className="mt-1 text-xs text-red">{form.formState.errors.category_id.message}</p>
+        )}
+      </div>
 
-        {/* Payment */}
+      {/* ═══ TWO-COLUMN GRID ═════════════════════════════════════ */}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-5">
+        {/* ─── LEFT CARD: Client & Payment ────────────────────── */}
         <Card padding="spacious">
-          <SectionHeader>{s.payment}</SectionHeader>
+          {/* Client section */}
+          <SectionHeader icon={<User size={14} weight="bold" />}>{s.client}</SectionHeader>
+          <div className="space-y-4">
+            <Field
+              label={t('transfers.form.fullName')}
+              error={form.formState.errors.full_name?.message}
+            >
+              <Input
+                {...form.register('full_name')}
+                placeholder={t('transfers.form.fullNamePlaceholder')}
+              />
+            </Field>
+
+            {/* FTD / STD toggle */}
+            <div>
+              <Label className="mb-1.5 block text-xs font-medium tracking-wide text-black/60">
+                {lang === 'tr' ? 'Yatırım Durumu' : 'Deposit Status'}
+              </Label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    manualFtdRef.current = true
+                    form.setValue('is_first_deposit', true)
+                  }}
+                  className={cn(
+                    'flex-1 rounded-lg px-3 py-2 text-center text-sm font-semibold transition-all',
+                    isFirstDeposit
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'bg-black/[0.04] text-black/35 hover:bg-black/[0.07]',
+                  )}
+                >
+                  FTD
+                  <span className="ml-1 text-xs font-normal opacity-70">
+                    {lang === 'tr' ? '(İlk Yatırım)' : '(First Deposit)'}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    manualFtdRef.current = true
+                    form.setValue('is_first_deposit', false)
+                  }}
+                  className={cn(
+                    'flex-1 rounded-lg px-3 py-2 text-center text-sm font-semibold transition-all',
+                    !isFirstDeposit
+                      ? 'bg-purple-600 text-white shadow-sm'
+                      : 'bg-black/[0.04] text-black/35 hover:bg-black/[0.07]',
+                  )}
+                >
+                  STD
+                  <span className="ml-1 text-xs font-normal opacity-70">
+                    {lang === 'tr' ? '(Tekrar Yatırım)' : '(Return Deposit)'}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {/* CRM & META — auto-filled from name lookup */}
+            <div className="grid grid-cols-2 gap-3">
+              <Field label={t('transfers.form.crmId')}>
+                <Input
+                  {...form.register('crm_id')}
+                  placeholder={t('transfers.form.crmIdPlaceholder')}
+                />
+              </Field>
+              <Field label={t('transfers.form.metaId')}>
+                <Input
+                  {...form.register('meta_id')}
+                  placeholder={t('transfers.form.metaIdPlaceholder')}
+                />
+              </Field>
+            </div>
+          </div>
+
+          {/* Divider between Client and Payment */}
+          <div className="my-5" />
+
+          {/* Payment section */}
+          <SectionHeader icon={<CreditCard size={14} weight="bold" />}>{s.payment}</SectionHeader>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field
               label={t('transfers.form.paymentMethod')}
@@ -488,7 +636,7 @@ export function TransferFormContent({
                 noResultsText={t('transfers.form.noResults')}
               />
             </Field>
-            <div className="grid grid-cols-3 gap-3 sm:col-span-2">
+            <div className="grid grid-cols-2 gap-3 sm:col-span-2">
               <Field
                 label={t('transfers.form.date')}
                 error={form.formState.errors.transfer_date?.message}
@@ -521,162 +669,18 @@ export function TransferFormContent({
                   )}
                 />
               </Field>
-              <Field label={t('transfers.form.currency')}>
-                <Select
-                  value={currency}
-                  onValueChange={(v) => form.setValue('currency', v as 'TL' | 'USD')}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="TL">TL</SelectItem>
-                    <SelectItem value="USD">USD</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
             </div>
           </div>
         </Card>
 
-        {/* Classification */}
+        {/* ─── RIGHT CARD: Amount & Details ───────────────────── */}
         <Card padding="spacious">
-          <SectionHeader>{s.classification}</SectionHeader>
+          {/* Amount section */}
+          <SectionHeader icon={<CurrencyCircleDollar size={14} weight="bold" />}>
+            {s.amount}
+          </SectionHeader>
           <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field
-                label={t('transfers.form.type')}
-                error={form.formState.errors.type_id?.message}
-              >
-                <SearchableSelectField
-                  value={typeId}
-                  onValueChange={(v) => form.setValue('type_id', v)}
-                  placeholder={t('transfers.form.selectType')}
-                  options={transferTypeOptions}
-                  searchPlaceholder={t('transfers.form.searchInList')}
-                  noResultsText={t('transfers.form.noResults')}
-                />
-              </Field>
-              <Field
-                label={
-                  <span className="flex items-center gap-1">
-                    <UserCircle size={12} className="text-black/40" />
-                    {lang === 'tr' ? 'Çalışan' : 'Employee'}
-                  </span>
-                }
-              >
-                {employeeOptions.length === 0 ? (
-                  <p className="flex h-10 items-center rounded-xl border border-black/[0.07] bg-black/[0.02] px-3 text-xs text-black/35">
-                    {lang === 'tr'
-                      ? 'Aktif MT / Re-attention çalışanı yok'
-                      : 'No active MT / Re-attention employees'}
-                  </p>
-                ) : (
-                  <SearchableSelectField
-                    value={employeeId ? employeeId : '__none__'}
-                    onValueChange={(v) => form.setValue('employee_id', v === '__none__' ? '' : v)}
-                    placeholder={lang === 'tr' ? 'Seç (isteğe bağlı)' : 'Select (optional)'}
-                    options={[
-                      {
-                        value: '__none__',
-                        label: lang === 'tr' ? '— Çalışan yok —' : '— No employee —',
-                      },
-                      ...employeeOptions,
-                    ]}
-                    searchPlaceholder={t('transfers.form.searchInList')}
-                    noResultsText={t('transfers.form.noResults')}
-                  />
-                )}
-              </Field>
-            </div>
-
-            {/* FTD / STD toggle */}
-            <div>
-              <Label className="mb-1.5 block text-xs font-medium tracking-wide text-black/60">
-                {lang === 'tr' ? 'Yatırım Durumu' : 'Deposit Status'}
-              </Label>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    manualFtdRef.current = true
-                    form.setValue('is_first_deposit', true)
-                  }}
-                  className={cn(
-                    'flex-1 rounded-xl border px-3 py-2 text-sm font-medium transition-all',
-                    isFirstDeposit
-                      ? 'border-blue-500/30 bg-blue-500/10 text-blue-700'
-                      : 'border-black/[0.08] bg-black/[0.02] text-black/40 hover:bg-black/[0.04]',
-                  )}
-                >
-                  FTD
-                  <span className="ml-1 text-[10px] font-normal opacity-60">
-                    {lang === 'tr' ? '(İlk)' : '(First)'}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    manualFtdRef.current = true
-                    form.setValue('is_first_deposit', false)
-                  }}
-                  className={cn(
-                    'flex-1 rounded-xl border px-3 py-2 text-sm font-medium transition-all',
-                    !isFirstDeposit
-                      ? 'border-purple-500/30 bg-purple-500/10 text-purple-700'
-                      : 'border-black/[0.08] bg-black/[0.02] text-black/40 hover:bg-black/[0.04]',
-                  )}
-                >
-                  STD
-                  <span className="ml-1 text-[10px] font-normal opacity-60">
-                    {lang === 'tr' ? '(Tekrar)' : '(Return)'}
-                  </span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* ═══ RIGHT COLUMN ══════════════════════════════════════ */}
-      <div className="space-y-3">
-        {/* Amount */}
-        <Card padding="spacious">
-          <SectionHeader>{s.amount}</SectionHeader>
-          <div className="space-y-4">
-            {/* Category — DEP green / WD red */}
-            <Field
-              label={t('transfers.form.category')}
-              error={form.formState.errors.category_id?.message}
-            >
-              <div className="grid grid-cols-2 gap-2">
-                {categoryOptions.map((cat) => {
-                  const selected = categoryId === cat.id
-                  return (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => form.setValue('category_id', cat.id)}
-                      className={cn(
-                        'rounded-xl border px-3 py-3 text-sm font-semibold transition-all',
-                        selected &&
-                          cat.is_deposit &&
-                          'border-green-500/40 bg-green-500/10 text-green-700 shadow-sm',
-                        selected &&
-                          !cat.is_deposit &&
-                          'border-red-500/40 bg-red-500/10 text-red-600 shadow-sm',
-                        !selected &&
-                          'border-black/[0.08] bg-black/[0.02] text-black/50 hover:border-black/15 hover:bg-black/[0.04]',
-                      )}
-                    >
-                      {cat.name}
-                    </button>
-                  )
-                })}
-              </div>
-            </Field>
-
-            {/* Amount input */}
+            {/* Amount input — large */}
             <Field
               label={`${t('transfers.form.amount')} (${currency})`}
               error={form.formState.errors.raw_amount?.message}
@@ -685,10 +689,27 @@ export function TransferFormContent({
                 type="number"
                 min="0"
                 step="0.01"
+                inputSize="lg"
                 {...form.register('raw_amount', { valueAsNumber: true })}
                 placeholder="0.00"
-                className="text-lg font-semibold tabular-nums"
+                className="text-2xl font-bold tabular-nums"
               />
+            </Field>
+
+            {/* Currency */}
+            <Field label={t('transfers.form.currency')}>
+              <Select
+                value={currency}
+                onValueChange={(v) => form.setValue('currency', v as 'TL' | 'USD')}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TL">TL</SelectItem>
+                  <SelectItem value="USD">USD</SelectItem>
+                </SelectContent>
+              </Select>
             </Field>
 
             {/* Exchange rate bar */}
@@ -772,60 +793,99 @@ export function TransferFormContent({
               <p className="text-xs text-red">{form.formState.errors.exchange_rate.message}</p>
             )}
           </div>
-        </Card>
 
-        {/* References */}
-        <Card padding="spacious">
-          <SectionHeader>{s.references}</SectionHeader>
+          {/* Divider between Amount and Details */}
+          <div className="my-5" />
+
+          {/* Details section */}
+          <SectionHeader icon={<Tag size={14} weight="bold" />}>{s.details}</SectionHeader>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <Field label={t('transfers.form.crmId')}>
-                <Input
-                  {...form.register('crm_id')}
-                  placeholder={t('transfers.form.crmIdPlaceholder')}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field
+                label={t('transfers.form.type')}
+                error={form.formState.errors.type_id?.message}
+              >
+                <SearchableSelectField
+                  value={typeId}
+                  onValueChange={(v) => form.setValue('type_id', v)}
+                  placeholder={t('transfers.form.selectType')}
+                  options={transferTypeOptions}
+                  searchPlaceholder={t('transfers.form.searchInList')}
+                  noResultsText={t('transfers.form.noResults')}
                 />
               </Field>
-              <Field label={t('transfers.form.metaId')}>
-                <Input
-                  {...form.register('meta_id')}
-                  placeholder={t('transfers.form.metaIdPlaceholder')}
-                />
+              <Field
+                label={
+                  <span className="flex items-center gap-1">
+                    <UserCircle size={12} className="text-black/40" />
+                    {lang === 'tr' ? 'Çalışan' : 'Employee'}
+                  </span>
+                }
+              >
+                {employeeOptions.length === 0 ? (
+                  <p className="flex h-10 items-center rounded-xl border border-black/[0.07] bg-black/[0.02] px-3 text-xs text-black/35">
+                    {lang === 'tr'
+                      ? 'Aktif MT / Re-attention çalışanı yok'
+                      : 'No active MT / Re-attention employees'}
+                  </p>
+                ) : (
+                  <SearchableSelectField
+                    value={employeeId ? employeeId : '__none__'}
+                    onValueChange={(v) => form.setValue('employee_id', v === '__none__' ? '' : v)}
+                    placeholder={lang === 'tr' ? 'Seç (isteğe bağlı)' : 'Select (optional)'}
+                    options={[
+                      {
+                        value: '__none__',
+                        label: lang === 'tr' ? '— Çalışan yok —' : '-- No employee --',
+                      },
+                      ...employeeOptions,
+                    ]}
+                    searchPlaceholder={t('transfers.form.searchInList')}
+                    noResultsText={t('transfers.form.noResults')}
+                  />
+                )}
               </Field>
             </div>
+
             <Field label={t('transfers.form.notes')}>
               <textarea
                 {...form.register('notes')}
                 placeholder={t('transfers.form.notesPlaceholder')}
                 rows={3}
-                className={`${basicInputClasses} ${disabledInputClasses} ${focusInputClasses} w-full resize-none rounded-xl px-3 py-2.5 text-sm`}
+                className={cn(
+                  basicInputClasses,
+                  disabledInputClasses,
+                  focusInputClasses,
+                  'w-full resize-none rounded-xl px-3 py-2.5 text-sm',
+                )}
               />
             </Field>
           </div>
         </Card>
+      </div>
 
-        {/* Actions */}
-        <div className="flex items-center justify-between py-1">
-          <Button type="button" variant="outline" onClick={onDone}>
-            {t('transfers.form.cancel')}
-          </Button>
-          <div className="flex items-center gap-2">
-            {!isEdit && (
-              <Button
-                type="button"
-                variant="gray"
-                disabled={isSubmitting}
-                onClick={() => {
-                  submitModeRef.current = 'new'
-                  void handleSubmit()
-                }}
-              >
-                {isSubmitting ? t('transfers.form.saving') : t('transfers.form.saveAndNew')}
-              </Button>
-            )}
-            <Button type="submit" variant="filled" disabled={isSubmitting}>
-              {isSubmitting ? t('transfers.form.saving') : t('transfers.form.save')}
+      {/* ═══ ACTIONS — full-width ════════════════════════════════ */}
+      <div className="flex items-center justify-between py-1">
+        <Button type="button" variant="outline" onClick={onDone}>
+          {t('transfers.form.cancel')}
+        </Button>
+        <div className="flex items-center gap-2">
+          {!isEdit && (
+            <Button
+              type="button"
+              variant="gray"
+              disabled={isSubmitting}
+              onClick={() => {
+                submitModeRef.current = 'new'
+                void handleSubmit()
+              }}
+            >
+              {isSubmitting ? t('transfers.form.saving') : t('transfers.form.saveAndNew')}
             </Button>
-          </div>
+          )}
+          <Button type="submit" variant="filled" disabled={isSubmitting}>
+            {isSubmitting ? t('transfers.form.saving') : t('transfers.form.save')}
+          </Button>
         </div>
       </div>
     </form>
