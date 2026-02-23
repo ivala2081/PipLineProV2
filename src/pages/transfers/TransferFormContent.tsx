@@ -495,7 +495,7 @@ export function TransferFormContent({
                   className={cn(
                     'flex-1 rounded-lg px-3 py-2 text-center text-sm font-semibold transition-all',
                     isFirstDeposit
-                      ? 'bg-blue-600 text-white shadow-sm'
+                      ? 'bg-brand text-white shadow-sm'
                       : 'bg-black/[0.04] text-black/35 hover:bg-black/[0.07]',
                   )}
                 >
@@ -513,7 +513,7 @@ export function TransferFormContent({
                   className={cn(
                     'flex-1 rounded-lg px-3 py-2 text-center text-sm font-semibold transition-all',
                     !isFirstDeposit
-                      ? 'bg-purple-600 text-white shadow-sm'
+                      ? 'bg-brand text-white shadow-sm'
                       : 'bg-black/[0.04] text-black/35 hover:bg-black/[0.07]',
                   )}
                 >
