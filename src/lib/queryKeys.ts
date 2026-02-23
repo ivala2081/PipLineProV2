@@ -70,4 +70,17 @@ export const queryKeys = {
       [...queryKeys.presence.all, 'onlineCount', orgId ?? ''] as const,
     portfolio: (orgId: string) => [...queryKeys.presence.all, 'portfolio', orgId] as const,
   },
+  uniPayment: {
+    all: ['uniPayment'] as const,
+    balances: (pspId: string) => [...queryKeys.uniPayment.all, 'balances', pspId] as const,
+    accounts: (pspId: string) => [...queryKeys.uniPayment.all, 'accounts', pspId] as const,
+    transactions: (pspId: string, accountId: string, page: number) =>
+      [...queryKeys.uniPayment.all, 'transactions', pspId, accountId, page] as const,
+    invoices: (pspId: string, page: number) =>
+      [...queryKeys.uniPayment.all, 'invoices', pspId, page] as const,
+    payments: (pspId: string, page: number) =>
+      [...queryKeys.uniPayment.all, 'payments', pspId, page] as const,
+    syncStatus: (pspId: string) =>
+      [...queryKeys.uniPayment.all, 'syncStatus', pspId] as const,
+  },
 } as const

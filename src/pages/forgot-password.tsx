@@ -108,11 +108,13 @@ export function ForgotPasswordPage() {
 
       {/* Logo + Card */}
       <div className="flex w-full max-w-md flex-col items-center">
-        <img
-          src={resolvedTheme === 'dark' ? '/for-dark.png' : '/for-white.png'}
-          alt="PipLinePro"
-          className="mb-8 h-16 w-auto object-contain"
-        />
+        <div className="mb-8 flex flex-col items-center gap-1">
+          <div className="flex items-baseline gap-0.5">
+            <span className="text-3xl font-black tracking-tight text-black">PipLine</span>
+            <span className="text-3xl font-black tracking-tight text-brand">Pro</span>
+          </div>
+          <span className="text-[11px] font-medium tracking-[0.2em] text-black/30 uppercase">v2.1</span>
+        </div>
 
         <Card className="w-full space-y-lg bg-bg1 border border-black/10">
           {/* Header */}

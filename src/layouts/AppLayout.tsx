@@ -67,16 +67,14 @@ import { OnlineCount } from '@/components/OnlineCount'
 function SidebarBrand() {
   const { currentOrg } = useOrganization()
   const { state } = useSidebar()
-  const { resolvedTheme } = useTheme()
   const isCollapsed = state === 'collapsed'
   const logoSize = isCollapsed ? 'size-6' : 'size-8'
-  const appIcon = resolvedTheme === 'dark' ? '/2.png' : '/1.png'
 
   return (
     <div
       className={cn('flex items-center gap-2.5 py-1', isCollapsed ? 'justify-center px-0' : 'px-2')}
     >
-      {/* Logo mark - show org logo if available, otherwise app icon (collapsed) or full logo (expanded) */}
+      {/* Logo mark - show org logo if available, otherwise text mark */}
       {currentOrg?.logo_url ? (
         <div
           className={cn(
@@ -89,11 +87,11 @@ function SidebarBrand() {
       ) : (
         <div
           className={cn(
-            'flex aspect-square shrink-0 items-center justify-center overflow-hidden rounded-lg',
+            'flex aspect-square shrink-0 items-center justify-center rounded-lg bg-brand/15',
             logoSize,
           )}
         >
-          <img src={appIcon} alt="PipLinePro" className="size-full object-contain" />
+          <span className={cn('font-black text-brand leading-none', isCollapsed ? 'text-[9px]' : 'text-[11px]')}>PL</span>
         </div>
       )}
 
@@ -405,8 +403,6 @@ function UserMenu() {
 function HeaderOrgSwitcher() {
   const { t } = useTranslation('pages')
   const { currentOrg, organizations, selectOrg } = useOrganization()
-  const { resolvedTheme } = useTheme()
-  const headerIcon = resolvedTheme === 'dark' ? '/2.png' : '/1.png'
 
   if (organizations.length === 0) return null
 
@@ -423,7 +419,9 @@ function HeaderOrgSwitcher() {
               />
             </div>
           ) : (
-            <img src={headerIcon} alt="PipLinePro" className="size-4 object-contain" />
+            <div className="flex size-4 items-center justify-center rounded bg-brand/15 text-brand text-[8px] font-black leading-none">
+              PL
+            </div>
           )}
           <span className="max-w-[120px] truncate">
             {currentOrg?.name ?? t('layout.noOrganization')}

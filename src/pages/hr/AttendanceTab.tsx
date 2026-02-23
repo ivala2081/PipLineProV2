@@ -251,37 +251,6 @@ function MonthlySummary({
     })
   }, [employees, monthlyRecords])
 
-  const monthNames = {
-    tr: [
-      'Ocak',
-      'Şubat',
-      'Mart',
-      'Nisan',
-      'Mayıs',
-      'Haziran',
-      'Temmuz',
-      'Ağustos',
-      'Eylül',
-      'Ekim',
-      'Kasım',
-      'Aralık',
-    ],
-    en: [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ],
-  }
-
   if (isLoading) {
     return (
       <div className="space-y-2">
@@ -293,11 +262,7 @@ function MonthlySummary({
   }
 
   return (
-    <div className="space-y-sm">
-      <p className="text-xs font-semibold uppercase tracking-widest text-black/35">
-        {monthNames[lang][month - 1]} {year} — {lang === 'tr' ? 'Aylık Özet' : 'Monthly Summary'}
-      </p>
-      <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
+    <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
         <Table>
           <TableHeader>
             <TableRow>
@@ -344,7 +309,6 @@ function MonthlySummary({
             ))}
           </TableBody>
         </Table>
-      </div>
     </div>
   )
 }
@@ -361,6 +325,7 @@ interface AttendanceTabProps {
 
 export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps) {
   const [selectedDate, setSelectedDate] = useState(todayString())
+  const [view, setView] = useState<'daily' | 'summary'>('daily')
 
   const activeEmployees = useMemo(() => employees.filter((e) => e.is_active), [employees])
 
@@ -390,6 +355,56 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
     } else setSummaryMonth((m) => m + 1)
   }
 
+  /* ---- Monthly Summary Screen ---- */
+  if (view === 'summary') {
+    const monthNames = {
+      tr: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'],
+      en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+    }
+    return (
+      <div className="space-y-lg">
+        {/* Header row */}
+        <div className="flex items-center gap-sm">
+          <Button variant="outline" size="sm" onClick={() => setView('daily')}>
+            <CaretLeft size={14} className="mr-1" />
+            {lang === 'tr' ? 'Geri' : 'Back'}
+          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon-sm" onClick={prevMonth}>
+              <CaretLeft size={14} />
+            </Button>
+            <span className="min-w-[120px] text-center text-sm font-medium text-black">
+              {monthNames[lang][summaryMonth - 1]} {summaryYear}
+            </span>
+            <Button variant="ghost" size="icon-sm" onClick={nextMonth}>
+              <CaretRight size={14} />
+            </Button>
+          </div>
+        </div>
+
+        {activeEmployees.length === 0 ? (
+          <EmptyState
+            icon={CalendarBlank}
+            title={lang === 'tr' ? 'Aktif çalışan yok' : 'No active employees'}
+            description={
+              lang === 'tr'
+                ? 'Devam takibi için aktif çalışan eklenmeli.'
+                : 'Add active employees to track attendance.'
+            }
+          />
+        ) : (
+          <MonthlySummary
+            employees={activeEmployees}
+            year={summaryYear}
+            month={summaryMonth}
+            lang={lang}
+          />
+        )}
+      </div>
+    )
+  }
+
+  /* ---- Daily Screen (default) ---- */
   return (
     <div className="space-y-lg">
       {/* Date picker */}
@@ -404,6 +419,9 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
         />
         <Button variant="outline" size="sm" onClick={() => setSelectedDate(todayString())}>
           {lang === 'tr' ? 'Bugün' : 'Today'}
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => setView('summary')}>
+          {lang === 'tr' ? 'Aylık Özet' : 'Monthly Summary'}
         </Button>
       </div>
 
@@ -449,26 +467,6 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
               ))}
             </TableBody>
           </Table>
-        </div>
-      )}
-
-      {/* Monthly summary */}
-      {activeEmployees.length > 0 && (
-        <div className="space-y-sm">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon-sm" onClick={prevMonth}>
-              <CaretLeft size={14} />
-            </Button>
-            <Button variant="ghost" size="icon-sm" onClick={nextMonth}>
-              <CaretRight size={14} />
-            </Button>
-          </div>
-          <MonthlySummary
-            employees={activeEmployees}
-            year={summaryYear}
-            month={summaryMonth}
-            lang={lang}
-          />
         </div>
       )}
     </div>

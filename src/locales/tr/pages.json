@@ -751,6 +751,15 @@
     "backToList": "Kasalara Dön",
     "noPsps": "Henüz kasa yok",
     "noPspsDesc": "Başlamak için bir ödeme hizmet sağlayıcısı ekleyin.",
+    "tabs": {
+      "local": "Yerel",
+      "global": "Global"
+    },
+    "addDialog": {
+      "scopeLabel": "Kasa Tipi",
+      "providerLabel": "Sağlayıcı",
+      "selectProvider": "Sağlayıcı seç"
+    },
     "stats": {
       "outstanding": "Devir Bakiye",
       "settlements": "Toplam Tahsilat",
@@ -777,7 +786,12 @@
         "settlements": "Tahsilatlar",
         "monthly": "Aylık",
         "bloke": "Bloke",
-        "settings": "Ayarlar"
+        "settings": "Ayarlar",
+        "wallet": "Cüzdan",
+        "upTransactions": "İşlemler",
+        "invoices": "Faturalar",
+        "upPayments": "Ödemeler",
+        "sync": "Senkronizasyon"
       }
     },
     "monthly": {
@@ -907,6 +921,63 @@
     "rowType": {
       "transfer": "Transfer",
       "settlement": "Tahsilat"
+    },
+    "wallet": {
+      "title": "Cüzdan",
+      "balances": "Bakiyeler",
+      "accounts": "Hesaplar",
+      "available": "Kullanılabilir",
+      "frozen": "Dondurulmuş",
+      "total": "Toplam",
+      "depositAddress": "Yatırma Adresi",
+      "copyAddress": "Kopyala",
+      "copied": "Kopyalandı!",
+      "noAccounts": "Cüzdan hesabı bulunamadı"
+    },
+    "upTransactions": {
+      "title": "İşlemler",
+      "type": "Tür",
+      "amount": "Tutar",
+      "fee": "Komisyon",
+      "status": "Durum",
+      "date": "Tarih",
+      "noTransactions": "Henüz işlem yok",
+      "noTransactionsDesc": "UniPayment işlemleri burada görünecek."
+    },
+    "invoices": {
+      "title": "Faturalar",
+      "create": "Fatura Oluştur",
+      "orderId": "Sipariş ID",
+      "amount": "Tutar",
+      "currency": "Para Birimi",
+      "status": "Durum",
+      "invoiceUrl": "Fatura Linki",
+      "noInvoices": "Henüz fatura yok",
+      "noInvoicesDesc": "Kripto ödeme almak için fatura oluşturun."
+    },
+    "upPayments": {
+      "title": "Ödemeler",
+      "create": "Ödeme Oluştur",
+      "fromAccount": "Kaynak Hesap",
+      "amount": "Tutar",
+      "status": "Durum",
+      "cancel": "İptal Et",
+      "cancelConfirm": "Bu ödemeyi iptal etmek istediğinize emin misiniz?",
+      "noPayments": "Henüz ödeme yok",
+      "noPaymentsDesc": "Giden ödemeler burada görünecek."
+    },
+    "sync": {
+      "title": "Senkronizasyon",
+      "syncNow": "Şimdi Senkronize Et",
+      "syncing": "Senkronize ediliyor...",
+      "lastSync": "Son Senkronizasyon",
+      "status": "Durum",
+      "idle": "Hazır",
+      "running": "Çalışıyor",
+      "error": "Hata",
+      "neverSynced": "Hiç senkronize edilmedi",
+      "syncSuccess": "Senkronizasyon tamamlandı: {{count}} yeni işlem",
+      "syncError": "Senkronizasyon başarısız: {{error}}"
     },
     "settings": {
       "status": "Durum",

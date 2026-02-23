@@ -21,6 +21,8 @@ export type HrEmployeeRole =
   | 'Social Media'
   | 'Sales Development'
   | 'Programmer'
+export type PspScope = 'local' | 'global'
+export type PspProvider = 'unipayment'
 export type HrBonusType = 'fixed' | 'percentage' | 'tiered' | 'custom'
 export type HrAttendanceStatus = 'present' | 'absent' | 'late' | 'half_day'
 export type HrDocumentType =
@@ -687,6 +689,8 @@ export interface Database {
           is_active: boolean
           is_internal: boolean
           currency: string
+          psp_scope: PspScope
+          provider: PspProvider | null
           created_at: string
           updated_at: string
         }
@@ -698,6 +702,8 @@ export interface Database {
           is_active?: boolean
           is_internal?: boolean
           currency?: string
+          psp_scope?: PspScope
+          provider?: PspProvider | null
           created_at?: string
           updated_at?: string
         }
@@ -709,6 +715,8 @@ export interface Database {
           is_active?: boolean
           is_internal?: boolean
           currency?: string
+          psp_scope?: PspScope
+          provider?: PspProvider | null
           created_at?: string
           updated_at?: string
         }
@@ -858,6 +866,7 @@ export interface Database {
           commission_rate_snapshot: number | null
           employee_id: string | null
           is_first_deposit: boolean
+          external_transaction_id: string | null
           created_by: string | null
           updated_by: string | null
           created_at: string
@@ -884,6 +893,7 @@ export interface Database {
           commission_rate_snapshot?: number | null
           employee_id?: string | null
           is_first_deposit?: boolean
+          external_transaction_id?: string | null
           created_by?: string | null
           updated_by?: string | null
           created_at?: string
@@ -910,6 +920,7 @@ export interface Database {
           commission_rate_snapshot?: number | null
           employee_id?: string | null
           is_first_deposit?: boolean
+          external_transaction_id?: string | null
           created_by?: string | null
           updated_by?: string | null
           created_at?: string
@@ -1279,6 +1290,55 @@ export interface Database {
           },
         ]
       }
+      /* ──────────── UniPayment Sync ──────────── */
+      unipayment_sync_log: {
+        Row: {
+          id: string
+          psp_id: string
+          organization_id: string
+          last_synced_at: string
+          last_txn_id: string | null
+          sync_status: 'idle' | 'running' | 'error'
+          error_message: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          psp_id: string
+          organization_id: string
+          last_synced_at?: string
+          last_txn_id?: string | null
+          sync_status?: 'idle' | 'running' | 'error'
+          error_message?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          psp_id?: string
+          organization_id?: string
+          last_synced_at?: string
+          last_txn_id?: string | null
+          sync_status?: 'idle' | 'running' | 'error'
+          error_message?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'unipayment_sync_log_psp_id_fkey'
+            columns: ['psp_id']
+            isOneToOne: true
+            referencedRelation: 'psps'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'unipayment_sync_log_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       /* ──────────── Security Tables ──────────── */
       trusted_devices: {
         Row: {
@@ -1414,6 +1474,9 @@ export interface Database {
           commission_rate: number
           is_active: boolean
           is_internal: boolean
+          currency: string
+          psp_scope: PspScope
+          provider: PspProvider | null
           total_deposits: number
           total_withdrawals: number
           total_commission: number
@@ -1463,3 +1526,4 @@ export type PspSettlement = Database['public']['Tables']['psp_settlements']['Row
 export type TrustedDevice = Database['public']['Tables']['trusted_devices']['Row']
 export type LoginAttempt = Database['public']['Tables']['login_attempts']['Row']
 export type CaptchaChallenge = Database['public']['Tables']['captcha_challenges']['Row']
+export type UniPaymentSyncLog = Database['public']['Tables']['unipayment_sync_log']['Row']

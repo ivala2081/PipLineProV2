@@ -70,6 +70,11 @@ import { settlementFormSchema, type SettlementFormValues } from '@/schemas/pspSe
 import type { PspSettlement } from '@/lib/database.types'
 import { MonthlyTab } from './PspMonthlyTab'
 import { BlokeTab } from './PspBlokeTab'
+import { UniPaymentWalletTab } from './UniPaymentWalletTab'
+import { UniPaymentTransactionsTab } from './UniPaymentTransactionsTab'
+import { UniPaymentInvoicesTab } from './UniPaymentInvoicesTab'
+import { UniPaymentPaymentsTab } from './UniPaymentPaymentsTab'
+import { UniPaymentSyncTab } from './UniPaymentSyncTab'
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -1378,6 +1383,14 @@ export function PspDetailPage() {
 
   const { psps, isLoading } = usePspDashboardQuery()
   const psp = psps.find((p) => p.psp_id === pspId)
+  const isUniPayment = psp?.provider === 'unipayment'
+
+  // Set default tab to 'wallet' for UniPayment PSPs
+  useEffect(() => {
+    if (psp && isUniPayment && activeTab === 'ledger') {
+      setActiveTab('wallet')
+    }
+  }, [psp, isUniPayment]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const localeTag = locale === 'tr' ? 'tr-TR' : 'en-US'
 
@@ -1482,14 +1495,26 @@ export function PspDetailPage() {
                       {t('psps.settings.internalTag')}
                     </Tag>
                   )}
+                  {psp.psp_scope === 'global' && (
+                    <Tag variant="cyan" className="text-[11px]">
+                      Global
+                    </Tag>
+                  )}
+                  {psp.provider && (
+                    <Tag variant="blue" className="text-[11px]">
+                      {psp.provider === 'unipayment' ? 'UniPayment' : psp.provider}
+                    </Tag>
+                  )}
                 </div>
                 <div className="mt-1 flex items-center gap-3">
-                  <span className="text-xs text-black/50">
-                    {t('psps.card.commission')}:{' '}
-                    <span className="font-semibold text-black/70">
-                      {(psp.commission_rate * 100).toFixed(1)}%
+                  {!isUniPayment && (
+                    <span className="text-xs text-black/50">
+                      {t('psps.card.commission')}:{' '}
+                      <span className="font-semibold text-black/70">
+                        {(psp.commission_rate * 100).toFixed(1)}%
+                      </span>
                     </span>
-                  </span>
+                  )}
                   {psp.last_settlement_date && (
                     <>
                       <span className="text-black/20">·</span>
@@ -1564,14 +1589,29 @@ export function PspDetailPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <TabsList>
+            {isUniPayment && (
+              <>
+                <TabsTrigger value="wallet">{t('psps.detail.tabs.wallet', 'Wallet')}</TabsTrigger>
+                <TabsTrigger value="up-transactions">{t('psps.detail.tabs.upTransactions', 'Transactions')}</TabsTrigger>
+                <TabsTrigger value="invoices">{t('psps.detail.tabs.invoices', 'Invoices')}</TabsTrigger>
+                <TabsTrigger value="up-payments">{t('psps.detail.tabs.upPayments', 'Payments')}</TabsTrigger>
+              </>
+            )}
             <TabsTrigger value="ledger">{t('psps.detail.tabs.ledger', 'Ledger')}</TabsTrigger>
-            {!psp.is_internal && (
+            {!psp.is_internal && !isUniPayment && (
               <TabsTrigger value="settlements">
                 {t('psps.detail.tabs.settlements', 'Settlements')}
               </TabsTrigger>
             )}
-            <TabsTrigger value="monthly">{t('psps.detail.tabs.monthly', 'Monthly')}</TabsTrigger>
-            <TabsTrigger value="bloke">{t('psps.detail.tabs.bloke', 'Bloke')}</TabsTrigger>
+            {!isUniPayment && (
+              <TabsTrigger value="monthly">{t('psps.detail.tabs.monthly', 'Monthly')}</TabsTrigger>
+            )}
+            {!isUniPayment && (
+              <TabsTrigger value="bloke">{t('psps.detail.tabs.bloke', 'Bloke')}</TabsTrigger>
+            )}
+            {isUniPayment && (
+              <TabsTrigger value="sync">{t('psps.detail.tabs.sync', 'Sync')}</TabsTrigger>
+            )}
             <TabsTrigger value="settings">{t('psps.detail.tabs.settings', 'Settings')}</TabsTrigger>
           </TabsList>
           <div className="flex items-center gap-2">
@@ -1632,6 +1672,24 @@ export function PspDetailPage() {
           </div>
         </div>
 
+        {/* UniPayment-specific tabs */}
+        {isUniPayment && (
+          <>
+            <TabsContent value="wallet">
+              <UniPaymentWalletTab pspId={pspId!} />
+            </TabsContent>
+            <TabsContent value="up-transactions">
+              <UniPaymentTransactionsTab pspId={pspId!} />
+            </TabsContent>
+            <TabsContent value="invoices">
+              <UniPaymentInvoicesTab pspId={pspId!} isAdmin={isAdmin} />
+            </TabsContent>
+            <TabsContent value="up-payments">
+              <UniPaymentPaymentsTab pspId={pspId!} isAdmin={isAdmin} />
+            </TabsContent>
+          </>
+        )}
+
         <TabsContent value="ledger">
           <LedgerTab
             pspId={pspId!}
@@ -1644,19 +1702,29 @@ export function PspDetailPage() {
           />
         </TabsContent>
 
-        {!psp.is_internal && (
+        {!psp.is_internal && !isUniPayment && (
           <TabsContent value="settlements">
             <SettlementsTab pspId={pspId!} isAdmin={isAdmin} />
           </TabsContent>
         )}
 
-        <TabsContent value="monthly">
-          <MonthlyTab pspId={pspId!} pspName={psp.psp_name} currency={psp.currency ?? 'TL'} />
-        </TabsContent>
+        {!isUniPayment && (
+          <TabsContent value="monthly">
+            <MonthlyTab pspId={pspId!} pspName={psp.psp_name} currency={psp.currency ?? 'TL'} />
+          </TabsContent>
+        )}
 
-        <TabsContent value="bloke">
-          <BlokeTab pspId={pspId!} isAdmin={isAdmin} />
-        </TabsContent>
+        {!isUniPayment && (
+          <TabsContent value="bloke">
+            <BlokeTab pspId={pspId!} isAdmin={isAdmin} />
+          </TabsContent>
+        )}
+
+        {isUniPayment && (
+          <TabsContent value="sync">
+            <UniPaymentSyncTab pspId={pspId!} isAdmin={isAdmin} />
+          </TabsContent>
+        )}
 
         <TabsContent value="settings">
           <SettingsTab

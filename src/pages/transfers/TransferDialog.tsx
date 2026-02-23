@@ -308,11 +308,7 @@ export function TransferDialog({
     [lookupData.categories, categoryId],
   )
 
-  const selectedType = useMemo(
-    () => lookupData.transferTypes.find((tt) => tt.id === typeId),
-    [lookupData.transferTypes, typeId],
-  )
-  const showEmployeeSection = !!typeId && selectedType?.name?.toLowerCase() === 'client'
+  const showEmployeeSection = true
 
   const paymentMethodOptions = useMemo<SelectOption[]>(
     () =>
@@ -688,12 +684,6 @@ export function TransferDialog({
               value={typeId}
               onValueChange={(value) => {
                 form.setValue('type_id', value)
-                const typeName = lookupData.transferTypes
-                  .find((tt) => tt.id === value)
-                  ?.name?.toLowerCase()
-                if (typeName !== 'client') {
-                  form.setValue('employee_id', '')
-                }
               }}
               placeholder={t('transfers.form.selectType')}
               options={transferTypeOptions}

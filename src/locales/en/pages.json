@@ -751,6 +751,15 @@
     "backToList": "Back to PSPs",
     "noPsps": "No PSPs yet",
     "noPspsDesc": "Add a payment service provider to get started.",
+    "tabs": {
+      "local": "Local",
+      "global": "Global"
+    },
+    "addDialog": {
+      "scopeLabel": "PSP Type",
+      "providerLabel": "Provider",
+      "selectProvider": "Select provider"
+    },
     "stats": {
       "outstanding": "Outstanding Balance",
       "settlements": "Total Settlements",
@@ -777,7 +786,12 @@
         "settlements": "Settlements",
         "monthly": "Monthly",
         "bloke": "Bloke",
-        "settings": "Settings"
+        "settings": "Settings",
+        "wallet": "Wallet",
+        "upTransactions": "Transactions",
+        "invoices": "Invoices",
+        "upPayments": "Payments",
+        "sync": "Sync"
       }
     },
     "monthly": {
@@ -907,6 +921,63 @@
     "rowType": {
       "transfer": "Transfer",
       "settlement": "Settlement"
+    },
+    "wallet": {
+      "title": "Wallet",
+      "balances": "Balances",
+      "accounts": "Accounts",
+      "available": "Available",
+      "frozen": "Frozen",
+      "total": "Total",
+      "depositAddress": "Deposit Address",
+      "copyAddress": "Copy",
+      "copied": "Copied!",
+      "noAccounts": "No wallet accounts found"
+    },
+    "upTransactions": {
+      "title": "Transactions",
+      "type": "Type",
+      "amount": "Amount",
+      "fee": "Fee",
+      "status": "Status",
+      "date": "Date",
+      "noTransactions": "No transactions yet",
+      "noTransactionsDesc": "UniPayment transactions will appear here."
+    },
+    "invoices": {
+      "title": "Invoices",
+      "create": "Create Invoice",
+      "orderId": "Order ID",
+      "amount": "Amount",
+      "currency": "Currency",
+      "status": "Status",
+      "invoiceUrl": "Invoice Link",
+      "noInvoices": "No invoices yet",
+      "noInvoicesDesc": "Create invoices to accept crypto payments."
+    },
+    "upPayments": {
+      "title": "Payments",
+      "create": "Create Payment",
+      "fromAccount": "From Account",
+      "amount": "Amount",
+      "status": "Status",
+      "cancel": "Cancel",
+      "cancelConfirm": "Are you sure you want to cancel this payment?",
+      "noPayments": "No payments yet",
+      "noPaymentsDesc": "Outgoing payments will appear here."
+    },
+    "sync": {
+      "title": "Sync",
+      "syncNow": "Sync Now",
+      "syncing": "Syncing...",
+      "lastSync": "Last Synced",
+      "status": "Status",
+      "idle": "Idle",
+      "running": "Running",
+      "error": "Error",
+      "neverSynced": "Never synced",
+      "syncSuccess": "Sync completed: {{count}} new transactions",
+      "syncError": "Sync failed: {{error}}"
     },
     "settings": {
       "status": "Status",
