@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -22,6 +22,7 @@ import {
 } from '@ds'
 import { useToast } from '@/hooks/useToast'
 import { useHrMutations, HR_EMPLOYEE_ROLES, type HrEmployee } from '@/hooks/queries/useHrQuery'
+import { formatAmount, parseAmount, numberToDisplay, amountPlaceholder } from '@/lib/formatAmount'
 
 /* ------------------------------------------------------------------ */
 /*  Form schema                                                         */
@@ -64,6 +65,7 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
   const { toast } = useToast()
   const lang = i18n.language === 'tr' ? 'tr' : 'en'
   const isEdit = !!employee
+  const [salaryDisplay, setSalaryDisplay] = useState('')
 
   const { createEmployee, updateEmployee } = useHrMutations()
 
@@ -94,6 +96,7 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
           hire_date: employee.hire_date ?? '',
           notes: employee.notes ?? '',
         })
+        setSalaryDisplay(numberToDisplay(employee.salary_tl ?? 0, lang))
       } else {
         form.reset({
           full_name: '',
@@ -105,9 +108,10 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
           hire_date: '',
           notes: '',
         })
+        setSalaryDisplay('')
       }
     }
-  }, [open, employee, form])
+  }, [open, employee, form, lang])
 
   const handleSubmit = form.handleSubmit(async (data) => {
     try {
@@ -212,11 +216,15 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
                   {lang === 'tr' ? 'Maaş (₺)' : 'Salary (₺)'}
                 </Label>
                 <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  {...form.register('salary_tl')}
-                  placeholder="0.00"
+                  type="text"
+                  inputMode="decimal"
+                  value={salaryDisplay}
+                  onChange={(e) => {
+                    const formatted = formatAmount(e.target.value, lang)
+                    setSalaryDisplay(formatted)
+                    form.setValue('salary_tl', parseAmount(formatted, lang), { shouldValidate: true })
+                  }}
+                  placeholder={amountPlaceholder(lang)}
                 />
                 {form.formState.errors.salary_tl && (
                   <p className={compactError}>{form.formState.errors.salary_tl.message}</p>

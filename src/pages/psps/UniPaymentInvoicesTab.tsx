@@ -30,8 +30,13 @@ import {
   useCreateInvoiceMutation,
 } from '@/hooks/queries/useUniPaymentQuery'
 import type { UniPaymentInvoiceStatus } from '@/lib/uniPaymentTypes'
+import {
+  formatAmount as formatAmountInput,
+  parseAmount as parseAmountInput,
+  amountPlaceholder,
+} from '@/lib/formatAmount'
 
-function formatAmount(value: number): string {
+function formatDisplayAmount(value: number): string {
   return value.toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 6,
@@ -67,7 +72,8 @@ interface Props {
 }
 
 export function UniPaymentInvoicesTab({ pspId, isAdmin }: Props) {
-  const { t } = useTranslation('pages')
+  const { t, i18n } = useTranslation('pages')
+  const lang = (i18n.language === 'tr' ? 'tr' : 'en') as 'tr' | 'en'
   const [page, setPage] = useState(1)
   const [createOpen, setCreateOpen] = useState(false)
 
@@ -95,7 +101,7 @@ export function UniPaymentInvoicesTab({ pspId, isAdmin }: Props) {
     try {
       await createMutation.mutateAsync({
         order_id: orderId.trim(),
-        price_amount: Number(amount),
+        price_amount: parseAmountInput(amount, lang),
         price_currency: currency,
         title: title.trim() || undefined,
       })
@@ -158,7 +164,7 @@ export function UniPaymentInvoicesTab({ pspId, isAdmin }: Props) {
                   <TableRow key={inv.invoice_id}>
                     <TableCell className="font-medium">{inv.order_id}</TableCell>
                     <TableCell className="text-right font-medium tabular-nums">
-                      {formatAmount(inv.price_amount)}
+                      {formatDisplayAmount(inv.price_amount)}
                     </TableCell>
                     <TableCell>
                       <Tag variant="blue" className="text-[10px]">{inv.price_currency}</Tag>
@@ -235,12 +241,11 @@ export function UniPaymentInvoicesTab({ pspId, isAdmin }: Props) {
             <div className="space-y-sm">
               <Label>{t('psps.invoices.amount')}</Label>
               <Input
-                type="number"
-                step="0.01"
-                min="0"
+                type="text"
+                inputMode="decimal"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="100.00"
+                onChange={(e) => setAmount(formatAmountInput(e.target.value, lang))}
+                placeholder={amountPlaceholder(lang)}
               />
             </div>
             <div className="space-y-sm">

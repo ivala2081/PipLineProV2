@@ -1,4 +1,4 @@
-import { useReducer, useCallback, useState } from 'react'
+import { useReducer, useCallback, useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -17,6 +17,7 @@ import { supabase } from '@/lib/supabase'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { queryKeys } from '@/lib/queryKeys'
 import { localDayStart, localDayEnd } from '@/lib/date'
+import { formatAmount, parseAmount, amountPlaceholder } from '@/lib/formatAmount'
 import type { TransferRow } from '@/hooks/useTransfers'
 import { TransferAuditDialog } from './TransferAuditDialog'
 import { TransferRowItem } from './TransferRowItem'
@@ -160,10 +161,17 @@ export function TransfersTable({
 }: TransfersTableProps) {
   const { t, i18n } = useTranslation('pages')
   const lang = i18n.language
+  const amtLocale = (lang === 'tr' ? 'tr' : 'en') as 'tr' | 'en'
   const { currentOrg } = useOrganization()
   const queryClient = useQueryClient()
   const [state, dispatch] = useReducer(reducer, initialState)
   const [filtersOpen, setFiltersOpen] = useState(false)
+
+  // Amount filter display states
+  const [amountMinDisplay, setAmountMinDisplay] = useState('')
+  const [amountMaxDisplay, setAmountMaxDisplay] = useState('')
+  useEffect(() => { if (!filters.amountMin) setAmountMinDisplay('') }, [filters.amountMin])
+  useEffect(() => { if (!filters.amountMax) setAmountMaxDisplay('') }, [filters.amountMax])
 
   const totalPages = Math.ceil(total / pageSize)
   const from = (page - 1) * pageSize + 1
@@ -427,13 +435,17 @@ export function TransfersTable({
                 {t('transfers.filters.minAmount', 'Min Amount')}
               </label>
               <Input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 inputSize="sm"
-                placeholder="0.00"
-                step="0.01"
-                min="0"
-                value={filters.amountMin ?? ''}
-                onChange={(e) => onFilterChange('amountMin', e.target.value || null)}
+                placeholder={amountPlaceholder(amtLocale)}
+                value={amountMinDisplay}
+                onChange={(e) => {
+                  const formatted = formatAmount(e.target.value, amtLocale)
+                  setAmountMinDisplay(formatted)
+                  const num = parseAmount(formatted, amtLocale)
+                  onFilterChange('amountMin', num ? String(num) : null)
+                }}
                 className="h-9 w-full text-xs"
               />
             </div>
@@ -444,13 +456,17 @@ export function TransfersTable({
                 {t('transfers.filters.maxAmount', 'Max Amount')}
               </label>
               <Input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 inputSize="sm"
-                placeholder="0.00"
-                step="0.01"
-                min="0"
-                value={filters.amountMax ?? ''}
-                onChange={(e) => onFilterChange('amountMax', e.target.value || null)}
+                placeholder={amountPlaceholder(amtLocale)}
+                value={amountMaxDisplay}
+                onChange={(e) => {
+                  const formatted = formatAmount(e.target.value, amtLocale)
+                  setAmountMaxDisplay(formatted)
+                  const num = parseAmount(formatted, amtLocale)
+                  onFilterChange('amountMax', num ? String(num) : null)
+                }}
                 className="h-9 w-full text-xs"
               />
             </div>

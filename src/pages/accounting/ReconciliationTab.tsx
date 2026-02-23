@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { formatAmount, parseAmount, numberToDisplay, amountPlaceholder } from '@/lib/formatAmount'
 import { useTranslation } from 'react-i18next'
 import {
   CaretLeft,
@@ -255,44 +256,59 @@ function SettingsPanel({
     teyit_entries: TeyitEntry[]
   }) => Promise<void>
 }) {
+  const amtLocale = (lang === 'tr' ? 'tr' : 'en') as 'tr' | 'en'
   const [devirUsdt, setDevirUsdt] = useState('')
   const [devirTl, setDevirTl] = useState('')
   const [devirUsd, setDevirUsd] = useState('')
   const [kur, setKur] = useState('')
   const [beklTahs, setBeklTahs] = useState('')
   const [teyitEntries, setTeyitEntries] = useState<TeyitEntry[]>([])
+  const [teyitAmountDisplays, setTeyitAmountDisplays] = useState<string[]>([])
   const [prevConfig, setPrevConfig] = useState(config)
 
   // Initialize from config
   if (config !== prevConfig) {
     setPrevConfig(config)
-    setDevirUsdt(config?.devir_usdt != null ? String(config.devir_usdt) : '')
-    setDevirTl(config?.devir_nakit_tl != null ? String(config.devir_nakit_tl) : '')
-    setDevirUsd(config?.devir_nakit_usd != null ? String(config.devir_nakit_usd) : '')
+    setDevirUsdt(config?.devir_usdt != null ? numberToDisplay(config.devir_usdt, amtLocale) : '')
+    setDevirTl(config?.devir_nakit_tl != null ? numberToDisplay(config.devir_nakit_tl, amtLocale) : '')
+    setDevirUsd(config?.devir_nakit_usd != null ? numberToDisplay(config.devir_nakit_usd, amtLocale) : '')
     setKur(config?.kur != null ? String(config.kur) : '')
     setBeklTahs(
-      config?.bekl_tahs != null && Number(config.bekl_tahs) !== 0 ? String(config.bekl_tahs) : '',
+      config?.bekl_tahs != null && Number(config.bekl_tahs) !== 0 ? numberToDisplay(config.bekl_tahs, amtLocale) : '',
     )
-    setTeyitEntries(config?.teyit_entries ?? [])
+    const entries = config?.teyit_entries ?? []
+    setTeyitEntries(entries)
+    setTeyitAmountDisplays(entries.map((e) => numberToDisplay(e.amount, amtLocale)))
   }
 
   const handleAddTeyit = () => {
     setTeyitEntries((prev) => [...prev, { label: '', amount: 0, currency: 'USD' }])
+    setTeyitAmountDisplays((prev) => [...prev, ''])
   }
 
   const handleRemoveTeyit = (index: number) => {
     setTeyitEntries((prev) => prev.filter((_, i) => i !== index))
+    setTeyitAmountDisplays((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleTeyitChange = (index: number, field: keyof TeyitEntry, value: string) => {
-    setTeyitEntries((prev) =>
-      prev.map((entry, i) => {
-        if (i !== index) return entry
-        if (field === 'amount') return { ...entry, amount: Number(value) || 0 }
-        if (field === 'currency') return { ...entry, currency: value as 'USD' | 'TL' }
-        return { ...entry, [field]: value }
-      }),
-    )
+    if (field === 'amount') {
+      const formatted = formatAmount(value, amtLocale)
+      setTeyitAmountDisplays((prev) => prev.map((d, i) => (i === index ? formatted : d)))
+      setTeyitEntries((prev) =>
+        prev.map((entry, i) =>
+          i === index ? { ...entry, amount: parseAmount(formatted, amtLocale) } : entry,
+        ),
+      )
+    } else {
+      setTeyitEntries((prev) =>
+        prev.map((entry, i) => {
+          if (i !== index) return entry
+          if (field === 'currency') return { ...entry, currency: value as 'USD' | 'TL' }
+          return { ...entry, [field]: value }
+        }),
+      )
+    }
   }
 
   const handleSave = async () => {
@@ -304,22 +320,11 @@ function SettingsPanel({
       return
     }
 
-    // Validate all numeric fields are valid numbers
-    const numericFields = [
-      { value: devirUsdt, label: 'USDT Devir' },
-      { value: devirTl, label: 'Cash TL Devir' },
-      { value: devirUsd, label: 'Cash USD Devir' },
-      { value: beklTahs, label: 'Expected Collections' },
-    ]
-
-    for (const field of numericFields) {
-      if (field.value && isNaN(Number(field.value))) {
-        alert(
-          `${field.label}: ${t('accounting.reconciliation.settings.invalidNumber', 'Invalid number')}`,
-        )
-        return
-      }
-    }
+    // Parse formatted amounts
+    const parsedDevirUsdt = devirUsdt ? parseAmount(devirUsdt, amtLocale) : null
+    const parsedDevirTl = devirTl ? parseAmount(devirTl, amtLocale) : null
+    const parsedDevirUsd = devirUsd ? parseAmount(devirUsd, amtLocale) : null
+    const parsedBeklTahs = beklTahs ? parseAmount(beklTahs, amtLocale) : null
 
     // Validate TEYİT entries
     const validTeyitEntries = teyitEntries.filter((e) => e.label.trim())
@@ -338,11 +343,11 @@ function SettingsPanel({
     await onSave({
       year,
       month,
-      devir_usdt: devirUsdt ? Number(devirUsdt) : null,
-      devir_nakit_tl: devirTl ? Number(devirTl) : null,
-      devir_nakit_usd: devirUsd ? Number(devirUsd) : null,
+      devir_usdt: parsedDevirUsdt,
+      devir_nakit_tl: parsedDevirTl,
+      devir_nakit_usd: parsedDevirUsd,
       kur: kur ? Number(kur) : null,
-      bekl_tahs: beklTahs ? Number(beklTahs) : null,
+      bekl_tahs: parsedBeklTahs,
       teyit_entries: validTeyitEntries,
     })
   }
@@ -373,11 +378,11 @@ function SettingsPanel({
             <div key={label}>
               <label className="mb-1 block text-xs text-black/50">{label}</label>
               <input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 className={inputClass}
                 value={value}
-                onChange={(e) => onChange(e.target.value)}
+                onChange={(e) => onChange(formatAmount(e.target.value, amtLocale))}
                 placeholder={t('accounting.reconciliation.settings.autoCalculated')}
               />
             </div>
@@ -409,12 +414,12 @@ function SettingsPanel({
             {t('accounting.reconciliation.fields.beklTahs')}
           </label>
           <input
-            type="number"
-            step="0.01"
+            type="text"
+            inputMode="decimal"
             className={inputClass}
             value={beklTahs}
-            onChange={(e) => setBeklTahs(e.target.value)}
-            placeholder="0.00"
+            onChange={(e) => setBeklTahs(formatAmount(e.target.value, amtLocale))}
+            placeholder={amountPlaceholder(amtLocale)}
           />
         </div>
       </div>
@@ -447,12 +452,12 @@ function SettingsPanel({
                   placeholder={t('accounting.reconciliation.teyit.label')}
                 />
                 <input
-                  type="number"
-                  step="0.01"
+                  type="text"
+                  inputMode="decimal"
                   className={`${inputClass} w-32`}
-                  value={entry.amount || ''}
+                  value={teyitAmountDisplays[i] ?? ''}
                   onChange={(e) => handleTeyitChange(i, 'amount', e.target.value)}
-                  placeholder="0.00"
+                  placeholder={amountPlaceholder(amtLocale)}
                 />
                 <select
                   className={`${inputClass} w-20`}

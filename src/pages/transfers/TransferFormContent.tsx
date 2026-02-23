@@ -13,6 +13,7 @@ import {
   UserCircle,
 } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
+import { formatAmount, parseAmount, numberToDisplay, amountPlaceholder } from '@/lib/formatAmount'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import type { TransferRow } from '@/hooks/useTransfers'
 import type { useLookupQueries } from '@/hooks/queries/useLookupQueries'
@@ -230,6 +231,7 @@ export function TransferFormContent({
 
   const [manualRate, setManualRate] = useState(false)
   const manualFtdRef = useRef(false)
+  const [amountDisplay, setAmountDisplay] = useState('')
 
   const { data: employees = [] } = useHrEmployeesQuery()
 
@@ -237,6 +239,13 @@ export function TransferFormContent({
     resolver: zodResolver(transferFormSchema),
     defaultValues: getDefaultFormValues(),
   })
+
+  // Re-format amount display when locale changes
+  useEffect(() => {
+    const current = form.getValues('raw_amount')
+    if (current) setAmountDisplay(numberToDisplay(current, lang))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang])
 
   /* ── Exchange rate ────────────────────────────────────────── */
   const { rate: fetchedRate, isError: rateError } = useExchangeRateQuery()
@@ -276,6 +285,7 @@ export function TransferFormContent({
           (transfer as TransferRow & { is_first_deposit?: boolean }).is_first_deposit ?? false,
         notes: transfer.notes ?? '',
       })
+      setAmountDisplay(numberToDisplay(Math.abs(transfer.amount), lang))
     } else {
       const defaults = getDefaultFormValues()
       const remembered = loadRememberedFields(currentOrg?.id)
@@ -285,6 +295,7 @@ export function TransferFormContent({
         exchange_rate: normalizedFetchedRate ?? defaults.exchange_rate,
         transfer_date: defaults.transfer_date,
       })
+      setAmountDisplay('')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transferId])
@@ -423,6 +434,7 @@ export function TransferFormContent({
           exchange_rate: normalizedFetchedRate ?? defaults.exchange_rate,
           transfer_date: defaults.transfer_date,
         })
+        setAmountDisplay('')
         return
       }
       onDone()
@@ -633,12 +645,18 @@ export function TransferFormContent({
               error={form.formState.errors.raw_amount?.message}
             >
               <Input
-                type="number"
-                min="0"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 inputSize="lg"
-                {...form.register('raw_amount', { valueAsNumber: true })}
-                placeholder="0.00"
+                value={amountDisplay}
+                onChange={(e) => {
+                  const formatted = formatAmount(e.target.value, lang)
+                  setAmountDisplay(formatted)
+                  form.setValue('raw_amount', parseAmount(formatted, lang), {
+                    shouldValidate: true,
+                  })
+                }}
+                placeholder={amountPlaceholder(lang)}
                 className="text-2xl font-bold tabular-nums"
               />
             </Field>

@@ -32,8 +32,13 @@ import {
   useCancelPaymentMutation,
 } from '@/hooks/queries/useUniPaymentQuery'
 import type { UniPaymentPaymentStatus } from '@/lib/uniPaymentTypes'
+import {
+  formatAmount as formatAmountInput,
+  parseAmount as parseAmountInput,
+  amountPlaceholder,
+} from '@/lib/formatAmount'
 
-function formatAmount(value: number): string {
+function formatDisplayAmount(value: number): string {
   return value.toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 6,
@@ -67,7 +72,8 @@ interface Props {
 }
 
 export function UniPaymentPaymentsTab({ pspId, isAdmin }: Props) {
-  const { t } = useTranslation('pages')
+  const { t, i18n } = useTranslation('pages')
+  const lang = (i18n.language === 'tr' ? 'tr' : 'en') as 'tr' | 'en'
   const [page, setPage] = useState(1)
   const [createOpen, setCreateOpen] = useState(false)
 
@@ -101,7 +107,7 @@ export function UniPaymentPaymentsTab({ pspId, isAdmin }: Props) {
         from_account_id: fromAccount,
         to: toAddress.trim(),
         asset_type: assetType,
-        amount: Number(amount),
+        amount: parseAmountInput(amount, lang),
         note: note.trim() || undefined,
       })
       setCreateOpen(false)
@@ -181,10 +187,10 @@ export function UniPaymentPaymentsTab({ pspId, isAdmin }: Props) {
                       <Tag variant="blue" className="text-[10px]">{pmt.asset_type}</Tag>
                     </TableCell>
                     <TableCell className="text-right font-medium tabular-nums text-red-600">
-                      -{formatAmount(pmt.amount)}
+                      -{formatDisplayAmount(pmt.amount)}
                     </TableCell>
                     <TableCell className="text-right tabular-nums text-black/40">
-                      {pmt.fee ? formatAmount(pmt.fee) : '-'}
+                      {pmt.fee ? formatDisplayAmount(pmt.fee) : '-'}
                     </TableCell>
                     <TableCell>{getPaymentStatusTag(pmt.status)}</TableCell>
                     <TableCell>
@@ -250,7 +256,7 @@ export function UniPaymentPaymentsTab({ pspId, isAdmin }: Props) {
                 <SelectContent>
                   {(accounts ?? []).map((acc) => (
                     <SelectItem key={acc.id} value={acc.id}>
-                      {acc.asset_type} ({formatAmount(acc.available)})
+                      {acc.asset_type} ({formatDisplayAmount(acc.available)})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -282,12 +288,11 @@ export function UniPaymentPaymentsTab({ pspId, isAdmin }: Props) {
               <div className="space-y-sm">
                 <Label>{t('psps.upPayments.amount')}</Label>
                 <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
+                  type="text"
+                  inputMode="decimal"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="100.00"
+                  onChange={(e) => setAmount(formatAmountInput(e.target.value, lang))}
+                  placeholder={amountPlaceholder(lang)}
                 />
               </div>
             </div>

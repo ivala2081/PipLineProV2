@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -26,6 +26,7 @@ import {
   type HrBonusAgreement,
   type HrEmployee,
 } from '@/hooks/queries/useHrQuery'
+import { formatAmount, parseAmount, numberToDisplay, amountPlaceholder } from '@/lib/formatAmount'
 
 const agreementSchema = z.object({
   employee_id: z.string().min(1, 'Çalışan seçin'),
@@ -59,6 +60,7 @@ export function BonusAgreementDialog({
   const { toast } = useToast()
   const lang = i18n.language === 'tr' ? 'tr' : 'en'
   const isEdit = !!agreement
+  const [fixedAmountDisplay, setFixedAmountDisplay] = useState('')
 
   const { createAgreement, updateAgreement } = useBonusMutations()
 
@@ -95,6 +97,7 @@ export function BonusAgreementDialog({
           effective_from: agreement.effective_from ?? '',
           effective_until: agreement.effective_until ?? '',
         })
+        setFixedAmountDisplay(numberToDisplay(agreement.fixed_amount, lang))
       } else {
         form.reset({
           employee_id: '',
@@ -108,9 +111,10 @@ export function BonusAgreementDialog({
           effective_from: '',
           effective_until: '',
         })
+        setFixedAmountDisplay('')
       }
     }
-  }, [open, agreement, form])
+  }, [open, agreement, form, lang])
 
   const handleSubmit = form.handleSubmit(async (data) => {
     try {
@@ -311,11 +315,15 @@ export function BonusAgreementDialog({
                     {lang === 'tr' ? 'Sabit Tutar (USDT)' : 'Fixed Amount (USDT)'}
                   </Label>
                   <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    {...form.register('fixed_amount')}
-                    placeholder="0.00"
+                    type="text"
+                    inputMode="decimal"
+                    value={fixedAmountDisplay}
+                    onChange={(e) => {
+                      const formatted = formatAmount(e.target.value, lang)
+                      setFixedAmountDisplay(formatted)
+                      form.setValue('fixed_amount', parseAmount(formatted, lang), { shouldValidate: true })
+                    }}
+                    placeholder={amountPlaceholder(lang)}
                   />
                 </div>
               )}

@@ -326,7 +326,7 @@ export function PspsPage() {
                 <Button
                   type="button"
                   size="sm"
-                  variant={newScope === 'local' ? 'default' : 'outline'}
+                  variant={newScope === 'local' ? 'filled' : 'outline'}
                   className="flex-1"
                   onClick={() => setNewScope('local')}
                 >
@@ -336,7 +336,7 @@ export function PspsPage() {
                 <Button
                   type="button"
                   size="sm"
-                  variant={newScope === 'global' ? 'default' : 'outline'}
+                  variant={newScope === 'global' ? 'filled' : 'outline'}
                   className="flex-1"
                   onClick={() => setNewScope('global')}
                 >

@@ -1,10 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { localYMD } from '@/lib/date'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { entryFormSchema, type EntryFormValues } from '@/schemas/accountingSchema'
 import type { AccountingEntry } from '@/lib/database.types'
+import { formatAmount, parseAmount, numberToDisplay, amountPlaceholder } from '@/lib/formatAmount'
 import { useHrEmployeesQuery } from '@/hooks/queries/useHrQuery'
 import {
   Dialog,
@@ -32,8 +33,10 @@ interface EntryDialogProps {
 }
 
 export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: EntryDialogProps) {
-  const { t } = useTranslation('pages')
+  const { t, i18n } = useTranslation('pages')
+  const lang = (i18n.language === 'tr' ? 'tr' : 'en') as 'tr' | 'en'
   const isEditing = !!entry
+  const [amountDisplay, setAmountDisplay] = useState('')
 
   // For employee selector in advance entries
   const { data: employees = [] } = useHrEmployeesQuery()
@@ -85,6 +88,7 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
           hr_employee_id: entry.hr_employee_id ?? null,
           advance_type: (entry.advance_type as EntryFormValues['advance_type']) ?? null,
         })
+        setAmountDisplay(numberToDisplay(entry.amount, lang))
       } else {
         reset({
           description_preset: 'diger',
@@ -100,9 +104,10 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
           hr_employee_id: null,
           advance_type: null,
         })
+        setAmountDisplay('')
       }
     }
-  }, [open, entry, reset])
+  }, [open, entry, reset, lang])
 
   // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch is intentional
   const direction = watch('direction')
@@ -250,7 +255,17 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
           <div className="grid grid-cols-2 gap-md">
             <div className="space-y-sm">
               <Label>{t('accounting.form.amount')}</Label>
-              <Input type="number" step="0.01" {...register('amount')} />
+              <Input
+                type="text"
+                inputMode="decimal"
+                value={amountDisplay}
+                onChange={(e) => {
+                  const formatted = formatAmount(e.target.value, lang)
+                  setAmountDisplay(formatted)
+                  setValue('amount', parseAmount(formatted, lang), { shouldValidate: true })
+                }}
+                placeholder={amountPlaceholder(lang)}
+              />
               {errors.amount && <p className="text-xs text-red">{errors.amount.message}</p>}
             </div>
             <div className="space-y-sm">
