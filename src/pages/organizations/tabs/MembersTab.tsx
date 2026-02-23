@@ -21,7 +21,11 @@ import {
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useToast } from '@/hooks/useToast'
 import { useOrgMembersQuery, type MemberWithProfile } from '@/hooks/queries/useOrgMembersQuery'
-import { useUpdateMemberRole, useRemoveMember } from '@/hooks/queries/useOrgMemberMutations'
+import {
+  useUpdateMemberRole,
+  useRemoveMember,
+  useSendCredentials,
+} from '@/hooks/queries/useOrgMemberMutations'
 import { ConfirmDialog } from '../ConfirmDialog'
 import { AddMemberDialog } from '../AddMemberDialog'
 import { UserAvatar } from '@/components/UserAvatar'
@@ -45,7 +49,10 @@ export function MembersTab({ orgId, canManage, assignableRoles = [], isGod }: Me
   const updateRole = useUpdateMemberRole(orgId)
   const removeMember = useRemoveMember(orgId)
 
+  const sendCredentials = useSendCredentials(orgId)
+
   const [removeTarget, setRemoveTarget] = useState<MemberWithProfile | null>(null)
+  const [credTarget, setCredTarget] = useState<MemberWithProfile | null>(null)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
 
   // Subscribe to real-time presence updates
@@ -59,6 +66,17 @@ export function MembersTab({ orgId, canManage, assignableRoles = [], isGod }: Me
     try {
       await updateRole.mutateAsync({ userId: member.user_id, role: newRole })
       toast({ title: t('organizations.toast.roleUpdated'), variant: 'success' })
+    } catch (err) {
+      toast({ title: (err as Error).message, variant: 'error' })
+    }
+  }
+
+  const handleSendCredentials = async () => {
+    if (!credTarget) return
+    try {
+      await sendCredentials.mutateAsync(credTarget.user_id)
+      toast({ title: t('organizations.toast.credentialsSent'), variant: 'success' })
+      setCredTarget(null)
     } catch (err) {
       toast({ title: (err as Error).message, variant: 'error' })
     }
@@ -201,6 +219,14 @@ export function MembersTab({ orgId, canManage, assignableRoles = [], isGod }: Me
                                     </DropdownMenuItem>
                                   )}
                                 <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setCredTarget(member)
+                                  }}
+                                >
+                                  {t('organizations.members.actions.sendCredentials')}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
                                   className="text-red"
                                   onClick={() => setRemoveTarget(member)}
                                 >
@@ -219,6 +245,18 @@ export function MembersTab({ orgId, canManage, assignableRoles = [], isGod }: Me
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!credTarget}
+        onClose={() => setCredTarget(null)}
+        onConfirm={handleSendCredentials}
+        title={t('organizations.sendCredentials.confirm.title')}
+        description={t('organizations.sendCredentials.confirm.description', {
+          name: credTarget?.profile?.display_name ?? credTarget?.user_id ?? '',
+        })}
+        confirmLabel={t('organizations.members.actions.sendCredentials')}
+        cancelLabel={t('organizations.createDialog.cancel')}
+      />
 
       <ConfirmDialog
         open={!!removeTarget}

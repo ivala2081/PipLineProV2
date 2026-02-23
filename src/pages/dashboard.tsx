@@ -431,7 +431,7 @@ function TopCustomersList({
     )
   }
 
-  const items = customers.slice(0, 8)
+  const items = customers.slice(0, 5)
   if (items.length === 0) {
     return (
       <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-black/[0.06]">
@@ -953,7 +953,6 @@ export function DashboardPage() {
                   <Area
                     type="monotone"
                     dataKey="deposits"
-                    stackId="vol"
                     stroke={GREEN}
                     strokeWidth={2}
                     fill="url(#gradDep)"
@@ -961,7 +960,6 @@ export function DashboardPage() {
                   <Area
                     type="monotone"
                     dataKey="withdrawals"
-                    stackId="vol"
                     stroke={RED}
                     strokeWidth={2}
                     fill="url(#gradWd)"

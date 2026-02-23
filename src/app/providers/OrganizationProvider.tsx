@@ -92,15 +92,24 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       const { data } = await supabase.from('organizations').select('*').order('name')
       orgs = (data ?? []) as Organization[]
     } else {
-      // Normal users see only their orgs via the join table
-      const { data } = await supabase
+      // Fetch memberships with role info
+      const { data: memberRows } = await supabase
         .from('organization_members')
-        .select('organization:organizations(*)')
+        .select('role, organization:organizations(*)')
         .eq('user_id', currentUser.id)
 
-      orgs = (data ?? [])
-        .map((row) => (row as unknown as { organization: Organization }).organization)
-        .filter(Boolean) as Organization[]
+      const isAnyAdmin = memberRows?.some((r) => r.role === 'admin') ?? false
+
+      if (isAnyAdmin) {
+        // Admins see all organizations
+        const { data } = await supabase.from('organizations').select('*').order('name')
+        orgs = (data ?? []) as Organization[]
+      } else {
+        // Managers and operation users see only their own orgs
+        orgs = (memberRows ?? [])
+          .map((row) => (row as unknown as { organization: Organization }).organization)
+          .filter(Boolean) as Organization[]
+      }
     }
 
     // Bail if a newer fetch cycle started

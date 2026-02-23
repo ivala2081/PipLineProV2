@@ -1025,7 +1025,8 @@
         "makeAdmin": "Make Admin",
         "makeManager": "Make Manager",
         "makeOperation": "Make Operation",
-        "remove": "Remove Member"
+        "remove": "Remove Member",
+        "sendCredentials": "Send Credentials"
       },
       "removeConfirm": {
         "title": "Remove Member",
@@ -1108,7 +1109,14 @@
       "invited": "Invitation sent successfully",
       "duplicateInvitation": "A pending invitation already exists for this email",
       "invitationRevoked": "Invitation revoked successfully",
+      "credentialsSent": "Credentials email sent successfully",
       "error": "An error occurred. Please try again."
+    },
+    "sendCredentials": {
+      "confirm": {
+        "title": "Send Credentials",
+        "description": "A password-reset link will be emailed to {{name}}. They can use it to set or update their password and access their account."
+      }
     },
     "invitations": {
       "title": "Invitations",

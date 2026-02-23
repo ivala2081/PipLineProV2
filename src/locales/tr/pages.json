@@ -1025,7 +1025,8 @@
         "makeAdmin": "Admin Yap",
         "makeManager": "Yönetici Yap",
         "makeOperation": "Operasyon Yap",
-        "remove": "Üyeyi Kaldır"
+        "remove": "Üyeyi Kaldır",
+        "sendCredentials": "Kimlik Bilgilerini Gönder"
       },
       "removeConfirm": {
         "title": "Üyeyi Kaldır",
@@ -1108,7 +1109,14 @@
       "invited": "Davet başarıyla gönderildi",
       "duplicateInvitation": "Bu e-posta için zaten bekleyen bir davet var",
       "invitationRevoked": "Davet başarıyla iptal edildi",
+      "credentialsSent": "Kimlik bilgileri e-postası başarıyla gönderildi",
       "error": "Bir hata oluştu. Lütfen tekrar deneyin."
+    },
+    "sendCredentials": {
+      "confirm": {
+        "title": "Kimlik Bilgilerini Gönder",
+        "description": "{{name}} adlı üyeye şifre sıfırlama bağlantısı e-posta ile gönderilecektir. Bu bağlantıyla şifrelerini belirleyebilir veya güncelleyebilirler."
+      }
     },
     "invitations": {
       "title": "Davetler",

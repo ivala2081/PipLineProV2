@@ -89,6 +89,29 @@ export function useRevokeInvitation(orgId: string) {
   })
 }
 
+export function useSendCredentials(orgId: string) {
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (!session) throw new Error('Not authenticated')
+
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/send-credentials`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ userId, orgId }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || data.error || 'Failed to send credentials')
+      return data
+    },
+  })
+}
+
 export function useRemoveMember(orgId: string) {
   const queryClient = useQueryClient()
 
