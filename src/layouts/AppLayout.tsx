@@ -1,7 +1,16 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { CaretUpDown, Check, PencilSimple, SignOut, Moon, Sun, Globe } from '@phosphor-icons/react'
+import {
+  CaretUpDown,
+  Check,
+  PencilSimple,
+  SignOut,
+  Moon,
+  Sun,
+  Monitor,
+  Globe,
+} from '@phosphor-icons/react'
 
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
@@ -448,7 +457,7 @@ function HeaderOrgSwitcher() {
 function HeaderBar() {
   const { t } = useTranslation('pages')
   const location = useLocation()
-  const { toggleTheme, resolvedTheme } = useTheme()
+  const { theme, toggleTheme, resolvedTheme } = useTheme()
   const { locale, changeLocale, localeNames } = useLocale()
   const tNav = t as (key: string) => string
 
@@ -508,7 +517,13 @@ function HeaderBar() {
           className="flex size-8 items-center justify-center rounded-md text-black/70 hover:bg-black/8 hover:text-black"
           aria-label={t('layout.toggleTheme')}
         >
-          {resolvedTheme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+          {theme === 'system' ? (
+            <Monitor size={16} />
+          ) : resolvedTheme === 'dark' ? (
+            <Sun size={16} />
+          ) : (
+            <Moon size={16} />
+          )}
         </button>
       </div>
     </header>

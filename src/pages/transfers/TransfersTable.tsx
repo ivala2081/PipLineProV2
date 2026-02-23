@@ -16,6 +16,7 @@ import type { PaymentMethod, TransferType } from '@/lib/transferLookups'
 import { supabase } from '@/lib/supabase'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { queryKeys } from '@/lib/queryKeys'
+import { localDayStart, localDayEnd } from '@/lib/date'
 import type { TransferRow } from '@/hooks/useTransfers'
 import { TransferAuditDialog } from './TransferAuditDialog'
 import { TransferRowItem } from './TransferRowItem'
@@ -202,8 +203,8 @@ export function TransfersTable({
 
       try {
         // Fetch all USD transfers for this date
-        const startOfDay = `${dateKey}T00:00:00`
-        const endOfDay = `${dateKey}T23:59:59`
+        const startOfDay = localDayStart(dateKey)
+        const endOfDay = localDayEnd(dateKey)
 
         const { data: usdTransfers } = await supabase
           .from('transfers')

@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
+import { localYMD } from '@/lib/date'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { entryFormSchema, type EntryFormValues } from '@/schemas/accountingSchema'
 import type { AccountingEntry } from '@/lib/database.types'
@@ -54,7 +55,7 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
       amount: 0,
       currency: 'USDT',
       cost_period: '',
-      entry_date: new Date().toISOString().slice(0, 10),
+      entry_date: localYMD(new Date()),
       payment_period: '',
       register: 'USDT',
       hr_employee_id: null,
@@ -93,7 +94,7 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
           amount: 0,
           currency: 'USDT',
           cost_period: '',
-          entry_date: new Date().toISOString().slice(0, 10),
+          entry_date: localYMD(new Date()),
           payment_period: '',
           register: 'USDT',
           hr_employee_id: null,

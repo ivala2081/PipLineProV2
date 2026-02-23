@@ -58,7 +58,12 @@
       "withdrawals": "Çekimler",
       "netCash": "Net Nakit",
       "commission": "Komisyon",
-      "transactions": "İşlemler"
+      "transactions": "İşlemler",
+      "netCashUsd": "Net Nakit $"
+    },
+    "viewMode": {
+      "gross": "Brüt",
+      "net": "Net"
     },
     "currencyAnalysis": {
       "title": "Para Birimi Gelir Analizi",
@@ -208,7 +213,8 @@
       "fullNamePlaceholder": "Ad soyad girin",
       "paymentMethod": "Ödeme Yöntemi",
       "selectPaymentMethod": "Ödeme yöntemi seçin",
-      "date": "Tarih ve Saat",
+      "date": "Tarih",
+      "time": "Saat",
       "category": "Kategori",
       "selectCategory": "Kategori seçin",
       "amount": "Tutar",
@@ -226,6 +232,8 @@
       "crmIdPlaceholder": "İsteğe bağlı",
       "metaId": "META ID",
       "metaIdPlaceholder": "İsteğe bağlı",
+      "notes": "Notlar",
+      "notesPlaceholder": "Bu transfer hakkında isteğe bağlı notlar...",
       "save": "Kaydet",
       "saveAndNew": "Kaydet ve Yeni",
       "saving": "Kaydediliyor...",
@@ -767,7 +775,71 @@
       "tabs": {
         "ledger": "Hesap Defteri",
         "settlements": "Tahsilatlar",
+        "monthly": "Aylık",
+        "bloke": "Bloke",
         "settings": "Ayarlar"
+      }
+    },
+    "monthly": {
+      "title": "Aylık Analiz",
+      "noData": "Henüz aylık veri yok.",
+      "totalDeposits": "Toplam Yatırım",
+      "totalWithdrawals": "Toplam Çekim",
+      "totalNet": "Toplam Net",
+      "totalCommission": "Toplam Komisyon",
+      "totalSettlements": "Toplam Tahsilat",
+      "volumeTrend": "Hacim Trendi",
+      "netTrend": "Net & Tahsilat Trendi",
+      "commissionAnalysis": "Komisyon Analizi",
+      "monthlyBreakdown": "Aylık Detay",
+      "deposits": "Yatırımlar",
+      "withdrawals": "Çekimler",
+      "net": "Net",
+      "settlement": "Tahsilat",
+      "commission": "Komisyon",
+      "transfers": "İşlemler",
+      "month": "Ay",
+      "change": "Değişim",
+      "export": "CSV İndir"
+    },
+    "bloke": {
+      "title": "Bloke Transferler",
+      "pending": "Beklemede",
+      "resolved": "Çözüldü",
+      "writtenOff": "Silindi",
+      "all": "Tümü",
+      "noData": "Bu PSP için bloke transfer yok.",
+      "markResolved": "Çözüldü İşaretle",
+      "markWrittenOff": "Sil",
+      "resolveDialog": {
+        "resolveTitle": "Bloke Transferi Çöz",
+        "writeOffTitle": "Bloke Transferi Sil",
+        "date": "Çözüm Tarihi",
+        "notes": "Notlar",
+        "notesPlaceholder": "Çözüm detaylarını girin...",
+        "confirm": "Onayla",
+        "cancel": "İptal",
+        "saving": "Kaydediliyor..."
+      },
+      "columns": {
+        "name": "İsim",
+        "date": "Tarih",
+        "amount": "Tutar",
+        "method": "Yöntem",
+        "status": "Durum",
+        "resolutionDate": "Çözüm Tarihi",
+        "actions": "İşlemler"
+      },
+      "stats": {
+        "total": "Toplam Bloke",
+        "pending": "Beklemede",
+        "resolved": "Çözüldü",
+        "writtenOff": "Silindi"
+      },
+      "toast": {
+        "resolved": "Transfer çözüldü olarak işaretlendi",
+        "writtenOff": "Transfer silindi olarak işaretlendi",
+        "error": "Bir hata oluştu"
       }
     },
     "ledger": {
@@ -969,7 +1041,7 @@
       "email": "E-posta Adresi",
       "emailPlaceholder": "kullanici@ornek.com",
       "password": "Şifre",
-      "passwordPlaceholder": "En az 6 karakter",
+      "passwordPlaceholder": "En az 8 karakter",
       "displayName": "Görünen Ad",
       "displayNamePlaceholder": "Ad soyad girin",
       "role": "Rol",
@@ -988,7 +1060,7 @@
       "email": "E-posta Adresi",
       "emailPlaceholder": "kullanici@ornek.com",
       "password": "Şifre",
-      "passwordPlaceholder": "En az 6 karakter",
+      "passwordPlaceholder": "En az 8 karakter",
       "passwordHint": "Bu, üyenin ilk giriş şifresi olacaktır.",
       "displayName": "Görünen Ad",
       "displayNamePlaceholder": "Ad soyad girin",

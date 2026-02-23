@@ -10,6 +10,7 @@ import { AppToastProvider } from '@/hooks/useToast'
 import { usePresence } from '@/hooks/usePresence'
 import { AppLayout } from '@/layouts/AppLayout'
 import { PageErrorBoundary } from '@/components/ErrorBoundary'
+import { RoleRoute } from '@/app/components/RoleRoute'
 import type { ReactNode } from 'react'
 
 /* ------------------------------------------------------------------ */
@@ -107,7 +108,7 @@ function PageSuspense({ children }: { children: ReactNode }) {
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="light">
+      <ThemeProvider defaultTheme="system">
         <AppToastProvider>
           <AuthProvider>
             <Routes>
@@ -167,33 +168,41 @@ export function App() {
                           <Route
                             path="/accounting"
                             element={
-                              <PageSuspense>
-                                <AccountingPage />
-                              </PageSuspense>
+                              <RoleRoute allowedRoles={['admin', 'manager']}>
+                                <PageSuspense>
+                                  <AccountingPage />
+                                </PageSuspense>
+                              </RoleRoute>
                             }
                           />
                           <Route
                             path="/accounting/wallet/:walletId/transfers"
                             element={
-                              <PageSuspense>
-                                <WalletTransfersPage />
-                              </PageSuspense>
+                              <RoleRoute allowedRoles={['admin', 'manager']}>
+                                <PageSuspense>
+                                  <WalletTransfersPage />
+                                </PageSuspense>
+                              </RoleRoute>
                             }
                           />
                           <Route
                             path="/psps"
                             element={
-                              <PageSuspense>
-                                <PspsPage />
-                              </PageSuspense>
+                              <RoleRoute allowedRoles={['admin']}>
+                                <PageSuspense>
+                                  <PspsPage />
+                                </PageSuspense>
+                              </RoleRoute>
                             }
                           />
                           <Route
                             path="/psps/:pspId"
                             element={
-                              <PageSuspense>
-                                <PspDetailPage />
-                              </PageSuspense>
+                              <RoleRoute allowedRoles={['admin']}>
+                                <PageSuspense>
+                                  <PspDetailPage />
+                                </PageSuspense>
+                              </RoleRoute>
                             }
                           />
                           <Route
@@ -223,33 +232,41 @@ export function App() {
                           <Route
                             path="/organizations"
                             element={
-                              <PageSuspense>
-                                <OrganizationsListPage />
-                              </PageSuspense>
+                              <RoleRoute allowedRoles={['admin']}>
+                                <PageSuspense>
+                                  <OrganizationsListPage />
+                                </PageSuspense>
+                              </RoleRoute>
                             }
                           />
                           <Route
                             path="/organizations/:orgId"
                             element={
-                              <PageSuspense>
-                                <OrganizationDetailPage />
-                              </PageSuspense>
+                              <RoleRoute allowedRoles={['admin']}>
+                                <PageSuspense>
+                                  <OrganizationDetailPage />
+                                </PageSuspense>
+                              </RoleRoute>
                             }
                           />
                           <Route
                             path="/security"
                             element={
-                              <PageSuspense>
-                                <SecurityDashboard />
-                              </PageSuspense>
+                              <RoleRoute allowedRoles={['admin', 'manager']}>
+                                <PageSuspense>
+                                  <SecurityDashboard />
+                                </PageSuspense>
+                              </RoleRoute>
                             }
                           />
                           <Route
                             path="/hr"
                             element={
-                              <PageSuspense>
-                                <HrPage />
-                              </PageSuspense>
+                              <RoleRoute allowedRoles={['admin']}>
+                                <PageSuspense>
+                                  <HrPage />
+                                </PageSuspense>
+                              </RoleRoute>
                             }
                           />
                           <Route path="*" element={<Navigate to="/" replace />} />

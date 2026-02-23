@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
@@ -20,7 +20,7 @@ import {
   DialogDescription,
   Button,
   Input,
-  DateInput,
+  DatePickerField,
   Label,
   Select,
   SelectTrigger,
@@ -76,6 +76,7 @@ function getDefaultFormValues(): TransferFormValues {
     meta_id: '',
     employee_id: '',
     is_first_deposit: false,
+    notes: '',
   }
 }
 
@@ -175,6 +176,9 @@ function SearchableSelectField({
   )
 }
 
+// Only Marketing and Re-attention employees are eligible for auto-bonus tracking
+const AUTO_BONUS_ROLES = ['Marketing', 'Re-attention'] as const
+
 export function TransferDialog({
   open,
   onClose,
@@ -188,6 +192,8 @@ export function TransferDialog({
   const isEdit = !!transfer
   const submitModeRef = useRef<'close' | 'new'>('close')
   const lang = i18n.language === 'tr' ? 'tr' : 'en'
+
+  const [manualRate, setManualRate] = useState(false)
 
   // HR employees for employee selector
   const { data: employees = [] } = useHrEmployeesQuery()
@@ -203,6 +209,19 @@ export function TransferDialog({
     if (fetchedRate == null || fetchedRate <= 1) return null
     return Math.round(fetchedRate * 10000) / 10000
   }, [fetchedRate])
+
+  const handleEnableManualRate = useCallback(() => setManualRate(true), [])
+  const handleResetRate = useCallback(() => {
+    setManualRate(false)
+    if (normalizedFetchedRate != null) {
+      form.setValue('exchange_rate', normalizedFetchedRate)
+    }
+  }, [normalizedFetchedRate, form])
+
+  // Reset manual rate toggle when dialog opens
+  useEffect(() => {
+    if (open) setManualRate(false)
+  }, [open])
 
   // Reset form when dialog opens/closes or transfer changes
   useEffect(() => {
@@ -225,6 +244,7 @@ export function TransferDialog({
           employee_id: (transfer as TransferRow & { employee_id?: string }).employee_id ?? '',
           is_first_deposit:
             (transfer as TransferRow & { is_first_deposit?: boolean }).is_first_deposit ?? false,
+          notes: transfer.notes ?? '',
         })
       } else {
         const defaults = getDefaultFormValues()
@@ -250,9 +270,6 @@ export function TransferDialog({
   const typeId = form.watch('type_id')
   const employeeId = form.watch('employee_id')
 
-  // Only Marketing and Re-attention employees are eligible for auto-bonus tracking
-  const AUTO_BONUS_ROLES = ['Marketing', 'Re-attention'] as const
-
   const employeeOptions = useMemo(
     () =>
       employees
@@ -265,12 +282,12 @@ export function TransferDialog({
   const rawAmount = Number(watchedRawAmount) || 0
   const exchangeRateValue = Number(watchedExchangeRate) || 0
 
-  // Auto-fill exchange_rate when rate is fetched (only for new transfers)
+  // Auto-fill exchange_rate when rate is fetched (only for new transfers, not when manual)
   useEffect(() => {
-    if (open && !isEdit && normalizedFetchedRate != null) {
+    if (open && !isEdit && !manualRate && normalizedFetchedRate != null) {
       form.setValue('exchange_rate', normalizedFetchedRate)
     }
-  }, [open, normalizedFetchedRate, form, isEdit, currentOrg?.id])
+  }, [open, normalizedFetchedRate, form, isEdit, manualRate, currentOrg?.id])
 
   // Show toast when exchange rate fetch fails
   useEffect(() => {
@@ -465,16 +482,47 @@ export function TransferDialog({
             )}
           </div>
 
-          {/* Date & Time */}
-          <div className="sm:col-span-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {/* Date, Time & Currency */}
+          <div className="sm:col-span-2 grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div>
               <Label className="mb-1 text-xs font-medium tracking-wide text-black/75">
                 {t('transfers.form.date')}
               </Label>
-              <DateInput type="datetime-local" {...form.register('transfer_date')} />
+              <DatePickerField
+                value={form.watch('transfer_date')?.split('T')[0] ?? ''}
+                onChange={(e) => {
+                  const date = e.target.value
+                  const time = form.getValues('transfer_date')?.split('T')[1] ?? '00:00'
+                  form.setValue('transfer_date', date ? `${date}T${time}` : '', {
+                    shouldValidate: true,
+                  })
+                }}
+              />
               {form.formState.errors.transfer_date && (
                 <p className={compactErrorClasses}>{form.formState.errors.transfer_date.message}</p>
               )}
+            </div>
+            <div>
+              <Label className="mb-1 text-xs font-medium tracking-wide text-black/75">
+                {t('transfers.form.time')}
+              </Label>
+              <input
+                type="time"
+                value={form.watch('transfer_date')?.split('T')[1]?.slice(0, 5) ?? ''}
+                onChange={(e) => {
+                  const time = e.target.value
+                  const date = form.getValues('transfer_date')?.split('T')[0] ?? ''
+                  if (date) {
+                    form.setValue('transfer_date', `${date}T${time}`, { shouldValidate: true })
+                  }
+                }}
+                className={cn(
+                  basicInputClasses,
+                  disabledInputClasses,
+                  focusInputClasses,
+                  'h-10 w-full cursor-pointer rounded-xl px-3 text-sm [&::-webkit-calendar-picker-indicator]:opacity-0',
+                )}
+              />
             </div>
 
             {/* Currency */}
@@ -540,6 +588,48 @@ export function TransferDialog({
               <p className={compactErrorClasses}>{form.formState.errors.raw_amount.message}</p>
             )}
 
+            {/* Exchange rate row */}
+            <div className="mt-2 flex items-center gap-2 rounded-lg border border-black/[0.07] bg-black/[0.02] px-3 py-2">
+              <span className="text-xs text-black/50">{t('transfers.form.exchangeRate')}</span>
+              {manualRate ? (
+                <>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    min="0.0001"
+                    {...form.register('exchange_rate', { valueAsNumber: true })}
+                    className={cn(
+                      basicInputClasses,
+                      focusInputClasses,
+                      'ml-auto h-7 w-28 rounded-lg px-2 text-xs tabular-nums',
+                    )}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleResetRate}
+                    className="text-xs text-brand/70 underline-offset-2 hover:text-brand hover:underline"
+                  >
+                    {t('transfers.form.resetRate')}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span className="ml-auto text-xs tabular-nums text-black/55">
+                    {normalizedFetchedRate != null
+                      ? `1 USD = ${normalizedFetchedRate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} TL`
+                      : t('transfers.form.fetchingRate')}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleEnableManualRate}
+                    className="text-xs text-black/35 underline-offset-2 hover:text-black/60 hover:underline"
+                  >
+                    {t('transfers.form.overrideRate')}
+                  </button>
+                </>
+              )}
+            </div>
+
             {/* Live conversion preview */}
             {rawAmount > 0 && exchangeRateValue > 0 && (
               <div className="mt-2 flex items-center gap-2 rounded-lg bg-blue/[0.06] px-3 py-2">
@@ -571,6 +661,21 @@ export function TransferDialog({
                   TL
                 </span>
               </div>
+            )}
+
+            {/* Exchange rate warning for USD */}
+            {currency === 'USD' && exchangeRateValue > 0 && exchangeRateValue <= 1 && (
+              <div className="mt-2 flex items-center gap-2 rounded-lg bg-yellow-500/[0.08] px-3 py-2">
+                <span className="text-xs text-yellow-700">
+                  {t(
+                    'transfers.form.exchangeRateWarning',
+                    'Exchange rate for USD is usually > 1. Please verify.',
+                  )}
+                </span>
+              </div>
+            )}
+            {form.formState.errors.exchange_rate && (
+              <p className={compactErrorClasses}>{form.formState.errors.exchange_rate.message}</p>
             )}
           </div>
 
@@ -660,6 +765,19 @@ export function TransferDialog({
                 placeholder={t('transfers.form.metaIdPlaceholder')}
               />
             </div>
+          </div>
+
+          {/* Notes */}
+          <div className="sm:col-span-2">
+            <Label className="mb-1 text-xs font-medium tracking-wide text-black/75">
+              {t('transfers.form.notes')}
+            </Label>
+            <textarea
+              {...form.register('notes')}
+              placeholder={t('transfers.form.notesPlaceholder')}
+              rows={2}
+              className={`${basicInputClasses} ${disabledInputClasses} ${focusInputClasses} w-full resize-none rounded-xl px-3 py-2 text-sm`}
+            />
           </div>
 
           <div className="pt-1 sm:col-span-2">

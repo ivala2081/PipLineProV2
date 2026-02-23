@@ -34,7 +34,12 @@ export const navGroups: NavGroup[] = [
     titleKey: 'nav.groups.dataEntry',
     items: [
       { titleKey: 'nav.transfers', href: '/transfers', icon: ArrowsLeftRight },
-      { titleKey: 'nav.accounting', href: '/accounting', icon: BookOpen },
+      {
+        titleKey: 'nav.accounting',
+        href: '/accounting',
+        icon: BookOpen,
+        roles: ['god', 'admin', 'manager'],
+      },
     ],
   },
   {
@@ -44,14 +49,13 @@ export const navGroups: NavGroup[] = [
         titleKey: 'nav.members',
         href: '/members',
         icon: Users,
-        roles: ['god', 'admin', 'manager'],
       },
-      { titleKey: 'nav.psps', href: '/psps', icon: CreditCard, roles: ['god', 'admin', 'manager'] },
+      { titleKey: 'nav.psps', href: '/psps', icon: CreditCard, roles: ['god', 'admin'] },
       {
         titleKey: 'nav.hr',
         href: '/hr',
         icon: IdentificationCard,
-        roles: ['god', 'admin', 'manager'],
+        roles: ['god', 'admin'],
       },
     ],
   },
@@ -62,7 +66,7 @@ export const navGroups: NavGroup[] = [
         titleKey: 'nav.organizations',
         href: '/organizations',
         icon: Buildings,
-        roles: ['god', 'admin', 'manager'],
+        roles: ['god', 'admin'],
       },
       {
         titleKey: 'nav.security',

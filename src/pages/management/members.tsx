@@ -29,6 +29,7 @@ import { PinDialog } from '@/pages/transfers/PinDialog'
 import { UserAvatar } from '@/components/UserAvatar'
 import { LastSeen } from '@/components/LastSeen'
 import { usePresenceSubscription } from '@/hooks/usePresenceSubscription'
+import { canManageMembers, getAssignableRoles } from '@/lib/roles'
 
 export function MembersPage() {
   const navigate = useNavigate()
@@ -38,7 +39,8 @@ export function MembersPage() {
   const { currentOrg, membership } = useOrganization()
 
   const orgId = currentOrg?.id ?? ''
-  const canManage = isGod || membership?.role === 'admin' || membership?.role === 'manager'
+  const canManage = canManageMembers(membership?.role, isGod)
+  const assignableRoles = getAssignableRoles(membership?.role, isGod)
 
   const { data: rawMembers = [], isLoading } = useOrgMembersQuery(orgId)
 
@@ -155,6 +157,10 @@ export function MembersPage() {
             <TableBody className="divide-y divide-black/[0.04]">
               {members.map((member) => {
                 const isSelf = member.user_id === user?.id
+                const canActOnMember =
+                  !isSelf &&
+                  // Managers cannot act on admins
+                  (isGod || membership?.role !== 'manager' || member.role !== 'admin')
                 const displayName = member.profile?.display_name ?? member.user_id
 
                 return (
@@ -210,7 +216,7 @@ export function MembersPage() {
                     </TableCell>
                     {canManage && (
                       <TableCell className="px-2 py-3" isActions>
-                        {!isSelf && (
+                        {canActOnMember && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
@@ -226,25 +232,26 @@ export function MembersPage() {
                               sideOffset={4}
                               onClick={(e) => e.stopPropagation()}
                             >
-                              {member.role !== 'admin' && (
+                              {assignableRoles.includes('admin') && member.role !== 'admin' && (
                                 <DropdownMenuItem onClick={() => handleChangeRole(member, 'admin')}>
                                   {t('organizations.members.actions.makeAdmin')}
                                 </DropdownMenuItem>
                               )}
-                              {member.role !== 'manager' && (
+                              {assignableRoles.includes('manager') && member.role !== 'manager' && (
                                 <DropdownMenuItem
                                   onClick={() => handleChangeRole(member, 'manager')}
                                 >
                                   {t('organizations.members.actions.makeManager')}
                                 </DropdownMenuItem>
                               )}
-                              {member.role !== 'operation' && (
-                                <DropdownMenuItem
-                                  onClick={() => handleChangeRole(member, 'operation')}
-                                >
-                                  {t('organizations.members.actions.makeOperation')}
-                                </DropdownMenuItem>
-                              )}
+                              {assignableRoles.includes('operation') &&
+                                member.role !== 'operation' && (
+                                  <DropdownMenuItem
+                                    onClick={() => handleChangeRole(member, 'operation')}
+                                  >
+                                    {t('organizations.members.actions.makeOperation')}
+                                  </DropdownMenuItem>
+                                )}
                               <DropdownMenuItem
                                 className="text-red"
                                 onClick={() => setPinTarget(member)}
@@ -299,6 +306,7 @@ export function MembersPage() {
           open={addDialogOpen}
           onClose={() => setAddDialogOpen(false)}
           orgId={orgId}
+          assignableRoles={assignableRoles}
         />
       )}
     </div>

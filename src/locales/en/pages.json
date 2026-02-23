@@ -58,7 +58,12 @@
       "withdrawals": "Withdrawals",
       "netCash": "Net Cash",
       "commission": "Commission",
-      "transactions": "Transactions"
+      "transactions": "Transactions",
+      "netCashUsd": "Net Cash $"
+    },
+    "viewMode": {
+      "gross": "Gross",
+      "net": "Net"
     },
     "currencyAnalysis": {
       "title": "Currency Revenue Analysis",
@@ -208,7 +213,8 @@
       "fullNamePlaceholder": "Enter full name",
       "paymentMethod": "Payment Method",
       "selectPaymentMethod": "Select payment method",
-      "date": "Date & Time",
+      "date": "Date",
+      "time": "Time",
       "category": "Category",
       "selectCategory": "Select category",
       "amount": "Amount",
@@ -226,6 +232,8 @@
       "crmIdPlaceholder": "Optional",
       "metaId": "META ID",
       "metaIdPlaceholder": "Optional",
+      "notes": "Notes",
+      "notesPlaceholder": "Optional notes about this transfer...",
       "save": "Save",
       "saveAndNew": "Save & New",
       "saving": "Saving...",
@@ -767,7 +775,71 @@
       "tabs": {
         "ledger": "Ledger",
         "settlements": "Settlements",
+        "monthly": "Monthly",
+        "bloke": "Bloke",
         "settings": "Settings"
+      }
+    },
+    "monthly": {
+      "title": "Monthly Analytics",
+      "noData": "No monthly data yet.",
+      "totalDeposits": "Total Deposits",
+      "totalWithdrawals": "Total Withdrawals",
+      "totalNet": "Total Net",
+      "totalCommission": "Total Commission",
+      "totalSettlements": "Total Settlements",
+      "volumeTrend": "Volume Trend",
+      "netTrend": "Net & Settlement Trend",
+      "commissionAnalysis": "Commission Analysis",
+      "monthlyBreakdown": "Monthly Breakdown",
+      "deposits": "Deposits",
+      "withdrawals": "Withdrawals",
+      "net": "Net",
+      "settlement": "Settlement",
+      "commission": "Commission",
+      "transfers": "Transfers",
+      "month": "Month",
+      "change": "MoM",
+      "export": "Export CSV"
+    },
+    "bloke": {
+      "title": "Blocked Transfers",
+      "pending": "Pending",
+      "resolved": "Resolved",
+      "writtenOff": "Written Off",
+      "all": "All",
+      "noData": "No blocked transfers for this PSP.",
+      "markResolved": "Mark Resolved",
+      "markWrittenOff": "Write Off",
+      "resolveDialog": {
+        "resolveTitle": "Resolve Blocked Transfer",
+        "writeOffTitle": "Write Off Blocked Transfer",
+        "date": "Resolution Date",
+        "notes": "Notes",
+        "notesPlaceholder": "Enter resolution details...",
+        "confirm": "Confirm",
+        "cancel": "Cancel",
+        "saving": "Saving..."
+      },
+      "columns": {
+        "name": "Name",
+        "date": "Date",
+        "amount": "Amount",
+        "method": "Method",
+        "status": "Status",
+        "resolutionDate": "Resolved On",
+        "actions": "Actions"
+      },
+      "stats": {
+        "total": "Total Blocked",
+        "pending": "Pending",
+        "resolved": "Resolved",
+        "writtenOff": "Written Off"
+      },
+      "toast": {
+        "resolved": "Transfer marked as resolved",
+        "writtenOff": "Transfer marked as written off",
+        "error": "An error occurred"
       }
     },
     "ledger": {
@@ -969,7 +1041,7 @@
       "email": "Email Address",
       "emailPlaceholder": "user@example.com",
       "password": "Password",
-      "passwordPlaceholder": "At least 6 characters",
+      "passwordPlaceholder": "At least 8 characters",
       "displayName": "Display Name",
       "displayNamePlaceholder": "Enter full name",
       "role": "Role",
@@ -988,7 +1060,7 @@
       "email": "Email Address",
       "emailPlaceholder": "user@example.com",
       "password": "Password",
-      "passwordPlaceholder": "At least 6 characters",
+      "passwordPlaceholder": "At least 8 characters",
       "passwordHint": "This will be the member's initial login password.",
       "displayName": "Display Name",
       "displayNamePlaceholder": "Enter full name",

@@ -211,6 +211,11 @@ serve(async (req: Request) => {
       if (membership?.role !== 'admin' && membership?.role !== 'manager') {
         return errorResponse(403, 'FORBIDDEN', 'Not authorized to invite members', origin)
       }
+
+      // Managers cannot assign admin role
+      if (membership?.role === 'manager' && role === 'admin') {
+        return errorResponse(403, 'FORBIDDEN', 'Managers cannot assign the admin role', origin)
+      }
     }
 
     // ── 5. Get org name (for the email) ─────────────────────────────

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { localYMD, localDayStart, localDayEnd } from '@/lib/date'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 
 /* ── Types ─────────────────────────────────────────── */
@@ -20,9 +21,26 @@ export interface CurrencySplit {
 }
 
 export interface DashboardKpis {
+  // ── Gross (before commission) ──────────────────────
   totalDeposits: number
   totalWithdrawals: number
   netCash: number
+  /** Sum of stored amount_usd for every deposit — uses each transfer's own exchange rate */
+  totalDepositsUsd: number
+  /** Sum of stored amount_usd for every withdrawal — uses each transfer's own exchange rate */
+  totalWithdrawalsUsd: number
+  /** totalDepositsUsd − totalWithdrawalsUsd */
+  netCashUsd: number
+  // ── Net (after deposit commission deducted) ────────
+  /** Gross deposits minus commission, expressed in TRY */
+  totalDepositsNet: number
+  /** Gross deposits minus commission, expressed in USD */
+  totalDepositsNetUsd: number
+  /** totalDepositsNet − totalWithdrawals */
+  netCashNet: number
+  /** totalDepositsNetUsd − totalWithdrawalsUsd */
+  netCashNetUsd: number
+  // ── Other ──────────────────────────────────────────
   totalCommission: number
   transactionCount: number
   depositCount: number
@@ -35,21 +53,21 @@ export interface DashboardKpis {
 
 export function getDateRange(period: DashboardPeriod): { from: string; to: string } {
   const now = new Date()
-  const todayStr = now.toISOString().slice(0, 10)
-  const to = `${todayStr}T23:59:59`
+  const todayStr = localYMD(now)
+  const to = localDayEnd(todayStr)
 
   switch (period) {
     case 'today':
-      return { from: `${todayStr}T00:00:00`, to }
+      return { from: localDayStart(todayStr), to }
     case 'week': {
       const day = now.getDay()
       const diff = day === 0 ? 6 : day - 1
       const monday = new Date(now)
       monday.setDate(now.getDate() - diff)
-      return { from: `${monday.toISOString().slice(0, 10)}T00:00:00`, to }
+      return { from: localDayStart(localYMD(monday)), to }
     }
     case 'month':
-      return { from: `${todayStr.slice(0, 7)}-01T00:00:00`, to }
+      return { from: localDayStart(`${todayStr.slice(0, 7)}-01`), to }
   }
 }
 
@@ -61,8 +79,8 @@ export function getPreviousDateRange(period: DashboardPeriod): { from: string; t
     case 'today': {
       const prev = new Date(fromDate)
       prev.setDate(prev.getDate() - 1)
-      const s = prev.toISOString().slice(0, 10)
-      return { from: `${s}T00:00:00`, to: `${s}T23:59:59` }
+      const s = localYMD(prev)
+      return { from: localDayStart(s), to: localDayEnd(s) }
     }
     case 'week': {
       const prevMonday = new Date(fromDate)
@@ -70,8 +88,8 @@ export function getPreviousDateRange(period: DashboardPeriod): { from: string; t
       const prevSunday = new Date(fromDate)
       prevSunday.setDate(prevSunday.getDate() - 1)
       return {
-        from: `${prevMonday.toISOString().slice(0, 10)}T00:00:00`,
-        to: `${prevSunday.toISOString().slice(0, 10)}T23:59:59`,
+        from: localDayStart(localYMD(prevMonday)),
+        to: localDayEnd(localYMD(prevSunday)),
       }
     }
     case 'month': {
@@ -80,8 +98,8 @@ export function getPreviousDateRange(period: DashboardPeriod): { from: string; t
       const prevMonthEnd = new Date(fromDate)
       prevMonthEnd.setDate(0)
       return {
-        from: `${prevMonthStart.toISOString().slice(0, 10)}T00:00:00`,
-        to: `${prevMonthEnd.toISOString().slice(0, 10)}T23:59:59`,
+        from: localDayStart(localYMD(prevMonthStart)),
+        to: localDayEnd(localYMD(prevMonthEnd)),
       }
     }
   }
@@ -92,15 +110,28 @@ export function getPreviousDateRange(period: DashboardPeriod): { from: string; t
 interface RawTransferRow {
   amount: number
   commission: number
+  net: number | null
+  exchange_rate: number | null
   currency: string
   category_id: string
-  amount_try: number
+  amount_try: number | null
   amount_usd: number
+  transfer_types: { name: string } | null
 }
 
 function computeKpis(rows: RawTransferRow[]): DashboardKpis {
+  // Exclude blocked transfers — mirrors the SQL filter in get_monthly_summary
+  const filtered = rows.filter((row) => {
+    const typeName = (row.transfer_types?.name ?? '').toLowerCase()
+    return !typeName.includes('bloke') && !typeName.includes('blocked')
+  })
+
   let totalDeposits = 0
   let totalWithdrawals = 0
+  let totalDepositsUsd = 0
+  let totalWithdrawalsUsd = 0
+  let totalDepositsNet = 0
+  let totalDepositsNetUsd = 0
   let totalCommission = 0
   let depositCount = 0
   let withdrawalCount = 0
@@ -122,16 +153,27 @@ function computeKpis(rows: RawTransferRow[]): DashboardKpis {
     usdCount: 0,
   }
 
-  for (const row of rows) {
+  for (const row of filtered) {
     // DB stores withdrawal amounts as negative; use abs() to normalise (mirrors SQL abs() in get_monthly_summary)
     const amount = Math.abs(Number(row.amount) || 0)
-    const amountTry = Math.abs(Number(row.amount_try) || amount)
+    // Use amount_try when populated; avoid the falsy-0 fallback that would misuse raw USD as TRY
+    const amountTry = row.amount_try != null ? Math.abs(Number(row.amount_try)) : amount
+    const amountUsd = Math.abs(Number(row.amount_usd) || 0)
     const commission = Number(row.commission) || 0
+    const exchangeRate = Number(row.exchange_rate) || 1
     const isDeposit = row.category_id === 'dep'
     const isTry = row.currency === 'TL'
 
     if (isDeposit) {
+      // Gross
       totalDeposits += amountTry
+      totalDepositsUsd += amountUsd
+      totalCommission += commission // commission is deposit-only (mirrors get_psp_summary)
+      // Net — commission converted to TRY and USD per transfer's own rate
+      const commissionTry = isTry ? commission : commission * exchangeRate
+      const commissionUsd = isTry ? (exchangeRate > 0 ? commission / exchangeRate : 0) : commission
+      totalDepositsNet += amountTry - commissionTry
+      totalDepositsNetUsd += amountUsd - commissionUsd
       depositCount++
       if (isTry) {
         depositSplit.tryAmount += amount
@@ -144,6 +186,7 @@ function computeKpis(rows: RawTransferRow[]): DashboardKpis {
       }
     } else {
       totalWithdrawals += amountTry
+      totalWithdrawalsUsd += amountUsd
       withdrawalCount++
       if (isTry) {
         withdrawalSplit.tryAmount += amount
@@ -155,16 +198,22 @@ function computeKpis(rows: RawTransferRow[]): DashboardKpis {
         withdrawalSplit.usdCount++
       }
     }
-
-    totalCommission += commission
   }
 
   return {
     totalDeposits,
     totalWithdrawals,
     netCash: totalDeposits - totalWithdrawals,
+    totalDepositsUsd,
+    totalWithdrawalsUsd,
+    netCashUsd: totalDepositsUsd - totalWithdrawalsUsd,
+    totalDepositsNet,
+    totalDepositsNetUsd,
+    // Withdrawals are unchanged between gross/net (commission is deposits-only)
+    netCashNet: totalDepositsNet - totalWithdrawals,
+    netCashNetUsd: totalDepositsNetUsd - totalWithdrawalsUsd,
     totalCommission,
-    transactionCount: rows.length,
+    transactionCount: filtered.length,
     depositCount,
     withdrawalCount,
     depositSplit,
@@ -174,7 +223,8 @@ function computeKpis(rows: RawTransferRow[]): DashboardKpis {
 
 /* ── Hook ──────────────────────────────────────────── */
 
-const COLUMNS = 'amount, commission, currency, category_id, amount_try, amount_usd'
+const COLUMNS =
+  'amount, commission, net, exchange_rate, currency, category_id, amount_try, amount_usd, transfer_types(name)'
 
 async function fetchKpis(orgId: string, from: string, to: string): Promise<DashboardKpis> {
   const { data, error } = await supabase

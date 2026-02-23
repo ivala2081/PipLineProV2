@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { queryKeys } from '@/lib/queryKeys'
+import { localYMD } from '@/lib/date'
 
 type LookupTable = 'psps'
 
@@ -107,7 +108,7 @@ export function useLookupMutation(table: LookupTable): UseLookupMutationReturn {
           psp_id: (inserted as { id: string }).id,
           organization_id: orgId,
           commission_rate: data.commission_rate,
-          effective_from: new Date().toISOString().slice(0, 10),
+          effective_from: localYMD(new Date()),
           created_by: user?.id,
         })
       }

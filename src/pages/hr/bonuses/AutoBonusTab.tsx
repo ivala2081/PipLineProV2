@@ -8,6 +8,7 @@ import {
   Trash,
   CheckFat,
 } from '@phosphor-icons/react'
+import { localYMD } from '@/lib/date'
 import {
   Tag,
   Skeleton,
@@ -199,7 +200,7 @@ function getMondayKey(dateStr: string): string {
   const diff = day === 0 ? -6 : 1 - day
   const monday = new Date(d)
   monday.setDate(d.getDate() + diff)
-  return monday.toISOString().slice(0, 10)
+  return localYMD(monday)
 }
 
 function computeMtStats(

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, Trash, SpinnerGap } from '@phosphor-icons/react'
+import { localYMD } from '@/lib/date'
 import { usePspRates, usePspRateMutations } from '@/hooks/queries/usePspRatesQuery'
 import { useToast } from '@/hooks/useToast'
 import { ManagerPinDialog } from '@ds'
@@ -30,7 +31,7 @@ interface PspRateHistoryDialogProps {
   onClose: () => void
 }
 
-const today = () => new Date().toISOString().slice(0, 10)
+const today = () => localYMD(new Date())
 
 export function PspRateHistoryDialog({ psp, open, onClose }: PspRateHistoryDialogProps) {
   const { t } = useTranslation('pages')

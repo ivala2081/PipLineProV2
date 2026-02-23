@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, UploadSimple, DownloadSimple } from '@phosphor-icons/react'
+import { localYMD } from '@/lib/date'
 import { useAccountingQuery } from '@/hooks/queries/useAccountingQuery'
 import { useWalletsQuery } from '@/hooks/queries/useWalletsQuery'
 import type { AccountingEntry } from '@/lib/database.types'
@@ -48,7 +49,7 @@ export function AccountingPage() {
     try {
       const entries = await accounting.fetchAllEntries()
       const csv = exportLedgerCsv(entries)
-      const timestamp = new Date().toISOString().slice(0, 10)
+      const timestamp = localYMD(new Date())
       const filename = `ledger-export-${timestamp}.csv`
       downloadCsv(csv, filename)
     } catch (err) {

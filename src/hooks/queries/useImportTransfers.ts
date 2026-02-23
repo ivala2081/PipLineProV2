@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { queryKeys } from '@/lib/queryKeys'
+import { localDayStart, localDayEnd } from '@/lib/date'
 import type { ResolvedTransferRow, ImportProgress } from '@/lib/csvImport/types'
 import type { ExistingTransfer, MissingLookups } from '@/lib/csvImport/validateRows'
 
@@ -116,8 +117,8 @@ export function useImportTransfers() {
       .from('transfers')
       .select('transfer_date, full_name, amount')
       .eq('organization_id', currentOrg.id)
-      .gte('transfer_date', `${dateRange.from}T00:00:00`)
-      .lte('transfer_date', `${dateRange.to}T23:59:59`)
+      .gte('transfer_date', localDayStart(dateRange.from))
+      .lte('transfer_date', localDayEnd(dateRange.to))
 
     return (data ?? []) as ExistingTransfer[]
   }

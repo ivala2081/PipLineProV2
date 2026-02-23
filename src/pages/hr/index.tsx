@@ -15,6 +15,7 @@ import {
   Shield,
   CurrencyCircleDollar,
   Money,
+  Users,
 } from '@phosphor-icons/react'
 import {
   PageHeader,
@@ -23,12 +24,9 @@ import {
   Tag,
   EmptyState,
   Skeleton,
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
+  Card,
+  Grid,
+  StatCard,
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
@@ -49,6 +47,7 @@ import { useToast } from '@/hooks/useToast'
 import {
   useHrEmployeesQuery,
   useHrMutations,
+  useHrSalaryPaymentsQuery,
   HR_EMPLOYEE_ROLES,
   type HrEmployee,
 } from '@/hooks/queries/useHrQuery'
@@ -90,7 +89,15 @@ function getInitials(name: string): string {
     .slice(0, 2)
 }
 
-function AvatarInitials({ name, role }: { name: string; role: HrEmployeeRole }) {
+function AvatarInitials({
+  name,
+  role,
+  size = 'sm',
+}: {
+  name: string
+  role: HrEmployeeRole
+  size?: 'sm' | 'lg'
+}) {
   const colors: Partial<Record<HrEmployeeRole, string>> = {
     Manager: 'bg-blue/15 text-blue',
     Marketing: 'bg-purple/15 text-purple',
@@ -101,9 +108,10 @@ function AvatarInitials({ name, role }: { name: string; role: HrEmployeeRole }) 
     'Sales Development': 'bg-red/15 text-red',
     Programmer: 'bg-blue/15 text-blue',
   }
+  const sizeClasses = size === 'lg' ? 'size-12 text-sm' : 'size-9 text-xs'
   return (
     <div
-      className={`flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${colors[role] ?? 'bg-black/10 text-black/60'}`}
+      className={`flex shrink-0 items-center justify-center rounded-full font-semibold ${sizeClasses} ${colors[role] ?? 'bg-black/10 text-black/60'}`}
     >
       {getInitials(name)}
     </div>
@@ -111,20 +119,159 @@ function AvatarInitials({ name, role }: { name: string; role: HrEmployeeRole }) 
 }
 
 /* ------------------------------------------------------------------ */
-/*  Stats pill                                                          */
+/*  Employee Card                                                       */
 /* ------------------------------------------------------------------ */
 
-function StatPill({ label, count, variant }: { label: string; count: number; variant: string }) {
+function EmployeeCard({
+  emp,
+  canManage,
+  lang,
+  onEdit,
+  onDelete,
+  onDocs,
+}: {
+  emp: HrEmployee
+  canManage: boolean
+  lang: 'tr' | 'en'
+  onEdit: () => void
+  onDelete: () => void
+  onDocs: () => void
+}) {
+  const roleInfo = getRoleTag(emp.role)
+
+  const formattedSalary =
+    emp.salary_tl > 0
+      ? new Intl.NumberFormat(lang === 'tr' ? 'tr-TR' : 'en-US', {
+          style: 'currency',
+          currency: 'TRY',
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
+        }).format(emp.salary_tl)
+      : null
+
+  const formattedDate = emp.hire_date
+    ? new Date(emp.hire_date).toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      })
+    : null
+
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-black/[0.07] bg-bg1 px-3 py-2 shadow-sm">
-      <span className={`text-lg font-bold tabular-nums ${variant}`}>{count}</span>
-      <span className="text-xs text-black/50">{label}</span>
-    </div>
+    <Card padding="compact" className="group relative border border-black/[0.07] bg-bg1">
+      {/* Actions dropdown — top right */}
+      {canManage && (
+        <div className="absolute right-2 top-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon-sm" className="opacity-0 group-hover:opacity-100">
+                <DotsThree size={18} weight="bold" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onEdit}>
+                <PencilSimple size={14} />
+                {lang === 'tr' ? 'Düzenle' : 'Edit'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onDocs}>
+                <FolderOpen size={14} />
+                {lang === 'tr' ? 'Belgeler' : 'Documents'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onDelete} className="text-red focus:text-red">
+                <Trash size={14} />
+                {lang === 'tr' ? 'Sil' : 'Delete'}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
+
+      {/* Card body */}
+      <div className="flex flex-col gap-3">
+        {/* Top: Avatar + Name + Email */}
+        <div className="flex items-start gap-3">
+          <AvatarInitials name={emp.full_name} role={emp.role} size="lg" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-black">{emp.full_name}</p>
+            <div className="mt-0.5 flex items-center gap-1.5 text-xs text-black/50">
+              <Envelope size={12} className="shrink-0 text-black/30" />
+              <span className="truncate">{emp.email}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Role tag */}
+        <div>
+          <Tag variant={roleInfo.variant}>{roleInfo.label}</Tag>
+        </div>
+
+        {/* Info grid: Salary | Insurance | Status | Hire Date */}
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2 border-t border-black/[0.06] pt-3">
+          {/* Salary */}
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-wider text-black/35">
+              {lang === 'tr' ? 'Maaş' : 'Salary'}
+            </p>
+            <p className="text-sm font-medium tabular-nums text-black/70">
+              {formattedSalary ?? '—'}
+            </p>
+          </div>
+
+          {/* Insurance */}
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-wider text-black/35">
+              {lang === 'tr' ? 'Sigorta' : 'Insurance'}
+            </p>
+            {emp.is_insured ? (
+              <div className="flex items-center gap-1">
+                <Shield size={13} weight="fill" className="text-blue" />
+                <span className="text-xs text-blue">{lang === 'tr' ? 'Sigortalı' : 'Insured'}</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1">
+                <ShieldWarning size={13} weight="fill" className="text-orange" />
+                <span className="text-xs text-orange">
+                  {lang === 'tr' ? 'Sigortasız' : 'Uninsured'}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Status */}
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-wider text-black/35">
+              {lang === 'tr' ? 'Durum' : 'Status'}
+            </p>
+            {emp.is_active ? (
+              <div className="flex items-center gap-1">
+                <CheckCircle size={13} weight="fill" className="text-green" />
+                <span className="text-xs text-green">{lang === 'tr' ? 'Aktif' : 'Active'}</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1">
+                <XCircle size={13} weight="fill" className="text-black/30" />
+                <span className="text-xs text-black/40">
+                  {lang === 'tr' ? 'Pasif' : 'Inactive'}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Hire Date */}
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-wider text-black/35">
+              {lang === 'tr' ? 'İşe Giriş' : 'Hire Date'}
+            </p>
+            <p className="text-xs tabular-nums text-black/60">{formattedDate ?? '—'}</p>
+          </div>
+        </div>
+      </div>
+    </Card>
   )
 }
 
 /* ------------------------------------------------------------------ */
-/*  Payment Schedule Banner                                             */
+/*  Payment schedule helpers                                            */
 /* ------------------------------------------------------------------ */
 
 function daysUntil(dayOfMonth: number): number {
@@ -135,69 +282,16 @@ function daysUntil(dayOfMonth: number): number {
 
   let target = new Date(year, month, dayOfMonth)
   if (today > dayOfMonth) {
-    // Already passed this month — next occurrence
     target = new Date(year, month + 1, dayOfMonth)
   }
   const diff = Math.ceil((target.getTime() - new Date(year, month, today).getTime()) / 86400000)
   return diff
 }
 
-function PaymentScheduleBanner({ lang }: { lang: 'tr' | 'en' }) {
-  const salaryDays = daysUntil(5)
-  const bonusDays = daysUntil(20)
-
-  const salaryLabel = lang === 'tr' ? 'Maaş Ödemesi' : 'Salary Payment'
-  const bonusLabel = lang === 'tr' ? 'Prim Ödemesi' : 'Bonus Payment'
-  const dayLabel = (d: number) =>
-    d === 0
-      ? lang === 'tr'
-        ? 'Bugün'
-        : 'Today'
-      : d === 1
-        ? lang === 'tr'
-          ? 'Yarın'
-          : 'Tomorrow'
-        : lang === 'tr'
-          ? `${d} gün sonra`
-          : `in ${d} days`
-
-  return (
-    <div className="flex flex-wrap items-center gap-sm">
-      <div className="flex items-center gap-2 rounded-lg border border-black/[0.07] bg-bg1 px-3 py-2 shadow-sm">
-        <Money size={14} weight="duotone" className="shrink-0 text-green" />
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-black/35">
-            {salaryLabel}
-          </p>
-          <p className="text-xs font-medium text-black">
-            {lang === 'tr' ? "Her ayın 5'i" : '5th of each month'}
-            <span
-              className={`ml-2 tabular-nums ${salaryDays <= 3 ? 'text-orange' : 'text-black/40'}`}
-            >
-              · {dayLabel(salaryDays)}
-            </span>
-          </p>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2 rounded-lg border border-black/[0.07] bg-bg1 px-3 py-2 shadow-sm">
-        <CurrencyCircleDollar size={14} weight="duotone" className="shrink-0 text-purple" />
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-black/35">
-            {bonusLabel}
-          </p>
-          <p className="text-xs font-medium text-black">
-            {lang === 'tr' ? "Her ayın 20'si" : '20th of each month'}
-            <span
-              className={`ml-2 tabular-nums ${bonusDays <= 3 ? 'text-orange' : 'text-black/40'}`}
-            >
-              · {dayLabel(bonusDays)}
-            </span>
-          </p>
-        </div>
-      </div>
-    </div>
-  )
+function dayLabel(d: number, lang: 'tr' | 'en') {
+  if (d === 0) return lang === 'tr' ? 'Bugün' : 'Today'
+  if (d === 1) return lang === 'tr' ? 'Yarın' : 'Tomorrow'
+  return lang === 'tr' ? `${d} gün sonra` : `in ${d} days`
 }
 
 /* ------------------------------------------------------------------ */
@@ -215,6 +309,12 @@ export function HrPage() {
   const { deleteEmployee } = useHrMutations()
 
   const lang: 'tr' | 'en' = i18n.language === 'tr' ? 'tr' : 'en'
+
+  // Salary payment query for tab badge
+  const now = new Date()
+  const currentYear = now.getFullYear()
+  const currentMonth = now.getMonth() + 1
+  const { data: currentSalaryPayments = [] } = useHrSalaryPaymentsQuery(currentYear, currentMonth)
 
   const [activeTab, setActiveTab] = useState('employees')
   const [search, setSearch] = useState('')
@@ -245,6 +345,12 @@ export function HrPage() {
     const uninsured = employees.length - insured
     return { total: employees.length, active, insured, uninsured }
   }, [employees])
+
+  const salaryPendingCount = useMemo(() => {
+    const activeWithSalary = employees.filter((e) => e.is_active && e.salary_tl > 0)
+    const paidIds = new Set(currentSalaryPayments.map((p) => p.employee_id))
+    return activeWithSalary.filter((e) => !paidIds.has(e.id)).length
+  }, [employees, currentSalaryPayments])
 
   const handleEdit = (emp: HrEmployee) => {
     setEditTarget(emp)
@@ -289,12 +395,24 @@ export function HrPage() {
         actions={headerAction}
       />
 
-      <PaymentScheduleBanner lang={lang} />
-
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="employees">{lang === 'tr' ? 'Çalışanlar' : 'Employees'}</TabsTrigger>
-          <TabsTrigger value="salaries">{lang === 'tr' ? 'Maaşlar' : 'Salaries'}</TabsTrigger>
+          <TabsTrigger value="employees">
+            {lang === 'tr' ? 'Çalışanlar' : 'Employees'}
+            {employees.length > 0 && (
+              <span className="ml-1.5 rounded-full bg-black/10 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none">
+                {employees.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="salaries">
+            {lang === 'tr' ? 'Maaşlar' : 'Salaries'}
+            {salaryPendingCount > 0 && (
+              <span className="ml-1.5 rounded-full bg-orange/15 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none text-orange">
+                {salaryPendingCount}
+              </span>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="bonuses">{lang === 'tr' ? 'Primler' : 'Bonuses'}</TabsTrigger>
           <TabsTrigger value="attendance">
             {lang === 'tr' ? 'Devam Takibi' : 'Attendance'}
@@ -304,31 +422,88 @@ export function HrPage() {
         {/* ── Employees Tab ── */}
         <TabsContent value="employees">
           <div className="space-y-lg pt-lg">
-            {/* Stats row */}
+            {/* Stats + Payment Schedule */}
             {!isLoading && employees.length > 0 && (
-              <div className="flex flex-wrap items-center gap-sm">
-                <StatPill
-                  label={lang === 'tr' ? 'Toplam' : 'Total'}
-                  count={stats.total}
-                  variant="text-black"
-                />
-                <StatPill
-                  label={lang === 'tr' ? 'Aktif' : 'Active'}
-                  count={stats.active}
-                  variant="text-green"
-                />
-                <StatPill
-                  label={lang === 'tr' ? 'Sigortalı' : 'Insured'}
-                  count={stats.insured}
-                  variant="text-blue"
-                />
-                {stats.uninsured > 0 && (
-                  <StatPill
-                    label={lang === 'tr' ? 'Sigortasız' : 'Uninsured'}
-                    count={stats.uninsured}
-                    variant="text-orange"
+              <div className="space-y-md">
+                <Grid cols={4} gap="md">
+                  <StatCard
+                    icon={Users}
+                    iconBg="bg-black/5"
+                    iconColor="text-black/60"
+                    label={lang === 'tr' ? 'Toplam' : 'Total'}
+                    value={stats.total}
                   />
-                )}
+                  <StatCard
+                    icon={CheckCircle}
+                    iconBg="bg-green/10"
+                    iconColor="text-green"
+                    label={lang === 'tr' ? 'Aktif' : 'Active'}
+                    value={stats.active}
+                  />
+                  <StatCard
+                    icon={Shield}
+                    iconBg="bg-blue/10"
+                    iconColor="text-blue"
+                    label={lang === 'tr' ? 'Sigortalı' : 'Insured'}
+                    value={stats.insured}
+                  />
+                  {stats.uninsured > 0 && (
+                    <StatCard
+                      icon={ShieldWarning}
+                      iconBg="bg-orange/10"
+                      iconColor="text-orange"
+                      label={lang === 'tr' ? 'Sigortasız' : 'Uninsured'}
+                      value={stats.uninsured}
+                    />
+                  )}
+                </Grid>
+
+                {/* Payment schedule cards */}
+                <Grid cols={2} gap="md">
+                  <Card
+                    padding="compact"
+                    className="flex items-center gap-4 border border-black/10 bg-bg1"
+                  >
+                    <div className="flex size-10 items-center justify-center rounded-xl bg-green/10">
+                      <Money size={18} className="text-green" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium uppercase tracking-wider text-black/40">
+                        {lang === 'tr' ? 'Maaş Ödemesi' : 'Salary Payment'}
+                      </p>
+                      <p className="mt-0.5 text-sm font-semibold text-black">
+                        {lang === 'tr' ? "Her ayın 5'i" : '5th of each month'}
+                        <span
+                          className={`ml-2 text-xs font-medium tabular-nums ${daysUntil(5) <= 3 ? 'text-orange' : 'text-black/40'}`}
+                        >
+                          · {dayLabel(daysUntil(5), lang)}
+                        </span>
+                      </p>
+                    </div>
+                  </Card>
+
+                  <Card
+                    padding="compact"
+                    className="flex items-center gap-4 border border-black/10 bg-bg1"
+                  >
+                    <div className="flex size-10 items-center justify-center rounded-xl bg-purple/10">
+                      <CurrencyCircleDollar size={18} className="text-purple" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium uppercase tracking-wider text-black/40">
+                        {lang === 'tr' ? 'Prim Ödemesi' : 'Bonus Payment'}
+                      </p>
+                      <p className="mt-0.5 text-sm font-semibold text-black">
+                        {lang === 'tr' ? "Her ayın 20'si" : '20th of each month'}
+                        <span
+                          className={`ml-2 text-xs font-medium tabular-nums ${daysUntil(20) <= 3 ? 'text-orange' : 'text-black/40'}`}
+                        >
+                          · {dayLabel(daysUntil(20), lang)}
+                        </span>
+                      </p>
+                    </div>
+                  </Card>
+                </Grid>
               </div>
             )}
 
@@ -370,13 +545,30 @@ export function HrPage() {
               </div>
             </div>
 
-            {/* Table */}
+            {/* Employee cards */}
             {isLoading ? (
-              <div className="space-y-2 rounded-xl border border-black/[0.07] p-4">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Skeleton key={i} className="h-12 w-full rounded-lg" />
+              <Grid cols={3} gap="md">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Card key={i} padding="compact" className="border border-black/[0.07] bg-bg1">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-start gap-3">
+                        <Skeleton className="size-12 rounded-full" />
+                        <div className="flex-1 space-y-2">
+                          <Skeleton className="h-4 w-3/4 rounded" />
+                          <Skeleton className="h-3 w-1/2 rounded" />
+                        </div>
+                      </div>
+                      <Skeleton className="h-5 w-20 rounded" />
+                      <div className="grid grid-cols-2 gap-3 border-t border-black/[0.06] pt-3">
+                        <Skeleton className="h-8 w-full rounded" />
+                        <Skeleton className="h-8 w-full rounded" />
+                        <Skeleton className="h-8 w-full rounded" />
+                        <Skeleton className="h-8 w-full rounded" />
+                      </div>
+                    </div>
+                  </Card>
                 ))}
-              </div>
+              </Grid>
             ) : filtered.length === 0 ? (
               <EmptyState
                 icon={IdentificationCard}
@@ -400,155 +592,19 @@ export function HrPage() {
                 }
               />
             ) : (
-              <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-64">
-                        {lang === 'tr' ? 'Çalışan' : 'Employee'}
-                      </TableHead>
-                      <TableHead>{lang === 'tr' ? 'E-posta' : 'Email'}</TableHead>
-                      <TableHead>{lang === 'tr' ? 'Maaş' : 'Salary'}</TableHead>
-                      <TableHead>{lang === 'tr' ? 'Rol' : 'Role'}</TableHead>
-                      <TableHead>{lang === 'tr' ? 'Sigorta' : 'Insurance'}</TableHead>
-                      <TableHead>{lang === 'tr' ? 'Durum' : 'Status'}</TableHead>
-                      <TableHead>{lang === 'tr' ? 'İşe Giriş' : 'Hire Date'}</TableHead>
-                      <TableHead className="w-14" />
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filtered.map((emp) => {
-                      const roleInfo = getRoleTag(emp.role)
-                      return (
-                        <TableRow key={emp.id} className="group">
-                          {/* Name */}
-                          <TableCell>
-                            <div className="flex items-center gap-sm">
-                              <AvatarInitials name={emp.full_name} role={emp.role} />
-                              <p className="truncate text-sm font-medium text-black">
-                                {emp.full_name}
-                              </p>
-                            </div>
-                          </TableCell>
-
-                          {/* Email */}
-                          <TableCell>
-                            <div className="flex items-center gap-1.5 text-sm text-black/60">
-                              <Envelope size={13} className="shrink-0 text-black/30" />
-                              <span className="truncate">{emp.email}</span>
-                            </div>
-                          </TableCell>
-
-                          {/* Salary */}
-                          <TableCell>
-                            <span className="text-sm tabular-nums font-medium text-black/70">
-                              {emp.salary_tl > 0
-                                ? new Intl.NumberFormat(lang === 'tr' ? 'tr-TR' : 'en-US', {
-                                    style: 'currency',
-                                    currency: 'TRY',
-                                    minimumFractionDigits: 0,
-                                    maximumFractionDigits: 0,
-                                  }).format(emp.salary_tl)
-                                : '—'}
-                            </span>
-                          </TableCell>
-
-                          {/* Role */}
-                          <TableCell>
-                            <Tag variant={roleInfo.variant}>{roleInfo.label}</Tag>
-                          </TableCell>
-
-                          {/* Insurance */}
-                          <TableCell>
-                            {emp.is_insured ? (
-                              <div className="flex items-center gap-1.5">
-                                <Shield size={13} weight="fill" className="text-blue" />
-                                <span className="text-xs text-blue">
-                                  {lang === 'tr' ? 'Sigortalı' : 'Insured'}
-                                </span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-1.5">
-                                <ShieldWarning size={13} weight="fill" className="text-orange" />
-                                <span className="text-xs text-orange">
-                                  {lang === 'tr' ? 'Sigortasız' : 'Uninsured'}
-                                </span>
-                              </div>
-                            )}
-                          </TableCell>
-
-                          {/* Status */}
-                          <TableCell>
-                            {emp.is_active ? (
-                              <div className="flex items-center gap-1.5">
-                                <CheckCircle size={14} weight="fill" className="text-green" />
-                                <span className="text-xs text-green">
-                                  {lang === 'tr' ? 'Aktif' : 'Active'}
-                                </span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-1.5">
-                                <XCircle size={14} weight="fill" className="text-black/30" />
-                                <span className="text-xs text-black/40">
-                                  {lang === 'tr' ? 'Pasif' : 'Inactive'}
-                                </span>
-                              </div>
-                            )}
-                          </TableCell>
-
-                          {/* Hire date */}
-                          <TableCell>
-                            {emp.hire_date ? (
-                              <span className="text-xs tabular-nums text-black/60">
-                                {new Date(emp.hire_date).toLocaleDateString(
-                                  lang === 'tr' ? 'tr-TR' : 'en-US',
-                                  { year: 'numeric', month: 'short', day: 'numeric' },
-                                )}
-                              </span>
-                            ) : (
-                              <span className="text-xs text-black/25">—</span>
-                            )}
-                          </TableCell>
-
-                          {/* Actions */}
-                          <TableCell>
-                            {canManage && (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    className="opacity-0 group-hover:opacity-100"
-                                  >
-                                    <DotsThree size={18} weight="bold" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleEdit(emp)}>
-                                    <PencilSimple size={14} />
-                                    {lang === 'tr' ? 'Düzenle' : 'Edit'}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => setDocsEmployee(emp)}>
-                                    <FolderOpen size={14} />
-                                    {lang === 'tr' ? 'Belgeler' : 'Documents'}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => setDeleteTarget(emp)}
-                                    className="text-red focus:text-red"
-                                  >
-                                    <Trash size={14} />
-                                    {lang === 'tr' ? 'Sil' : 'Delete'}
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
+              <Grid cols={3} gap="md">
+                {filtered.map((emp) => (
+                  <EmployeeCard
+                    key={emp.id}
+                    emp={emp}
+                    canManage={canManage}
+                    lang={lang}
+                    onEdit={() => handleEdit(emp)}
+                    onDelete={() => setDeleteTarget(emp)}
+                    onDocs={() => setDocsEmployee(emp)}
+                  />
+                ))}
+              </Grid>
             )}
           </div>
         </TabsContent>

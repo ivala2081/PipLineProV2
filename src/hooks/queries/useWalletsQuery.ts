@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { queryKeys } from '@/lib/queryKeys'
 import type { Wallet } from '@/lib/database.types'
@@ -17,6 +18,7 @@ interface UseWalletsQueryReturn {
 }
 
 export function useWalletsQuery(): UseWalletsQueryReturn {
+  const { user } = useAuth()
   const { currentOrg } = useOrganization()
   const queryClient = useQueryClient()
 
@@ -57,6 +59,7 @@ export function useWalletsQuery(): UseWalletsQueryReturn {
         label: formData.label,
         address: formData.address,
         chain: formData.chain,
+        created_by: user?.id ?? null,
       } as never)
       if (error) throw error
     },

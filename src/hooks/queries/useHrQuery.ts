@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { useAuth } from '@/app/providers/AuthProvider'
+import { localDayStart, localDayEnd } from '@/lib/date'
 import type {
   HrEmployeeRole,
   HrDocumentType,
@@ -592,9 +593,10 @@ export function useAutoBonusTransfersQuery(year: number, month: number) {
   const { currentOrg } = useOrganization()
   const orgId = currentOrg?.id ?? ''
 
-  const dateFrom = `${year}-${String(month).padStart(2, '0')}-01T00:00:00`
+  const monthStr = `${year}-${String(month).padStart(2, '0')}`
   const lastDay = new Date(year, month, 0).getDate()
-  const dateTo = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}T23:59:59`
+  const dateFrom = localDayStart(`${monthStr}-01`)
+  const dateTo = localDayEnd(`${monthStr}-${String(lastDay).padStart(2, '0')}`)
 
   return useQuery({
     queryKey: hrKeys.autoBonusTransfers(orgId, year, month),

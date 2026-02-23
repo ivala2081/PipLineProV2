@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { queryKeys } from '@/lib/queryKeys'
+import { localYMD, localDayStart, localDayEnd } from '@/lib/date'
 import { hrKeys, DEFAULT_MT_CONFIG, type MtTier } from '@/hooks/queries/useHrQuery'
 import { computeTransfer } from '@/hooks/useTransfers'
 import type { TransferRow, TransferFormData } from '@/hooks/useTransfers'
@@ -150,10 +151,10 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
       if (filters.paymentMethodId) query = query.eq('payment_method_id', filters.paymentMethodId)
       if (filters.typeId) query = query.eq('type_id', filters.typeId)
       if (filters.dateFrom) {
-        query = query.gte('transfer_date', `${filters.dateFrom}T00:00:00`)
+        query = query.gte('transfer_date', localDayStart(filters.dateFrom))
       }
       if (filters.dateTo) {
-        query = query.lte('transfer_date', `${filters.dateTo}T23:59:59`)
+        query = query.lte('transfer_date', localDayEnd(filters.dateTo))
       }
       if (filters.amountMin) query = query.gte('amount', parseFloat(filters.amountMin))
       if (filters.amountMax) query = query.lte('amount', parseFloat(filters.amountMax))
@@ -213,8 +214,8 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
       if (filters.currency) query = query.eq('currency', filters.currency)
       if (filters.paymentMethodId) query = query.eq('payment_method_id', filters.paymentMethodId)
       if (filters.typeId) query = query.eq('type_id', filters.typeId)
-      if (filters.dateFrom) query = query.gte('transfer_date', `${filters.dateFrom}T00:00:00`)
-      if (filters.dateTo) query = query.lte('transfer_date', `${filters.dateTo}T23:59:59`)
+      if (filters.dateFrom) query = query.gte('transfer_date', localDayStart(filters.dateFrom))
+      if (filters.dateTo) query = query.lte('transfer_date', localDayEnd(filters.dateTo))
       if (filters.amountMin) query = query.gte('amount', parseFloat(filters.amountMin))
       if (filters.amountMax) query = query.lte('amount', parseFloat(filters.amountMax))
 
@@ -235,7 +236,7 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
       // Group by date and count
       const counts: Record<string, number> = {}
       for (const row of filteredData) {
-        const dateKey = (row as { transfer_date: string }).transfer_date.slice(0, 10)
+        const dateKey = localYMD(new Date((row as { transfer_date: string }).transfer_date))
         counts[dateKey] = (counts[dateKey] || 0) + 1
       }
 
@@ -292,6 +293,7 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
           meta_id: data.meta_id || null,
           employee_id: data.employee_id || null,
           is_first_deposit: data.is_first_deposit ?? false,
+          notes: data.notes || null,
           created_by: user.id,
           exchange_rate: data.exchange_rate,
           amount_try: amountTry,
@@ -323,7 +325,7 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
 
           const bonusAmount = calcAutoBonus(emp.role, category.is_deposit, amountUsd, depositTiers)
           if (bonusAmount !== 0) {
-            const period = new Date(data.transfer_date).toISOString().slice(0, 7)
+            const period = String(data.transfer_date).slice(0, 7)
             await supabase.from('hr_bonus_payments').insert({
               agreement_id: null,
               employee_id: data.employee_id,
@@ -394,6 +396,7 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
           meta_id: data.meta_id || null,
           employee_id: data.employee_id || null,
           is_first_deposit: data.is_first_deposit ?? false,
+          notes: data.notes || null,
           exchange_rate: data.exchange_rate,
           amount_try: amountTry,
           amount_usd: amountUsd,
@@ -428,7 +431,7 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
 
           const bonusAmount = calcAutoBonus(emp.role, category.is_deposit, amountUsd, depositTiers)
           if (bonusAmount !== 0) {
-            const period = new Date(data.transfer_date).toISOString().slice(0, 7)
+            const period = String(data.transfer_date).slice(0, 7)
             await supabase.from('hr_bonus_payments').insert({
               agreement_id: null,
               employee_id: data.employee_id,
@@ -495,8 +498,8 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
   const fetchTransfersByDate = async (dateKey: string): Promise<TransferRow[]> => {
     if (!currentOrg) throw new Error('No organization selected')
 
-    const startOfDay = `${dateKey}T00:00:00`
-    const endOfDay = `${dateKey}T23:59:59`
+    const startOfDay = localDayStart(dateKey)
+    const endOfDay = localDayEnd(dateKey)
 
     const { data, error } = await supabase
       .from('transfers')

@@ -1,4 +1,5 @@
 import type { TransferRow } from '@/hooks/useTransfers'
+import { localYMD } from '@/lib/date'
 
 /* ── Types ──────────────────────────────────────────── */
 
@@ -70,7 +71,7 @@ export function formatNumber(n: number | undefined | null, lang: string = 'tr') 
 export function groupByDate(transfers: TransferRow[], lang: string): DateGroup[] {
   const map = new Map<string, TransferRow[]>()
   for (const t of transfers) {
-    const key = t.transfer_date.slice(0, 10)
+    const key = localYMD(new Date(t.transfer_date))
     const arr = map.get(key) ?? []
     arr.push(t)
     map.set(key, arr)
@@ -91,16 +92,21 @@ export function groupByDate(transfers: TransferRow[], lang: string): DateGroup[]
 /* ── USD helpers ────────────────────────────────────── */
 
 export function countUsdTransfers(transfers: TransferRow[]): number {
-  return transfers.filter(
-    (t) => t.currency === 'USD' && !t.type?.name?.toLowerCase().includes('blocked'),
-  ).length
+  return transfers.filter((t) => {
+    if (t.currency !== 'USD') return false
+    const typeName = t.type?.name?.toLowerCase() ?? ''
+    return !typeName.includes('blocked') && !typeName.includes('bloke')
+  }).length
 }
 
 /* ── Day Summary ────────────────────────────────────── */
 
 export function computeDaySummary(transfers: TransferRow[]): DaySummary {
-  // Exclude blocked transfers from all calculations
-  const active = transfers.filter((t) => !t.type?.name?.toLowerCase().includes('blocked'))
+  // Exclude blocked/bloke transfers from all calculations (mirrors SQL is_excluded flag)
+  const active = transfers.filter((t) => {
+    const typeName = t.type?.name?.toLowerCase() ?? ''
+    return !typeName.includes('blocked') && !typeName.includes('bloke')
+  })
 
   let deposits = 0
   let withdrawals = 0

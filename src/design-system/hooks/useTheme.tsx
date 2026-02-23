@@ -42,8 +42,10 @@ export function ThemeProvider({
   }, [])
 
   const toggleTheme = useCallback(() => {
-    setTheme(resolvedTheme === 'light' ? 'dark' : 'light')
-  }, [resolvedTheme, setTheme])
+    if (theme === 'system') setTheme('light')
+    else if (theme === 'light') setTheme('dark')
+    else setTheme('system')
+  }, [theme, setTheme])
 
   // Apply data-theme attribute and sync resolved theme
   useEffect(() => {

@@ -2,6 +2,7 @@ import type { Currency } from '@/lib/database.types'
 import type { Psp } from '@/hooks/queries/usePspsQuery'
 import type { CsvRawRow, ResolvedTransferRow, ValidationIssue, ImportParseResult } from './types'
 import { parseTurkishDecimal, parseTurkishDate } from './parseCsv'
+import { localYMD } from '@/lib/date'
 
 /* ------------------------------------------------------------------ */
 /*  Lookup maps (indexed by name + aliases)                            */
@@ -291,7 +292,7 @@ export function validateAllRows(
       const rowDateKey = resolved.transferDate.slice(0, 10)
       const dup = existingTransfers.some(
         (e) =>
-          e.transfer_date.slice(0, 10) === rowDateKey &&
+          localYMD(new Date(e.transfer_date)) === rowDateKey &&
           e.full_name.toLowerCase() === resolved.fullName.toLowerCase() &&
           Math.abs(e.amount - resolved.amount) < 0.01,
       )

@@ -16,11 +16,13 @@ import {
 import { useToast } from '@/hooks/useToast'
 import { useInviteMember } from '@/hooks/queries/useOrgMemberMutations'
 import { inviteMemberSchema, type InviteMemberValues } from '@/schemas/organizationSchema'
+import type { OrgMemberRole } from '@/lib/database.types'
 
 interface InviteMemberDialogProps {
   open: boolean
   onClose: () => void
   orgId: string
+  assignableRoles?: OrgMemberRole[]
 }
 
 function RoleCard({
@@ -59,7 +61,12 @@ function RoleCard({
   )
 }
 
-export function InviteMemberDialog({ open, onClose, orgId }: InviteMemberDialogProps) {
+export function InviteMemberDialog({
+  open,
+  onClose,
+  orgId,
+  assignableRoles,
+}: InviteMemberDialogProps) {
   const { t } = useTranslation('pages')
   const { toast } = useToast()
   const inviteMember = useInviteMember(orgId)
@@ -171,27 +178,33 @@ export function InviteMemberDialog({ open, onClose, orgId }: InviteMemberDialogP
           <div className="space-y-sm">
             <Label>{t('organizations.inviteDialog.role')}</Label>
             <div className="grid gap-sm">
-              <RoleCard
-                selected={selectedRole === 'operation'}
-                onClick={() => form.setValue('role', 'operation')}
-                icon={<User size={18} />}
-                title={t('organizations.inviteDialog.roleOperation')}
-                description={t('organizations.inviteDialog.roleOperationDescription')}
-              />
-              <RoleCard
-                selected={selectedRole === 'manager'}
-                onClick={() => form.setValue('role', 'manager')}
-                icon={<Crown size={18} />}
-                title={t('organizations.inviteDialog.roleManager')}
-                description={t('organizations.inviteDialog.roleManagerDescription')}
-              />
-              <RoleCard
-                selected={selectedRole === 'admin'}
-                onClick={() => form.setValue('role', 'admin')}
-                icon={<ShieldCheck size={18} />}
-                title={t('organizations.inviteDialog.roleAdmin')}
-                description={t('organizations.inviteDialog.roleAdminDescription')}
-              />
+              {(!assignableRoles || assignableRoles.includes('operation')) && (
+                <RoleCard
+                  selected={selectedRole === 'operation'}
+                  onClick={() => form.setValue('role', 'operation')}
+                  icon={<User size={18} />}
+                  title={t('organizations.inviteDialog.roleOperation')}
+                  description={t('organizations.inviteDialog.roleOperationDescription')}
+                />
+              )}
+              {(!assignableRoles || assignableRoles.includes('manager')) && (
+                <RoleCard
+                  selected={selectedRole === 'manager'}
+                  onClick={() => form.setValue('role', 'manager')}
+                  icon={<Crown size={18} />}
+                  title={t('organizations.inviteDialog.roleManager')}
+                  description={t('organizations.inviteDialog.roleManagerDescription')}
+                />
+              )}
+              {(!assignableRoles || assignableRoles.includes('admin')) && (
+                <RoleCard
+                  selected={selectedRole === 'admin'}
+                  onClick={() => form.setValue('role', 'admin')}
+                  icon={<ShieldCheck size={18} />}
+                  title={t('organizations.inviteDialog.roleAdmin')}
+                  description={t('organizations.inviteDialog.roleAdminDescription')}
+                />
+              )}
             </div>
             {form.formState.errors.role && (
               <p className="text-xs text-red">{form.formState.errors.role.message}</p>

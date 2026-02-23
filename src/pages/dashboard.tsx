@@ -554,6 +554,7 @@ export function DashboardPage() {
   const [period, setPeriod] = useState<DashboardPeriod>('month')
   const [pmView, setPmView] = useState<'volume' | 'count'>('volume')
   const [primaryCurrency, setPrimaryCurrency] = useState<'USD' | 'TRY'>('USD')
+  const [viewMode, setViewMode] = useState<'gross' | 'net'>('gross')
   const { kpis, prevKpis, isLoading } = useDashboardQuery(period)
 
   const now = useMemo(() => new Date(), [])
@@ -606,14 +607,23 @@ export function DashboardPage() {
       if (!currentOrg) throw new Error('No org')
       const { data, error } = await supabase
         .from('transfers')
-        .select('psp_id, commission')
+        .select('psp_id, commission, category_id, transfer_types(name)')
         .eq('organization_id', currentOrg.id)
         .gte('transfer_date', currentRange.from)
         .lte('transfer_date', currentRange.to)
       if (error) throw error
 
       const commMap = new Map<string, { commission: number; count: number }>()
-      for (const row of (data ?? []) as Array<{ psp_id: string; commission: number }>) {
+      for (const row of (data ?? []) as Array<{
+        psp_id: string
+        commission: number
+        category_id: string
+        transfer_types: { name: string } | null
+      }>) {
+        // Deposits only; blocked transfers have commission=0 but exclude for count accuracy
+        const typeName = (row.transfer_types?.name ?? '').toLowerCase()
+        if (row.category_id !== 'dep') continue
+        if (typeName.includes('bloke') || typeName.includes('blocked')) continue
         const id = row.psp_id
         if (!commMap.has(id)) commMap.set(id, { commission: 0, count: 0 })
         const entry = commMap.get(id)!
@@ -648,14 +658,22 @@ export function DashboardPage() {
       if (!currentOrg) throw new Error('No org')
       const { data, error } = await supabase
         .from('transfers')
-        .select('psp_id, commission')
+        .select('psp_id, commission, category_id, transfer_types(name)')
         .eq('organization_id', currentOrg.id)
         .gte('transfer_date', prevRange.from)
         .lte('transfer_date', prevRange.to)
       if (error) throw error
 
       const map = new Map<string, number>()
-      for (const row of (data ?? []) as Array<{ psp_id: string; commission: number }>) {
+      for (const row of (data ?? []) as Array<{
+        psp_id: string
+        commission: number
+        category_id: string
+        transfer_types: { name: string } | null
+      }>) {
+        const typeName = (row.transfer_types?.name ?? '').toLowerCase()
+        if (row.category_id !== 'dep') continue
+        if (typeName.includes('bloke') || typeName.includes('blocked')) continue
         const name = pspMeta?.get(row.psp_id)?.name ?? row.psp_id
         map.set(name, (map.get(name) ?? 0) + (Number(row.commission) || 0))
       }
@@ -683,48 +701,67 @@ export function DashboardPage() {
 
   /* ── Currency-aware KPI values ───────────────────── */
   const isUSD = primaryCurrency === 'USD'
+  const isNet = viewMode === 'net'
 
-  // Raw split amounts
-  const depUsd = kpis?.depositSplit?.usdAmount ?? 0
-  const depTry = kpis?.depositSplit?.tryAmount ?? 0
-  const wdUsd = kpis?.withdrawalSplit?.usdAmount ?? 0
-  const wdTry = kpis?.withdrawalSplit?.tryAmount ?? 0
-  const netUsd = depUsd - wdUsd
-  const netTry = depTry - wdTry
+  // Gross totals
+  const depUsdGross = kpis?.totalDepositsUsd ?? 0
+  const wdUsdGross = kpis?.totalWithdrawalsUsd ?? 0
+  const netUsdGross = kpis?.netCashUsd ?? 0
+  const prevDepUsdGross = prevKpis?.totalDepositsUsd ?? 0
+  const prevWdUsdGross = prevKpis?.totalWithdrawalsUsd ?? 0
+  const prevNetUsdGross = prevKpis?.netCashUsd ?? 0
 
-  // Previous period splits for trends
-  const prevDepUsd = prevKpis?.depositSplit?.usdAmount ?? 0
-  const prevWdUsd = prevKpis?.withdrawalSplit?.usdAmount ?? 0
-  const prevNetUsd = prevDepUsd - prevWdUsd
+  // Net totals (after deposit commission)
+  const depUsdNet = kpis?.totalDepositsNetUsd ?? 0
+  const depTryNet = kpis?.totalDepositsNet ?? 0
+  const netUsdNet = kpis?.netCashNetUsd ?? 0
+  const netTryNet = kpis?.netCashNet ?? 0
+  const prevDepUsdNet = prevKpis?.totalDepositsNetUsd ?? 0
+  const prevDepTryNet = prevKpis?.totalDepositsNet ?? 0
+  const prevNetUsdNet = prevKpis?.netCashNetUsd ?? 0
+  const prevNetTryNet = prevKpis?.netCashNet ?? 0
 
-  // Formatted values for primary/secondary display
-  const depositMainValue = isUSD
-    ? fmtMoney(depUsd, lang, '$')
-    : fmtMoney(kpis?.totalDeposits ?? 0, lang)
+  // Active values based on current view mode
+  const depUsdActive = isNet ? depUsdNet : depUsdGross
+  const depTryActive = isNet ? depTryNet : (kpis?.totalDeposits ?? 0)
+  const wdUsdActive = wdUsdGross // withdrawals unchanged between gross/net
+  const wdTryActive = kpis?.totalWithdrawals ?? 0
+  const netUsdActive = isNet ? netUsdNet : netUsdGross
+  const netTryActive = isNet ? netTryNet : (kpis?.netCash ?? 0)
+
+  const prevDepUsdActive = isNet ? prevDepUsdNet : prevDepUsdGross
+  const prevDepTryActive = isNet ? prevDepTryNet : (prevKpis?.totalDeposits ?? 0)
+  const prevWdUsdActive = prevWdUsdGross
+  const prevWdTryActive = prevKpis?.totalWithdrawals ?? 0
+  const prevNetUsdActive = isNet ? prevNetUsdNet : prevNetUsdGross
+  const prevNetTryActive = isNet ? prevNetTryNet : (prevKpis?.netCash ?? 0)
+
+  // Deposits card
+  const depositMainValue = isUSD ? fmtMoney(depUsdActive, lang, '$') : fmtMoney(depTryActive, lang)
   const depositTrend = isUSD
-    ? { current: depUsd, previous: prevDepUsd }
-    : { current: kpis?.totalDeposits ?? 0, previous: prevKpis?.totalDeposits }
+    ? { current: depUsdActive, previous: prevDepUsdActive }
+    : { current: depTryActive, previous: prevDepTryActive }
   const depositSecondary = isUSD
-    ? { label: 'TRY', value: fmtCompact(depTry) + ' ₺' }
-    : { label: 'USD', value: fmtCompact(depUsd) + ' $' }
+    ? { label: 'TRY', value: fmtCompact(depTryActive) + ' ₺' }
+    : { label: 'USD', value: fmtCompact(depUsdActive) + ' $' }
 
-  const withdrawalMainValue = isUSD
-    ? fmtMoney(wdUsd, lang, '$')
-    : fmtMoney(kpis?.totalWithdrawals ?? 0, lang)
+  // Withdrawals card (gross = net, no commission on withdrawals)
+  const withdrawalMainValue = isUSD ? fmtMoney(wdUsdActive, lang, '$') : fmtMoney(wdTryActive, lang)
   const withdrawalTrend = isUSD
-    ? { current: wdUsd, previous: prevWdUsd }
-    : { current: kpis?.totalWithdrawals ?? 0, previous: prevKpis?.totalWithdrawals }
+    ? { current: wdUsdActive, previous: prevWdUsdActive }
+    : { current: wdTryActive, previous: prevWdTryActive }
   const withdrawalSecondary = isUSD
-    ? { label: 'TRY', value: fmtCompact(wdTry) + ' ₺' }
-    : { label: 'USD', value: fmtCompact(wdUsd) + ' $' }
+    ? { label: 'TRY', value: fmtCompact(wdTryActive) + ' ₺' }
+    : { label: 'USD', value: fmtCompact(wdUsdActive) + ' $' }
 
-  const netMainValue = isUSD ? fmtMoney(netUsd, lang, '$') : fmtMoney(kpis?.netCash ?? 0, lang)
+  // Net Cash card (toggleable)
+  const netMainValue = isUSD ? fmtMoney(netUsdActive, lang, '$') : fmtMoney(netTryActive, lang)
   const netTrend = isUSD
-    ? { current: netUsd, previous: prevNetUsd }
-    : { current: kpis?.netCash ?? 0, previous: prevKpis?.netCash }
+    ? { current: netUsdActive, previous: prevNetUsdActive }
+    : { current: netTryActive, previous: prevNetTryActive }
   const netSecondary = isUSD
-    ? { label: 'TRY', value: fmtCompact(netTry) + ' ₺' }
-    : { label: 'USD', value: fmtCompact(netUsd) + ' $' }
+    ? { label: 'TRY', value: fmtCompact(netTryActive) + ' ₺' }
+    : { label: 'USD', value: fmtCompact(netUsdActive) + ' $' }
 
   /* ── Render ──────────────────────────────────────── */
   return (
@@ -742,6 +779,32 @@ export function DashboardPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {/* Gross / Net toggle */}
+          <div className="flex items-center overflow-hidden rounded-lg border border-black/[0.08]">
+            <button
+              onClick={() => setViewMode('gross')}
+              className={cn(
+                'px-3 py-1.5 text-[11px] font-bold tracking-wide transition-all',
+                !isNet
+                  ? 'bg-black/[0.07] text-black'
+                  : 'text-black/35 hover:bg-black/[0.03] hover:text-black/60',
+              )}
+            >
+              {t('dashboard.viewMode.gross')}
+            </button>
+            <div className="h-4 w-px bg-black/[0.08]" />
+            <button
+              onClick={() => setViewMode('net')}
+              className={cn(
+                'px-3 py-1.5 text-[11px] font-bold tracking-wide transition-all',
+                isNet
+                  ? 'bg-black/[0.07] text-black'
+                  : 'text-black/35 hover:bg-black/[0.03] hover:text-black/60',
+              )}
+            >
+              {t('dashboard.viewMode.net')}
+            </button>
+          </div>
           {/* Currency toggle */}
           <div className="flex items-center overflow-hidden rounded-lg border border-black/[0.08]">
             <button
@@ -823,21 +886,15 @@ export function DashboardPage() {
           }
         />
         <HeroKpiCard
-          icon={Receipt}
+          icon={Coins}
           iconBg="bg-cyan/10"
           iconColor="text-cyan"
-          label={t('dashboard.kpi.transactions')}
-          value={fmtCount(kpis?.transactionCount ?? 0, lang)}
+          label={t('dashboard.kpi.netCashUsd')}
+          value={fmtMoney(netUsdActive, lang, '$')}
           isLoading={isLoading}
           className="sm:col-span-2 lg:col-span-1"
-          trend={
-            <TrendBadge
-              current={kpis?.transactionCount ?? 0}
-              previous={prevKpis?.transactionCount}
-            />
-          }
-          splitLeft={{ label: '↑', value: fmtCount(kpis?.depositCount ?? 0, lang) }}
-          splitRight={{ label: '↓', value: fmtCount(kpis?.withdrawalCount ?? 0, lang) }}
+          trend={<TrendBadge current={netUsdActive} previous={prevNetUsdActive} />}
+          splitLeft={{ label: '₺', value: fmtCompact(netTryActive) + ' ₺' }}
         />
       </div>
 

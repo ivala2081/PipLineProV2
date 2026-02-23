@@ -14,29 +14,31 @@ import {
 } from '@ds'
 import { Eye, EyeSlash } from '@phosphor-icons/react'
 import { useToast } from '@/hooks/useToast'
-import { useAddMember } from '@/hooks/queries/useOrgMemberMutations'
-import { addMemberSchema, type AddMemberValues } from '@/schemas/organizationSchema'
+import { useInviteMember } from '@/hooks/queries/useOrgMemberMutations'
+import { inviteMemberSchema, type InviteMemberValues } from '@/schemas/organizationSchema'
+import type { OrgMemberRole } from '@/lib/database.types'
 
 interface AddMemberDialogProps {
   open: boolean
   onClose: () => void
   orgId: string
+  assignableRoles?: OrgMemberRole[]
 }
 
-export function AddMemberDialog({ open, onClose, orgId }: AddMemberDialogProps) {
+export function AddMemberDialog({ open, onClose, orgId, assignableRoles }: AddMemberDialogProps) {
   const { t } = useTranslation('pages')
   const { toast } = useToast()
-  const addMember = useAddMember(orgId)
+  const inviteMember = useInviteMember(orgId)
   const [showPassword, setShowPassword] = useState(false)
 
-  const form = useForm<AddMemberValues>({
-    resolver: zodResolver(addMemberSchema),
-    defaultValues: { email: '', password: '', role: 'operation', display_name: '' },
+  const form = useForm<InviteMemberValues>({
+    resolver: zodResolver(inviteMemberSchema),
+    defaultValues: { email: '', password: '', role: 'operation', displayName: '' },
   })
 
   const handleOpenChange = (o: boolean) => {
     if (o) {
-      form.reset({ email: '', password: '', role: 'operation', display_name: '' })
+      form.reset({ email: '', password: '', role: 'operation', displayName: '' })
       setShowPassword(false)
     } else {
       onClose()
@@ -45,8 +47,12 @@ export function AddMemberDialog({ open, onClose, orgId }: AddMemberDialogProps) 
 
   const handleSubmit = form.handleSubmit(async (data) => {
     try {
-      await addMember.mutateAsync(data)
-      toast({ title: t('organizations.toast.memberAdded'), variant: 'success' })
+      const result = await inviteMember.mutateAsync(data)
+      if (result?.userAlreadyExisted) {
+        toast({ title: t('organizations.toast.memberAdded'), variant: 'success' })
+      } else {
+        toast({ title: t('organizations.toast.memberAdded'), variant: 'success' })
+      }
       onClose()
     } catch (err) {
       toast({ title: (err as Error).message, variant: 'error' })
@@ -64,7 +70,7 @@ export function AddMemberDialog({ open, onClose, orgId }: AddMemberDialogProps) 
             <Label>{t('organizations.addMemberDialog.displayName')}</Label>
             <Input
               type="text"
-              {...form.register('display_name')}
+              {...form.register('displayName')}
               placeholder={t('organizations.addMemberDialog.displayNamePlaceholder')}
             />
           </div>
@@ -106,23 +112,36 @@ export function AddMemberDialog({ open, onClose, orgId }: AddMemberDialogProps) 
           <div className="space-y-sm">
             <Label>{t('organizations.addMemberDialog.role')}</Label>
             <div className="flex gap-md">
-              <label className="flex items-center gap-sm">
-                <input
-                  type="radio"
-                  value="operation"
-                  {...form.register('role')}
-                  className="size-4"
-                />
-                <span className="text-sm">{t('organizations.addMemberDialog.roleOperation')}</span>
-              </label>
-              <label className="flex items-center gap-sm">
-                <input type="radio" value="manager" {...form.register('role')} className="size-4" />
-                <span className="text-sm">{t('organizations.addMemberDialog.roleManager')}</span>
-              </label>
-              <label className="flex items-center gap-sm">
-                <input type="radio" value="admin" {...form.register('role')} className="size-4" />
-                <span className="text-sm">{t('organizations.addMemberDialog.roleAdmin')}</span>
-              </label>
+              {(!assignableRoles || assignableRoles.includes('operation')) && (
+                <label className="flex items-center gap-sm">
+                  <input
+                    type="radio"
+                    value="operation"
+                    {...form.register('role')}
+                    className="size-4"
+                  />
+                  <span className="text-sm">
+                    {t('organizations.addMemberDialog.roleOperation')}
+                  </span>
+                </label>
+              )}
+              {(!assignableRoles || assignableRoles.includes('manager')) && (
+                <label className="flex items-center gap-sm">
+                  <input
+                    type="radio"
+                    value="manager"
+                    {...form.register('role')}
+                    className="size-4"
+                  />
+                  <span className="text-sm">{t('organizations.addMemberDialog.roleManager')}</span>
+                </label>
+              )}
+              {(!assignableRoles || assignableRoles.includes('admin')) && (
+                <label className="flex items-center gap-sm">
+                  <input type="radio" value="admin" {...form.register('role')} className="size-4" />
+                  <span className="text-sm">{t('organizations.addMemberDialog.roleAdmin')}</span>
+                </label>
+              )}
             </div>
           </div>
 
@@ -131,12 +150,12 @@ export function AddMemberDialog({ open, onClose, orgId }: AddMemberDialogProps) 
               type="button"
               variant="outline"
               onClick={onClose}
-              disabled={addMember.isPending}
+              disabled={inviteMember.isPending}
             >
               {t('organizations.addMemberDialog.cancel')}
             </Button>
-            <Button type="submit" variant="filled" disabled={addMember.isPending}>
-              {addMember.isPending
+            <Button type="submit" variant="filled" disabled={inviteMember.isPending}>
+              {inviteMember.isPending
                 ? t('organizations.addMemberDialog.adding')
                 : t('organizations.addMemberDialog.add')}
             </Button>

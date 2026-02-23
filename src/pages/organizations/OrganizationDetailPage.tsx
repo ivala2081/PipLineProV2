@@ -6,6 +6,7 @@ import { useLocale } from '@ds/hooks'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganizationDetailQuery } from '@/hooks/queries/useOrganizationDetailQuery'
 import { useOrgMembersQuery } from '@/hooks/queries/useOrgMembersQuery'
+import { canManageMembers, getAssignableRoles } from '@/lib/roles'
 import { OverviewTab } from './tabs/OverviewTab'
 import { MembersTab } from './tabs/MembersTab'
 import { SettingsTab } from './tabs/SettingsTab'
@@ -65,8 +66,8 @@ export function OrganizationDetailPage() {
   const { data: members = [] } = useOrgMembersQuery(orgId ?? '')
 
   const currentUserMember = members.find((m) => m.user_id === user?.id)
-  const canManage =
-    isGod || currentUserMember?.role === 'admin' || currentUserMember?.role === 'manager'
+  const canManage = canManageMembers(currentUserMember?.role, isGod)
+  const assignableRoles = getAssignableRoles(currentUserMember?.role, isGod)
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString(locale === 'tr' ? 'tr-TR' : 'en-US', {
@@ -173,7 +174,12 @@ export function OrganizationDetailPage() {
           <OverviewTab org={org} orgId={orgId!} />
         </TabsContent>
         <TabsContent value="members">
-          <MembersTab orgId={orgId!} canManage={canManage} />
+          <MembersTab
+            orgId={orgId!}
+            canManage={canManage}
+            assignableRoles={assignableRoles}
+            isGod={isGod}
+          />
         </TabsContent>
         {canManage && (
           <TabsContent value="settings">

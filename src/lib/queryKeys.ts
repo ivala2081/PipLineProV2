@@ -48,6 +48,8 @@ export const queryKeys = {
     all: ['pspDashboard'] as const,
     summary: (orgId: string) => [...queryKeys.pspDashboard.all, 'summary', orgId] as const,
     ledger: (pspId: string) => [...queryKeys.pspDashboard.all, 'ledger', pspId] as const,
+    monthly: (pspId: string) => [...queryKeys.pspDashboard.all, 'monthly', pspId] as const,
+    bloke: (pspId: string) => [...queryKeys.pspDashboard.all, 'bloke', pspId] as const,
   },
   profiles: {
     all: ['profiles'] as const,

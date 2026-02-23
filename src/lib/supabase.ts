@@ -12,15 +12,3 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
-
-/**
- * Admin client with service_role key — used ONLY for user creation by god/admin.
- * Bypasses RLS. Never use for regular queries.
- */
-const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
-
-export const supabaseAdmin = supabaseServiceRoleKey
-  ? createClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    })
-  : null

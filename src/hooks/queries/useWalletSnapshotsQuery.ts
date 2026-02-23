@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { queryKeys } from '@/lib/queryKeys'
+import { localYMD } from '@/lib/date'
 import { getWalletPortfolioWithUsd } from '@/lib/tatumServiceSecure'
 import type { WalletSnapshot } from '@/lib/database.types'
 
@@ -50,7 +51,7 @@ export function useWalletSnapshotsQuery(
         tokenAddress: a.tokenAddress,
       }))
 
-      const today = new Date().toISOString().slice(0, 10)
+      const today = localYMD(new Date())
 
       const { error } = await supabase.from('wallet_snapshots').upsert(
         {

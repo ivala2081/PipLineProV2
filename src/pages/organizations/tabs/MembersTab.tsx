@@ -27,13 +27,16 @@ import { AddMemberDialog } from '../AddMemberDialog'
 import { UserAvatar } from '@/components/UserAvatar'
 import { LastSeen } from '@/components/LastSeen'
 import { usePresenceSubscription } from '@/hooks/usePresenceSubscription'
+import type { OrgMemberRole } from '@/lib/database.types'
 
 interface MembersTabProps {
   orgId: string
   canManage: boolean
+  assignableRoles?: OrgMemberRole[]
+  isGod?: boolean
 }
 
-export function MembersTab({ orgId, canManage }: MembersTabProps) {
+export function MembersTab({ orgId, canManage, assignableRoles = [], isGod }: MembersTabProps) {
   const navigate = useNavigate()
   const { t } = useTranslation('pages')
   const { toast } = useToast()
@@ -48,8 +51,11 @@ export function MembersTab({ orgId, canManage }: MembersTabProps) {
   // Subscribe to real-time presence updates
   usePresenceSubscription()
 
-  const handleToggleRole = async (member: MemberWithProfile) => {
-    const newRole = member.role === 'admin' ? 'operation' : 'admin'
+  const handleChangeRole = async (
+    member: MemberWithProfile,
+    newRole: 'admin' | 'manager' | 'operation',
+  ) => {
+    if (member.role === newRole) return
     try {
       await updateRole.mutateAsync({ userId: member.user_id, role: newRole })
       toast({ title: t('organizations.toast.roleUpdated'), variant: 'success' })
@@ -112,6 +118,12 @@ export function MembersTab({ orgId, canManage }: MembersTabProps) {
               <TableBody>
                 {members.map((member) => {
                   const isSelf = member.user_id === user?.id
+                  const canActOnMember =
+                    !isSelf &&
+                    (isGod ||
+                      !assignableRoles.length ||
+                      member.role !== 'admin' ||
+                      assignableRoles.includes('admin'))
                   const displayName = member.profile?.display_name ?? member.user_id
 
                   return (
@@ -136,8 +148,16 @@ export function MembersTab({ orgId, canManage }: MembersTabProps) {
                         <LastSeen lastSeenAt={member.profile?.last_seen_at} />
                       </TableCell>
                       <TableCell>
-                        <Tag variant={member.role === 'admin' ? 'green' : 'blue'}>
-                          {member.role === 'admin' ? 'Admin' : 'Operation'}
+                        <Tag
+                          variant={
+                            member.role === 'admin'
+                              ? 'green'
+                              : member.role === 'manager'
+                                ? 'purple'
+                                : 'blue'
+                          }
+                        >
+                          {t(`memberProfile.roles.${member.role}`)}
                         </Tag>
                       </TableCell>
                       <TableCell className="text-sm text-black/60">
@@ -145,7 +165,7 @@ export function MembersTab({ orgId, canManage }: MembersTabProps) {
                       </TableCell>
                       {canManage && (
                         <TableCell>
-                          {!isSelf && (
+                          {canActOnMember && (
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button
@@ -157,11 +177,29 @@ export function MembersTab({ orgId, canManage }: MembersTabProps) {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleToggleRole(member)}>
-                                  {member.role === 'admin'
-                                    ? t('organizations.members.actions.demoteToOperation')
-                                    : t('organizations.members.actions.promoteToAdmin')}
-                                </DropdownMenuItem>
+                                {assignableRoles.includes('admin') && member.role !== 'admin' && (
+                                  <DropdownMenuItem
+                                    onClick={() => handleChangeRole(member, 'admin')}
+                                  >
+                                    {t('organizations.members.actions.makeAdmin')}
+                                  </DropdownMenuItem>
+                                )}
+                                {assignableRoles.includes('manager') &&
+                                  member.role !== 'manager' && (
+                                    <DropdownMenuItem
+                                      onClick={() => handleChangeRole(member, 'manager')}
+                                    >
+                                      {t('organizations.members.actions.makeManager')}
+                                    </DropdownMenuItem>
+                                  )}
+                                {assignableRoles.includes('operation') &&
+                                  member.role !== 'operation' && (
+                                    <DropdownMenuItem
+                                      onClick={() => handleChangeRole(member, 'operation')}
+                                    >
+                                      {t('organizations.members.actions.makeOperation')}
+                                    </DropdownMenuItem>
+                                  )}
                                 <DropdownMenuItem
                                   className="text-red"
                                   onClick={() => setRemoveTarget(member)}
@@ -200,6 +238,7 @@ export function MembersTab({ orgId, canManage }: MembersTabProps) {
           open={addDialogOpen}
           onClose={() => setAddDialogOpen(false)}
           orgId={orgId}
+          assignableRoles={assignableRoles}
         />
       )}
     </>

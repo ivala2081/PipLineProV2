@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { localYMD } from '@/lib/date'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -67,6 +68,8 @@ import { useToast } from '@/hooks/useToast'
 import { ManagerPinDialog } from '@ds'
 import { settlementFormSchema, type SettlementFormValues } from '@/schemas/pspSettlementSchema'
 import type { PspSettlement } from '@/lib/database.types'
+import { MonthlyTab } from './PspMonthlyTab'
+import { BlokeTab } from './PspBlokeTab'
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -914,7 +917,7 @@ function SettingsTab({
   } | null>(null)
   const [pendingDeleteRateId, setPendingDeleteRateId] = useState<string | null>(null)
 
-  const todayStr = new Date().toISOString().slice(0, 10)
+  const todayStr = localYMD(new Date())
 
   const handleAddClick = () => {
     if (!effectiveFrom || !ratePercent) return
@@ -1567,6 +1570,8 @@ export function PspDetailPage() {
                 {t('psps.detail.tabs.settlements', 'Settlements')}
               </TabsTrigger>
             )}
+            <TabsTrigger value="monthly">{t('psps.detail.tabs.monthly', 'Monthly')}</TabsTrigger>
+            <TabsTrigger value="bloke">{t('psps.detail.tabs.bloke', 'Bloke')}</TabsTrigger>
             <TabsTrigger value="settings">{t('psps.detail.tabs.settings', 'Settings')}</TabsTrigger>
           </TabsList>
           <div className="flex items-center gap-2">
@@ -1644,6 +1649,14 @@ export function PspDetailPage() {
             <SettlementsTab pspId={pspId!} isAdmin={isAdmin} />
           </TabsContent>
         )}
+
+        <TabsContent value="monthly">
+          <MonthlyTab pspId={pspId!} pspName={psp.psp_name} currency={psp.currency ?? 'TL'} />
+        </TabsContent>
+
+        <TabsContent value="bloke">
+          <BlokeTab pspId={pspId!} isAdmin={isAdmin} />
+        </TabsContent>
 
         <TabsContent value="settings">
           <SettingsTab
