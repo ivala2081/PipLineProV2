@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Plus, UploadSimple } from '@phosphor-icons/react'
 import { useLookupQueries } from '@/hooks/queries/useLookupQueries'
@@ -6,7 +7,6 @@ import { useTransfersQuery } from '@/hooks/queries/useTransfersQuery'
 import type { TransferRow } from '@/hooks/useTransfers'
 import { Button, Tabs, TabsList, TabsTrigger, TabsContent, PageHeader } from '@ds'
 import { TransfersTable } from './TransfersTable'
-import { TransferDialog } from './TransferDialog'
 import { DeleteConfirmDialog } from './DeleteConfirmDialog'
 import { LookupSettings } from './LookupSettings'
 import { MonthlyTab } from './MonthlyTab'
@@ -14,31 +14,21 @@ import { CsvImportDialog } from './CsvImportDialog'
 
 export function TransfersPage() {
   const { t } = useTranslation('pages')
+  const navigate = useNavigate()
   const lookupData = useLookupQueries()
   const transfers = useTransfersQuery()
 
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingTransfer, setEditingTransfer] = useState<TransferRow | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<TransferRow | null>(null)
   const [importOpen, setImportOpen] = useState(false)
 
-  const handleAdd = () => {
-    setEditingTransfer(null)
-    setDialogOpen(true)
-  }
+  const handleAdd = () => navigate('/transfers/new')
 
   const handleEdit = (transfer: TransferRow) => {
-    setEditingTransfer(transfer)
-    setDialogOpen(true)
+    navigate(`/transfers/${transfer.id}/edit`)
   }
 
   const handleDelete = (transfer: TransferRow) => {
     setDeleteTarget(transfer)
-  }
-
-  const handleDialogClose = () => {
-    setDialogOpen(false)
-    setEditingTransfer(null)
   }
 
   const handleDeleteClose = () => {
@@ -98,14 +88,6 @@ export function TransfersPage() {
           <LookupSettings lookupData={lookupData} />
         </TabsContent>
       </Tabs>
-
-      <TransferDialog
-        open={dialogOpen}
-        onClose={handleDialogClose}
-        transfer={editingTransfer}
-        lookupData={lookupData}
-        onSubmit={transfers}
-      />
 
       <CsvImportDialog
         open={importOpen}

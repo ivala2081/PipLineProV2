@@ -30,6 +30,12 @@ const DashboardPage = lazy(() =>
 const TransfersPage = lazy(() =>
   import('@/pages/transfers').then((m) => ({ default: m.TransfersPage })),
 )
+const AddTransferPage = lazy(() =>
+  import('@/pages/transfers/AddTransferPage').then((m) => ({ default: m.AddTransferPage })),
+)
+const EditTransferPage = lazy(() =>
+  import('@/pages/transfers/EditTransferPage').then((m) => ({ default: m.EditTransferPage })),
+)
 const AccountingPage = lazy(() =>
   import('@/pages/accounting').then((m) => ({ default: m.AccountingPage })),
 )
@@ -162,6 +168,22 @@ export function App() {
                             element={
                               <PageSuspense>
                                 <TransfersPage />
+                              </PageSuspense>
+                            }
+                          />
+                          <Route
+                            path="/transfers/new"
+                            element={
+                              <PageSuspense>
+                                <AddTransferPage />
+                              </PageSuspense>
+                            }
+                          />
+                          <Route
+                            path="/transfers/:id/edit"
+                            element={
+                              <PageSuspense>
+                                <EditTransferPage />
                               </PageSuspense>
                             }
                           />
