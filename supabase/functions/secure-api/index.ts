@@ -63,7 +63,8 @@ async function handleTatumRequest(
 
       case 'getTransactions': {
         const { chain, address, pageSize, offset, transactionDirection, transactionTypes } = params
-        url = new URL(`${TATUM_BASE_V4}/data/transactions`)
+        // Tatum deprecated /v4/data/transactions → use /v4/data/transaction/history
+        url = new URL(`${TATUM_BASE_V4}/data/transaction/history`)
         url.searchParams.set('chain', String(chain))
         url.searchParams.set('addresses', String(address))
         url.searchParams.set('pageSize', String(pageSize || 50))
@@ -116,7 +117,9 @@ async function handleTatumRequest(
 
     if (!response.ok) {
       const errorText = await response.text()
-      return errorResponse(response.status, `Tatum API error: ${errorText}`, origin)
+      console.error(`[Tatum] API error (${response.status}):`, errorText)
+      // Return 502 for upstream errors so client doesn't confuse with auth issues
+      return errorResponse(502, `Tatum API error (${response.status}): ${errorText}`, origin)
     }
 
     const data = await response.json()

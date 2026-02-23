@@ -1304,7 +1304,44 @@
     "tabs": {
       "overview": "Genel Bakış",
       "failedLogins": "Başarısız Girişler",
-      "auditLog": "Denetim Kaydı"
+      "auditLog": "Denetim Kaydı",
+      "apiIntegrations": "API Entegrasyonları"
+    },
+    "api": {
+      "checkHealth": "Sağlık Kontrolü",
+      "lastCheck": "Son kontrol:",
+      "updateKey": "Anahtarı Güncelle",
+      "emptyState": "API durumlarını görmek için Sağlık Kontrolü butonuna tıklayın",
+      "coldStartNote": "Anahtar değişiklikleri yaklaşık 60 saniye içinde etkili olur (Edge Function soğuk başlatma süresi).",
+      "status": {
+        "healthy": "Sağlıklı",
+        "error": "Hata",
+        "notConfigured": "Tanımsız"
+      },
+      "errorType": {
+        "invalidKey": "API anahtarı geçersiz veya süresi dolmuş",
+        "rateLimit": "API istek limiti aşıldı",
+        "serverError": "Servis sunucu hatası",
+        "networkError": "Ağ bağlantı hatası"
+      },
+      "affected": {
+        "tatum": "Etkilenen: Cüzdanlar, Portföy, Transfer Geçmişi",
+        "exchangeRate": "Etkilenen: Döviz Kurları, Dashboard",
+        "gemini": "Etkilenen: AI Özellikleri",
+        "resend": "Etkilenen: E-posta (Davet, Bildirim)",
+        "uniPayment": "Etkilenen: PSP → UniPayment Cüzdanı"
+      },
+      "dialog": {
+        "title": "{{service}} — Anahtar Güncelle",
+        "description": "Yeni API anahtarını girin. Değişiklik Supabase Edge Function secret'larına otomatik yansıyacaktır.",
+        "placeholder": "Yeni anahtar değeri...",
+        "warning": "Bu işlem mevcut anahtarı kalıcı olarak değiştirecektir. Yanlış anahtar girilmesi servisi devre dışı bırakabilir.",
+        "save": "Kaydet",
+        "saving": "Kaydediliyor...",
+        "cancel": "İptal",
+        "success": "API anahtarı başarıyla güncellendi",
+        "error": "API anahtarı güncellenemedi"
+      }
     },
     "dialog": {
       "title": "Denetim Detayları",

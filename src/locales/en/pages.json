@@ -1304,7 +1304,44 @@
     "tabs": {
       "overview": "Overview",
       "failedLogins": "Failed Logins",
-      "auditLog": "Audit Log"
+      "auditLog": "Audit Log",
+      "apiIntegrations": "API Integrations"
+    },
+    "api": {
+      "checkHealth": "Health Check",
+      "lastCheck": "Last check:",
+      "updateKey": "Update Key",
+      "emptyState": "Click Health Check to see API statuses",
+      "coldStartNote": "Key changes take effect in approximately 60 seconds (Edge Function cold start).",
+      "status": {
+        "healthy": "Healthy",
+        "error": "Error",
+        "notConfigured": "Not Configured"
+      },
+      "errorType": {
+        "invalidKey": "API key is invalid or expired",
+        "rateLimit": "API rate limit exceeded",
+        "serverError": "Service server error",
+        "networkError": "Network connection error"
+      },
+      "affected": {
+        "tatum": "Affected: Wallets, Portfolio, Transfer History",
+        "exchangeRate": "Affected: Exchange Rates, Dashboard",
+        "gemini": "Affected: AI Features",
+        "resend": "Affected: Email (Invitations, Notifications)",
+        "uniPayment": "Affected: PSP → UniPayment Wallet"
+      },
+      "dialog": {
+        "title": "{{service}} — Update Key",
+        "description": "Enter the new API key. Changes will automatically propagate to Supabase Edge Function secrets.",
+        "placeholder": "New key value...",
+        "warning": "This action will permanently replace the existing key. Entering an incorrect key may disable the service.",
+        "save": "Save",
+        "saving": "Saving...",
+        "cancel": "Cancel",
+        "success": "API key updated successfully",
+        "error": "Failed to update API key"
+      }
     },
     "dialog": {
       "title": "Audit Details",

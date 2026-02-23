@@ -20,8 +20,9 @@ import {
   useUniPaymentDepositAddress,
 } from '@/hooks/queries/useUniPaymentQuery'
 
-function formatAmount(value: number): string {
-  return value.toLocaleString('en-US', {
+function formatAmount(value: number | undefined | null): string {
+  if (value == null) return '0.00'
+  return Number(value).toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 6,
   })

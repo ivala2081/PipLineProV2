@@ -194,6 +194,13 @@ async function fetchV4Portfolio(chain: string, address: string): Promise<Portfol
     tatumApi.getPortfolio(v4Chain, address, 'fungible') as Promise<V4PortfolioResponse>,
   ])
 
+  if (nativeRes.status === 'rejected') {
+    console.warn(`[Tatum] ${chain} native portfolio failed:`, nativeRes.reason?.message ?? nativeRes.reason)
+  }
+  if (fungibleRes.status === 'rejected') {
+    console.warn(`[Tatum] ${chain} fungible portfolio failed:`, fungibleRes.reason?.message ?? fungibleRes.reason)
+  }
+
   const assets: PortfolioAsset[] = []
 
   if (nativeRes.status === 'fulfilled') {
@@ -531,7 +538,10 @@ async function getUsdRate(symbol: string): Promise<number> {
       rateCache.set(rateSymbol, { usdPrice: price, fetchedAt: Date.now() })
       return price
     })
-    .catch(() => cached?.usdPrice ?? 0)
+    .catch((err) => {
+      console.warn(`[Tatum] Rate fetch failed for ${rateSymbol}:`, err?.message ?? err)
+      return cached?.usdPrice ?? 0
+    })
     .finally(() => {
       inflightRates.delete(rateSymbol)
     })

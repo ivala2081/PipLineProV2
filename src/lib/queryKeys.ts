@@ -83,4 +83,8 @@ export const queryKeys = {
     syncStatus: (pspId: string) =>
       [...queryKeys.uniPayment.all, 'syncStatus', pspId] as const,
   },
+  apiHealth: {
+    all: ['apiHealth'] as const,
+    status: () => [...queryKeys.apiHealth.all, 'status'] as const,
+  },
 } as const

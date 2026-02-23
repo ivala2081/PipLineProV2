@@ -66,6 +66,7 @@ export function WalletCard({ wallet, onViewDetail, onEdit, onDelete }: WalletCar
     assets,
     totalUsd,
     isLoading: isBalanceLoading,
+    error: balanceError,
   } = useWalletBalanceQuery(wallet.id, wallet.chain, wallet.address)
   const { takeSnapshot, isTakingSnapshot } = useWalletSnapshotsQuery(
     wallet.id,
@@ -190,6 +191,8 @@ export function WalletCard({ wallet, onViewDetail, onEdit, onDelete }: WalletCar
           </p>
           {isBalanceLoading ? (
             <Skeleton className="mt-1 h-6 w-24 rounded" />
+          ) : balanceError ? (
+            <p className="mt-0.5 text-xs text-red/80" title={balanceError}>API Error</p>
           ) : (
             <p className="mt-0.5 font-mono text-lg font-bold tabular-nums text-black/85">
               ${fmt(totalUsd)}

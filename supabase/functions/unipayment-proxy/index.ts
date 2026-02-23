@@ -120,7 +120,8 @@ async function validateCaller(
   const { data: { user }, error } = await supabase.auth.getUser()
   if (error || !user) throw new Error('Unauthorized: invalid token')
 
-  // Check org membership
+  // Use the user's own client (with their JWT) to check membership
+  // This respects RLS and confirms user can access the org
   const { data: member, error: memErr } = await supabase
     .from('organization_members')
     .select('role')
@@ -128,7 +129,20 @@ async function validateCaller(
     .eq('user_id', user.id)
     .single()
 
-  if (memErr || !member) throw new Error('Not a member of this organization')
+  if (memErr || !member) {
+    // Fallback: check profile for system_role (god users may not have org membership)
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('system_role')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.system_role === 'god') {
+      return { userId: user.id, role: 'god' }
+    }
+
+    throw new Error('Not a member of this organization')
+  }
 
   return { userId: user.id, role: member.role as string }
 }
@@ -161,7 +175,12 @@ async function handleGetTransactions(params: Record<string, unknown>): Promise<u
 async function handleGetDepositAddress(params: Record<string, unknown>): Promise<unknown> {
   const { account_id } = params
   if (!account_id) throw new Error('account_id is required')
-  return uniPaymentFetch('GET', `/v1.0/wallet/accounts/${account_id}/deposit/address`)
+  try {
+    return await uniPaymentFetch('GET', `/v1.0/wallet/accounts/${account_id}/deposit/address`)
+  } catch {
+    // Some account types may not support deposit addresses
+    return { code: 'OK', data: null }
+  }
 }
 
 async function handleCreateInvoice(params: Record<string, unknown>): Promise<unknown> {

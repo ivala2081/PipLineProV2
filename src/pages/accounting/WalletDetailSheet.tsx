@@ -61,6 +61,7 @@ export function WalletDetailSheet({ wallet, onClose, onEdit }: WalletDetailSheet
     assets,
     totalUsd,
     isLoading: isBalanceLoading,
+    error: balanceError,
     refetch,
   } = useWalletBalanceQuery(wallet?.id ?? '', wallet?.chain ?? '', wallet?.address ?? '', !!wallet)
 
@@ -134,6 +135,10 @@ export function WalletDetailSheet({ wallet, onClose, onEdit }: WalletDetailSheet
               </p>
               {isBalanceLoading ? (
                 <Skeleton className="mt-1 h-8 w-32 rounded" />
+              ) : balanceError ? (
+                <p className="mt-0.5 text-sm text-red/80" title={balanceError}>
+                  API Error: {balanceError}
+                </p>
               ) : (
                 <p className="mt-0.5 text-2xl font-bold tabular-nums text-black/85">
                   ${formatUsd(totalUsd)}

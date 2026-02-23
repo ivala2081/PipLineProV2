@@ -10,11 +10,13 @@ import {
   Lightning,
   Clock,
   Database,
+  Plugs,
 } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { canManageOrg } from '@/lib/roles'
+import { ApiIntegrationsTab } from './security/ApiIntegrationsTab'
 import {
   Card,
   StatCard,
@@ -286,6 +288,7 @@ export function SecurityDashboard() {
           <TabsTrigger value="overview">{t('security.tabs.overview')}</TabsTrigger>
           <TabsTrigger value="failed-logins">{t('security.tabs.failedLogins')}</TabsTrigger>
           <TabsTrigger value="audit-log">{t('security.tabs.auditLog')}</TabsTrigger>
+          <TabsTrigger value="api-integrations">{t('security.tabs.apiIntegrations')}</TabsTrigger>
         </TabsList>
 
         {/* ── Overview Tab ── */}
@@ -460,6 +463,11 @@ export function SecurityDashboard() {
               <p className="text-sm text-black/60">{t('security.noGodActivity')}</p>
             </div>
           )}
+        </TabsContent>
+
+        {/* ── API Integrations Tab ── */}
+        <TabsContent value="api-integrations">
+          <ApiIntegrationsTab />
         </TabsContent>
       </Tabs>
     </div>

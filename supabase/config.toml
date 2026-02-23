@@ -1,0 +1,2 @@
+[functions.unipayment-proxy]
+verify_jwt = false

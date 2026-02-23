@@ -1,5 +1,10 @@
 {
   "permissions": {
-    "allow": ["Bash(git add:*)"]
+    "allow": [
+      "Bash(git add:*)"
+    ]
+  },
+  "enabledPlugins": {
+    "supabase@claude-plugins-official": true
   }
 }
