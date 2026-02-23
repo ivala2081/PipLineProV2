@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, Trash, FloppyDisk, GearSix, PencilSimple, X } from '@phosphor-icons/react'
 import { Button, Input, Skeleton } from '@ds'
+import { formatAmount, parseAmount, numberToDisplay, amountPlaceholder } from '@/lib/formatAmount'
 import {
   useMtConfigQuery,
   useUpdateMtConfigMutation,
@@ -63,18 +64,42 @@ function TierTable({
   accentClass,
   lang,
 }: TierTableProps) {
+  // Keep display strings in sync with tier values
+  const [minDisplays, setMinDisplays] = useState<string[]>(() =>
+    tiers.map((t) => (t.min ? numberToDisplay(t.min, lang) : '')),
+  )
+  const [bonusDisplays, setBonusDisplays] = useState<string[]>(() =>
+    tiers.map((t) => (t.bonus ? numberToDisplay(t.bonus, lang) : '')),
+  )
+
+  // Sync displays when tiers change externally (e.g. cancel → re-edit)
+  useEffect(() => {
+    setMinDisplays(tiers.map((t) => (t.min ? numberToDisplay(t.min, lang) : '')))
+    setBonusDisplays(tiers.map((t) => (t.bonus ? numberToDisplay(t.bonus, lang) : '')))
+  }, [tiers.length, lang]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleChange = (idx: number, field: 'min' | 'bonus', raw: string) => {
-    const val = parseInt(raw.replace(/\D/g, ''), 10)
-    const next = tiers.map((t, i) => (i === idx ? { ...t, [field]: isNaN(val) ? 0 : val } : t))
+    const formatted = formatAmount(raw, lang)
+    const num = Math.round(parseAmount(formatted, lang))
+    if (field === 'min') {
+      setMinDisplays((prev) => prev.map((d, i) => (i === idx ? formatted : d)))
+    } else {
+      setBonusDisplays((prev) => prev.map((d, i) => (i === idx ? formatted : d)))
+    }
+    const next = tiers.map((t, i) => (i === idx ? { ...t, [field]: isNaN(num) ? 0 : num } : t))
     onChange(next)
   }
 
   const addRow = () => {
     onChange([...tiers, { min: 0, bonus: 0 }])
+    setMinDisplays((prev) => [...prev, ''])
+    setBonusDisplays((prev) => [...prev, ''])
   }
 
   const removeRow = (idx: number) => {
     onChange(tiers.filter((_, i) => i !== idx))
+    setMinDisplays((prev) => prev.filter((_, i) => i !== idx))
+    setBonusDisplays((prev) => prev.filter((_, i) => i !== idx))
   }
 
   return (
@@ -94,18 +119,18 @@ function TierTable({
       {tiers.map((tier, idx) => (
         <div key={idx} className="grid grid-cols-[1fr_1fr_2rem] items-center gap-2">
           <Input
-            type="number"
-            min={0}
-            value={tier.min === 0 ? '' : tier.min}
+            type="text"
+            inputMode="numeric"
+            value={minDisplays[idx] ?? ''}
             placeholder={minPlaceholder}
             onChange={(e) => handleChange(idx, 'min', e.target.value)}
             className="h-8 text-sm tabular-nums"
           />
           <div className="relative">
             <Input
-              type="number"
-              min={0}
-              value={tier.bonus === 0 ? '' : tier.bonus}
+              type="text"
+              inputMode="numeric"
+              value={bonusDisplays[idx] ?? ''}
               placeholder="0"
               onChange={(e) => handleChange(idx, 'bonus', e.target.value)}
               className={`h-8 text-sm tabular-nums font-semibold pr-14 ${accentClass}`}
@@ -165,6 +190,8 @@ export function MtConfigTab({ lang }: MtConfigTabProps) {
 
   const [isEditing, setIsEditing] = useState(false)
   const [draft, setDraft] = useState<MtConfig | null>(null)
+  const [weeklyPrizeDisplay, setWeeklyPrizeDisplay] = useState('')
+  const [monthlyPrizeDisplay, setMonthlyPrizeDisplay] = useState('')
 
   // Sync draft when saved config loads for the first time
   useEffect(() => {
@@ -186,6 +213,8 @@ export function MtConfigTab({ lang }: MtConfigTabProps) {
 
   const handleStartEdit = () => {
     setDraft(structuredClone(savedConfig))
+    setWeeklyPrizeDisplay(numberToDisplay(savedConfig.weekly_prize_amount, lang))
+    setMonthlyPrizeDisplay(numberToDisplay(savedConfig.monthly_prize_amount, lang))
     setIsEditing(true)
   }
 
@@ -421,14 +450,16 @@ export function MtConfigTab({ lang }: MtConfigTabProps) {
                     </label>
                     <div className="relative">
                       <Input
-                        type="number"
-                        min={0}
-                        value={draft.weekly_prize_amount}
-                        onChange={(e) =>
+                        type="text"
+                        inputMode="numeric"
+                        value={weeklyPrizeDisplay}
+                        onChange={(e) => {
+                          const formatted = formatAmount(e.target.value, lang)
+                          setWeeklyPrizeDisplay(formatted)
                           setDraft((d) =>
-                            d ? { ...d, weekly_prize_amount: Number(e.target.value) } : d,
+                            d ? { ...d, weekly_prize_amount: Math.round(parseAmount(formatted, lang)) } : d,
                           )
-                        }
+                        }}
                         className="h-8 pr-14 text-sm font-semibold tabular-nums text-yellow-700"
                       />
                       <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-black/30">
@@ -467,14 +498,16 @@ export function MtConfigTab({ lang }: MtConfigTabProps) {
                     </label>
                     <div className="relative">
                       <Input
-                        type="number"
-                        min={0}
-                        value={draft.monthly_prize_amount}
-                        onChange={(e) =>
+                        type="text"
+                        inputMode="numeric"
+                        value={monthlyPrizeDisplay}
+                        onChange={(e) => {
+                          const formatted = formatAmount(e.target.value, lang)
+                          setMonthlyPrizeDisplay(formatted)
                           setDraft((d) =>
-                            d ? { ...d, monthly_prize_amount: Number(e.target.value) } : d,
+                            d ? { ...d, monthly_prize_amount: Math.round(parseAmount(formatted, lang)) } : d,
                           )
-                        }
+                        }}
                         className="h-8 pr-14 text-sm font-semibold tabular-nums text-yellow-700"
                       />
                       <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-black/30">

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -20,6 +20,7 @@ import {
   type HrBonusAgreement,
   type HrEmployee,
 } from '@/hooks/queries/useHrQuery'
+import { formatAmount, parseAmount, numberToDisplay, amountPlaceholder } from '@/lib/formatAmount'
 
 const paymentSchema = z.object({
   amount_usdt: z.coerce.number().min(0.01, "Tutar 0'dan büyük olmalı"),
@@ -48,6 +49,7 @@ export function BonusPaymentDialog({
   const lang = i18n.language === 'tr' ? 'tr' : 'en'
 
   const { createPayment } = useBonusMutations()
+  const [amountDisplay, setAmountDisplay] = useState('')
 
   const employee = employees.find((e) => e.id === agreement?.employee_id)
 
@@ -63,14 +65,16 @@ export function BonusPaymentDialog({
 
   useEffect(() => {
     if (open && agreement) {
+      const amt = agreement.bonus_type === 'fixed' ? agreement.fixed_amount : 0
       form.reset({
-        amount_usdt: agreement.bonus_type === 'fixed' ? agreement.fixed_amount : 0,
+        amount_usdt: amt,
         period: '',
         paid_at: new Date().toISOString().split('T')[0],
         notes: '',
       })
+      setAmountDisplay(numberToDisplay(amt, lang))
     }
-  }, [open, agreement, form])
+  }, [open, agreement, form, lang])
 
   const handleSubmit = form.handleSubmit(async (data) => {
     if (!agreement) return
@@ -138,11 +142,15 @@ export function BonusPaymentDialog({
                 {lang === 'tr' ? 'Tutar (USDT)' : 'Amount (USDT)'}
               </Label>
               <Input
-                type="number"
-                step="0.01"
-                min="0"
-                {...form.register('amount_usdt')}
-                placeholder="0.00"
+                type="text"
+                inputMode="decimal"
+                value={amountDisplay}
+                onChange={(e) => {
+                  const formatted = formatAmount(e.target.value, lang)
+                  setAmountDisplay(formatted)
+                  form.setValue('amount_usdt', parseAmount(formatted, lang), { shouldValidate: true })
+                }}
+                placeholder={amountPlaceholder(lang)}
               />
               {form.formState.errors.amount_usdt && (
                 <p className={compactError}>{form.formState.errors.amount_usdt.message}</p>

@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { formatAmount, parseAmount, numberToDisplay, amountPlaceholder } from '@/lib/formatAmount'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { localYMD } from '@/lib/date'
@@ -106,7 +107,9 @@ function SettlementFormDialog({
   initialData?: SettlementFormValues
   isEdit?: boolean
 }) {
-  const { t } = useTranslation('pages')
+  const { t, i18n } = useTranslation('pages')
+  const lang = (i18n.language === 'tr' ? 'tr' : 'en') as 'tr' | 'en'
+  const [amountDisplay, setAmountDisplay] = useState('')
 
   const {
     register,
@@ -134,8 +137,9 @@ function SettlementFormDialog({
         currency: (initialData?.currency ?? 'TL') as 'TL' | 'USD',
         notes: initialData?.notes ?? '',
       })
+      setAmountDisplay(initialData?.amount ? numberToDisplay(Number(initialData.amount), lang) : '')
     }
-  }, [open, initialData, reset])
+  }, [open, initialData, reset, lang])
 
   // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch
   const currencyVal = watch('currency')
@@ -176,12 +180,16 @@ function SettlementFormDialog({
             <div className="flex items-start gap-sm">
               <div className="flex-1">
                 <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder={amountPlaceholder(lang)}
                   className="text-lg font-semibold tabular-nums"
-                  {...register('amount')}
+                  value={amountDisplay}
+                  onChange={(e) => {
+                    const formatted = formatAmount(e.target.value, lang)
+                    setAmountDisplay(formatted)
+                    setValue('amount', parseAmount(formatted, lang) as unknown as number, { shouldValidate: true })
+                  }}
                 />
               </div>
               <div className="flex gap-1 pt-0.5">

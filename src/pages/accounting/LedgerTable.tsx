@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   DotsThree,
@@ -13,6 +13,7 @@ import {
   Funnel,
 } from '@phosphor-icons/react'
 import type { AccountingEntry } from '@/lib/database.types'
+import { formatAmount, parseAmount, amountPlaceholder } from '@/lib/formatAmount'
 import type { LedgerFilters } from '@/hooks/queries/useAccountingQuery'
 import { LedgerDailySummaryDialog } from './LedgerDailySummaryDialog'
 import {
@@ -122,12 +123,25 @@ export function LedgerTable({
   hasActiveFilters,
 }: LedgerTableProps) {
   const { t, i18n } = useTranslation('pages')
+  const lang = (i18n.language === 'tr' ? 'tr' : 'en') as 'tr' | 'en'
   const totalPages = Math.ceil(total / pageSize)
   const from = (page - 1) * pageSize + 1
   const to = Math.min(page * pageSize, total)
 
   // Filter bar expanded state
   const [filtersOpen, setFiltersOpen] = useState(false)
+
+  // Amount filter display states
+  const [amountMinDisplay, setAmountMinDisplay] = useState('')
+  const [amountMaxDisplay, setAmountMaxDisplay] = useState('')
+
+  // Sync display when filters are cleared externally
+  useEffect(() => {
+    if (!filters.amountMin) setAmountMinDisplay('')
+  }, [filters.amountMin])
+  useEffect(() => {
+    if (!filters.amountMax) setAmountMaxDisplay('')
+  }, [filters.amountMax])
 
   // Summary dialog state
   const [summaryGroup, setSummaryGroup] = useState<DateGroup | null>(null)
@@ -305,13 +319,17 @@ export function LedgerTable({
                     {t('accounting.filters.minAmount', 'Min')}
                   </span>
                   <Input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     inputSize="sm"
-                    placeholder="0.00"
-                    step="0.01"
-                    min="0"
-                    value={filters.amountMin ?? ''}
-                    onChange={(e) => onFilterChange('amountMin', e.target.value || null)}
+                    placeholder={amountPlaceholder(lang)}
+                    value={amountMinDisplay}
+                    onChange={(e) => {
+                      const formatted = formatAmount(e.target.value, lang)
+                      setAmountMinDisplay(formatted)
+                      const num = parseAmount(formatted, lang)
+                      onFilterChange('amountMin', num ? String(num) : null)
+                    }}
                     className="h-9 w-full text-xs"
                   />
                 </div>
@@ -320,13 +338,17 @@ export function LedgerTable({
                     {t('accounting.filters.maxAmount', 'Max')}
                   </span>
                   <Input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     inputSize="sm"
-                    placeholder="0.00"
-                    step="0.01"
-                    min="0"
-                    value={filters.amountMax ?? ''}
-                    onChange={(e) => onFilterChange('amountMax', e.target.value || null)}
+                    placeholder={amountPlaceholder(lang)}
+                    value={amountMaxDisplay}
+                    onChange={(e) => {
+                      const formatted = formatAmount(e.target.value, lang)
+                      setAmountMaxDisplay(formatted)
+                      const num = parseAmount(formatted, lang)
+                      onFilterChange('amountMax', num ? String(num) : null)
+                    }}
                     className="h-9 w-full text-xs"
                   />
                 </div>
