@@ -176,6 +176,8 @@ function fmtNum(n: number): string {
   })
 }
 
+const MAX_VISIBLE_TOKENS = 3
+
 function TokenAmountList({
   byToken,
   color,
@@ -192,15 +194,19 @@ function TokenAmountList({
   if (entries.length === 0) {
     return <span className="text-black/20">—</span>
   }
+
+  const visible = entries.slice(0, MAX_VISIBLE_TOKENS)
+  const hiddenCount = entries.length - visible.length
+
   return (
     <div className="space-y-0.5">
-      {entries.map(([sym, amount]) => {
+      {visible.map(([sym, amount]) => {
         const tokenColor = perTokenSign ? (amount >= 0 ? 'text-green' : 'text-red') : color
         const tokenPrefix = perTokenSign ? (amount >= 0 ? '+' : '-') : prefix
-        const displayAmount = perTokenSign ? Math.abs(amount) : Math.abs(amount)
+        const displayAmount = Math.abs(amount)
 
         return (
-          <div key={sym} className="flex items-baseline justify-end gap-1">
+          <div key={sym} className="flex items-baseline justify-end gap-1 whitespace-nowrap">
             <span className={`font-mono text-xs font-semibold tabular-nums ${tokenColor}`}>
               {tokenPrefix}
               {fmtNum(displayAmount)}
@@ -209,6 +215,9 @@ function TokenAmountList({
           </div>
         )
       })}
+      {hiddenCount > 0 && (
+        <span className="text-[10px] text-black/25">+{hiddenCount} more</span>
+      )}
     </div>
   )
 }
@@ -238,7 +247,7 @@ interface WalletDailyClosingProps {
   currentBalances: Record<string, number>
 }
 
-const TH = 'h-9 px-4 text-xs font-semibold uppercase tracking-wider text-black/40 whitespace-nowrap'
+const TH = 'h-9 px-3 text-xs font-semibold uppercase tracking-wider text-black/40 whitespace-nowrap'
 
 /* ── Component ────────────────────────────────────────── */
 
@@ -273,93 +282,103 @@ export function WalletDailyClosing({
   }
 
   return (
-    <div className="rounded-xl border border-black/10">
-      <Table cardOnMobile>
-        <TableHeader>
-          <TableRow className="bg-black/[0.02]">
-            <TableHead className={TH}>{t('accounting.dailyClosing.date')}</TableHead>
-            <TableHead className={TH}>{t('accounting.dailyClosing.tx')}</TableHead>
-            <TableHead className={`${TH} text-right`}>
-              <span className="inline-flex items-center gap-1">
-                <ArrowDown size={11} weight="bold" className="text-green" />
-                {t('accounting.dailyClosing.in')}
-              </span>
-            </TableHead>
-            <TableHead className={`${TH} text-right`}>
-              <span className="inline-flex items-center gap-1">
-                <ArrowUp size={11} weight="bold" className="text-red" />
-                {t('accounting.dailyClosing.out')}
-              </span>
-            </TableHead>
-            <TableHead className={`${TH} text-right`}>
-              <span className="inline-flex items-center gap-1">
-                <Minus size={11} weight="bold" className="text-black/40" />
-                {t('accounting.dailyClosing.net')}
-              </span>
-            </TableHead>
-            <TableHead className={`${TH} text-right`}>
-              {t('accounting.dailyClosing.balance')}
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {closings.map((day) => (
-            <TableRow key={day.dateKey} className="hover:bg-black/[0.01]">
-              {/* Date */}
-              <TableCell className="px-4 py-3" data-label={t('accounting.dailyClosing.date')}>
-                <div>
-                  <span className="text-sm font-medium text-black/80">{day.label}</span>
-                  <span className="ml-2 text-[10px] text-black/25">
-                    {day.dateKey !== 'unknown' ? day.dateKey : ''}
-                  </span>
-                </div>
-              </TableCell>
-
-              {/* Transfer count */}
-              <TableCell className="px-4 py-3" data-label={t('accounting.dailyClosing.tx')}>
-                <div className="flex items-center gap-sm">
-                  <span className="text-xs tabular-nums text-black/50">{day.totalCount}</span>
-                  <span className="text-[10px] text-black/25">
-                    ({day.inCount}↓ {day.outCount}↑)
-                  </span>
-                </div>
-              </TableCell>
-
-              {/* IN */}
-              <TableCell
-                className="px-4 py-3 text-right"
-                data-label={t('accounting.dailyClosing.in')}
-              >
-                <TokenAmountList byToken={day.inByToken} color="text-green" prefix="+" />
-              </TableCell>
-
-              {/* OUT */}
-              <TableCell
-                className="px-4 py-3 text-right"
-                data-label={t('accounting.dailyClosing.out')}
-              >
-                <TokenAmountList byToken={day.outByToken} color="text-red" prefix="-" />
-              </TableCell>
-
-              {/* NET */}
-              <TableCell
-                className="px-4 py-3 text-right"
-                data-label={t('accounting.dailyClosing.net')}
-              >
-                <TokenAmountList byToken={day.netByToken} color="" prefix="" perTokenSign />
-              </TableCell>
-
-              {/* BALANCE */}
-              <TableCell
-                className="px-4 py-3 text-right"
-                data-label={t('accounting.dailyClosing.balance')}
-              >
-                <BalanceList balanceByToken={day.balanceByToken} />
-              </TableCell>
+    <div className="rounded-xl border border-black/10 overflow-hidden">
+      <div className="max-h-[75vh] overflow-y-auto">
+        <Table className="table-fixed" cardOnMobile>
+          <colgroup>
+            <col className="w-[22%]" />
+            <col className="w-[10%]" />
+            <col className="w-[17%]" />
+            <col className="w-[17%]" />
+            <col className="w-[17%]" />
+            <col className="w-[17%]" />
+          </colgroup>
+          <TableHeader className="sticky top-0 z-10 bg-bg1">
+            <TableRow className="bg-black/[0.02]">
+              <TableHead className={TH}>{t('accounting.dailyClosing.date')}</TableHead>
+              <TableHead className={TH}>{t('accounting.dailyClosing.tx')}</TableHead>
+              <TableHead className={`${TH} text-right`}>
+                <span className="inline-flex items-center gap-1">
+                  <ArrowDown size={11} weight="bold" className="text-green" />
+                  {t('accounting.dailyClosing.in')}
+                </span>
+              </TableHead>
+              <TableHead className={`${TH} text-right`}>
+                <span className="inline-flex items-center gap-1">
+                  <ArrowUp size={11} weight="bold" className="text-red" />
+                  {t('accounting.dailyClosing.out')}
+                </span>
+              </TableHead>
+              <TableHead className={`${TH} text-right`}>
+                <span className="inline-flex items-center gap-1">
+                  <Minus size={11} weight="bold" className="text-black/40" />
+                  {t('accounting.dailyClosing.net')}
+                </span>
+              </TableHead>
+              <TableHead className={`${TH} text-right`}>
+                {t('accounting.dailyClosing.balance')}
+              </TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {closings.map((day) => (
+              <TableRow key={day.dateKey} className="hover:bg-black/[0.01]">
+                {/* Date */}
+                <TableCell className="px-3 py-3" data-label={t('accounting.dailyClosing.date')}>
+                  <div className="truncate">
+                    <span className="text-sm font-medium text-black/80">{day.label}</span>
+                    <span className="ml-1 text-[10px] text-black/25">
+                      {day.dateKey !== 'unknown' ? day.dateKey : ''}
+                    </span>
+                  </div>
+                </TableCell>
+
+                {/* Transfer count */}
+                <TableCell className="px-3 py-3" data-label={t('accounting.dailyClosing.tx')}>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs tabular-nums text-black/50">{day.totalCount}</span>
+                    <span className="text-[10px] text-black/25 whitespace-nowrap">
+                      ({day.inCount}↓ {day.outCount}↑)
+                    </span>
+                  </div>
+                </TableCell>
+
+                {/* IN */}
+                <TableCell
+                  className="px-3 py-3 text-right"
+                  data-label={t('accounting.dailyClosing.in')}
+                >
+                  <TokenAmountList byToken={day.inByToken} color="text-green" prefix="+" />
+                </TableCell>
+
+                {/* OUT */}
+                <TableCell
+                  className="px-3 py-3 text-right"
+                  data-label={t('accounting.dailyClosing.out')}
+                >
+                  <TokenAmountList byToken={day.outByToken} color="text-red" prefix="-" />
+                </TableCell>
+
+                {/* NET */}
+                <TableCell
+                  className="px-3 py-3 text-right"
+                  data-label={t('accounting.dailyClosing.net')}
+                >
+                  <TokenAmountList byToken={day.netByToken} color="" prefix="" perTokenSign />
+                </TableCell>
+
+                {/* BALANCE */}
+                <TableCell
+                  className="px-3 py-3 text-right"
+                  data-label={t('accounting.dailyClosing.balance')}
+                >
+                  <BalanceList balanceByToken={day.balanceByToken} />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   )
 }

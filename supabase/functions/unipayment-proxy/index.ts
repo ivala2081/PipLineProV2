@@ -15,6 +15,7 @@ import { createAdminClient } from '../_shared/supabase-admin.ts'
 const UNIPAYMENT_CLIENT_ID = Deno.env.get('UNIPAYMENT_CLIENT_ID')
 const UNIPAYMENT_CLIENT_SECRET = Deno.env.get('UNIPAYMENT_CLIENT_SECRET')
 const UNIPAYMENT_BASE_URL = Deno.env.get('UNIPAYMENT_BASE_URL') || 'https://api.unipayment.io'
+const UNIPAYMENT_APP_ID = Deno.env.get('UNIPAYMENT_APP_ID') || '46f44926-9968-4713-bcc7-f9a2b7586f15'
 
 /* ── Response helpers ──────────────────────────────────────────────── */
 
@@ -164,16 +165,16 @@ async function handleGetDepositAddress(params: Record<string, unknown>): Promise
 }
 
 async function handleCreateInvoice(params: Record<string, unknown>): Promise<unknown> {
-  const { order_id, price_amount, price_currency } = params
+  const { order_id, price_amount, price_currency, _app_id } = params
   if (!order_id || !price_amount || !price_currency) {
     throw new Error('order_id, price_amount, and price_currency are required')
   }
-  return uniPaymentFetch('POST', '/v1.0/invoices', params)
+  return uniPaymentFetch('POST', '/v1.0/invoices', { ...params, app_id: _app_id })
 }
 
 async function handleQueryInvoices(params: Record<string, unknown>): Promise<unknown> {
-  const { page_no = 1, page_size = 20, status } = params
-  let path = `/v1.0/invoices?page_no=${page_no}&page_size=${page_size}`
+  const { page_no = 1, page_size = 20, status, _app_id } = params
+  let path = `/v1.0/invoices?app_id=${_app_id}&page_no=${page_no}&page_size=${page_size}`
   if (status) path += `&status=${status}`
   return uniPaymentFetch('GET', path)
 }
@@ -193,8 +194,8 @@ async function handleCreatePayment(params: Record<string, unknown>): Promise<unk
 }
 
 async function handleQueryPayments(params: Record<string, unknown>): Promise<unknown> {
-  const { page_no = 1, page_size = 20, status } = params
-  let path = `/v1.0/payments?page_no=${page_no}&page_size=${page_size}`
+  const { page_no = 1, page_size = 20, status, _app_id } = params
+  let path = `/v1.0/payments?app_id=${_app_id}&page_no=${page_no}&page_size=${page_size}`
   if (status) path += `&status=${status}`
   return uniPaymentFetch('GET', path)
 }
@@ -414,6 +415,23 @@ serve(async (req: Request) => {
     // Validate JWT and org membership
     const authHeader = req.headers.get('Authorization')
     const caller = await validateCaller(authHeader, orgId)
+
+    // Resolve app_id from PSP record (if psp_id provided)
+    let appId = UNIPAYMENT_APP_ID
+    const pspId = params.psp_id as string | undefined
+    if (pspId) {
+      const admin = createAdminClient()
+      const { data: psp } = await admin
+        .from('psps')
+        .select('provider_app_id')
+        .eq('id', pspId)
+        .single()
+      if (psp?.provider_app_id) {
+        appId = psp.provider_app_id
+      }
+    }
+    // Inject appId into params for handlers
+    params._app_id = appId
 
     // Route to action handler
     let result: unknown

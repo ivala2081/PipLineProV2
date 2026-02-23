@@ -12,7 +12,8 @@ ALTER TABLE public.psps
   ADD COLUMN IF NOT EXISTS psp_scope TEXT NOT NULL DEFAULT 'local'
     CHECK (psp_scope IN ('local', 'global')),
   ADD COLUMN IF NOT EXISTS provider TEXT NULL
-    CHECK (provider IS NULL OR provider IN ('unipayment'));
+    CHECK (provider IS NULL OR provider IN ('unipayment')),
+  ADD COLUMN IF NOT EXISTS provider_app_id TEXT NULL;
 
 -- Enforce: one UniPayment PSP per organization
 CREATE UNIQUE INDEX IF NOT EXISTS idx_psps_one_unipayment_per_org

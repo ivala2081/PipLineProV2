@@ -758,7 +758,8 @@
     "addDialog": {
       "scopeLabel": "PSP Type",
       "providerLabel": "Provider",
-      "selectProvider": "Select provider"
+      "selectProvider": "Select provider",
+      "appIdLabel": "App ID"
     },
     "stats": {
       "outstanding": "Outstanding Balance",

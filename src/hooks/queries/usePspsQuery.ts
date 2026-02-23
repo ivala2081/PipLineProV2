@@ -11,6 +11,7 @@ export interface Psp {
   is_internal: boolean
   psp_scope: 'local' | 'global'
   provider: string | null
+  provider_app_id: string | null
 }
 
 export function usePspsQuery() {
@@ -23,7 +24,7 @@ export function usePspsQuery() {
 
       const { data, error } = await supabase
         .from('psps')
-        .select('id, name, commission_rate, is_active, is_internal, psp_scope, provider')
+        .select('id, name, commission_rate, is_active, is_internal, psp_scope, provider, provider_app_id')
         .eq('organization_id', currentOrg.id)
         .order('name')
 

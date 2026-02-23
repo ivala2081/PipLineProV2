@@ -156,6 +156,7 @@ export function PspsPage() {
   // Add dialog state
   const [newScope, setNewScope] = useState<'local' | 'global' | null>(null)
   const [newProvider, setNewProvider] = useState<string>('unipayment')
+  const [newAppId, setNewAppId] = useState('')
   const [newName, setNewName] = useState('')
   const [newRate, setNewRate] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -167,6 +168,7 @@ export function PspsPage() {
   const resetDialog = () => {
     setNewScope(null)
     setNewProvider('unipayment')
+    setNewAppId('')
     setNewName('')
     setNewRate('')
   }
@@ -176,7 +178,7 @@ export function PspsPage() {
     if (newScope === 'local') {
       if (!newName.trim() || !newRate) return
     } else {
-      if (!newName.trim() || !newProvider) return
+      if (!newName.trim() || !newProvider || !newAppId.trim()) return
     }
 
     setIsSubmitting(true)
@@ -190,6 +192,7 @@ export function PspsPage() {
         data.commission_rate = Number(newRate) / 100
       } else {
         data.provider = newProvider
+        data.provider_app_id = newAppId.trim()
         data.commission_rate = 0
         data.currency = 'USD'
       }
@@ -208,7 +211,7 @@ export function PspsPage() {
     !!newScope && (
       newScope === 'local'
         ? !!newName.trim() && !!newRate
-        : !!newName.trim() && !!newProvider
+        : !!newName.trim() && !!newProvider && !!newAppId.trim()
     )
 
   const renderCards = (items: PspSummary[]) => {
@@ -345,17 +348,28 @@ export function PspsPage() {
 
             {/* Provider (Global only) */}
             {newScope === 'global' && (
-              <div className="space-y-sm">
-                <Label>{t('psps.addDialog.providerLabel')}</Label>
-                <Select value={newProvider} onValueChange={setNewProvider}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('psps.addDialog.selectProvider')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unipayment">UniPayment</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <>
+                <div className="space-y-sm">
+                  <Label>{t('psps.addDialog.providerLabel')}</Label>
+                  <Select value={newProvider} onValueChange={setNewProvider}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('psps.addDialog.selectProvider')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unipayment">UniPayment</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-sm">
+                  <Label>{t('psps.addDialog.appIdLabel')}</Label>
+                  <Input
+                    value={newAppId}
+                    onChange={(e) => setNewAppId(e.target.value)}
+                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                  />
+                </div>
+              </>
             )}
 
             {/* Name */}

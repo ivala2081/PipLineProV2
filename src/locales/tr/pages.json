@@ -758,7 +758,8 @@
     "addDialog": {
       "scopeLabel": "Kasa Tipi",
       "providerLabel": "Sağlayıcı",
-      "selectProvider": "Sağlayıcı seç"
+      "selectProvider": "Sağlayıcı seç",
+      "appIdLabel": "App ID"
     },
     "stats": {
       "outstanding": "Devir Bakiye",

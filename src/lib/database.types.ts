@@ -691,6 +691,7 @@ export interface Database {
           currency: string
           psp_scope: PspScope
           provider: PspProvider | null
+          provider_app_id: string | null
           created_at: string
           updated_at: string
         }
@@ -704,6 +705,7 @@ export interface Database {
           currency?: string
           psp_scope?: PspScope
           provider?: PspProvider | null
+          provider_app_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -717,6 +719,7 @@ export interface Database {
           currency?: string
           psp_scope?: PspScope
           provider?: PspProvider | null
+          provider_app_id?: string | null
           created_at?: string
           updated_at?: string
         }
