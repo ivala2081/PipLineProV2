@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { DotsThree, Plus, Users } from '@phosphor-icons/react'
+import { Crown, DotsThree, Plus, ShieldCheck, Users, Wrench } from '@phosphor-icons/react'
 import {
   Table,
   TableHeader,
@@ -9,7 +9,6 @@ import {
   TableRow,
   TableHead,
   TableCell,
-  Tag,
   Skeleton,
   Button,
   DropdownMenu,
@@ -31,6 +30,16 @@ import { LastSeen } from '@/components/LastSeen'
 import { usePresenceSubscription } from '@/hooks/usePresenceSubscription'
 import { canManageMembers, getAssignableRoles } from '@/lib/roles'
 
+type RoleKey = 'manager' | 'admin' | 'operation'
+
+const ROLE_ORDER: RoleKey[] = ['admin', 'manager', 'operation']
+
+const ROLE_CONFIG = {
+  manager: { RoleIcon: Crown, dotClass: 'bg-purple-400' },
+  admin: { RoleIcon: ShieldCheck, dotClass: 'bg-green-400' },
+  operation: { RoleIcon: Wrench, dotClass: 'bg-blue-400' },
+}
+
 export function MembersPage() {
   const navigate = useNavigate()
   const { t, i18n } = useTranslation('pages')
@@ -44,11 +53,15 @@ export function MembersPage() {
 
   const { data: rawMembers = [], isLoading } = useOrgMembersQuery(orgId)
 
-  // Sort by role priority: manager → admin → operation
-  const roleOrder: Record<string, number> = { manager: 0, admin: 1, operation: 2 }
-  const members = [...rawMembers].sort(
-    (a, b) => (roleOrder[a.role] ?? 9) - (roleOrder[b.role] ?? 9),
+  const membersByRole = ROLE_ORDER.reduce(
+    (acc, role) => {
+      acc[role] = rawMembers.filter((m) => m.role === role)
+      return acc
+    },
+    {} as Record<RoleKey, MemberWithProfile[]>,
   )
+  const totalMembers = rawMembers.length
+
   const updateRole = useUpdateMemberRole(orgId)
   const removeMember = useRemoveMember(orgId)
 
@@ -56,7 +69,6 @@ export function MembersPage() {
   const [removeTarget, setRemoveTarget] = useState<MemberWithProfile | null>(null)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
 
-  // Subscribe to real-time presence updates
   usePresenceSubscription()
 
   const handleChangeRole = async (
@@ -113,21 +125,31 @@ export function MembersPage() {
       />
 
       {isLoading ? (
-        <div className="overflow-hidden rounded-xl border border-black/10">
-          <div className="bg-black/[0.015] px-4 py-3">
-            <Skeleton className="h-4 w-48 rounded-md" />
-          </div>
-          <div className="divide-y divide-black/[0.04]">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 px-4 py-3.5">
-                <Skeleton className="size-8 rounded-full" />
-                <Skeleton className="h-4 w-32 rounded-md" />
-                <Skeleton className="ml-auto h-4 w-16 rounded-md" />
+        /* Skeleton matches 3-section layout */
+        <div className="space-y-5">
+          {([1, 2, 3] as const).map((rowCount, i) => (
+            <div key={i} className="overflow-hidden rounded-xl border border-black/10">
+              <div className="flex items-center gap-2.5 border-b border-black/10 bg-black/[0.015] px-4 py-2.5">
+                <Skeleton className="size-2 rounded-full" />
+                <Skeleton className="h-3 w-20 rounded-md" />
+                <Skeleton className="ml-auto h-4 w-6 rounded-md" />
               </div>
-            ))}
-          </div>
+              <div className="divide-y divide-black/[0.04]">
+                {Array.from({ length: rowCount }).map((_, j) => (
+                  <div key={j} className="flex items-center gap-3 px-4 py-3.5">
+                    <Skeleton className="size-8 shrink-0 rounded-full" />
+                    <div className="flex flex-col gap-1.5">
+                      <Skeleton className="h-3.5 w-28 rounded-md" />
+                      <Skeleton className="h-3 w-20 rounded-md" />
+                    </div>
+                    <Skeleton className="ml-auto h-3 w-16 rounded-md" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
-      ) : members.length === 0 ? (
+      ) : totalMembers === 0 ? (
         <div className="flex flex-col items-center justify-center gap-sm rounded-xl border border-black/10 bg-bg1 py-20">
           <div className="flex size-12 items-center justify-center rounded-full bg-black/[0.04]">
             <Users size={20} className="text-black/30" />
@@ -135,147 +157,158 @@ export function MembersPage() {
           <p className="text-sm text-black/60">{t('organizations.members.empty')}</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-black/10">
-          <Table cardOnMobile>
-            <TableHeader>
-              <TableRow className="bg-black/[0.015] hover:bg-black/[0.015]">
-                <TableHead className="h-10 px-4 text-xs font-semibold uppercase tracking-wider text-black/40">
-                  {t('organizations.members.columns.name')}
-                </TableHead>
-                <TableHead className="h-10 px-4 text-xs font-semibold uppercase tracking-wider text-black/40">
-                  {t('organizations.members.columns.status')}
-                </TableHead>
-                <TableHead className="h-10 px-4 text-xs font-semibold uppercase tracking-wider text-black/40">
-                  {t('organizations.members.columns.role')}
-                </TableHead>
-                <TableHead className="h-10 px-4 text-xs font-semibold uppercase tracking-wider text-black/40">
-                  {t('organizations.members.columns.joined')}
-                </TableHead>
-                {canManage && <TableHead className="h-10 w-12 px-2" />}
-              </TableRow>
-            </TableHeader>
-            <TableBody className="divide-y divide-black/[0.04]">
-              {members.map((member) => {
-                const isSelf = member.user_id === user?.id
-                const canActOnMember =
-                  !isSelf &&
-                  // Managers cannot act on admins
-                  (isGod || membership?.role !== 'manager' || member.role !== 'admin')
-                const displayName = member.profile?.display_name ?? member.user_id
+        <>
+          <div className="space-y-5">
+            {ROLE_ORDER.map((role) => {
+              const group = membersByRole[role]
+              if (group.length === 0) return null
+              const { RoleIcon, dotClass } = ROLE_CONFIG[role]
 
-                return (
-                  <TableRow
-                    key={member.user_id}
-                    className="cursor-pointer hover:bg-black/[0.015]"
-                    onClick={() => navigate(`/members/${member.user_id}`)}
-                  >
-                    <TableCell
-                      className="px-4 py-3"
-                      data-label={t('organizations.members.columns.name')}
-                    >
-                      <div className="flex items-center gap-sm">
-                        <UserAvatar
-                          src={member.profile?.avatar_url}
-                          name={member.profile?.display_name ?? undefined}
-                          size="sm"
-                          showPresence
-                          lastSeenAt={member.profile?.last_seen_at}
-                        />
-                        <span className="text-sm font-medium text-black/90">{displayName}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell
-                      className="px-4 py-3"
-                      data-label={t('organizations.members.columns.status')}
-                    >
-                      <LastSeen lastSeenAt={member.profile?.last_seen_at} />
-                    </TableCell>
-                    <TableCell
-                      className="px-4 py-3"
-                      data-label={t('organizations.members.columns.role')}
-                    >
-                      <Tag
-                        variant={
-                          member.role === 'admin'
-                            ? 'green'
-                            : member.role === 'manager'
-                              ? 'purple'
-                              : 'blue'
-                        }
-                      >
-                        {t(`memberProfile.roles.${member.role}`)}
-                      </Tag>
-                    </TableCell>
-                    <TableCell
-                      className="px-4 py-3 text-sm text-black/50"
-                      data-label={t('organizations.members.columns.joined')}
-                    >
-                      {new Date(member.created_at).toLocaleDateString(
-                        i18n.language === 'tr' ? 'tr-TR' : 'en-US',
-                      )}
-                    </TableCell>
-                    {canManage && (
-                      <TableCell className="px-2 py-3" isActions>
-                        {canActOnMember && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                className="size-7 p-0 text-black/40 hover:text-black/70"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <DotsThree size={16} weight="bold" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                              align="end"
-                              sideOffset={4}
-                              onClick={(e) => e.stopPropagation()}
+              return (
+                <div key={role} className="overflow-hidden rounded-xl border border-black/10">
+                  {/* Role section header */}
+                  <div className="flex items-center gap-2.5 border-b border-black/10 bg-black/[0.015] px-4 py-2.5">
+                    <span className={`size-2 shrink-0 rounded-full ${dotClass}`} />
+                    <RoleIcon size={13} weight="bold" className="text-black/40" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-black/50">
+                      {t(`memberProfile.roles.${role}`)}
+                    </span>
+                    <span className="ml-auto rounded-md bg-black/[0.06] px-1.5 py-0.5 text-xs font-semibold tabular-nums text-black/40">
+                      {group.length}
+                    </span>
+                  </div>
+
+                  <Table cardOnMobile className="table-fixed">
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead className="h-9 px-4 text-xs font-medium text-black/30">
+                          {t('organizations.members.columns.name')}
+                        </TableHead>
+                        <TableHead className="h-9 w-52 px-4 text-xs font-medium text-black/30">
+                          {t('organizations.members.columns.status')}
+                        </TableHead>
+                        <TableHead className="h-9 w-36 px-4 text-xs font-medium text-black/30">
+                          {t('organizations.members.columns.joined')}
+                        </TableHead>
+                        {canManage && <TableHead className="h-9 w-12 px-2" />}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody className="divide-y divide-black/[0.04]">
+                      {group.map((member) => {
+                        const isSelf = member.user_id === user?.id
+                        const canActOnMember =
+                          !isSelf &&
+                          (isGod || membership?.role !== 'manager' || member.role !== 'admin')
+                        const displayName = member.profile?.display_name ?? member.user_id
+
+                        return (
+                          <TableRow
+                            key={member.user_id}
+                            className="cursor-pointer hover:bg-black/[0.015]"
+                            onClick={() => navigate(`/members/${member.user_id}`)}
+                          >
+                            <TableCell
+                              className="px-4 py-3"
+                              data-label={t('organizations.members.columns.name')}
                             >
-                              {assignableRoles.includes('admin') && member.role !== 'admin' && (
-                                <DropdownMenuItem onClick={() => handleChangeRole(member, 'admin')}>
-                                  {t('organizations.members.actions.makeAdmin')}
-                                </DropdownMenuItem>
+                              <div className="flex items-center gap-sm">
+                                <UserAvatar
+                                  src={member.profile?.avatar_url}
+                                  name={member.profile?.display_name ?? undefined}
+                                  size="sm"
+                                  showPresence
+                                  lastSeenAt={member.profile?.last_seen_at}
+                                />
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className="text-sm font-medium text-black/90">
+                                    {displayName}
+                                  </span>
+                                  {isSelf && <span className="text-xs text-black/30">· You</span>}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell
+                              className="px-4 py-3"
+                              data-label={t('organizations.members.columns.status')}
+                            >
+                              <LastSeen lastSeenAt={member.profile?.last_seen_at} />
+                            </TableCell>
+                            <TableCell
+                              className="px-4 py-3 text-sm text-black/40"
+                              data-label={t('organizations.members.columns.joined')}
+                            >
+                              {new Date(member.created_at).toLocaleDateString(
+                                i18n.language === 'tr' ? 'tr-TR' : 'en-US',
                               )}
-                              {assignableRoles.includes('manager') && member.role !== 'manager' && (
-                                <DropdownMenuItem
-                                  onClick={() => handleChangeRole(member, 'manager')}
-                                >
-                                  {t('organizations.members.actions.makeManager')}
-                                </DropdownMenuItem>
-                              )}
-                              {assignableRoles.includes('operation') &&
-                                member.role !== 'operation' && (
-                                  <DropdownMenuItem
-                                    onClick={() => handleChangeRole(member, 'operation')}
-                                  >
-                                    {t('organizations.members.actions.makeOperation')}
-                                  </DropdownMenuItem>
+                            </TableCell>
+                            {canManage && (
+                              <TableCell className="px-2 py-3" isActions>
+                                {canActOnMember && (
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        className="size-7 p-0 text-black/40 hover:text-black/70"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <DotsThree size={16} weight="bold" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                      align="end"
+                                      sideOffset={4}
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      {assignableRoles.includes('admin') &&
+                                        member.role !== 'admin' && (
+                                          <DropdownMenuItem
+                                            onClick={() => handleChangeRole(member, 'admin')}
+                                          >
+                                            {t('organizations.members.actions.makeAdmin')}
+                                          </DropdownMenuItem>
+                                        )}
+                                      {assignableRoles.includes('manager') &&
+                                        member.role !== 'manager' && (
+                                          <DropdownMenuItem
+                                            onClick={() => handleChangeRole(member, 'manager')}
+                                          >
+                                            {t('organizations.members.actions.makeManager')}
+                                          </DropdownMenuItem>
+                                        )}
+                                      {assignableRoles.includes('operation') &&
+                                        member.role !== 'operation' && (
+                                          <DropdownMenuItem
+                                            onClick={() => handleChangeRole(member, 'operation')}
+                                          >
+                                            {t('organizations.members.actions.makeOperation')}
+                                          </DropdownMenuItem>
+                                        )}
+                                      <DropdownMenuItem
+                                        className="text-red"
+                                        onClick={() => setPinTarget(member)}
+                                      >
+                                        {t('organizations.members.actions.remove')}
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
                                 )}
-                              <DropdownMenuItem
-                                className="text-red"
-                                onClick={() => setPinTarget(member)}
-                              >
-                                {t('organizations.members.actions.remove')}
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
-                      </TableCell>
-                    )}
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-
-          {/* Footer with count */}
-          <div className="border-t border-black/10 bg-black/[0.015] px-4 py-2.5">
-            <span className="text-xs text-black/40">
-              {members.length} {t('members.totalMembers')}
-            </span>
+                              </TableCell>
+                            )}
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              )
+            })}
           </div>
-        </div>
+
+          {/* Total count */}
+          <p className="text-center text-xs text-black/30">
+            {totalMembers} {t('members.totalMembers')}
+          </p>
+        </>
       )}
 
       <PinDialog
