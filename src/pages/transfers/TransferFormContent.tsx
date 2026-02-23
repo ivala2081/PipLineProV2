@@ -4,7 +4,6 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowsDownUp,
   ArrowCircleDown,
   ArrowCircleUp,
   User,
@@ -452,82 +451,6 @@ export function TransferFormContent({
       }}
       className="space-y-3 lg:space-y-5"
     >
-      {/* ═══ TRANSFER DIRECTION — full-width banner ═══════════ */}
-      <div>
-        <div className="mb-2 flex items-center gap-2">
-          <ArrowsDownUp size={14} weight="bold" className="text-black/30" />
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-black/35">
-            {s.direction}
-          </p>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          {categoryOptions.map((cat) => {
-            const selected = categoryId === cat.id
-            const isDep = cat.is_deposit
-            return (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => form.setValue('category_id', cat.id)}
-                className={cn(
-                  'group relative flex items-center gap-3 rounded-2xl border-2 px-5 py-4 text-left transition-all',
-                  selected && isDep && 'border-green-500/50 bg-green-500/10 shadow-sm',
-                  selected && !isDep && 'border-red-500/50 bg-red-500/10 shadow-sm',
-                  !selected &&
-                    'border-black/[0.08] bg-black/[0.02] hover:border-black/15 hover:bg-black/[0.04]',
-                )}
-              >
-                <div
-                  className={cn(
-                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors',
-                    selected && isDep && 'bg-green-500/20 text-green-600',
-                    selected && !isDep && 'bg-red-500/20 text-red-500',
-                    !selected && 'bg-black/[0.04] text-black/25 group-hover:text-black/40',
-                  )}
-                >
-                  {isDep ? (
-                    <ArrowCircleDown size={22} weight={selected ? 'fill' : 'bold'} />
-                  ) : (
-                    <ArrowCircleUp size={22} weight={selected ? 'fill' : 'bold'} />
-                  )}
-                </div>
-                <div>
-                  <span
-                    className={cn(
-                      'block text-base font-bold leading-tight',
-                      selected && isDep && 'text-green-700',
-                      selected && !isDep && 'text-red-600',
-                      !selected && 'text-black/40',
-                    )}
-                  >
-                    {cat.name}
-                  </span>
-                  <span
-                    className={cn(
-                      'block text-[11px] leading-tight',
-                      selected && isDep && 'text-green-600/60',
-                      selected && !isDep && 'text-red-500/60',
-                      !selected && 'text-black/25',
-                    )}
-                  >
-                    {isDep
-                      ? lang === 'tr'
-                        ? 'Gelen Transfer'
-                        : 'Incoming transfer'
-                      : lang === 'tr'
-                        ? 'Giden Transfer'
-                        : 'Outgoing transfer'}
-                  </span>
-                </div>
-              </button>
-            )
-          })}
-        </div>
-        {form.formState.errors.category_id && (
-          <p className="mt-1 text-xs text-red">{form.formState.errors.category_id.message}</p>
-        )}
-      </div>
-
       {/* ═══ TWO-COLUMN GRID ═════════════════════════════════════ */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-5">
         {/* ─── LEFT CARD: Client & Payment ────────────────────── */}
@@ -680,6 +603,30 @@ export function TransferFormContent({
             {s.amount}
           </SectionHeader>
           <div className="space-y-4">
+            {/* Currency toggle */}
+            <div>
+              <Label className="mb-1.5 block text-xs font-medium tracking-wide text-black/60">
+                {t('transfers.form.currency')}
+              </Label>
+              <div className="flex gap-2">
+                {(['TL', 'USD'] as const).map((cur) => (
+                  <button
+                    key={cur}
+                    type="button"
+                    onClick={() => form.setValue('currency', cur)}
+                    className={cn(
+                      'flex-1 rounded-lg px-3 py-2 text-center text-sm font-semibold transition-all',
+                      currency === cur
+                        ? 'bg-brand text-white shadow-sm'
+                        : 'bg-black/[0.04] text-black/35 hover:bg-black/[0.07]',
+                    )}
+                  >
+                    {cur}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Amount input — large */}
             <Field
               label={`${t('transfers.form.amount')} (${currency})`}
@@ -696,21 +643,45 @@ export function TransferFormContent({
               />
             </Field>
 
-            {/* Currency */}
-            <Field label={t('transfers.form.currency')}>
-              <Select
-                value={currency}
-                onValueChange={(v) => form.setValue('currency', v as 'TL' | 'USD')}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="TL">TL</SelectItem>
-                  <SelectItem value="USD">USD</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
+            {/* DEP / WD direction */}
+            <div>
+              <Label className="mb-1.5 block text-xs font-medium tracking-wide text-black/60">
+                {s.direction}
+              </Label>
+              <div className="grid grid-cols-2 gap-2">
+                {categoryOptions.map((cat) => {
+                  const selected = categoryId === cat.id
+                  const isDep = cat.is_deposit
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => form.setValue('category_id', cat.id)}
+                      className={cn(
+                        'flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold transition-all',
+                        selected &&
+                          isDep &&
+                          'bg-green-500/15 text-green-700 shadow-sm ring-1 ring-green-500/30',
+                        selected &&
+                          !isDep &&
+                          'bg-red-500/15 text-red-600 shadow-sm ring-1 ring-red-500/30',
+                        !selected && 'bg-black/[0.04] text-black/35 hover:bg-black/[0.07]',
+                      )}
+                    >
+                      {isDep ? (
+                        <ArrowCircleDown size={18} weight={selected ? 'fill' : 'bold'} />
+                      ) : (
+                        <ArrowCircleUp size={18} weight={selected ? 'fill' : 'bold'} />
+                      )}
+                      {cat.name}
+                    </button>
+                  )
+                })}
+              </div>
+              {form.formState.errors.category_id && (
+                <p className="mt-1 text-xs text-red">{form.formState.errors.category_id.message}</p>
+              )}
+            </div>
 
             {/* Exchange rate bar */}
             <div className="rounded-xl border border-black/[0.07] bg-black/[0.02] px-3 py-2.5">
