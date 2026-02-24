@@ -5,6 +5,7 @@ import {
   ArrowRight,
   PencilSimple,
   Trash,
+  MagnifyingGlass,
 } from '@phosphor-icons/react'
 import {
   Button,
@@ -21,12 +22,14 @@ import {
   SelectContent,
   SelectItem,
   Skeleton,
+  Input,
 } from '@ds'
 import { useToast } from '@/hooks/useToast'
 import {
   useBonusPaymentsQuery,
   useBonusAgreementsQuery,
   useBonusMutations,
+  useHrSettingsQuery,
   type HrEmployee,
   type HrBonusPayment,
 } from '@/hooks/queries/useHrQuery'
@@ -58,7 +61,10 @@ export function PaymentsTab({ employees, canManage, lang }: PaymentsTabProps) {
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1) // 1-based
-  const [employeeFilter, setEmployeeFilter] = useState<string>('all')
+  const [search, setSearch] = useState('')
+  const [deptFilter, setDeptFilter] = useState<string>('all')
+  const { data: hrSettings } = useHrSettingsQuery()
+  const settingsRoles = hrSettings?.roles ?? []
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [editingPayment, setEditingPayment] = useState<HrBonusPayment | null>(null)
 
@@ -82,17 +88,22 @@ export function PaymentsTab({ employees, canManage, lang }: PaymentsTabProps) {
   // Filter: paid status only, within the selected month by paid_at
   const filtered = useMemo(() => {
     const monthStr = `${year}-${String(month).padStart(2, '0')}`
+    const q = search.trim().toLowerCase()
     return allPayments.filter((p) => {
       // Only paid entries
       if (p.status && p.status !== 'paid') return false
       // Filter by month (based on paid_at or created_at fallback)
       const dateStr = p.paid_at ?? p.created_at.slice(0, 10)
       if (!dateStr.startsWith(monthStr)) return false
-      // Employee filter
-      if (employeeFilter !== 'all' && p.employee_id !== employeeFilter) return false
+      // Get employee for dept filter and text search
+      const emp = employees.find((e) => e.id === p.employee_id)
+      // Dept filter
+      if (deptFilter !== 'all' && emp?.role !== deptFilter) return false
+      // Text search (name + email)
+      if (q && !emp?.full_name.toLowerCase().includes(q) && !emp?.email.toLowerCase().includes(q)) return false
       return true
     })
-  }, [allPayments, year, month, employeeFilter])
+  }, [allPayments, year, month, search, deptFilter, employees])
 
   const totalUsdt = useMemo(
     () => filtered.reduce((s, p) => s + p.amount_usdt, 0),
@@ -128,23 +139,34 @@ export function PaymentsTab({ employees, canManage, lang }: PaymentsTabProps) {
           </Button>
         </div>
 
-        {/* Employee filter */}
-        <div className="w-52">
-          <Select value={employeeFilter} onValueChange={setEmployeeFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder={lang === 'tr' ? 'Çalışan filtrele' : 'Filter employee'} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">
-                {lang === 'tr' ? 'Tüm Çalışanlar' : 'All Employees'}
-              </SelectItem>
-              {employees.map((e) => (
-                <SelectItem key={e.id} value={e.id}>
-                  {e.full_name}
+        {/* Search + Dept filters */}
+        <div className="flex items-center gap-2">
+          <div className="relative w-52">
+            <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30" />
+            <Input
+              className="pl-8 text-sm"
+              placeholder={lang === 'tr' ? 'İsim veya e-posta ara...' : 'Search by name or email...'}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="w-48">
+            <Select value={deptFilter} onValueChange={setDeptFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder={lang === 'tr' ? 'Departman' : 'Department'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  {lang === 'tr' ? 'Tüm Departmanlar' : 'All Departments'}
                 </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                {settingsRoles.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {r}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 

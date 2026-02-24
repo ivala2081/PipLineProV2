@@ -4,7 +4,6 @@ import {
   Trophy,
   Star,
   ChartBar,
-  CalendarCheck,
   Trash,
   CheckFat,
   Money,
@@ -42,6 +41,7 @@ import {
   useAutoBonusTransfersQuery,
   useHrEmployeesQuery,
   useMtConfigQuery,
+  useReConfigQuery,
   useBonusPaymentsQuery,
   useBonusMutations,
   useAdvancesQuery,
@@ -50,6 +50,8 @@ import {
   type HrBonusPayment,
   type MtConfig,
   type MtTier,
+  type ReConfig,
+  type ReTier,
   type BulkPayoutItem,
 } from '@/hooks/queries/useHrQuery'
 import { useToast } from '@/hooks/useToast'
@@ -81,7 +83,12 @@ function getMtVolumeBonus(volumeUsd: number, tiers: MtTier[]): number {
   return 0
 }
 
-const RE_ATTENTION_RATE = 0.0575
+function getReRate(netUsd: number, tiers: ReTier[]): number {
+  for (const tier of tiers) {
+    if (netUsd >= tier.min) return tier.rate
+  }
+  return 0
+}
 
 /* ------------------------------------------------------------------ */
 /*  RecentPaymentsSection (defined at module level)                    */
@@ -303,7 +310,7 @@ function computeMtStats(
   })
 }
 
-function computeReStats(employees: HrEmployee[], transfers: AutoBonusTransfer[]): ReEmployeeStat[] {
+function computeReStats(employees: HrEmployee[], transfers: AutoBonusTransfer[], config: ReConfig): ReEmployeeStat[] {
   const reEmps = employees.filter((e) => e.role === 'Re-attention' && e.is_active)
   return reEmps.map((emp) => {
     const empTransfers = transfers.filter((t) => t.employee_id === emp.id)
@@ -314,7 +321,8 @@ function computeReStats(employees: HrEmployee[], transfers: AutoBonusTransfer[])
       .filter((t) => t.category_id === 'wd')
       .reduce((s, t) => s + Math.abs(t.amount_usd), 0)
     const netUsd = totalDepositsUsd - totalWithdrawalsUsd
-    const bonus = netUsd > 0 ? Math.round(netUsd * RE_ATTENTION_RATE * 100) / 100 : 0
+    const rate = getReRate(netUsd, config.rate_tiers)
+    const bonus = netUsd > 0 ? Math.round(netUsd * (rate / 100) * 100) / 100 : 0
     return { employee: emp, totalDepositsUsd, totalWithdrawalsUsd, netUsd, bonus }
   })
 }
@@ -329,10 +337,6 @@ function fmt(n: number, digits = 2) {
     maximumFractionDigits: digits,
   })
 }
-
-/* ------------------------------------------------------------------ */
-/*  Monthly Summary Dialog                                              */
-/* ------------------------------------------------------------------ */
 
 const MONTH_NAMES_TR = [
   'Ocak',
@@ -362,238 +366,6 @@ const MONTH_NAMES_EN = [
   'November',
   'December',
 ]
-
-interface MonthlySummaryDialogProps {
-  open: boolean
-  onClose: () => void
-  year: number
-  month: number
-  lang: 'tr' | 'en'
-  dept: 'marketing' | 'reattention'
-  mtStats: MtEmployeeStat[]
-  reStats: ReEmployeeStat[]
-  monthlyPrizeAmount: number
-}
-
-function MonthlySummaryDialog({
-  open,
-  onClose,
-  year,
-  month,
-  lang,
-  dept,
-  mtStats,
-  reStats,
-  monthlyPrizeAmount,
-}: MonthlySummaryDialogProps) {
-  const monthName = lang === 'tr' ? MONTH_NAMES_TR[month - 1] : MONTH_NAMES_EN[month - 1]
-
-  const mtTotal = mtStats.reduce((s, e) => s + e.totalBonus, 0)
-  const reTotal = reStats.reduce((s, e) => s + e.bonus, 0)
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent size="lg" onInteractOutside={(e) => e.preventDefault()}>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <CalendarCheck size={18} weight="duotone" className="text-brand" />
-            {lang === 'tr'
-              ? `Aylık Özet — ${monthName} ${year}`
-              : `Monthly Summary — ${monthName} ${year}`}
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-lg pt-1">
-          {/* Marketing Summary */}
-          {dept === 'marketing' && (
-            <div className="space-y-sm">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-black/30">
-                Marketing
-              </p>
-              {mtStats.length === 0 ? (
-                <p className="text-sm text-black/40">{lang === 'tr' ? 'Veri yok' : 'No data'}</p>
-              ) : (
-                <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{lang === 'tr' ? 'Çalışan' : 'Employee'}</TableHead>
-                        <TableHead className="text-right">
-                          {lang === 'tr' ? 'FD Adet' : 'FD Count'}
-                        </TableHead>
-                        <TableHead className="text-right">
-                          {lang === 'tr' ? 'Dep. Prim' : 'Dep. Bonus'}
-                        </TableHead>
-                        <TableHead className="text-right">
-                          {lang === 'tr' ? 'Adet Prim' : 'Count Bonus'}
-                        </TableHead>
-                        <TableHead className="text-right">
-                          {lang === 'tr' ? 'Hacim Prim' : 'Vol. Bonus'}
-                        </TableHead>
-                        <TableHead className="text-right">
-                          {lang === 'tr' ? 'Ödül' : 'Prize'}
-                        </TableHead>
-                        <TableHead className="text-right">
-                          {lang === 'tr' ? 'Toplam' : 'Total'}
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {[...mtStats]
-                        .sort((a, b) => b.totalBonus - a.totalBonus)
-                        .map((stat) => (
-                          <TableRow key={stat.employee.id}>
-                            <TableCell>
-                              <div className="flex items-center gap-sm">
-                                <EmpAvatar emp={stat.employee} />
-                                <span className="truncate text-sm font-medium text-black">
-                                  {stat.employee.full_name}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <span className="tabular-nums text-sm font-semibold text-black/80">
-                                {stat.count}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <BonusCell value={stat.depositBonus} />
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <BonusCell value={stat.countBonus} />
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <BonusCell value={stat.volumeBonus} />
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {stat.weeklyPrize > 0 || stat.monthlyPrize ? (
-                                <span className="tabular-nums text-sm font-semibold text-yellow-600">
-                                  {fmt(
-                                    stat.weeklyPrize + (stat.monthlyPrize ? monthlyPrizeAmount : 0),
-                                  )}{' '}
-                                  USDT
-                                </span>
-                              ) : (
-                                <span className="text-xs text-black/30">—</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {stat.totalBonus > 0 ? (
-                                <span className="tabular-nums text-sm font-bold text-green">
-                                  {fmt(stat.totalBonus)} USDT
-                                </span>
-                              ) : (
-                                <span className="text-xs text-black/30">—</span>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      {mtStats.length > 1 && (
-                        <TableRow className="bg-black/[0.02]">
-                          <TableCell
-                            colSpan={6}
-                            className="text-right text-xs font-semibold text-black/50"
-                          >
-                            {lang === 'tr' ? 'Toplam MT Prim' : 'Total MT Bonus'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span className="tabular-nums text-sm font-bold text-purple">
-                              {fmt(mtTotal)} USDT
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Re-attention Summary */}
-          {dept === 'reattention' && (
-            <div className="space-y-sm">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-black/30">
-                Re-attention
-              </p>
-              {reStats.length === 0 ? (
-                <p className="text-sm text-black/40">{lang === 'tr' ? 'Veri yok' : 'No data'}</p>
-              ) : (
-                <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{lang === 'tr' ? 'Çalışan' : 'Employee'}</TableHead>
-                        <TableHead className="text-right">
-                          {lang === 'tr' ? 'Net (USD)' : 'Net (USD)'}
-                        </TableHead>
-                        <TableHead className="text-right">
-                          {lang === 'tr' ? 'Prim (USDT)' : 'Bonus (USDT)'}
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {[...reStats]
-                        .sort((a, b) => b.bonus - a.bonus)
-                        .map((stat) => (
-                          <TableRow key={stat.employee.id}>
-                            <TableCell>
-                              <div className="flex items-center gap-sm">
-                                <EmpAvatar emp={stat.employee} />
-                                <span className="truncate text-sm font-medium text-black">
-                                  {stat.employee.full_name}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <span
-                                className={`tabular-nums text-sm font-semibold ${stat.netUsd >= 0 ? 'text-blue' : 'text-red'}`}
-                              >
-                                {stat.netUsd >= 0 ? '+' : ''}
-                                {fmt(stat.netUsd, 0)} USD
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <BonusCell value={stat.bonus} />
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      {reStats.length > 1 && (
-                        <TableRow className="bg-black/[0.02]">
-                          <TableCell
-                            colSpan={2}
-                            className="text-right text-xs font-semibold text-black/50"
-                          >
-                            {lang === 'tr' ? 'Toplam RE Prim' : 'Total RE Bonus'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span className="tabular-nums text-sm font-bold text-orange">
-                              {fmt(reTotal)} USDT
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Grand Total */}
-          <div className="flex items-center justify-between rounded-xl border border-black/[0.07] bg-bg1 px-4 py-3">
-            <span className="text-sm font-semibold text-black/60">
-              {lang === 'tr' ? 'Dönem Toplam Prim' : 'Period Total Bonus'}
-            </span>
-            <span className="tabular-nums text-base font-bold text-green">
-              {fmt(dept === 'marketing' ? mtTotal : reTotal)} USDT
-            </span>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
-}
 
 function BonusCell({ value }: { value: number }) {
   if (value === 0) return <span className="text-xs text-black/30">—</span>
@@ -1194,7 +966,6 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
-  const [summaryOpen, setSummaryOpen] = useState(false)
   const [bulkPayoutOpen, setBulkPayoutOpen] = useState(false)
   const { toast } = useToast()
 
@@ -1204,22 +975,27 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
     month,
   )
   const { data: config, isLoading: configLoading } = useMtConfigQuery()
+  const { data: reConfig, isLoading: reConfigLoading } = useReConfigQuery()
   const { data: allPayments = [] } = useBonusPaymentsQuery()
   const { data: advances = [] } = useAdvancesQuery(year, month)
   const { deletePayment, createPayment } = useBonusMutations()
 
   const [payTarget, setPayTarget] = useState<AutoPayTarget | null>(null)
 
-  const isLoading = empLoading || transfersLoading || configLoading
+  const isLoading = empLoading || transfersLoading || configLoading || reConfigLoading
 
   const mtStats = useMemo(
     () => (dept !== 'reattention' && config ? computeMtStats(employees, transfers, config) : []),
     [employees, transfers, config, dept],
   )
   const reStats = useMemo(
-    () => (dept !== 'marketing' ? computeReStats(employees, transfers) : []),
-    [employees, transfers, dept],
+    () => (dept !== 'marketing' && reConfig ? computeReStats(employees, transfers, reConfig) : []),
+    [employees, transfers, reConfig, dept],
   )
+
+  // Period label for display and bulk payout
+  const monthNames = lang === 'tr' ? MONTH_NAMES_TR : MONTH_NAMES_EN
+  const periodLabel = `${monthNames[month - 1]} ${year}`
 
   // Build advance map per employee (bonus advances only)
   const advancesByEmp = useMemo(() => {
@@ -1231,7 +1007,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
     return m
   }, [advances])
 
-  // Already-paid employee IDs for this period (individual payments)
+  // Already-paid employee IDs for this period (matched by period label, not paid_at date)
   const paidMtIds = useMemo(() => {
     const mtIds = new Set(employees.filter((e) => e.role === 'Marketing').map((e) => e.id))
     return new Set(
@@ -1239,16 +1015,12 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
         .filter(
           (p) =>
             mtIds.has(p.employee_id) &&
-            p.paid_at &&
+            p.period === periodLabel &&
             (!p.status || p.status === 'paid'),
         )
-        .filter((p) => {
-          const d = new Date(p.paid_at!)
-          return d.getFullYear() === year && d.getMonth() + 1 === month
-        })
         .map((p) => p.employee_id),
     )
-  }, [allPayments, employees, year, month])
+  }, [allPayments, employees, periodLabel])
 
   const paidReIds = useMemo(() => {
     const reIds = new Set(employees.filter((e) => e.role === 'Re-attention').map((e) => e.id))
@@ -1257,20 +1029,12 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
         .filter(
           (p) =>
             reIds.has(p.employee_id) &&
-            p.paid_at &&
+            p.period === periodLabel &&
             (!p.status || p.status === 'paid'),
         )
-        .filter((p) => {
-          const d = new Date(p.paid_at!)
-          return d.getFullYear() === year && d.getMonth() + 1 === month
-        })
         .map((p) => p.employee_id),
     )
-  }, [allPayments, employees, year, month])
-
-  // Period label for display and bulk payout
-  const monthNames = lang === 'tr' ? MONTH_NAMES_TR : MONTH_NAMES_EN
-  const periodLabel = `${monthNames[month - 1]} ${year}`
+  }, [allPayments, employees, periodLabel])
 
   const periodSelector = (
     <PeriodSelector
@@ -1289,14 +1053,12 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
     return m
   }, [employees])
 
-  // Payments for a dept, filtered by selected month/year (paid_at)
+  // Payments for a dept, filtered by selected period label
   const getPaymentsForDept = (role: 'Marketing' | 'Re-attention') => {
     const deptIds = new Set(employees.filter((e) => e.role === role).map((e) => e.id))
     return allPayments.filter((p) => {
       if (!deptIds.has(p.employee_id)) return false
-      if (!p.paid_at) return false
-      const d = new Date(p.paid_at)
-      return d.getFullYear() === year && d.getMonth() + 1 === month
+      return p.period === periodLabel
     })
   }
 
@@ -1401,25 +1163,6 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
           canManage={canManage}
           onDeletePayment={(id) => void handleDeletePayment(id)}
         />
-        {!isLoading && mtStats.length > 0 && (
-          <div className="flex justify-center pt-sm">
-            <Button variant="outline" onClick={() => setSummaryOpen(true)}>
-              <CalendarCheck size={15} weight="duotone" />
-              {lang === 'tr' ? 'Aylık Özet' : 'Monthly Summary'}
-            </Button>
-          </div>
-        )}
-        <MonthlySummaryDialog
-          open={summaryOpen}
-          onClose={() => setSummaryOpen(false)}
-          year={year}
-          month={month}
-          lang={lang}
-          dept="marketing"
-          mtStats={mtStats}
-          reStats={[]}
-          monthlyPrizeAmount={config?.monthly_prize_amount ?? 200}
-        />
         <BulkPayoutConfirmDialog
           open={bulkPayoutOpen}
           onClose={() => setBulkPayoutOpen(false)}
@@ -1480,25 +1223,6 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
           employeeMap={employeeMap}
           canManage={canManage}
           onDeletePayment={(id) => void handleDeletePayment(id)}
-        />
-        {!isLoading && reStats.length > 0 && (
-          <div className="flex justify-center pt-sm">
-            <Button variant="outline" onClick={() => setSummaryOpen(true)}>
-              <CalendarCheck size={15} weight="duotone" />
-              {lang === 'tr' ? 'Aylık Özet' : 'Monthly Summary'}
-            </Button>
-          </div>
-        )}
-        <MonthlySummaryDialog
-          open={summaryOpen}
-          onClose={() => setSummaryOpen(false)}
-          year={year}
-          month={month}
-          lang={lang}
-          dept="reattention"
-          mtStats={[]}
-          reStats={reStats}
-          monthlyPrizeAmount={config?.monthly_prize_amount ?? 200}
         />
         <BulkPayoutConfirmDialog
           open={bulkPayoutOpen}

@@ -14,6 +14,7 @@ import {
   Buildings,
   GearSix,
   CheckFat,
+  ClockCounterClockwise,
 } from '@phosphor-icons/react'
 import {
   Button,
@@ -59,6 +60,8 @@ import { BulkPayoutConfirmDialog } from './BulkPayoutConfirmDialog'
 import { VariablePendingDialog } from './VariablePendingDialog'
 import { AutoBonusTab } from './AutoBonusTab'
 import { MtConfigTab } from './MtConfigTab'
+import { ReConfigTab } from './ReConfigTab'
+import { PaymentsTab } from '../PaymentsTab'
 import type { HrBonusType } from '@/lib/database.types'
 
 /* ------------------------------------------------------------------ */
@@ -102,7 +105,7 @@ interface BonusesTabProps {
 // Roles that use automatic bonus calculation — excluded from manual agreements
 const AUTO_BONUS_ROLES = ['Marketing', 'Re-attention'] as const
 
-type DeptTab = 'marketing' | 'reattention' | 'other' | 'config'
+type DeptTab = 'marketing' | 'reattention' | 'other' | 'history' | 'config' | 're-config'
 
 const MONTH_NAMES_TR = [
   'Ocak',
@@ -313,10 +316,20 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
               <Buildings size={14} className="mr-1" />
               {lang === 'tr' ? 'Diğer Departmanlar' : 'Other Departments'}
             </TabsTrigger>
+            <TabsTrigger value="history">
+              <ClockCounterClockwise size={14} className="mr-1" />
+              {lang === 'tr' ? 'Ödeme Geçmişi' : 'Payment History'}
+            </TabsTrigger>
             {canManage && (
               <TabsTrigger value="config">
                 <GearSix size={14} className="mr-1" />
                 {lang === 'tr' ? 'MT Yapılandırma' : 'MT Config'}
+              </TabsTrigger>
+            )}
+            {canManage && (
+              <TabsTrigger value="re-config">
+                <GearSix size={14} className="mr-1" />
+                {lang === 'tr' ? 'RE Yapılandırma' : 'RE Config'}
               </TabsTrigger>
             )}
           </TabsList>
@@ -807,9 +820,19 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
           </div>
         </TabsContent>
 
+        <TabsContent value="history" className="pt-lg">
+          <PaymentsTab employees={employees} canManage={canManage} lang={lang} />
+        </TabsContent>
+
         {canManage && (
           <TabsContent value="config" className="pt-lg">
             <MtConfigTab lang={lang} />
+          </TabsContent>
+        )}
+
+        {canManage && (
+          <TabsContent value="re-config" className="pt-lg">
+            <ReConfigTab lang={lang} />
           </TabsContent>
         )}
       </Tabs>

@@ -143,6 +143,41 @@ export type MtConfig = {
   monthly_prize_min_sales: number
 }
 
+/* ------------------------------------------------------------------ */
+/*  RE Config Types                                                    */
+/* ------------------------------------------------------------------ */
+
+export type ReTier = { min: number; rate: number }
+
+export type ReConfig = {
+  rate_tiers: ReTier[]
+}
+
+export const DEFAULT_RE_CONFIG: ReConfig = {
+  rate_tiers: [{ min: 0, rate: 5.75 }],
+}
+
+/* ------------------------------------------------------------------ */
+/*  HR Settings Types                                                  */
+/* ------------------------------------------------------------------ */
+
+export type HrSettings = {
+  roles: string[]
+  supplement_tl: number
+  absence_full_day_divisor: number
+  absence_half_day_divisor: number
+}
+
+export const DEFAULT_HR_SETTINGS: HrSettings = {
+  roles: [
+    'Manager', 'Marketing', 'Operation', 'Re-attention',
+    'Project Management', 'Social Media', 'Sales Development', 'Programmer',
+  ],
+  supplement_tl: 4000,
+  absence_full_day_divisor: 30,
+  absence_half_day_divisor: 60,
+}
+
 export const DEFAULT_MT_CONFIG: MtConfig = {
   deposit_tiers: [
     { min: 10000, bonus: 750 },
@@ -199,6 +234,8 @@ export const hrKeys = {
   autoBonusTransfers: (orgId: string, year: number, month: number) =>
     ['hr', orgId, 'auto-bonus-transfers', year, month] as const,
   mtConfig: (orgId: string) => ['hr', orgId, 'mt-config'] as const,
+  reConfig: (orgId: string) => ['hr', orgId, 're-config'] as const,
+  hrSettings: (orgId: string) => ['hr', orgId, 'settings'] as const,
 }
 
 /* ------------------------------------------------------------------ */
@@ -720,6 +757,55 @@ export function useUpdateMtConfigMutation() {
 }
 
 /* ------------------------------------------------------------------ */
+/*  RE Config Query & Mutation                                         */
+/* ------------------------------------------------------------------ */
+
+export function useReConfigQuery() {
+  const { currentOrg } = useOrganization()
+  const orgId = currentOrg?.id ?? ''
+
+  return useQuery({
+    queryKey: hrKeys.reConfig(orgId),
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('hr_re_config')
+        .select('*')
+        .eq('organization_id', orgId)
+        .maybeSingle()
+
+      if (!data) return DEFAULT_RE_CONFIG
+      return {
+        rate_tiers: data.rate_tiers as ReTier[],
+      } as ReConfig
+    },
+    enabled: !!orgId,
+  })
+}
+
+export function useUpdateReConfigMutation() {
+  const { currentOrg } = useOrganization()
+  const queryClient = useQueryClient()
+  const orgId = currentOrg?.id ?? ''
+
+  return useMutation({
+    mutationFn: async (config: ReConfig) => {
+      const { error } = await supabase.from('hr_re_config').upsert(
+        {
+          organization_id: orgId,
+          rate_tiers: config.rate_tiers,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'organization_id' },
+      )
+      if (error) throw error
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: hrKeys.reConfig(orgId) })
+    },
+  })
+}
+
+/* ------------------------------------------------------------------ */
 /*  Auto Bonus Transfers Query                                         */
 /* ------------------------------------------------------------------ */
 
@@ -1042,6 +1128,7 @@ export type BulkSalaryPayoutItem = {
   employee_name: string
   amount_tl: number
   supplement_tl: number
+  attendance_deduction_tl: number
   period: string
   description: string
 }
@@ -1086,7 +1173,7 @@ export function useBulkSalaryPayoutMutation() {
         organization_id: orgId,
         employee_id: item.employee_id,
         period: item.period,
-        amount_tl: item.amount_tl,
+        amount_tl: Math.max(0, item.amount_tl - item.attendance_deduction_tl),
         paid_at: paidAt,
         notes: null as string | null,
         created_by: user.id,
@@ -1108,7 +1195,7 @@ export function useBulkSalaryPayoutMutation() {
         description: item.description,
         entry_type: 'ODEME' as const,
         direction: 'out' as const,
-        amount: item.amount_tl,
+        amount: Math.max(0, item.amount_tl - item.attendance_deduction_tl),
         currency: 'TL',
         entry_date: paidAt,
         payment_period: item.period,
@@ -1126,7 +1213,7 @@ export function useBulkSalaryPayoutMutation() {
       if (supplementItems.length > 0) {
         const supplementPayload = supplementItems.map((item) => ({
           organization_id: orgId,
-          description: `${item.employee_name} — ${item.period} Sigorta Ek Ücreti`,
+          description: `${item.employee_name} — ${item.period} Sigorta Elden Ödeme`,
           entry_type: 'ODEME' as const,
           direction: 'out' as const,
           amount: item.supplement_tl,
@@ -1224,6 +1311,63 @@ export function useUpdateSalaryPaymentMutation() {
       void queryClient.invalidateQueries({ queryKey: ['hr', orgId, 'salary-payments'] })
       void queryClient.invalidateQueries({ queryKey: ['hr', orgId, 'all-salary-payments'] })
       void queryClient.invalidateQueries({ queryKey: ['accounting'] })
+    },
+  })
+}
+
+/* ------------------------------------------------------------------ */
+/*  HR Settings Hooks                                                   */
+/* ------------------------------------------------------------------ */
+
+export function useHrSettingsQuery() {
+  const { currentOrg } = useOrganization()
+  const orgId = currentOrg?.id ?? ''
+
+  return useQuery({
+    queryKey: hrKeys.hrSettings(orgId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('hr_settings')
+        .select('*')
+        .eq('organization_id', orgId)
+        .maybeSingle()
+
+      if (error) throw error
+      if (!data) return DEFAULT_HR_SETTINGS
+
+      return {
+        roles: (data.roles ?? DEFAULT_HR_SETTINGS.roles) as string[],
+        supplement_tl: Number(data.supplement_tl) || DEFAULT_HR_SETTINGS.supplement_tl,
+        absence_full_day_divisor: Number(data.absence_full_day_divisor) || DEFAULT_HR_SETTINGS.absence_full_day_divisor,
+        absence_half_day_divisor: Number(data.absence_half_day_divisor) || DEFAULT_HR_SETTINGS.absence_half_day_divisor,
+      } as HrSettings
+    },
+    enabled: !!orgId,
+  })
+}
+
+export function useUpdateHrSettingsMutation() {
+  const { currentOrg } = useOrganization()
+  const queryClient = useQueryClient()
+  const orgId = currentOrg?.id ?? ''
+
+  return useMutation({
+    mutationFn: async (settings: HrSettings) => {
+      const { error } = await supabase.from('hr_settings').upsert(
+        {
+          organization_id: orgId,
+          roles: settings.roles,
+          supplement_tl: settings.supplement_tl,
+          absence_full_day_divisor: settings.absence_full_day_divisor,
+          absence_half_day_divisor: settings.absence_half_day_divisor,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'organization_id' },
+      )
+      if (error) throw error
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: hrKeys.hrSettings(orgId) })
     },
   })
 }

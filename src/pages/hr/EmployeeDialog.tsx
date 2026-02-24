@@ -21,7 +21,7 @@ import {
   Separator,
 } from '@ds'
 import { useToast } from '@/hooks/useToast'
-import { useHrMutations, HR_EMPLOYEE_ROLES, type HrEmployee } from '@/hooks/queries/useHrQuery'
+import { useHrMutations, useHrSettingsQuery, type HrEmployee } from '@/hooks/queries/useHrQuery'
 import { formatAmount, parseAmount, numberToDisplay, amountPlaceholder } from '@/lib/formatAmount'
 
 /* ------------------------------------------------------------------ */
@@ -69,6 +69,8 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
   const [salaryDisplay, setSalaryDisplay] = useState('')
 
   const { createEmployee, updateEmployee } = useHrMutations()
+  const { data: hrSettings } = useHrSettingsQuery()
+  const settingsRoles = hrSettings?.roles ?? []
 
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeSchema),
@@ -259,7 +261,7 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {HR_EMPLOYEE_ROLES.map((r) => (
+                    {settingsRoles.map((r) => (
                       <SelectItem key={r} value={r}>
                         {r}
                       </SelectItem>
@@ -344,7 +346,7 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
                       }`}
                     >
                       <span className="text-xs font-medium text-black/70">
-                        {lang === 'tr' ? 'Ek ücret alacak' : 'Supplement'}
+                        {lang === 'tr' ? 'Sigorta Elden Ödeme Alacak' : 'Insurance Supplement'}
                       </span>
                       <div
                         className={`relative h-5 w-10 shrink-0 rounded-full transition-colors ${

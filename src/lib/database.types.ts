@@ -615,6 +615,40 @@ export interface Database {
           },
         ]
       }
+      /* ──────────── HR Settings ──────────── */
+      hr_settings: {
+        Row: {
+          id: string
+          organization_id: string
+          roles: string[]
+          supplement_tl: number
+          absence_full_day_divisor: number
+          absence_half_day_divisor: number
+          updated_at: string
+        }
+        Insert: {
+          organization_id: string
+          roles?: string[]
+          supplement_tl?: number
+          absence_full_day_divisor?: number
+          absence_half_day_divisor?: number
+        }
+        Update: {
+          roles?: string[]
+          supplement_tl?: number
+          absence_full_day_divisor?: number
+          absence_half_day_divisor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'hr_settings_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: true
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       /* ──────────── Global Lookup Tables (TEXT PK, no org_id) ──────────── */
       transfer_categories: {
         Row: {

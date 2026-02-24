@@ -16,6 +16,7 @@ import {
   CurrencyCircleDollar,
   Money,
   Users,
+  GearSix,
 } from '@phosphor-icons/react'
 import {
   PageHeader,
@@ -53,7 +54,7 @@ import {
   useHrEmployeesQuery,
   useHrMutations,
   useHrSalaryPaymentsQuery,
-  HR_EMPLOYEE_ROLES,
+  useHrSettingsQuery,
   type HrEmployee,
 } from '@/hooks/queries/useHrQuery'
 import { EmployeeDialog } from './EmployeeDialog'
@@ -62,8 +63,7 @@ import { DocumentsDialog } from './DocumentsDialog'
 import { BonusesTab } from './bonuses'
 import { AttendanceTab } from './AttendanceTab'
 import { SalariesTab } from './SalariesTab'
-import { PaymentsTab } from './PaymentsTab'
-import { SalaryPaymentsTab } from './SalaryPaymentsTab'
+import { SettingsTab } from './SettingsTab'
 import type { HrEmployeeRole } from '@/lib/database.types'
 
 /* ------------------------------------------------------------------ */
@@ -243,6 +243,8 @@ export function HrPage() {
 
   const { data: employees = [], isLoading } = useHrEmployeesQuery()
   const { deleteEmployee } = useHrMutations()
+  const { data: hrSettings } = useHrSettingsQuery()
+  const settingsRoles = hrSettings?.roles ?? []
 
   const lang: 'tr' | 'en' = i18n.language === 'tr' ? 'tr' : 'en'
 
@@ -254,7 +256,7 @@ export function HrPage() {
 
   const [activeTab, setActiveTab] = useState('employees')
   const [search, setSearch] = useState('')
-  const [roleFilter, setRoleFilter] = useState<HrEmployeeRole | 'all'>('all')
+  const [roleFilter, setRoleFilter] = useState<string>('all')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<HrEmployee | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<HrEmployee | null>(null)
@@ -341,15 +343,15 @@ export function HrPage() {
             )}
           </TabsTrigger>
           <TabsTrigger value="bonuses">{lang === 'tr' ? 'Primler' : 'Bonuses'}</TabsTrigger>
-          <TabsTrigger value="payments">
-            {lang === 'tr' ? 'Geçmiş Prim Ödemeleri' : 'Bonus Payment History'}
-          </TabsTrigger>
-          <TabsTrigger value="salary-payments">
-            {lang === 'tr' ? 'Geçmiş Maaş Ödemeleri' : 'Salary Payment History'}
-          </TabsTrigger>
           <TabsTrigger value="attendance">
             {lang === 'tr' ? 'Devam Takibi' : 'Attendance'}
           </TabsTrigger>
+          {canManage && (
+            <TabsTrigger value="settings">
+              <GearSix size={14} className="mr-1" />
+              {lang === 'tr' ? 'Ayarlar' : 'Settings'}
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* ── Employees Tab ── */}
@@ -443,7 +445,7 @@ export function HrPage() {
               <div className="w-48">
                 <Select
                   value={roleFilter}
-                  onValueChange={(v) => setRoleFilter(v as HrEmployeeRole | 'all')}
+                  onValueChange={setRoleFilter}
                 >
                   <SelectTrigger>
                     <SelectValue
@@ -454,7 +456,7 @@ export function HrPage() {
                     <SelectItem value="all">
                       {lang === 'tr' ? 'Tüm Roller' : 'All Roles'}
                     </SelectItem>
-                    {HR_EMPLOYEE_ROLES.map((r) => (
+                    {settingsRoles.map((r) => (
                       <SelectItem key={r} value={r}>
                         {r}
                       </SelectItem>
@@ -600,26 +602,21 @@ export function HrPage() {
           </div>
         </TabsContent>
 
-        {/* ── Bonus Payments Tab ── */}
-        <TabsContent value="payments">
-          <div className="pt-lg">
-            <PaymentsTab employees={employees} canManage={canManage} lang={lang} />
-          </div>
-        </TabsContent>
-
-        {/* ── Salary Payments Tab ── */}
-        <TabsContent value="salary-payments">
-          <div className="pt-lg">
-            <SalaryPaymentsTab employees={employees} canManage={canManage} lang={lang} />
-          </div>
-        </TabsContent>
-
         {/* ── Attendance Tab ── */}
         <TabsContent value="attendance">
           <div className="pt-lg">
             <AttendanceTab employees={employees} canManage={canManage} lang={lang} />
           </div>
         </TabsContent>
+
+        {/* ── Settings Tab ── */}
+        {canManage && (
+          <TabsContent value="settings">
+            <div className="pt-lg">
+              <SettingsTab employees={employees} canManage={canManage} lang={lang} />
+            </div>
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Dialogs */}

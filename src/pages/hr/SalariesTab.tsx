@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Money, CheckCircle, Clock, ArrowLeft, ArrowRight, CheckFat } from '@phosphor-icons/react'
+import { Money, CheckCircle, Clock, ArrowLeft, ArrowRight, CheckFat, PencilSimple, ClockCounterClockwise } from '@phosphor-icons/react'
 import {
   Button,
   Table,
@@ -11,14 +11,23 @@ import {
   Tag,
   EmptyState,
   Skeleton,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
 } from '@ds'
 import {
-  useHrSalaryPaymentsQuery,
+  useAllSalaryPaymentsQuery,
   useAdvancesQuery,
+  useHrMonthlyAttendanceQuery,
+  useHrSettingsQuery,
   type HrEmployee,
+  type HrSalaryPaymentLocal,
   type BulkSalaryPayoutItem,
 } from '@/hooks/queries/useHrQuery'
 import { BulkSalaryConfirmDialog } from './BulkSalaryConfirmDialog'
+import { SalaryEditDialog } from './SalaryEditDialog'
+import { SalaryPaymentsTab } from './SalaryPaymentsTab'
 import type { HrEmployeeRole } from '@/lib/database.types'
 
 /* ------------------------------------------------------------------ */
@@ -87,9 +96,16 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [bulkPayoutOpen, setBulkPayoutOpen] = useState(false)
+  const [editingPayment, setEditingPayment] = useState<HrSalaryPaymentLocal | null>(null)
+  const [editingEmployee, setEditingEmployee] = useState<HrEmployee | null>(null)
 
-  const { data: salaryPayments = [], isLoading } = useHrSalaryPaymentsQuery(year, month)
+  const { data: allSalaryPayments = [], isLoading } = useAllSalaryPaymentsQuery()
   const { data: advances = [] } = useAdvancesQuery(year, month)
+  const { data: monthlyAttendance = [] } = useHrMonthlyAttendanceQuery(year, month)
+  const { data: hrSettings } = useHrSettingsQuery()
+  const supplementTl = hrSettings?.supplement_tl ?? 4000
+  const fullDayDivisor = hrSettings?.absence_full_day_divisor ?? 30
+  const halfDayDivisor = hrSettings?.absence_half_day_divisor ?? 60
 
   const monthNames = lang === 'tr' ? MONTH_NAMES_TR : MONTH_NAMES_EN
   const periodLabel = `${monthNames[month - 1]} ${year}`
@@ -100,14 +116,16 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
     [employees],
   )
 
-  /* Map of employee_id → paid salary payment for this period */
+  /* Map of employee_id → paid salary payment for this period (matched by period label) */
   const paidByEmp = useMemo(() => {
-    const map = new Map<string, (typeof salaryPayments)[number]>()
-    for (const p of salaryPayments) {
-      map.set(p.employee_id, p)
+    const map = new Map<string, (typeof allSalaryPayments)[number]>()
+    for (const p of allSalaryPayments) {
+      if (p.period === periodLabel) {
+        map.set(p.employee_id, p)
+      }
     }
     return map
-  }, [salaryPayments])
+  }, [allSalaryPayments, periodLabel])
 
   /* Map of employee_id → salary advance total for this period */
   const salaryAdvanceByEmp = useMemo(() => {
@@ -120,7 +138,19 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
     return map
   }, [advances])
 
-  const SUPPLEMENT_TL = 4000
+  /* Map of employee_id → attendance deduction for this period */
+  const attendanceDeductionByEmp = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const emp of activeEmployees) {
+      const empAttendance = monthlyAttendance.filter((a) => a.employee_id === emp.id)
+      const absentDays = empAttendance.filter((a) => a.status === 'absent').length
+      const halfDays = empAttendance.filter((a) => a.status === 'half_day').length
+      const deduction = Math.round((emp.salary_tl * absentDays) / fullDayDivisor) + Math.round((emp.salary_tl * halfDays) / halfDayDivisor)
+      if (deduction > 0) map.set(emp.id, deduction)
+    }
+    return map
+  }, [monthlyAttendance, activeEmployees, fullDayDivisor, halfDayDivisor])
+
 
   /* Build bulk payout items: employees not yet paid this period */
   const bulkItems = useMemo<BulkSalaryPayoutItem[]>(() => {
@@ -128,11 +158,13 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
       .filter((e) => !paidByEmp.has(e.id))
       .map((e) => {
         const hasSupp = !e.is_insured && e.receives_supplement
+        const deduction = attendanceDeductionByEmp.get(e.id) ?? 0
         return {
           employee_id: e.id,
           employee_name: e.full_name,
           amount_tl: e.salary_tl,
-          supplement_tl: hasSupp ? SUPPLEMENT_TL : 0,
+          supplement_tl: hasSupp ? supplementTl : 0,
+          attendance_deduction_tl: deduction,
           period: periodLabel,
           description:
             lang === 'tr'
@@ -140,10 +172,28 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
               : `${e.full_name} — ${periodLabel} Salary Payment`,
         }
       })
-  }, [activeEmployees, paidByEmp, periodLabel, lang])
+  }, [activeEmployees, paidByEmp, periodLabel, lang, attendanceDeductionByEmp, supplementTl])
 
   const unpaidCount = bulkItems.length
   const paidCount = paidByEmp.size
+
+  /* Employee lookup map */
+  const employeeMap = useMemo(() => {
+    const m = new Map<string, HrEmployee>()
+    employees.forEach((e) => m.set(e.id, e))
+    return m
+  }, [employees])
+
+  /* Paid salary records for the selected period */
+  const paidRecords = useMemo(
+    () => allSalaryPayments.filter((p) => p.period === periodLabel),
+    [allSalaryPayments, periodLabel],
+  )
+
+  const paidTotalTl = useMemo(
+    () => paidRecords.reduce((s, p) => s + p.amount_tl, 0),
+    [paidRecords],
+  )
 
   /* Month navigation */
   const prevMonth = () => {
@@ -161,6 +211,25 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
 
   return (
     <div className="space-y-lg">
+      <Tabs defaultValue="pending">
+        <TabsList>
+          <TabsTrigger value="pending">
+            <Money size={14} className="mr-1" />
+            {lang === 'tr' ? 'Maaş Ödemeleri' : 'Salary Payments'}
+            {unpaidCount > 0 && (
+              <span className="ml-1.5 rounded-full bg-orange/15 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none text-orange">
+                {unpaidCount}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="history">
+            <ClockCounterClockwise size={14} className="mr-1" />
+            {lang === 'tr' ? 'Ödeme Geçmişi' : 'Payment History'}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="pending" className="pt-lg">
+          <div className="space-y-lg">
       {/* Controls row */}
       <div className="flex flex-wrap items-center gap-sm">
         {/* Period navigator */}
@@ -248,9 +317,12 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                   {lang === 'tr' ? 'Brüt Maaş' : 'Gross Salary'}
                 </TableHead>
                 <TableHead className="text-right">
-                  {lang === 'tr' ? 'Ek Ücret' : 'Supplement'}
+                  {lang === 'tr' ? 'Sigorta Elden Ödeme' : 'Insurance Supplement'}
                 </TableHead>
                 <TableHead className="text-right">{lang === 'tr' ? 'Avans' : 'Advance'}</TableHead>
+                <TableHead className="text-right">
+                  {lang === 'tr' ? 'Devam Kesintisi' : 'Absence Deduction'}
+                </TableHead>
                 <TableHead className="text-right">
                   {lang === 'tr' ? 'Net Ödeme' : 'Net Payment'}
                 </TableHead>
@@ -259,8 +331,9 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
             <TableBody>
               {activeEmployees.filter((e) => !paidByEmp.has(e.id)).map((emp) => {
                 const advance = salaryAdvanceByEmp.get(emp.id) ?? 0
-                const supplement = !emp.is_insured && emp.receives_supplement ? SUPPLEMENT_TL : 0
-                const net = emp.salary_tl + supplement - advance
+                const supplement = !emp.is_insured && emp.receives_supplement ? supplementTl : 0
+                const deduction = attendanceDeductionByEmp.get(emp.id) ?? 0
+                const net = emp.salary_tl + supplement - advance - deduction
 
                 return (
                   <TableRow key={emp.id}>
@@ -305,6 +378,17 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                       )}
                     </TableCell>
 
+                    {/* Attendance deduction */}
+                    <TableCell className="text-right">
+                      {deduction > 0 ? (
+                        <span className="tabular-nums text-sm font-medium text-red">
+                          -{fmtTL(deduction)} TL
+                        </span>
+                      ) : (
+                        <span className="text-xs text-black/25">—</span>
+                      )}
+                    </TableCell>
+
                     {/* Net */}
                     <TableCell className="text-right">
                       <span className="tabular-nums text-sm font-semibold text-black">
@@ -319,6 +403,80 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
         </div>
       )}
 
+      {/* ── Geçmiş Ödemeler (paid salary records for this period) ── */}
+      {!isLoading && paidRecords.length > 0 && (
+        <>
+          <div className="flex items-center justify-between gap-sm">
+            <h3 className="text-sm font-semibold text-black/70">
+              {lang === 'tr' ? 'Geçmiş Ödemeler' : 'Payment History'}
+            </h3>
+            <span className="text-xs text-black/40">
+              {lang === 'tr' ? 'Toplam' : 'Total'}:{' '}
+              <span className="font-semibold text-black/60">{fmtTL(paidTotalTl)} TL</span>
+              {' · '}
+              {paidRecords.length} {lang === 'tr' ? 'kayıt' : 'records'}
+            </span>
+          </div>
+          <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{lang === 'tr' ? 'Çalışan' : 'Employee'}</TableHead>
+                  <TableHead className="text-right">{lang === 'tr' ? 'Tutar' : 'Amount'}</TableHead>
+                  <TableHead>{lang === 'tr' ? 'Ödeme Tarihi' : 'Paid Date'}</TableHead>
+                  <TableHead>{lang === 'tr' ? 'Notlar' : 'Notes'}</TableHead>
+                  {canManage && <TableHead className="w-14" />}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paidRecords.map((payment) => {
+                  const emp = employeeMap.get(payment.employee_id)
+                  const paidDate = new Date(payment.paid_at).toLocaleDateString(
+                    lang === 'tr' ? 'tr-TR' : 'en-US',
+                    { day: 'numeric', month: 'short', year: 'numeric' },
+                  )
+                  return (
+                    <TableRow key={payment.id} className="group">
+                      <TableCell>
+                        <p className="text-sm font-medium text-black">
+                          {emp?.full_name ?? '—'}
+                        </p>
+                        {emp && <p className="mt-0.5 text-xs text-black/40">{emp.role}</p>}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-sm font-semibold text-black/80">
+                        {fmtTL(payment.amount_tl)}{' '}
+                        <span className="text-xs font-normal text-black/40">TL</span>
+                      </TableCell>
+                      <TableCell className="text-xs tabular-nums text-black/50">
+                        {paidDate}
+                      </TableCell>
+                      <TableCell className="max-w-48 truncate text-xs text-black/40">
+                        {payment.notes ?? '—'}
+                      </TableCell>
+                      {canManage && (
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="opacity-0 group-hover:opacity-100"
+                            onClick={() => {
+                              setEditingPayment(payment)
+                              setEditingEmployee(emp ?? null)
+                            }}
+                          >
+                            <PencilSimple size={14} />
+                          </Button>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </>
+      )}
+
       {/* Bulk salary confirm dialog */}
       <BulkSalaryConfirmDialog
         open={bulkPayoutOpen}
@@ -327,6 +485,25 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
         periodLabel={periodLabel}
         lang={lang}
       />
+
+      {/* Edit salary payment dialog */}
+      <SalaryEditDialog
+        open={!!editingPayment}
+        onClose={() => {
+          setEditingPayment(null)
+          setEditingEmployee(null)
+        }}
+        payment={editingPayment}
+        employee={editingEmployee}
+        lang={lang}
+      />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="history" className="pt-lg">
+          <SalaryPaymentsTab employees={employees} canManage={canManage} lang={lang} />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
