@@ -43,6 +43,7 @@ const employeeSchema = z.object({
   ]),
   salary_tl: z.coerce.number().min(0, 'Maaş negatif olamaz'),
   is_insured: z.boolean(),
+  receives_supplement: z.boolean(),
   is_active: z.boolean(),
   hire_date: z.string().optional(),
   notes: z.string().optional(),
@@ -77,6 +78,7 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
       role: 'Operation',
       salary_tl: 0,
       is_insured: true,
+      receives_supplement: false,
       is_active: true,
       hire_date: '',
       notes: '',
@@ -92,6 +94,7 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
           role: employee.role,
           salary_tl: employee.salary_tl ?? 0,
           is_insured: employee.is_insured ?? true,
+          receives_supplement: employee.receives_supplement ?? false,
           is_active: employee.is_active,
           hire_date: employee.hire_date ?? '',
           notes: employee.notes ?? '',
@@ -104,6 +107,7 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
           role: 'Operation',
           salary_tl: 0,
           is_insured: true,
+          receives_supplement: false,
           is_active: true,
           hire_date: '',
           notes: '',
@@ -121,6 +125,7 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
         role: data.role,
         salary_tl: data.salary_tl,
         is_insured: data.is_insured,
+        receives_supplement: data.is_insured ? false : data.receives_supplement,
         is_active: data.is_active,
         hire_date: data.hire_date || null,
         notes: data.notes?.trim() || null,
@@ -284,28 +289,77 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
                 </Select>
               </div>
 
-              <div>
+              <div className="sm:col-span-2">
                 <Label className="mb-1 text-xs font-medium tracking-wide text-black/70">
                   {lang === 'tr' ? 'Sigorta Durumu' : 'Insurance Status'}
                 </Label>
-                <Select
-                  value={form.watch('is_insured') ? 'insured' : 'uninsured'}
-                  onValueChange={(v) => form.setValue('is_insured', v === 'insured')}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="insured">
+                <div className="grid grid-cols-2 gap-2">
+                  {/* Insured button — col 1 */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      form.setValue('is_insured', true)
+                      form.setValue('receives_supplement', false)
+                    }}
+                    className={`rounded-lg border px-3 py-2 text-center transition-colors ${
+                      form.watch('is_insured')
+                        ? 'border-brand/40 bg-brand/5 text-black'
+                        : 'border-black/[0.09] bg-bg1 text-black/70'
+                    }`}
+                  >
+                    <span className="text-xs font-medium">
                       {lang === 'tr' ? 'Sigortalı' : 'Insured'}
-                    </SelectItem>
-                    <SelectItem value="uninsured">
-                      {lang === 'tr'
-                        ? 'Sigortasız (+4.000 ₺ ek ücret)'
-                        : 'Uninsured (+₺4,000 supplement)'}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                    </span>
+                  </button>
+
+                  {/* Uninsured button — col 2 */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      form.setValue('is_insured', false)
+                      form.setValue('receives_supplement', false)
+                    }}
+                    className={`rounded-lg border px-3 py-2 text-center transition-colors ${
+                      !form.watch('is_insured')
+                        ? 'border-brand/40 bg-brand/5 text-black'
+                        : 'border-black/[0.09] bg-bg1 text-black/70'
+                    }`}
+                  >
+                    <span className="text-xs font-medium">
+                      {lang === 'tr' ? 'Sigortasız' : 'Uninsured'}
+                    </span>
+                  </button>
+
+                  {/* Supplement toggle — full width when uninsured */}
+                  {!form.watch('is_insured') && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        form.setValue('receives_supplement', !form.watch('receives_supplement'))
+                      }
+                      className={`col-span-2 flex items-center justify-center gap-2 rounded-lg border px-3 py-2 transition-colors ${
+                        form.watch('receives_supplement')
+                          ? 'border-orange/40 bg-orange/5'
+                          : 'border-black/[0.09] bg-bg1'
+                      }`}
+                    >
+                      <span className="text-xs font-medium text-black/70">
+                        {lang === 'tr' ? 'Ek ücret alacak' : 'Supplement'}
+                      </span>
+                      <div
+                        className={`relative h-5 w-10 shrink-0 rounded-full transition-colors ${
+                          form.watch('receives_supplement') ? 'bg-orange' : 'bg-black/15'
+                        }`}
+                      >
+                        <span
+                          className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+                            form.watch('receives_supplement') ? 'translate-x-5' : 'translate-x-0'
+                          }`}
+                        />
+                      </div>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 

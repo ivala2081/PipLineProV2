@@ -96,17 +96,7 @@ export function WalletDetailSheet({ wallet, onClose, onEdit }: WalletDetailSheet
         <SheetHeader>
           <div className="flex items-center justify-between">
             <SheetTitle>{wallet?.label ?? ''}</SheetTitle>
-            {onEdit && wallet && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1.5 text-xs text-black/50 hover:text-black/80"
-                onClick={() => onEdit(wallet)}
-              >
-                <PencilSimple size={14} />
-                {t('accounting.actions.edit')}
-              </Button>
-            )}
+            {/* Düzenle (Edit) butonu kaldırıldı */}
           </div>
         </SheetHeader>
 

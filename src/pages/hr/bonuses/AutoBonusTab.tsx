@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   TrendUp,
   Trophy,
@@ -7,6 +7,7 @@ import {
   CalendarCheck,
   Trash,
   CheckFat,
+  Money,
 } from '@phosphor-icons/react'
 import { localYMD } from '@/lib/date'
 import {
@@ -33,6 +34,9 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  Input,
+  Label,
 } from '@ds'
 import {
   useAutoBonusTransfersQuery,
@@ -50,6 +54,7 @@ import {
 } from '@/hooks/queries/useHrQuery'
 import { useToast } from '@/hooks/useToast'
 import { BulkPayoutConfirmDialog } from './BulkPayoutConfirmDialog'
+import { formatAmount, parseAmount, numberToDisplay, amountPlaceholder } from '@/lib/formatAmount'
 
 /* ------------------------------------------------------------------ */
 /*  Pure calculation helpers (accept tiers as params)                  */
@@ -596,20 +601,109 @@ function BonusCell({ value }: { value: number }) {
 }
 
 function EmpAvatar({ emp }: { emp: HrEmployee }) {
-  const initials = emp.full_name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
-  const colorClass =
-    emp.role === 'Marketing' ? 'bg-purple/15 text-purple' : 'bg-orange/15 text-orange'
+  // Avatar removed as per design change; return null to avoid rendering initials
+  return null
+}
+
+/* ------------------------------------------------------------------ */
+/*  Auto Bonus Payment Dialog                                           */
+/* ------------------------------------------------------------------ */
+
+interface AutoPayTarget {
+  employee: HrEmployee
+  amount: number
+  period: string
+}
+
+function AutoBonusPaymentDialog({
+  open,
+  onClose,
+  target,
+  lang,
+  onConfirm,
+  isPending,
+}: {
+  open: boolean
+  onClose: () => void
+  target: AutoPayTarget | null
+  lang: 'tr' | 'en'
+  onConfirm: (amount: number) => Promise<void>
+  isPending: boolean
+}) {
+  const [amountDisplay, setAmountDisplay] = useState('')
+  const [amount, setAmount] = useState(0)
+
+  useEffect(() => {
+    if (open && target) {
+      setAmount(target.amount)
+      setAmountDisplay(target.amount > 0 ? numberToDisplay(target.amount, lang) : '')
+    }
+  }, [open, target, lang])
+
   return (
-    <div
-      className={`flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${colorClass}`}
-    >
-      {initials}
-    </div>
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent size="sm" onInteractOutside={(e) => e.preventDefault()}>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <Money size={18} className="text-brand" weight="duotone" />
+            {lang === 'tr' ? 'Prim Ödemesi' : 'Bonus Payment'}
+          </DialogTitle>
+          <DialogDescription className="text-xs text-black/55">
+            {target && (
+              <span className="font-medium text-black/70">{target.employee.full_name}</span>
+            )}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-md">
+          <div>
+            <Label className="mb-1 text-xs font-medium tracking-wide text-black/70">
+              {lang === 'tr' ? 'Dönem' : 'Period'}
+            </Label>
+            <Input
+              value={target?.period ?? ''}
+              readOnly
+              className="cursor-not-allowed opacity-60"
+            />
+          </div>
+          <div>
+            <Label className="mb-1 text-xs font-medium tracking-wide text-black/70">
+              {lang === 'tr' ? 'Tutar (USDT)' : 'Amount (USDT)'}
+            </Label>
+            <Input
+              type="text"
+              inputMode="decimal"
+              value={amountDisplay}
+              onChange={(e) => {
+                const formatted = formatAmount(e.target.value, lang)
+                setAmountDisplay(formatted)
+                setAmount(parseAmount(formatted, lang))
+              }}
+              placeholder={amountPlaceholder(lang)}
+            />
+          </div>
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <Button type="button" variant="outline" size="sm" onClick={onClose}>
+              {lang === 'tr' ? 'İptal' : 'Cancel'}
+            </Button>
+            <Button
+              type="button"
+              variant="filled"
+              size="sm"
+              disabled={isPending || amount <= 0}
+              onClick={() => void onConfirm(amount)}
+            >
+              {isPending
+                ? lang === 'tr'
+                  ? 'Kaydediliyor...'
+                  : 'Saving...'
+                : lang === 'tr'
+                  ? 'Ödemeyi Kaydet'
+                  : 'Save Payment'}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -695,12 +789,18 @@ function MarketingBonusTable({
   lang,
   config,
   advancesByEmp,
+  canManage = false,
+  paidEmployeeIds,
+  onPayEmployee,
 }: {
   stats: MtEmployeeStat[]
   isLoading: boolean
   lang: 'tr' | 'en'
   config: MtConfig | undefined
   advancesByEmp: Map<string, number>
+  canManage?: boolean
+  paidEmployeeIds?: Set<string>
+  onPayEmployee?: (emp: HrEmployee, amount: number) => void
 }) {
   if (isLoading) {
     return (
@@ -721,6 +821,22 @@ function MarketingBonusTable({
           lang === 'tr'
             ? 'İK modülünden Marketing rolünde çalışan ekleyin.'
             : 'Add employees with Marketing role in the HR module.'
+        }
+      />
+    )
+  }
+
+  const unpaidStats = stats.filter((s) => !paidEmployeeIds?.has(s.employee.id))
+
+  if (unpaidStats.length === 0) {
+    return (
+      <EmptyState
+        icon={ChartBar}
+        title={lang === 'tr' ? 'Tüm primler ödendi' : 'All bonuses paid'}
+        description={
+          lang === 'tr'
+            ? 'Bu dönem için tüm Marketing primleri ödenmiştir.'
+            : 'All Marketing bonuses for this period have been paid.'
         }
       />
     )
@@ -769,10 +885,12 @@ function MarketingBonusTable({
               <TableHead className="text-right">
                 {lang === 'tr' ? 'Net Prim' : 'Net Bonus'}
               </TableHead>
+              {canManage && <TableHead className="w-28" />}
             </TableRow>
           </TableHeader>
           <TableBody>
             {stats
+              .filter((s) => !paidEmployeeIds?.has(s.employee.id))
               .sort((a, b) => b.count - a.count || b.totalVolumeUsd - a.totalVolumeUsd)
               .map((stat, idx) => {
                 const advance = advancesByEmp.get(stat.employee.id) ?? 0
@@ -846,6 +964,21 @@ function MarketingBonusTable({
                         <span className="text-xs text-black/30">—</span>
                       )}
                     </TableCell>
+                    {canManage && (
+                      <TableCell className="w-28 text-right">
+                        {stat.totalBonus > 0 && onPayEmployee ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 gap-1 px-2 text-xs"
+                            onClick={() => onPayEmployee(stat.employee, stat.totalBonus)}
+                          >
+                            <Money size={13} />
+                            {lang === 'tr' ? 'Ödeme Ekle' : 'Add Payment'}
+                          </Button>
+                        ) : null}
+                      </TableCell>
+                    )}
                   </TableRow>
                 )
               })}
@@ -865,11 +998,17 @@ function ReattentionBonusTable({
   isLoading,
   lang,
   advancesByEmp,
+  canManage = false,
+  paidEmployeeIds,
+  onPayEmployee,
 }: {
   stats: ReEmployeeStat[]
   isLoading: boolean
   lang: 'tr' | 'en'
   advancesByEmp: Map<string, number>
+  canManage?: boolean
+  paidEmployeeIds?: Set<string>
+  onPayEmployee?: (emp: HrEmployee, amount: number) => void
 }) {
   if (isLoading) {
     return (
@@ -890,6 +1029,22 @@ function ReattentionBonusTable({
           lang === 'tr'
             ? 'İK modülünden Re-attention rolünde çalışan ekleyin.'
             : 'Add employees with Re-attention role in the HR module.'
+        }
+      />
+    )
+  }
+
+  const unpaidReStats = stats.filter((s) => !paidEmployeeIds?.has(s.employee.id))
+
+  if (unpaidReStats.length === 0) {
+    return (
+      <EmptyState
+        icon={TrendUp}
+        title={lang === 'tr' ? 'Tüm primler ödendi' : 'All bonuses paid'}
+        description={
+          lang === 'tr'
+            ? 'Bu dönem için tüm Re-attention primleri ödenmiştir.'
+            : 'All Re-attention bonuses for this period have been paid.'
         }
       />
     )
@@ -918,10 +1073,12 @@ function ReattentionBonusTable({
               <TableHead className="text-right">
                 {lang === 'tr' ? 'Net Prim' : 'Net Bonus'}
               </TableHead>
+              {canManage && <TableHead className="w-28" />}
             </TableRow>
           </TableHeader>
           <TableBody>
             {stats
+              .filter((s) => !paidEmployeeIds?.has(s.employee.id))
               .sort((a, b) => b.bonus - a.bonus)
               .map((stat) => {
                 const advance = advancesByEmp.get(stat.employee.id) ?? 0
@@ -977,6 +1134,21 @@ function ReattentionBonusTable({
                         <span className="text-xs text-black/30">—</span>
                       )}
                     </TableCell>
+                    {canManage && (
+                      <TableCell className="w-28 text-right">
+                        {stat.bonus > 0 && onPayEmployee ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 gap-1 px-2 text-xs"
+                            onClick={() => onPayEmployee(stat.employee, stat.bonus)}
+                          >
+                            <Money size={13} />
+                            {lang === 'tr' ? 'Ödeme Ekle' : 'Add Payment'}
+                          </Button>
+                        ) : null}
+                      </TableCell>
+                    )}
                   </TableRow>
                 )
               })}
@@ -997,6 +1169,7 @@ function ReattentionBonusTable({
                     USDT
                   </span>
                 </TableCell>
+                {canManage && <TableCell />}
               </TableRow>
             )}
           </TableBody>
@@ -1033,7 +1206,9 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
   const { data: config, isLoading: configLoading } = useMtConfigQuery()
   const { data: allPayments = [] } = useBonusPaymentsQuery()
   const { data: advances = [] } = useAdvancesQuery(year, month)
-  const { deletePayment } = useBonusMutations()
+  const { deletePayment, createPayment } = useBonusMutations()
+
+  const [payTarget, setPayTarget] = useState<AutoPayTarget | null>(null)
 
   const isLoading = empLoading || transfersLoading || configLoading
 
@@ -1055,6 +1230,43 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
     }
     return m
   }, [advances])
+
+  // Already-paid employee IDs for this period (individual payments)
+  const paidMtIds = useMemo(() => {
+    const mtIds = new Set(employees.filter((e) => e.role === 'Marketing').map((e) => e.id))
+    return new Set(
+      allPayments
+        .filter(
+          (p) =>
+            mtIds.has(p.employee_id) &&
+            p.paid_at &&
+            (!p.status || p.status === 'paid'),
+        )
+        .filter((p) => {
+          const d = new Date(p.paid_at!)
+          return d.getFullYear() === year && d.getMonth() + 1 === month
+        })
+        .map((p) => p.employee_id),
+    )
+  }, [allPayments, employees, year, month])
+
+  const paidReIds = useMemo(() => {
+    const reIds = new Set(employees.filter((e) => e.role === 'Re-attention').map((e) => e.id))
+    return new Set(
+      allPayments
+        .filter(
+          (p) =>
+            reIds.has(p.employee_id) &&
+            p.paid_at &&
+            (!p.status || p.status === 'paid'),
+        )
+        .filter((p) => {
+          const d = new Date(p.paid_at!)
+          return d.getFullYear() === year && d.getMonth() + 1 === month
+        })
+        .map((p) => p.employee_id),
+    )
+  }, [allPayments, employees, year, month])
 
   // Period label for display and bulk payout
   const monthNames = lang === 'tr' ? MONTH_NAMES_TR : MONTH_NAMES_EN
@@ -1097,11 +1309,11 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
     }
   }
 
-  // Build bulk payout items for the active dept
+  // Build bulk payout items — exclude employees who already received individual payment
   const buildBulkItems = (): BulkPayoutItem[] => {
     if (dept === 'marketing') {
       return mtStats
-        .filter((s) => s.totalBonus > 0)
+        .filter((s) => s.totalBonus > 0 && !paidMtIds.has(s.employee.id))
         .map((s) => ({
           employee_id: s.employee.id,
           employee_name: s.employee.full_name,
@@ -1112,7 +1324,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
     }
     if (dept === 'reattention') {
       return reStats
-        .filter((s) => s.bonus > 0)
+        .filter((s) => s.bonus > 0 && !paidReIds.has(s.employee.id))
         .map((s) => ({
           employee_id: s.employee.id,
           employee_name: s.employee.full_name,
@@ -1122,6 +1334,28 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
         }))
     }
     return []
+  }
+
+  const handlePayEmployee = (emp: HrEmployee, amount: number) => {
+    setPayTarget({ employee: emp, amount, period: periodLabel })
+  }
+
+  const handleSinglePayment = async (amount: number) => {
+    if (!payTarget) return
+    try {
+      await createPayment.mutateAsync({
+        employee_id: payTarget.employee.id,
+        period: payTarget.period,
+        amount_usdt: amount,
+        paid_at: new Date().toISOString().split('T')[0],
+        agreement_id: null,
+        description: `${payTarget.employee.role === 'Marketing' ? 'Marketing' : 'Re-attention'} Primi — ${payTarget.employee.full_name} (${payTarget.period})`,
+      })
+      toast({ title: lang === 'tr' ? 'Ödeme kaydedildi' : 'Payment recorded', variant: 'success' })
+      setPayTarget(null)
+    } catch {
+      toast({ title: lang === 'tr' ? 'Bir hata oluştu' : 'Something went wrong', variant: 'error' })
+    }
   }
 
   // Single-department mode (used by department tabs in BonusesTab)
@@ -1145,12 +1379,20 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
             )}
           </div>
         </div>
+        {!isLoading && mtStats.some((s) => !paidMtIds.has(s.employee.id)) && (
+          <h3 className="text-sm font-semibold text-black/70">
+            {lang === 'tr' ? 'Bekleyen Ödemeler' : 'Pending Payments'}
+          </h3>
+        )}
         <MarketingBonusTable
           stats={mtStats}
           isLoading={isLoading}
           lang={lang}
           config={config}
           advancesByEmp={advancesByEmp}
+          canManage={canManage}
+          paidEmployeeIds={paidMtIds}
+          onPayEmployee={handlePayEmployee}
         />
         <RecentPaymentsSection
           pmts={pmts}
@@ -1186,6 +1428,14 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
           periodLabel={periodLabel}
           lang={lang}
         />
+        <AutoBonusPaymentDialog
+          open={!!payTarget}
+          onClose={() => setPayTarget(null)}
+          target={payTarget}
+          lang={lang}
+          onConfirm={handleSinglePayment}
+          isPending={createPayment.isPending}
+        />
       </div>
     )
   }
@@ -1210,11 +1460,19 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
             )}
           </div>
         </div>
+        {!isLoading && reStats.some((s) => !paidReIds.has(s.employee.id)) && (
+          <h3 className="text-sm font-semibold text-black/70">
+            {lang === 'tr' ? 'Bekleyen Ödemeler' : 'Pending Payments'}
+          </h3>
+        )}
         <ReattentionBonusTable
           stats={reStats}
           isLoading={isLoading}
           lang={lang}
           advancesByEmp={advancesByEmp}
+          canManage={canManage}
+          paidEmployeeIds={paidReIds}
+          onPayEmployee={handlePayEmployee}
         />
         <RecentPaymentsSection
           pmts={pmts}
@@ -1250,6 +1508,14 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
           periodLabel={periodLabel}
           lang={lang}
         />
+        <AutoBonusPaymentDialog
+          open={!!payTarget}
+          onClose={() => setPayTarget(null)}
+          target={payTarget}
+          lang={lang}
+          onConfirm={handleSinglePayment}
+          isPending={createPayment.isPending}
+        />
       </div>
     )
   }
@@ -1281,7 +1547,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
       <Tabs defaultValue="marketing">
         <TabsList>
           <TabsTrigger value="marketing">Marketing</TabsTrigger>
-          <TabsTrigger value="reattention">Re-attention</TabsTrigger>
+          <TabsTrigger value="reattention">Retention</TabsTrigger>
         </TabsList>
         <TabsContent value="marketing" className="pt-lg">
           <MarketingBonusTable

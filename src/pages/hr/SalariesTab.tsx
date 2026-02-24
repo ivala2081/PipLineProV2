@@ -120,20 +120,26 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
     return map
   }, [advances])
 
+  const SUPPLEMENT_TL = 4000
+
   /* Build bulk payout items: employees not yet paid this period */
   const bulkItems = useMemo<BulkSalaryPayoutItem[]>(() => {
     return activeEmployees
       .filter((e) => !paidByEmp.has(e.id))
-      .map((e) => ({
-        employee_id: e.id,
-        employee_name: e.full_name,
-        amount_tl: e.salary_tl,
-        period: periodLabel,
-        description:
-          lang === 'tr'
-            ? `${e.full_name} — ${periodLabel} Maaş Ödemesi`
-            : `${e.full_name} — ${periodLabel} Salary Payment`,
-      }))
+      .map((e) => {
+        const hasSupp = !e.is_insured && e.receives_supplement
+        return {
+          employee_id: e.id,
+          employee_name: e.full_name,
+          amount_tl: e.salary_tl,
+          supplement_tl: hasSupp ? SUPPLEMENT_TL : 0,
+          period: periodLabel,
+          description:
+            lang === 'tr'
+              ? `${e.full_name} — ${periodLabel} Maaş Ödemesi`
+              : `${e.full_name} — ${periodLabel} Salary Payment`,
+        }
+      })
   }, [activeEmployees, paidByEmp, periodLabel, lang])
 
   const unpaidCount = bulkItems.length
@@ -199,7 +205,12 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
         )}
       </div>
 
-      {/* Table */}
+      {/* Table — Bekleyen Ödemeler */}
+      {!isLoading && unpaidCount > 0 && (
+        <h3 className="text-sm font-semibold text-black/70">
+          {lang === 'tr' ? 'Bekleyen Ödemeler' : 'Pending Payments'}
+        </h3>
+      )}
       {isLoading ? (
         <div className="space-y-2 rounded-xl border border-black/[0.07] p-4">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -216,6 +227,16 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
               : 'No active employees with a salary configured.'
           }
         />
+      ) : unpaidCount === 0 ? (
+        <EmptyState
+          icon={CheckCircle}
+          title={lang === 'tr' ? 'Tüm maaşlar ödendi' : 'All salaries paid'}
+          description={
+            lang === 'tr'
+              ? `${periodLabel} dönemi maaşlarının tamamı ödenmiştir.`
+              : `All salaries for ${periodLabel} have been paid.`
+          }
+        />
       ) : (
         <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
           <Table>
@@ -226,36 +247,26 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                 <TableHead className="text-right">
                   {lang === 'tr' ? 'Brüt Maaş' : 'Gross Salary'}
                 </TableHead>
+                <TableHead className="text-right">
+                  {lang === 'tr' ? 'Ek Ücret' : 'Supplement'}
+                </TableHead>
                 <TableHead className="text-right">{lang === 'tr' ? 'Avans' : 'Advance'}</TableHead>
                 <TableHead className="text-right">
                   {lang === 'tr' ? 'Net Ödeme' : 'Net Payment'}
                 </TableHead>
-                <TableHead className="text-center">{lang === 'tr' ? 'Durum' : 'Status'}</TableHead>
-                <TableHead className="text-right">
-                  {lang === 'tr' ? 'Ödeme Tarihi' : 'Paid At'}
-                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {activeEmployees.map((emp) => {
-                const payment = paidByEmp.get(emp.id)
+              {activeEmployees.filter((e) => !paidByEmp.has(e.id)).map((emp) => {
                 const advance = salaryAdvanceByEmp.get(emp.id) ?? 0
-                const net = emp.salary_tl - advance
-                const isPaid = !!payment
+                const supplement = !emp.is_insured && emp.receives_supplement ? SUPPLEMENT_TL : 0
+                const net = emp.salary_tl + supplement - advance
 
                 return (
                   <TableRow key={emp.id}>
                     {/* Employee */}
                     <TableCell>
                       <div className="flex items-center gap-sm">
-                        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-black/[0.06] text-xs font-semibold text-black/60">
-                          {emp.full_name
-                            .split(' ')
-                            .map((n) => n[0])
-                            .join('')
-                            .toUpperCase()
-                            .slice(0, 2)}
-                        </div>
                         <span className="text-sm font-medium text-black">{emp.full_name}</span>
                       </div>
                     </TableCell>
@@ -270,6 +281,17 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                       <span className="tabular-nums text-sm font-medium text-black/70">
                         {fmtTL(emp.salary_tl)} TL
                       </span>
+                    </TableCell>
+
+                    {/* Supplement */}
+                    <TableCell className="text-right">
+                      {supplement > 0 ? (
+                        <span className="tabular-nums text-sm font-medium text-orange">
+                          +{fmtTL(supplement)} TL
+                        </span>
+                      ) : (
+                        <span className="text-xs text-black/25">—</span>
+                      )}
                     </TableCell>
 
                     {/* Advance */}
@@ -288,35 +310,6 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                       <span className="tabular-nums text-sm font-semibold text-black">
                         {fmtTL(net > 0 ? net : 0)} TL
                       </span>
-                    </TableCell>
-
-                    {/* Status */}
-                    <TableCell className="text-center">
-                      {isPaid ? (
-                        <div className="inline-flex items-center gap-1.5 rounded-full bg-green/10 px-2.5 py-1 text-xs font-medium text-green">
-                          <CheckCircle size={12} weight="fill" />
-                          {lang === 'tr' ? 'Ödendi' : 'Paid'}
-                        </div>
-                      ) : (
-                        <div className="inline-flex items-center gap-1.5 rounded-full bg-orange/10 px-2.5 py-1 text-xs font-medium text-orange">
-                          <Clock size={12} weight="fill" />
-                          {lang === 'tr' ? 'Bekliyor' : 'Pending'}
-                        </div>
-                      )}
-                    </TableCell>
-
-                    {/* Paid at */}
-                    <TableCell className="text-right">
-                      {payment ? (
-                        <span className="tabular-nums text-xs text-black/60">
-                          {new Date(payment.paid_at).toLocaleDateString(
-                            lang === 'tr' ? 'tr-TR' : 'en-US',
-                            { day: 'numeric', month: 'short', year: 'numeric' },
-                          )}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-black/25">—</span>
-                      )}
                     </TableCell>
                   </TableRow>
                 )

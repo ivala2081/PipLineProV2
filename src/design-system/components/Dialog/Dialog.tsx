@@ -18,13 +18,14 @@ export const DialogOverlay: FC<DialogOverlayProps> = ({ className, ...props }) =
 )
 DialogOverlay.displayName = 'DialogOverlay'
 
-export type DialogSize = 'sm' | 'md' | 'lg' | 'xl'
+export type DialogSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl'
 
 const dialogSizeClasses: Record<DialogSize, string> = {
   sm: 'md:max-w-sm',
   md: 'md:max-w-md',
   lg: 'md:max-w-lg',
   xl: 'md:max-w-xl',
+  '2xl': 'md:max-w-2xl',
 }
 
 export type DialogContentProps = ComponentProps<typeof DialogPrimitive.Content> & {

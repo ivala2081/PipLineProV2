@@ -23,7 +23,7 @@ export type HrEmployeeRole =
   | 'Programmer'
 export type PspScope = 'local' | 'global'
 export type PspProvider = 'unipayment'
-export type HrBonusType = 'fixed' | 'percentage' | 'tiered' | 'custom'
+export type HrBonusType = 'fixed' | 'percentage' | 'tiered' | 'custom' | 'variable'
 export type HrAttendanceStatus = 'present' | 'absent' | 'late' | 'half_day'
 export type HrDocumentType =
   | 'ikametgah'
@@ -234,6 +234,7 @@ export interface Database {
           role: HrEmployeeRole
           salary_tl: number
           is_insured: boolean
+          receives_supplement: boolean
           is_active: boolean
           hire_date: string | null
           notes: string | null
@@ -249,6 +250,7 @@ export interface Database {
           role: HrEmployeeRole
           salary_tl?: number
           is_insured?: boolean
+          receives_supplement?: boolean
           is_active?: boolean
           hire_date?: string | null
           notes?: string | null
@@ -264,6 +266,7 @@ export interface Database {
           role?: HrEmployeeRole
           salary_tl?: number
           is_insured?: boolean
+          receives_supplement?: boolean
           is_active?: boolean
           hire_date?: string | null
           notes?: string | null

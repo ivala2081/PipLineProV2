@@ -82,7 +82,9 @@
       "Bash(python:*)",
       "Bash(git -C /home/ivala/Documents/GitHub/PipLineProV2 log --oneline -15)",
       "Bash(git -C /home/ivala/Documents/GitHub/PipLineProV2 diff HEAD --name-only)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(^0[7-9][0-9])",
+      "Bash(^1 \")"
     ]
   }
 }

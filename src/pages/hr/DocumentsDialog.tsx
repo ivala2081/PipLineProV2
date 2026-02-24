@@ -206,8 +206,7 @@ export function DocumentsDialog({ open, onClose, employee }: DocumentsDialogProp
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent
-        size="xl"
-        className="max-h-[90vh] overflow-y-auto"
+        size="2xl"
         onInteractOutside={(e) => e.preventDefault()}
       >
         <DialogHeader>
@@ -229,7 +228,7 @@ export function DocumentsDialog({ open, onClose, employee }: DocumentsDialogProp
         </DialogHeader>
 
         {employee ? (
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {HR_DOCUMENT_TYPES.map(({ type, labelTr, labelEn }) => (
               <DocumentItem
                 key={type}

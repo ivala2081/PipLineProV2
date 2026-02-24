@@ -22,6 +22,7 @@ export type HrEmployee = {
   role: HrEmployeeRole
   salary_tl: number
   is_insured: boolean
+  receives_supplement: boolean
   is_active: boolean
   hire_date: string | null
   notes: string | null
@@ -49,6 +50,7 @@ export type HrEmployeeInsert = {
   role: HrEmployeeRole
   salary_tl?: number
   is_insured?: boolean
+  receives_supplement?: boolean
   is_active?: boolean
   hire_date?: string | null
   notes?: string | null
@@ -99,12 +101,12 @@ export type HrBonusPayment = {
   transfer_id: string | null
   created_by: string | null
   created_at: string
+  status: 'pending' | 'paid'
 }
 
 export const HR_DOCUMENT_TYPES: { type: HrDocumentType; labelTr: string; labelEn: string }[] = [
   { type: 'ikametgah', labelTr: 'İkametgâh Belgesi', labelEn: 'Residence Certificate' },
   { type: 'adli_sicil', labelTr: 'Adli Sicil Kaydı', labelEn: 'Criminal Record' },
-  { type: 'diploma', labelTr: 'Diploma Fotokopisi', labelEn: 'Diploma Copy' },
   { type: 'saglik_raporu', labelTr: 'Sağlık Raporu', labelEn: 'Health Report' },
   { type: 'kimlik_on', labelTr: 'Kimlik Ön Yüz', labelEn: 'ID Card (Front)' },
   { type: 'kimlik_arka', labelTr: 'Kimlik Arka Yüz', labelEn: 'ID Card (Back)' },
@@ -114,7 +116,7 @@ export const HR_EMPLOYEE_ROLES: HrEmployeeRole[] = [
   'Manager',
   'Marketing',
   'Operation',
-  'Re-attention',
+  'Retention',
   'Project Management',
   'Social Media',
   'Sales Development',
@@ -188,6 +190,7 @@ export const hrKeys = {
   documents: (orgId: string, employeeId: string) => ['hr', orgId, 'documents', employeeId] as const,
   bonusAgreements: (orgId: string) => ['hr', orgId, 'bonus-agreements'] as const,
   bonusPayments: (orgId: string) => ['hr', orgId, 'bonus-payments'] as const,
+  variablePending: (orgId: string) => ['hr', orgId, 'variable-pending'] as const,
   salaryPayments: (orgId: string, year: number, month: number) =>
     ['hr', orgId, 'salary-payments', year, month] as const,
   attendance: (orgId: string, date: string) => ['hr', orgId, 'attendance', date] as const,
@@ -413,6 +416,32 @@ export function useBonusPaymentsQuery() {
   })
 }
 
+/** Fetches hr_bonus_payments with status='pending' (variable bonuses not yet processed). */
+export function useVariablePendingQuery() {
+  const { currentOrg } = useOrganization()
+  const orgId = currentOrg?.id ?? ''
+
+  return useQuery({
+    queryKey: hrKeys.variablePending(orgId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('hr_bonus_payments')
+        .select('*')
+        .eq('organization_id', orgId)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        // status column may not exist yet (migration not run) — return empty
+        console.warn('useVariablePendingQuery:', error.message)
+        return [] as HrBonusPayment[]
+      }
+      return (data ?? []) as HrBonusPayment[]
+    },
+    enabled: !!orgId,
+  })
+}
+
 export function useBonusMutations() {
   const { currentOrg } = useOrganization()
   const { user } = useAuth()
@@ -476,16 +505,87 @@ export function useBonusMutations() {
   })
 
   const createPayment = useMutation({
-    mutationFn: async (
-      payload: Omit<HrBonusPayment, 'id' | 'organization_id' | 'created_by' | 'created_at'> & {
-        agreement_id?: string | null
-      },
-    ) => {
+    mutationFn: async (payload: {
+      agreement_id?: string | null
+      employee_id: string
+      period: string
+      amount_usdt: number
+      paid_at?: string | null
+      notes?: string | null
+      description: string // used for accounting entry
+    }) => {
+      const paidAt = payload.paid_at ?? new Date().toISOString().split('T')[0]
+
+      // 1. Create hr_bonus_payment
+      const { data: payment, error: paymentError } = await supabase
+        .from('hr_bonus_payments')
+        .insert({
+          agreement_id: payload.agreement_id ?? null,
+          employee_id: payload.employee_id,
+          period: payload.period,
+          amount_usdt: payload.amount_usdt,
+          paid_at: paidAt,
+          notes: payload.notes ?? null,
+          status: 'paid',
+          organization_id: orgId,
+          created_by: user?.id ?? null,
+        })
+        .select()
+        .single()
+      if (paymentError) throw paymentError
+
+      // 2. Create accounting entry (so payment is visible in accounting ledger)
+      const { error: entryError } = await supabase.from('accounting_entries').insert({
+        organization_id: orgId,
+        description: payload.description,
+        entry_type: 'ODEME',
+        direction: 'out',
+        amount: payload.amount_usdt,
+        currency: 'USDT',
+        entry_date: paidAt,
+        payment_period: payload.period,
+        register: 'USDT',
+        hr_payment_id: payment.id,
+        hr_payment_type: 'bonus',
+        created_by: user?.id ?? null,
+      })
+      if (entryError) throw entryError
+
+      return payment as HrBonusPayment
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: hrKeys.bonusPayments(orgId) })
+      void queryClient.invalidateQueries({ queryKey: ['accounting'] })
+    },
+  })
+
+  /** Creates a pending variable bonus entry (no accounting — processed during bulk payout). */
+  const createVariablePending = useMutation({
+    mutationFn: async (payload: {
+      agreement_id: string
+      employee_id: string
+      period: string
+      amount_usdt: number
+    }) => {
+      // Delete any existing pending entry for the same agreement + period
+      await supabase
+        .from('hr_bonus_payments')
+        .delete()
+        .eq('organization_id', orgId)
+        .eq('agreement_id', payload.agreement_id)
+        .eq('period', payload.period)
+        .eq('status', 'pending')
+
+      if (payload.amount_usdt <= 0) return null
+
       const { data, error } = await supabase
         .from('hr_bonus_payments')
         .insert({
           ...payload,
           organization_id: orgId,
+          status: 'pending',
+          paid_at: null,
+          notes: null,
           created_by: user?.id ?? null,
         })
         .select()
@@ -494,7 +594,49 @@ export function useBonusMutations() {
       return data as HrBonusPayment
     },
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: hrKeys.variablePending(orgId) })
       void queryClient.invalidateQueries({ queryKey: hrKeys.bonusPayments(orgId) })
+    },
+  })
+
+  const updatePayment = useMutation({
+    mutationFn: async (payload: {
+      id: string
+      amount_usdt: number
+      period: string
+      paid_at: string | null
+      notes: string | null
+      description: string
+    }) => {
+      // 1. Update hr_bonus_payments
+      const { error: paymentError } = await supabase
+        .from('hr_bonus_payments')
+        .update({
+          amount_usdt: payload.amount_usdt,
+          period: payload.period,
+          paid_at: payload.paid_at,
+          notes: payload.notes,
+        })
+        .eq('id', payload.id)
+        .eq('organization_id', orgId)
+      if (paymentError) throw paymentError
+
+      // 2. Update the linked accounting_entries row (matched by hr_payment_id)
+      const { error: entryError } = await supabase
+        .from('accounting_entries')
+        .update({
+          amount: payload.amount_usdt,
+          entry_date: payload.paid_at ?? new Date().toISOString().split('T')[0],
+          payment_period: payload.period,
+          description: payload.description,
+        })
+        .eq('hr_payment_id', payload.id)
+        .eq('organization_id', orgId)
+      if (entryError) throw entryError
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: hrKeys.bonusPayments(orgId) })
+      void queryClient.invalidateQueries({ queryKey: ['accounting'] })
     },
   })
 
@@ -509,10 +651,11 @@ export function useBonusMutations() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: hrKeys.bonusPayments(orgId) })
+      void queryClient.invalidateQueries({ queryKey: hrKeys.variablePending(orgId) })
     },
   })
 
-  return { createAgreement, updateAgreement, deleteAgreement, createPayment, deletePayment }
+  return { createAgreement, updateAgreement, deleteAgreement, createPayment, updatePayment, createVariablePending, deletePayment }
 }
 
 /* ------------------------------------------------------------------ */
@@ -771,6 +914,9 @@ export type BulkPayoutItem = {
   amount_usdt: number
   period: string // e.g. "Şubat 2026"
   description: string // used as accounting entry description
+  agreement_id?: string | null
+  /** If set, this is an existing pending variable payment — update status instead of creating new. */
+  pending_payment_id?: string | null
 }
 
 export function useBulkBonusPayoutMutation() {
@@ -789,50 +935,87 @@ export function useBulkBonusPayoutMutation() {
     }) => {
       if (!orgId || !user) throw new Error('No organization selected')
 
-      // 1. Create hr_bonus_payments for each item, get back IDs
-      const paymentsPayload = items.map((item) => ({
-        organization_id: orgId,
-        employee_id: item.employee_id,
-        agreement_id: null as string | null,
-        period: item.period,
-        amount_usdt: item.amount_usdt,
-        paid_at: paidAt,
-        notes: null as string | null,
-        created_by: user.id,
-      }))
+      // Separate new (fixed) items from existing pending (variable) items
+      const newItems = items.filter((i) => !i.pending_payment_id)
+      const pendingItems = items.filter((i) => !!i.pending_payment_id)
 
-      const { data: payments, error: paymentError } = await supabase
-        .from('hr_bonus_payments')
-        .insert(paymentsPayload)
-        .select('id, employee_id')
-      if (paymentError) throw paymentError
+      // ── Fixed items: create new hr_bonus_payment + accounting_entry ──
+      if (newItems.length > 0) {
+        const paymentsPayload = newItems.map((item) => ({
+          organization_id: orgId,
+          employee_id: item.employee_id,
+          agreement_id: item.agreement_id ?? null,
+          period: item.period,
+          amount_usdt: item.amount_usdt,
+          paid_at: paidAt,
+          notes: null as string | null,
+          status: 'paid',
+          created_by: user.id,
+        }))
 
-      // Build employee_id → payment_id map
-      const paymentIdByEmployee = new Map<string, string>(
-        (payments ?? []).map((p) => [p.employee_id, p.id]),
-      )
+        const { data: payments, error: paymentError } = await supabase
+          .from('hr_bonus_payments')
+          .insert(paymentsPayload)
+          .select('id, employee_id')
+        if (paymentError) throw paymentError
 
-      // 2. Create accounting_entries for each item, linked to payment
-      const entriesPayload = items.map((item) => ({
-        organization_id: orgId,
-        description: item.description,
-        entry_type: 'ODEME' as const,
-        direction: 'out' as const,
-        amount: item.amount_usdt,
-        currency: 'USDT',
-        entry_date: paidAt,
-        payment_period: item.period,
-        register: 'USDT',
-        hr_payment_id: paymentIdByEmployee.get(item.employee_id) ?? null,
-        hr_payment_type: 'bonus' as const,
-        created_by: user.id,
-      }))
+        const paymentIdByEmployee = new Map<string, string>(
+          (payments ?? []).map((p) => [p.employee_id, p.id]),
+        )
 
-      const { error: entryError } = await supabase.from('accounting_entries').insert(entriesPayload)
-      if (entryError) throw entryError
+        const entriesPayload = newItems.map((item) => ({
+          organization_id: orgId,
+          description: item.description,
+          entry_type: 'ODEME' as const,
+          direction: 'out' as const,
+          amount: item.amount_usdt,
+          currency: 'USDT',
+          entry_date: paidAt,
+          payment_period: item.period,
+          register: 'USDT',
+          hr_payment_id: paymentIdByEmployee.get(item.employee_id) ?? null,
+          hr_payment_type: 'bonus' as const,
+          created_by: user.id,
+        }))
+
+        const { error: entryError } = await supabase.from('accounting_entries').insert(entriesPayload)
+        if (entryError) throw entryError
+      }
+
+      // ── Variable pending items: update status to 'paid' + create accounting_entry ──
+      if (pendingItems.length > 0) {
+        const pendingIds = pendingItems.map((i) => i.pending_payment_id!).filter(Boolean)
+
+        const { error: updateError } = await supabase
+          .from('hr_bonus_payments')
+          .update({ status: 'paid', paid_at: paidAt })
+          .in('id', pendingIds)
+        if (updateError) throw updateError
+
+        const pendingEntriesPayload = pendingItems.map((item) => ({
+          organization_id: orgId,
+          description: item.description,
+          entry_type: 'ODEME' as const,
+          direction: 'out' as const,
+          amount: item.amount_usdt,
+          currency: 'USDT',
+          entry_date: paidAt,
+          payment_period: item.period,
+          register: 'USDT',
+          hr_payment_id: item.pending_payment_id,
+          hr_payment_type: 'bonus' as const,
+          created_by: user.id,
+        }))
+
+        const { error: pendingEntryError } = await supabase
+          .from('accounting_entries')
+          .insert(pendingEntriesPayload)
+        if (pendingEntryError) throw pendingEntryError
+      }
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: hrKeys.bonusPayments(orgId) })
+      void queryClient.invalidateQueries({ queryKey: hrKeys.variablePending(orgId) })
       void queryClient.invalidateQueries({ queryKey: ['accounting'] })
     },
   })
@@ -858,6 +1041,7 @@ export type BulkSalaryPayoutItem = {
   employee_id: string
   employee_name: string
   amount_tl: number
+  supplement_tl: number
   period: string
   description: string
 }
@@ -936,10 +1120,109 @@ export function useBulkSalaryPayoutMutation() {
 
       const { error: entryError } = await supabase.from('accounting_entries').insert(entriesPayload)
       if (entryError) throw entryError
+
+      // 3. Create separate supplement entries for uninsured employees with receives_supplement
+      const supplementItems = items.filter((item) => item.supplement_tl > 0)
+      if (supplementItems.length > 0) {
+        const supplementPayload = supplementItems.map((item) => ({
+          organization_id: orgId,
+          description: `${item.employee_name} — ${item.period} Sigorta Ek Ücreti`,
+          entry_type: 'ODEME' as const,
+          direction: 'out' as const,
+          amount: item.supplement_tl,
+          currency: 'TL',
+          entry_date: paidAt,
+          payment_period: item.period,
+          register: 'NAKIT_TL',
+          hr_payment_id: paymentIdByEmployee.get(item.employee_id) ?? null,
+          hr_payment_type: 'salary' as const,
+          created_by: user.id,
+        }))
+        const { error: suppError } = await supabase
+          .from('accounting_entries')
+          .insert(supplementPayload)
+        if (suppError) throw suppError
+      }
     },
     onSuccess: () => {
       // Invalidate all salary payment queries
       void queryClient.invalidateQueries({ queryKey: ['hr', orgId, 'salary-payments'] })
+      void queryClient.invalidateQueries({ queryKey: ['hr', orgId, 'all-salary-payments'] })
+      void queryClient.invalidateQueries({ queryKey: ['accounting'] })
+    },
+  })
+}
+
+/** Fetches ALL hr_salary_payments for the org (no month filter) — used for history view. */
+export function useAllSalaryPaymentsQuery() {
+  const { currentOrg } = useOrganization()
+  const orgId = currentOrg?.id ?? ''
+
+  return useQuery({
+    queryKey: ['hr', orgId, 'all-salary-payments'] as const,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('hr_salary_payments')
+        .select('*')
+        .eq('organization_id', orgId)
+        .order('paid_at', { ascending: false })
+      if (error) throw error
+      return (data ?? []) as HrSalaryPaymentLocal[]
+    },
+    enabled: !!orgId,
+  })
+}
+
+export function useUpdateSalaryPaymentMutation() {
+  const { currentOrg } = useOrganization()
+  const queryClient = useQueryClient()
+  const orgId = currentOrg?.id ?? ''
+
+  return useMutation({
+    mutationFn: async (payload: {
+      id: string
+      amount_tl: number
+      old_amount_tl: number
+      paid_at: string
+      notes: string | null
+      description: string
+    }) => {
+      // 1. Update hr_salary_payments
+      const { error: paymentError } = await supabase
+        .from('hr_salary_payments')
+        .update({
+          amount_tl: payload.amount_tl,
+          paid_at: payload.paid_at,
+          notes: payload.notes,
+        })
+        .eq('id', payload.id)
+        .eq('organization_id', orgId)
+      if (paymentError) throw paymentError
+
+      // 2. Update main salary accounting entry (matched by old amount)
+      const { error: mainError } = await supabase
+        .from('accounting_entries')
+        .update({
+          amount: payload.amount_tl,
+          entry_date: payload.paid_at,
+          description: payload.description,
+        })
+        .eq('hr_payment_id', payload.id)
+        .eq('organization_id', orgId)
+        .eq('amount', payload.old_amount_tl)
+      if (mainError) throw mainError
+
+      // 3. Update entry_date for supplement entries (different amount) — ignore error
+      await supabase
+        .from('accounting_entries')
+        .update({ entry_date: payload.paid_at })
+        .eq('hr_payment_id', payload.id)
+        .eq('organization_id', orgId)
+        .neq('amount', payload.old_amount_tl)
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['hr', orgId, 'salary-payments'] })
+      void queryClient.invalidateQueries({ queryKey: ['hr', orgId, 'all-salary-payments'] })
       void queryClient.invalidateQueries({ queryKey: ['accounting'] })
     },
   })

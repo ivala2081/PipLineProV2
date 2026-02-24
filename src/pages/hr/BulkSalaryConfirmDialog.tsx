@@ -45,7 +45,9 @@ export function BulkSalaryConfirmDialog({
   const [paidAt, setPaidAt] = useState(new Date().toISOString().split('T')[0])
 
   const eligibleItems = items.filter((i) => i.amount_tl > 0)
-  const total = eligibleItems.reduce((s, i) => s + i.amount_tl, 0)
+  const totalSalary = eligibleItems.reduce((s, i) => s + i.amount_tl, 0)
+  const totalSupplement = eligibleItems.reduce((s, i) => s + (i.supplement_tl ?? 0), 0)
+  const total = totalSalary + totalSupplement
   const hasItems = eligibleItems.length > 0
 
   const handleConfirm = async () => {
@@ -104,7 +106,10 @@ export function BulkSalaryConfirmDialog({
                       <TableHead>{lang === 'tr' ? 'Çalışan' : 'Employee'}</TableHead>
                       <TableHead>{lang === 'tr' ? 'Açıklama' : 'Description'}</TableHead>
                       <TableHead className="text-right">
-                        {lang === 'tr' ? 'Tutar (TL)' : 'Amount (TL)'}
+                        {lang === 'tr' ? 'Maaş (TL)' : 'Salary (TL)'}
+                      </TableHead>
+                      <TableHead className="text-right">
+                        {lang === 'tr' ? 'Ek Ücret' : 'Supplement'}
                       </TableHead>
                     </TableRow>
                   </TableHeader>
@@ -113,17 +118,7 @@ export function BulkSalaryConfirmDialog({
                       <TableRow key={item.employee_id}>
                         <TableCell>
                           <div className="flex items-center gap-sm">
-                            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-green/10 text-xs font-semibold text-green">
-                              {item.employee_name
-                                .split(' ')
-                                .map((n) => n[0])
-                                .join('')
-                                .toUpperCase()
-                                .slice(0, 2)}
-                            </div>
-                            <span className="text-sm font-medium text-black">
-                              {item.employee_name}
-                            </span>
+                            <span className="text-sm font-medium text-black">{item.employee_name}</span>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -134,12 +129,21 @@ export function BulkSalaryConfirmDialog({
                             {fmtTL(item.amount_tl)} TL
                           </span>
                         </TableCell>
+                        <TableCell className="text-right">
+                          {(item.supplement_tl ?? 0) > 0 ? (
+                            <span className="tabular-nums text-sm font-semibold text-orange">
+                              +{fmtTL(item.supplement_tl)} TL
+                            </span>
+                          ) : (
+                            <span className="text-xs text-black/25">—</span>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                     {/* Total row */}
                     <TableRow className="bg-black/[0.02]">
                       <TableCell
-                        colSpan={2}
+                        colSpan={3}
                         className="text-right text-xs font-semibold text-black/50"
                       >
                         {lang === 'tr' ? 'Toplam' : 'Total'}
@@ -165,8 +169,8 @@ export function BulkSalaryConfirmDialog({
                 <CheckFat size={16} weight="fill" className="mt-0.5 shrink-0 text-green" />
                 <p className="text-xs text-black/60">
                   {lang === 'tr'
-                    ? `${eligibleItems.length} çalışan için toplam ${fmtTL(total)} TL maaş ödemesi oluşturulacak ve muhasebe kasa defterine (Nakit TL) işlenecek.`
-                    : `${eligibleItems.length} salary payment records totaling ${fmtTL(total)} TL will be created and recorded in the accounting ledger (Cash TL).`}
+                    ? `${eligibleItems.length} çalışan için toplam ${fmtTL(totalSalary)} TL maaş${totalSupplement > 0 ? ` + ${fmtTL(totalSupplement)} TL ek ücret` : ''} ödemesi oluşturulacak ve muhasebe kasa defterine (Nakit TL) işlenecek.`
+                    : `${eligibleItems.length} salary payment records totaling ${fmtTL(totalSalary)} TL${totalSupplement > 0 ? ` + ${fmtTL(totalSupplement)} TL supplement` : ''} will be created and recorded in the accounting ledger (Cash TL).`}
                 </p>
               </div>
             </>

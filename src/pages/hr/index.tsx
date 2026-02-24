@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   IdentificationCard,
@@ -24,7 +24,6 @@ import {
   Tag,
   EmptyState,
   Skeleton,
-  Card,
   Grid,
   StatCard,
   DropdownMenu,
@@ -40,6 +39,12 @@ import {
   TabsList,
   TabsTrigger,
   TabsContent,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
 } from '@ds'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { useAuth } from '@/app/providers/AuthProvider'
@@ -57,6 +62,8 @@ import { DocumentsDialog } from './DocumentsDialog'
 import { BonusesTab } from './bonuses'
 import { AttendanceTab } from './AttendanceTab'
 import { SalariesTab } from './SalariesTab'
+import { PaymentsTab } from './PaymentsTab'
+import { SalaryPaymentsTab } from './SalaryPaymentsTab'
 import type { HrEmployeeRole } from '@/lib/database.types'
 
 /* ------------------------------------------------------------------ */
@@ -80,49 +87,7 @@ function getRoleTag(role: HrEmployeeRole) {
   return map[role] ?? { variant: 'blue', label: role }
 }
 
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
-}
-
-function AvatarInitials({
-  name,
-  role,
-  size = 'sm',
-}: {
-  name: string
-  role: HrEmployeeRole
-  size?: 'sm' | 'lg'
-}) {
-  const colors: Partial<Record<HrEmployeeRole, string>> = {
-    Manager: 'bg-blue/15 text-blue',
-    Marketing: 'bg-purple/15 text-purple',
-    Operation: 'bg-mint/15 text-mint',
-    'Re-attention': 'bg-orange/15 text-orange',
-    'Project Management': 'bg-cyan/15 text-cyan',
-    'Social Media': 'bg-purple/15 text-purple',
-    'Sales Development': 'bg-red/15 text-red',
-    Programmer: 'bg-blue/15 text-blue',
-  }
-  const sizeClasses = size === 'lg' ? 'size-12 text-sm' : 'size-9 text-xs'
-  return (
-    <div
-      className={`flex shrink-0 items-center justify-center rounded-full font-semibold ${sizeClasses} ${colors[role] ?? 'bg-black/10 text-black/60'}`}
-    >
-      {getInitials(name)}
-    </div>
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/*  Employee Card                                                       */
-/* ------------------------------------------------------------------ */
-
-function EmployeeCard({
+function EmployeeRow({
   emp,
   canManage,
   lang,
@@ -147,7 +112,7 @@ function EmployeeCard({
           minimumFractionDigits: 0,
           maximumFractionDigits: 0,
         }).format(emp.salary_tl)
-      : null
+      : '—'
 
   const formattedDate = emp.hire_date
     ? new Date(emp.hire_date).toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', {
@@ -155,13 +120,65 @@ function EmployeeCard({
         month: 'short',
         day: 'numeric',
       })
-    : null
+    : '—'
 
   return (
-    <Card padding="compact" className="group relative border border-black/[0.07] bg-bg1">
-      {/* Actions dropdown — top right */}
+    <TableRow className="group border-b border-black/[0.06] last:border-0">
+      {/* Name + Email */}
+      <TableCell className="py-3">
+        <p className="text-sm font-semibold text-black">{emp.full_name}</p>
+        <div className="mt-0.5 flex items-center gap-1 text-xs text-black/50">
+          <Envelope size={11} className="shrink-0 text-black/30" />
+          <span>{emp.email}</span>
+        </div>
+      </TableCell>
+
+      {/* Role */}
+      <TableCell className="py-3">
+        <Tag variant={roleInfo.variant}>{roleInfo.label}</Tag>
+      </TableCell>
+
+      {/* Salary */}
+      <TableCell className="py-3 tabular-nums text-sm text-black/70">{formattedSalary}</TableCell>
+
+      {/* Insurance */}
+      <TableCell className="py-3">
+        {emp.is_insured ? (
+          <div className="flex items-center gap-1">
+            <Shield size={13} weight="fill" className="text-blue" />
+            <span className="text-xs text-blue">{lang === 'tr' ? 'Sigortalı' : 'Insured'}</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1">
+            <ShieldWarning size={13} weight="fill" className="text-orange" />
+            <span className="text-xs text-orange">
+              {lang === 'tr' ? 'Sigortasız' : 'Uninsured'}
+            </span>
+          </div>
+        )}
+      </TableCell>
+
+      {/* Status */}
+      <TableCell className="py-3">
+        {emp.is_active ? (
+          <div className="flex items-center gap-1">
+            <CheckCircle size={13} weight="fill" className="text-green" />
+            <span className="text-xs text-green">{lang === 'tr' ? 'Aktif' : 'Active'}</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1">
+            <XCircle size={13} weight="fill" className="text-black/30" />
+            <span className="text-xs text-black/40">{lang === 'tr' ? 'Pasif' : 'Inactive'}</span>
+          </div>
+        )}
+      </TableCell>
+
+      {/* Hire Date */}
+      <TableCell className="py-3 tabular-nums text-xs text-black/60">{formattedDate}</TableCell>
+
+      {/* Actions */}
       {canManage && (
-        <div className="absolute right-2 top-2">
+        <TableCell className="py-3 text-right">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon-sm" className="opacity-0 group-hover:opacity-100">
@@ -183,90 +200,9 @@ function EmployeeCard({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
+        </TableCell>
       )}
-
-      {/* Card body */}
-      <div className="flex flex-col gap-3">
-        {/* Top: Avatar + Name + Email */}
-        <div className="flex items-start gap-3">
-          <AvatarInitials name={emp.full_name} role={emp.role} size="lg" />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-black">{emp.full_name}</p>
-            <div className="mt-0.5 flex items-center gap-1.5 text-xs text-black/50">
-              <Envelope size={12} className="shrink-0 text-black/30" />
-              <span className="truncate">{emp.email}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Role tag */}
-        <div>
-          <Tag variant={roleInfo.variant}>{roleInfo.label}</Tag>
-        </div>
-
-        {/* Info grid: Salary | Insurance | Status | Hire Date */}
-        <div className="grid grid-cols-2 gap-x-3 gap-y-2 border-t border-black/[0.06] pt-3">
-          {/* Salary */}
-          <div>
-            <p className="text-[10px] font-medium uppercase tracking-wider text-black/35">
-              {lang === 'tr' ? 'Maaş' : 'Salary'}
-            </p>
-            <p className="text-sm font-medium tabular-nums text-black/70">
-              {formattedSalary ?? '—'}
-            </p>
-          </div>
-
-          {/* Insurance */}
-          <div>
-            <p className="text-[10px] font-medium uppercase tracking-wider text-black/35">
-              {lang === 'tr' ? 'Sigorta' : 'Insurance'}
-            </p>
-            {emp.is_insured ? (
-              <div className="flex items-center gap-1">
-                <Shield size={13} weight="fill" className="text-blue" />
-                <span className="text-xs text-blue">{lang === 'tr' ? 'Sigortalı' : 'Insured'}</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1">
-                <ShieldWarning size={13} weight="fill" className="text-orange" />
-                <span className="text-xs text-orange">
-                  {lang === 'tr' ? 'Sigortasız' : 'Uninsured'}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Status */}
-          <div>
-            <p className="text-[10px] font-medium uppercase tracking-wider text-black/35">
-              {lang === 'tr' ? 'Durum' : 'Status'}
-            </p>
-            {emp.is_active ? (
-              <div className="flex items-center gap-1">
-                <CheckCircle size={13} weight="fill" className="text-green" />
-                <span className="text-xs text-green">{lang === 'tr' ? 'Aktif' : 'Active'}</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1">
-                <XCircle size={13} weight="fill" className="text-black/30" />
-                <span className="text-xs text-black/40">
-                  {lang === 'tr' ? 'Pasif' : 'Inactive'}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Hire Date */}
-          <div>
-            <p className="text-[10px] font-medium uppercase tracking-wider text-black/35">
-              {lang === 'tr' ? 'İşe Giriş' : 'Hire Date'}
-            </p>
-            <p className="text-xs tabular-nums text-black/60">{formattedDate ?? '—'}</p>
-          </div>
-        </div>
-      </div>
-    </Card>
+    </TableRow>
   )
 }
 
@@ -324,9 +260,6 @@ export function HrPage() {
   const [deleteTarget, setDeleteTarget] = useState<HrEmployee | null>(null)
   const [docsEmployee, setDocsEmployee] = useState<HrEmployee | null>(null)
 
-  // Ref to BonusesTab's add handler (for header button wiring)
-  const bonusAddFnRef = useRef<(() => void) | null>(null)
-
   const filtered = useMemo(() => {
     let list = employees
     if (roleFilter !== 'all') list = list.filter((e) => e.role === roleFilter)
@@ -373,19 +306,13 @@ export function HrPage() {
   }
 
   /* Tab-aware header action */
-  const headerAction = canManage ? (
-    activeTab === 'employees' ? (
+  const headerAction =
+    canManage && activeTab === 'employees' ? (
       <Button variant="filled" onClick={handleAddNew}>
         <Plus size={16} weight="bold" />
         {t('hr.addEmployee', 'Çalışan Ekle')}
       </Button>
-    ) : activeTab === 'bonuses' ? (
-      <Button variant="filled" onClick={() => bonusAddFnRef.current?.()}>
-        <Plus size={16} weight="bold" />
-        {lang === 'tr' ? 'Prim Anlaşması Ekle' : 'Add Bonus Agreement'}
-      </Button>
-    ) : null
-  ) : undefined
+    ) : undefined
 
   return (
     <div className="space-y-lg">
@@ -414,6 +341,12 @@ export function HrPage() {
             )}
           </TabsTrigger>
           <TabsTrigger value="bonuses">{lang === 'tr' ? 'Primler' : 'Bonuses'}</TabsTrigger>
+          <TabsTrigger value="payments">
+            {lang === 'tr' ? 'Geçmiş Prim Ödemeleri' : 'Bonus Payment History'}
+          </TabsTrigger>
+          <TabsTrigger value="salary-payments">
+            {lang === 'tr' ? 'Geçmiş Maaş Ödemeleri' : 'Salary Payment History'}
+          </TabsTrigger>
           <TabsTrigger value="attendance">
             {lang === 'tr' ? 'Devam Takibi' : 'Attendance'}
           </TabsTrigger>
@@ -458,52 +391,38 @@ export function HrPage() {
                   )}
                 </Grid>
 
-                {/* Payment schedule cards */}
-                <Grid cols={2} gap="md">
-                  <Card
-                    padding="compact"
-                    className="flex items-center gap-4 border border-black/10 bg-bg1"
-                  >
-                    <div className="flex size-10 items-center justify-center rounded-xl bg-green/10">
-                      <Money size={18} className="text-green" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium uppercase tracking-wider text-black/40">
-                        {lang === 'tr' ? 'Maaş Ödemesi' : 'Salary Payment'}
-                      </p>
-                      <p className="mt-0.5 text-sm font-semibold text-black">
-                        {lang === 'tr' ? "Her ayın 5'i" : '5th of each month'}
-                        <span
-                          className={`ml-2 text-xs font-medium tabular-nums ${daysUntil(5) <= 3 ? 'text-orange' : 'text-black/40'}`}
-                        >
-                          · {dayLabel(daysUntil(5), lang)}
-                        </span>
-                      </p>
-                    </div>
-                  </Card>
-
-                  <Card
-                    padding="compact"
-                    className="flex items-center gap-4 border border-black/10 bg-bg1"
-                  >
-                    <div className="flex size-10 items-center justify-center rounded-xl bg-purple/10">
-                      <CurrencyCircleDollar size={18} className="text-purple" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium uppercase tracking-wider text-black/40">
-                        {lang === 'tr' ? 'Prim Ödemesi' : 'Bonus Payment'}
-                      </p>
-                      <p className="mt-0.5 text-sm font-semibold text-black">
-                        {lang === 'tr' ? "Her ayın 20'si" : '20th of each month'}
-                        <span
-                          className={`ml-2 text-xs font-medium tabular-nums ${daysUntil(20) <= 3 ? 'text-orange' : 'text-black/40'}`}
-                        >
-                          · {dayLabel(daysUntil(20), lang)}
-                        </span>
-                      </p>
-                    </div>
-                  </Card>
-                </Grid>
+                {/* Payment schedule strip */}
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-1 rounded-xl border border-black/[0.07] bg-bg1 px-4 py-2.5">
+                  <div className="flex items-center gap-2">
+                    <Money size={14} className="shrink-0 text-green" />
+                    <span className="text-xs text-black/50">
+                      {lang === 'tr' ? 'Maaş' : 'Salary'}&nbsp;—&nbsp;
+                      <span className="font-medium text-black/70">
+                        {lang === 'tr' ? "Her ayın 5'i" : '5th'}
+                      </span>
+                    </span>
+                    <span
+                      className={`text-xs tabular-nums ${daysUntil(5) <= 3 ? 'text-orange' : 'text-black/35'}`}
+                    >
+                      · {dayLabel(daysUntil(5), lang)}
+                    </span>
+                  </div>
+                  <div className="h-3 w-px bg-black/10" />
+                  <div className="flex items-center gap-2">
+                    <CurrencyCircleDollar size={14} className="shrink-0 text-purple" />
+                    <span className="text-xs text-black/50">
+                      {lang === 'tr' ? 'Prim' : 'Bonus'}&nbsp;—&nbsp;
+                      <span className="font-medium text-black/70">
+                        {lang === 'tr' ? "Her ayın 20'si" : '20th'}
+                      </span>
+                    </span>
+                    <span
+                      className={`text-xs tabular-nums ${daysUntil(20) <= 3 ? 'text-orange' : 'text-black/35'}`}
+                    >
+                      · {dayLabel(daysUntil(20), lang)}
+                    </span>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -545,30 +464,61 @@ export function HrPage() {
               </div>
             </div>
 
-            {/* Employee cards */}
+            {/* Employee table */}
             {isLoading ? (
-              <Grid cols={3} gap="md">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <Card key={i} padding="compact" className="border border-black/[0.07] bg-bg1">
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-start gap-3">
-                        <Skeleton className="size-12 rounded-full" />
-                        <div className="flex-1 space-y-2">
-                          <Skeleton className="h-4 w-3/4 rounded" />
-                          <Skeleton className="h-3 w-1/2 rounded" />
-                        </div>
-                      </div>
-                      <Skeleton className="h-5 w-20 rounded" />
-                      <div className="grid grid-cols-2 gap-3 border-t border-black/[0.06] pt-3">
-                        <Skeleton className="h-8 w-full rounded" />
-                        <Skeleton className="h-8 w-full rounded" />
-                        <Skeleton className="h-8 w-full rounded" />
-                        <Skeleton className="h-8 w-full rounded" />
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </Grid>
+              <div className="rounded-xl border border-black/[0.07] bg-bg1">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b border-black/[0.07]">
+                      <TableHead className="text-xs font-medium text-black/40">
+                        {lang === 'tr' ? 'Çalışan' : 'Employee'}
+                      </TableHead>
+                      <TableHead className="text-xs font-medium text-black/40">
+                        {lang === 'tr' ? 'Rol' : 'Role'}
+                      </TableHead>
+                      <TableHead className="text-xs font-medium text-black/40">
+                        {lang === 'tr' ? 'Maaş' : 'Salary'}
+                      </TableHead>
+                      <TableHead className="text-xs font-medium text-black/40">
+                        {lang === 'tr' ? 'Sigorta' : 'Insurance'}
+                      </TableHead>
+                      <TableHead className="text-xs font-medium text-black/40">
+                        {lang === 'tr' ? 'Durum' : 'Status'}
+                      </TableHead>
+                      <TableHead className="text-xs font-medium text-black/40">
+                        {lang === 'tr' ? 'İşe Giriş' : 'Hire Date'}
+                      </TableHead>
+                      {canManage && <TableHead />}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <TableRow key={i} className="border-b border-black/[0.06] last:border-0">
+                        <TableCell className="py-3">
+                          <Skeleton className="mb-1.5 h-4 w-36 rounded" />
+                          <Skeleton className="h-3 w-48 rounded" />
+                        </TableCell>
+                        <TableCell className="py-3">
+                          <Skeleton className="h-5 w-20 rounded" />
+                        </TableCell>
+                        <TableCell className="py-3">
+                          <Skeleton className="h-4 w-24 rounded" />
+                        </TableCell>
+                        <TableCell className="py-3">
+                          <Skeleton className="h-4 w-20 rounded" />
+                        </TableCell>
+                        <TableCell className="py-3">
+                          <Skeleton className="h-4 w-16 rounded" />
+                        </TableCell>
+                        <TableCell className="py-3">
+                          <Skeleton className="h-4 w-24 rounded" />
+                        </TableCell>
+                        {canManage && <TableCell className="py-3" />}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             ) : filtered.length === 0 ? (
               <EmptyState
                 icon={IdentificationCard}
@@ -592,19 +542,46 @@ export function HrPage() {
                 }
               />
             ) : (
-              <Grid cols={3} gap="md">
-                {filtered.map((emp) => (
-                  <EmployeeCard
-                    key={emp.id}
-                    emp={emp}
-                    canManage={canManage}
-                    lang={lang}
-                    onEdit={() => handleEdit(emp)}
-                    onDelete={() => setDeleteTarget(emp)}
-                    onDocs={() => setDocsEmployee(emp)}
-                  />
-                ))}
-              </Grid>
+              <div className="rounded-xl border border-black/[0.07] bg-bg1">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b border-black/[0.07]">
+                      <TableHead className="text-xs font-medium text-black/40">
+                        {lang === 'tr' ? 'Çalışan' : 'Employee'}
+                      </TableHead>
+                      <TableHead className="text-xs font-medium text-black/40">
+                        {lang === 'tr' ? 'Rol' : 'Role'}
+                      </TableHead>
+                      <TableHead className="text-xs font-medium text-black/40">
+                        {lang === 'tr' ? 'Maaş' : 'Salary'}
+                      </TableHead>
+                      <TableHead className="text-xs font-medium text-black/40">
+                        {lang === 'tr' ? 'Sigorta' : 'Insurance'}
+                      </TableHead>
+                      <TableHead className="text-xs font-medium text-black/40">
+                        {lang === 'tr' ? 'Durum' : 'Status'}
+                      </TableHead>
+                      <TableHead className="text-xs font-medium text-black/40">
+                        {lang === 'tr' ? 'İşe Giriş' : 'Hire Date'}
+                      </TableHead>
+                      {canManage && <TableHead />}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map((emp) => (
+                      <EmployeeRow
+                        key={emp.id}
+                        emp={emp}
+                        canManage={canManage}
+                        lang={lang}
+                        onEdit={() => handleEdit(emp)}
+                        onDelete={() => setDeleteTarget(emp)}
+                        onDocs={() => setDocsEmployee(emp)}
+                      />
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </div>
         </TabsContent>
@@ -619,14 +596,21 @@ export function HrPage() {
         {/* ── Bonuses Tab ── */}
         <TabsContent value="bonuses">
           <div className="pt-lg">
-            <BonusesTab
-              employees={employees}
-              canManage={canManage}
-              lang={lang}
-              onAddRef={(fn) => {
-                bonusAddFnRef.current = fn
-              }}
-            />
+            <BonusesTab employees={employees} canManage={canManage} lang={lang} />
+          </div>
+        </TabsContent>
+
+        {/* ── Bonus Payments Tab ── */}
+        <TabsContent value="payments">
+          <div className="pt-lg">
+            <PaymentsTab employees={employees} canManage={canManage} lang={lang} />
+          </div>
+        </TabsContent>
+
+        {/* ── Salary Payments Tab ── */}
+        <TabsContent value="salary-payments">
+          <div className="pt-lg">
+            <SalaryPaymentsTab employees={employees} canManage={canManage} lang={lang} />
           </div>
         </TabsContent>
 

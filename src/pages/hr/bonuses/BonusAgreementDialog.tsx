@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
-import { Handshake } from '@phosphor-icons/react'
+import { Handshake, Info } from '@phosphor-icons/react'
 import {
   Dialog,
   DialogContent,
@@ -32,16 +32,18 @@ const agreementSchema = z.object({
   employee_id: z.string().min(1, 'Çalışan seçin'),
   title: z.string().min(2, 'Başlık en az 2 karakter'),
   description: z.string().optional(),
-  bonus_type: z.enum(['fixed', 'percentage', 'tiered', 'custom']),
+  bonus_type: z.enum(['fixed', 'variable', 'percentage', 'tiered', 'custom']),
   fixed_amount: z.coerce.number().min(0).default(0),
   percentage_rate: z.coerce.number().min(0).max(100).default(0),
   percentage_base: z.string().optional(),
   is_active: z.boolean(),
   effective_from: z.string().optional(),
-  effective_until: z.string().optional(),
 })
 
 type AgreementFormValues = z.infer<typeof agreementSchema>
+
+// Bonus types offered in the UI for other departments
+type SelectableBonusType = 'fixed' | 'variable'
 
 interface BonusAgreementDialogProps {
   open: boolean
@@ -76,7 +78,6 @@ export function BonusAgreementDialog({
       percentage_base: '',
       is_active: true,
       effective_from: '',
-      effective_until: '',
     },
   })
 
@@ -95,7 +96,6 @@ export function BonusAgreementDialog({
           percentage_base: agreement.percentage_base ?? '',
           is_active: agreement.is_active,
           effective_from: agreement.effective_from ?? '',
-          effective_until: agreement.effective_until ?? '',
         })
         setFixedAmountDisplay(numberToDisplay(agreement.fixed_amount, lang))
       } else {
@@ -109,7 +109,6 @@ export function BonusAgreementDialog({
           percentage_base: '',
           is_active: true,
           effective_from: '',
-          effective_until: '',
         })
         setFixedAmountDisplay('')
       }
@@ -125,13 +124,12 @@ export function BonusAgreementDialog({
         bonus_type: data.bonus_type,
         currency: 'USDT',
         fixed_amount: data.bonus_type === 'fixed' ? data.fixed_amount : 0,
-        percentage_rate: data.bonus_type === 'percentage' ? data.percentage_rate : 0,
-        percentage_base:
-          data.bonus_type === 'percentage' ? data.percentage_base?.trim() || null : null,
+        percentage_rate: 0,
+        percentage_base: null,
         tier_rules: [] as unknown,
         is_active: data.is_active,
         effective_from: data.effective_from || null,
-        effective_until: data.effective_until || null,
+        effective_until: null,
       }
 
       if (isEdit && agreement) {
@@ -152,6 +150,10 @@ export function BonusAgreementDialog({
 
   const isSubmitting = createAgreement.isPending || updateAgreement.isPending
   const compactError = 'mt-1 text-xs text-red'
+
+  // For the select we only expose the two selectable types; legacy types still render if already set
+  const selectableBonusType: SelectableBonusType =
+    bonusType === 'fixed' || bonusType === 'variable' ? bonusType : 'fixed'
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -268,7 +270,7 @@ export function BonusAgreementDialog({
                   {lang === 'tr' ? 'Prim Türü' : 'Bonus Type'}
                 </Label>
                 <Select
-                  value={form.watch('bonus_type')}
+                  value={selectableBonusType}
                   onValueChange={(v) =>
                     form.setValue('bonus_type', v as AgreementFormValues['bonus_type'])
                   }
@@ -278,13 +280,11 @@ export function BonusAgreementDialog({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="fixed">
-                      {lang === 'tr' ? 'Sabit Tutar' : 'Fixed Amount'}
+                      {lang === 'tr' ? 'Sabit' : 'Fixed'}
                     </SelectItem>
-                    <SelectItem value="percentage">
-                      {lang === 'tr' ? 'Yüzdelik' : 'Percentage'}
+                    <SelectItem value="variable">
+                      {lang === 'tr' ? 'Değişken' : 'Variable'}
                     </SelectItem>
-                    <SelectItem value="tiered">{lang === 'tr' ? 'Kademeli' : 'Tiered'}</SelectItem>
-                    <SelectItem value="custom">{lang === 'tr' ? 'Özel' : 'Custom'}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -309,7 +309,7 @@ export function BonusAgreementDialog({
               </div>
 
               {/* Fixed amount (shown for fixed type) */}
-              {bonusType === 'fixed' && (
+              {(bonusType === 'fixed' || (bonusType !== 'variable' && bonusType !== 'percentage' && bonusType !== 'tiered' && bonusType !== 'custom')) && (
                 <div>
                   <Label className="mb-1 text-xs font-medium tracking-wide text-black/70">
                     {lang === 'tr' ? 'Sabit Tutar (USDT)' : 'Fixed Amount (USDT)'}
@@ -328,50 +328,34 @@ export function BonusAgreementDialog({
                 </div>
               )}
 
-              {/* Percentage rate (shown for percentage type) */}
-              {bonusType === 'percentage' && (
-                <>
-                  <div>
-                    <Label className="mb-1 text-xs font-medium tracking-wide text-black/70">
-                      {lang === 'tr' ? 'Yüzde Oranı (%)' : 'Percentage Rate (%)'}
-                    </Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="100"
-                      {...form.register('percentage_rate')}
-                      placeholder="0.00"
-                    />
-                  </div>
-                  <div>
-                    <Label className="mb-1 text-xs font-medium tracking-wide text-black/70">
-                      {lang === 'tr' ? 'Hesaplama Bazı' : 'Calculation Base'}
-                    </Label>
-                    <Input
-                      {...form.register('percentage_base')}
-                      placeholder={
-                        lang === 'tr'
-                          ? 'örn. Aylık ciro, Yatırım hacmi'
-                          : 'e.g. Monthly revenue, Deposit volume'
-                      }
-                    />
-                  </div>
-                </>
+              {/* Variable bonus info (shown for variable type) */}
+              {bonusType === 'variable' && (
+                <div className="sm:col-span-2 flex items-start gap-2 rounded-lg border border-orange/30 bg-orange/5 px-3 py-2.5 text-xs text-orange">
+                  <Info size={14} weight="fill" className="mt-0.5 shrink-0" />
+                  <span>
+                    {lang === 'tr'
+                      ? 'Değişken primde tutar anlaşmaya bağlı değildir. İK, her ay ödeme yapmadan önce o aya ait hakedilen tutarı manuel olarak girmelidir.'
+                      : 'Variable bonus amount is not fixed in the agreement. HR must manually enter the earned amount for each month before making a payment.'}
+                  </span>
+                </div>
               )}
 
-              {/* Effective dates */}
+              {/* Effective from date */}
               <div>
                 <Label className="mb-1 text-xs font-medium tracking-wide text-black/70">
                   {lang === 'tr' ? 'Başlangıç Tarihi' : 'Effective From'}
                 </Label>
                 <Input type="date" {...form.register('effective_from')} />
               </div>
-              <div>
-                <Label className="mb-1 text-xs font-medium tracking-wide text-black/70">
-                  {lang === 'tr' ? 'Bitiş Tarihi' : 'Effective Until'}
-                </Label>
-                <Input type="date" {...form.register('effective_until')} />
+
+              {/* Info: agreement ends automatically when employee is deactivated */}
+              <div className="flex items-start gap-2 rounded-lg border border-black/[0.08] bg-bg2 px-3 py-2.5 text-xs text-black/50">
+                <Info size={14} weight="fill" className="mt-0.5 shrink-0 text-black/30" />
+                <span>
+                  {lang === 'tr'
+                    ? 'Anlaşma bitiş tarihi yoktur. Personel pasife alındığında veya işten çıkarıldığında otomatik sona erer.'
+                    : 'No end date. Agreement ends automatically when the employee is deactivated or terminated.'}
+                </span>
               </div>
             </div>
           </div>

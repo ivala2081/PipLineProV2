@@ -126,17 +126,7 @@ export function BulkPayoutConfirmDialog({
                       <TableRow key={item.employee_id}>
                         <TableCell>
                           <div className="flex items-center gap-sm">
-                            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand/10 text-xs font-semibold text-brand">
-                              {item.employee_name
-                                .split(' ')
-                                .map((n) => n[0])
-                                .join('')
-                                .toUpperCase()
-                                .slice(0, 2)}
-                            </div>
-                            <span className="text-sm font-medium text-black">
-                              {item.employee_name}
-                            </span>
+                            <span className="text-sm font-medium text-black">{item.employee_name}</span>
                           </div>
                         </TableCell>
                         <TableCell>

@@ -24,6 +24,7 @@ import {
   SelectContent,
   SelectItem,
   EmptyState,
+  DatePicker,
 } from '@ds'
 import { useToast } from '@/hooks/useToast'
 import {
@@ -137,17 +138,7 @@ function AttendanceRow({
     <TableRow>
       {/* Employee */}
       <TableCell>
-        <div className="flex items-center gap-2">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand/10 text-xs font-semibold text-brand">
-            {employee.full_name
-              .split(' ')
-              .map((n) => n[0])
-              .join('')
-              .toUpperCase()
-              .slice(0, 2)}
-          </div>
-          <span className="text-sm font-medium text-black">{employee.full_name}</span>
-        </div>
+        <span className="text-sm font-medium text-black">{employee.full_name}</span>
       </TableCell>
 
       {/* Status selector */}
@@ -409,17 +400,14 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
     <div className="space-y-lg">
       {/* Date picker */}
       <div className="flex items-center gap-sm">
-        <CalendarBlank size={16} className="text-black/40" />
-        <input
-          type="date"
-          value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
-          max={todayString()}
-          className="h-9 rounded-lg border border-black/[0.12] bg-bg1 px-3 text-sm text-black focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/10 dark:border-white/10 dark:bg-bg2 dark:text-white"
+        <DatePicker
+          dateFrom={selectedDate}
+          dateTo={selectedDate}
+          onChange={(from) => {
+            if (from) setSelectedDate(from)
+          }}
+          minWidth="9rem"
         />
-        <Button variant="outline" size="sm" onClick={() => setSelectedDate(todayString())}>
-          {lang === 'tr' ? 'Bugün' : 'Today'}
-        </Button>
         <Button variant="outline" size="sm" onClick={() => setView('summary')}>
           {lang === 'tr' ? 'Aylık Özet' : 'Monthly Summary'}
         </Button>
