@@ -74,7 +74,7 @@ function getRoleVariant(
     Manager: 'blue',
     Marketing: 'purple',
     Operation: 'green',
-    'Re-attention': 'orange',
+    'Retention': 'orange',
     'Project Management': 'cyan',
     'Social Media': 'purple',
     'Sales Development': 'red',

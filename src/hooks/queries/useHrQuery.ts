@@ -170,7 +170,7 @@ export type HrSettings = {
 
 export const DEFAULT_HR_SETTINGS: HrSettings = {
   roles: [
-    'Manager', 'Marketing', 'Operation', 'Re-attention',
+    'Manager', 'Marketing', 'Operation', 'Retention',
     'Project Management', 'Social Media', 'Sales Development', 'Programmer',
   ],
   supplement_tl: 4000,

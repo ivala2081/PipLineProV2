@@ -35,7 +35,7 @@ const employeeSchema = z.object({
     'Manager',
     'Marketing',
     'Operation',
-    'Re-attention',
+    'Retention',
     'Project Management',
     'Social Media',
     'Sales Development',

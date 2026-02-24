@@ -54,7 +54,7 @@ export function BulkPayoutConfirmDialog({
     dept === 'marketing'
       ? 'Marketing'
       : dept === 'reattention'
-        ? 'Re-attention'
+        ? 'Retention'
         : lang === 'tr'
           ? 'Diğer Departmanlar'
           : 'Other Departments'

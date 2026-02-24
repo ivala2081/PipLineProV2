@@ -311,7 +311,7 @@ function computeMtStats(
 }
 
 function computeReStats(employees: HrEmployee[], transfers: AutoBonusTransfer[], config: ReConfig): ReEmployeeStat[] {
-  const reEmps = employees.filter((e) => e.role === 'Re-attention' && e.is_active)
+  const reEmps = employees.filter((e) => e.role === 'Retention' && e.is_active)
   return reEmps.map((emp) => {
     const empTransfers = transfers.filter((t) => t.employee_id === emp.id)
     const totalDepositsUsd = empTransfers
@@ -762,7 +762,7 @@ function MarketingBonusTable({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Re-attention Tab                                                    */
+/*  Retention Tab                                                    */
 /* ------------------------------------------------------------------ */
 
 function ReattentionBonusTable({
@@ -796,11 +796,11 @@ function ReattentionBonusTable({
     return (
       <EmptyState
         icon={TrendUp}
-        title={lang === 'tr' ? 'Re-attention çalışanı yok' : 'No Re-attention employees'}
+        title={lang === 'tr' ? 'Retention çalışanı yok' : 'No Retention employees'}
         description={
           lang === 'tr'
-            ? 'İK modülünden Re-attention rolünde çalışan ekleyin.'
-            : 'Add employees with Re-attention role in the HR module.'
+            ? 'İK modülünden Retention rolünde çalışan ekleyin.'
+            : 'Add employees with Retention role in the HR module.'
         }
       />
     )
@@ -815,8 +815,8 @@ function ReattentionBonusTable({
         title={lang === 'tr' ? 'Tüm primler ödendi' : 'All bonuses paid'}
         description={
           lang === 'tr'
-            ? 'Bu dönem için tüm Re-attention primleri ödenmiştir.'
-            : 'All Re-attention bonuses for this period have been paid.'
+            ? 'Bu dönem için tüm Retention primleri ödenmiştir.'
+            : 'All Retention bonuses for this period have been paid.'
         }
       />
     )
@@ -1023,7 +1023,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
   }, [allPayments, employees, periodLabel])
 
   const paidReIds = useMemo(() => {
-    const reIds = new Set(employees.filter((e) => e.role === 'Re-attention').map((e) => e.id))
+    const reIds = new Set(employees.filter((e) => e.role === 'Retention').map((e) => e.id))
     return new Set(
       allPayments
         .filter(
@@ -1054,7 +1054,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
   }, [employees])
 
   // Payments for a dept, filtered by selected period label
-  const getPaymentsForDept = (role: 'Marketing' | 'Re-attention') => {
+  const getPaymentsForDept = (role: 'Marketing' | 'Retention') => {
     const deptIds = new Set(employees.filter((e) => e.role === role).map((e) => e.id))
     return allPayments.filter((p) => {
       if (!deptIds.has(p.employee_id)) return false
@@ -1092,7 +1092,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
           employee_name: s.employee.full_name,
           amount_usdt: s.bonus,
           period: periodLabel,
-          description: `Re-attention Primi — ${s.employee.full_name} (${periodLabel})`,
+          description: `Retention Primi — ${s.employee.full_name} (${periodLabel})`,
         }))
     }
     return []
@@ -1111,7 +1111,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
         amount_usdt: amount,
         paid_at: new Date().toISOString().split('T')[0],
         agreement_id: null,
-        description: `${payTarget.employee.role === 'Marketing' ? 'Marketing' : 'Re-attention'} Primi — ${payTarget.employee.full_name} (${payTarget.period})`,
+        description: `${payTarget.employee.role === 'Marketing' ? 'Marketing' : 'Retention'} Primi — ${payTarget.employee.full_name} (${payTarget.period})`,
       })
       toast({ title: lang === 'tr' ? 'Ödeme kaydedildi' : 'Payment recorded', variant: 'success' })
       setPayTarget(null)
@@ -1185,7 +1185,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
 
   if (dept === 'reattention') {
     const total = reStats.reduce((s, e) => s + e.bonus, 0)
-    const pmts = getPaymentsForDept('Re-attention')
+    const pmts = getPaymentsForDept('Retention')
     return (
       <div className="space-y-lg">
         <div className="flex flex-wrap items-center justify-between gap-sm">

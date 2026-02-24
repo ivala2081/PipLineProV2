@@ -26,7 +26,7 @@ const RE_BONUS_RATE = 0.0575
 
 /** Returns the auto-bonus USDT amount for a transfer.
  *  Marketing: per-deposit tier bonus (deposit only, always positive).
- *  Re-attention: amount_usd × 5.75% — positive for deposit, negative for withdrawal.
+ *  Retention: amount_usd × 5.75% — positive for deposit, negative for withdrawal.
  *  Returns 0 if no bonus applies. */
 function calcAutoBonus(
   role: string,
@@ -37,7 +37,7 @@ function calcAutoBonus(
   if (role === 'Marketing' && isDeposit) {
     return getMtDepositBonus(Math.abs(amountUsd), depositTiers)
   }
-  if (role === 'Re-attention') {
+  if (role === 'Retention') {
     const sign = isDeposit ? 1 : -1
     return Math.round(Math.abs(amountUsd) * RE_BONUS_RATE * sign * 100) / 100
   }
@@ -305,7 +305,7 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
 
       if (error) throw error
 
-      // Auto-bonus: Marketing / Re-attention
+      // Auto-bonus: Marketing / Retention
       if (data.employee_id && newTransfer) {
         const { data: emp } = await supabase
           .from('hr_employees')

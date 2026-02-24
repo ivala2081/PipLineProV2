@@ -54,7 +54,7 @@ type RememberedTransferFields = Pick<
 >
 
 const TRANSFER_PREFS_KEY = 'piplinepro:transfer-form-prefs'
-const AUTO_BONUS_ROLES = ['Marketing', 'Re-attention'] as const
+const AUTO_BONUS_ROLES = ['Marketing', 'Retention'] as const
 
 /* ── Pure helpers ─────────────────────────────────────────────────── */
 
@@ -814,8 +814,8 @@ export function TransferFormContent({
                 {employeeOptions.length === 0 ? (
                   <p className="flex h-10 items-center rounded-xl border border-black/[0.07] bg-black/[0.02] px-3 text-xs text-black/35">
                     {lang === 'tr'
-                      ? 'Aktif MT / Re-attention çalışanı yok'
-                      : 'No active MT / Re-attention employees'}
+                      ? 'Aktif MT / Retention çalışanı yok'
+                      : 'No active MT / Retention employees'}
                   </p>
                 ) : (
                   <SearchableSelectField

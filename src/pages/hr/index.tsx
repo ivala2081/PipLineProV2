@@ -78,7 +78,7 @@ function getRoleTag(role: HrEmployeeRole) {
     Manager: { variant: 'blue', label: 'Manager' },
     Marketing: { variant: 'purple', label: 'Marketing' },
     Operation: { variant: 'green', label: 'Operation' },
-    'Re-attention': { variant: 'orange', label: 'Re-attention' },
+    'Retention': { variant: 'orange', label: 'Retention' },
     'Project Management': { variant: 'cyan', label: 'Project Mgmt' },
     'Social Media': { variant: 'purple', label: 'Social Media' },
     'Sales Development': { variant: 'red', label: 'Sales Dev' },

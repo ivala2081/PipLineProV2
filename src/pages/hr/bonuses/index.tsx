@@ -103,7 +103,7 @@ interface BonusesTabProps {
 }
 
 // Roles that use automatic bonus calculation — excluded from manual agreements
-const AUTO_BONUS_ROLES = ['Marketing', 'Re-attention'] as const
+const AUTO_BONUS_ROLES = ['Marketing', 'Retention'] as const
 
 type DeptTab = 'marketing' | 'reattention' | 'other' | 'history' | 'config' | 're-config'
 
