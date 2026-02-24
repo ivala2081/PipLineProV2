@@ -68,6 +68,8 @@ export const queryKeys = {
     all: ['presence'] as const,
     onlineCount: (orgId: string | undefined) =>
       [...queryKeys.presence.all, 'onlineCount', orgId ?? ''] as const,
+    onlineMembers: (orgId: string | undefined) =>
+      [...queryKeys.presence.all, 'onlineMembers', orgId ?? ''] as const,
     portfolio: (orgId: string) => [...queryKeys.presence.all, 'portfolio', orgId] as const,
   },
   uniPayment: {
@@ -80,8 +82,7 @@ export const queryKeys = {
       [...queryKeys.uniPayment.all, 'invoices', pspId, page] as const,
     payments: (pspId: string, page: number) =>
       [...queryKeys.uniPayment.all, 'payments', pspId, page] as const,
-    syncStatus: (pspId: string) =>
-      [...queryKeys.uniPayment.all, 'syncStatus', pspId] as const,
+    syncStatus: (pspId: string) => [...queryKeys.uniPayment.all, 'syncStatus', pspId] as const,
   },
   apiHealth: {
     all: ['apiHealth'] as const,

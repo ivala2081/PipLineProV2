@@ -154,6 +154,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = useCallback(async (email: string, password: string) => {
     const deviceId = getDeviceId()
 
+    // Server-side rate limiting — check DB-tracked failed attempts before auth
+    try {
+      const { data: isRateLimited } = await supabase.rpc(
+        'should_rate_limit_device' as never,
+        { p_device_id: deviceId, p_max_attempts: 5, p_minutes: 15 } as never,
+      )
+      if (isRateLimited) {
+        return {
+          error: { message: 'rate_limited', status: 429 } as unknown as AuthError,
+        }
+      }
+    } catch {
+      // Don't block login if rate-limit check itself fails
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
     // Log login attempt (fire and forget)

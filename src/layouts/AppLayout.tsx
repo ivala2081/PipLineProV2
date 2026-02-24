@@ -67,33 +67,26 @@ import { OnlineCount } from '@/components/OnlineCount'
 function SidebarBrand() {
   const { currentOrg } = useOrganization()
   const { state } = useSidebar()
+  const { resolvedTheme } = useTheme()
   const isCollapsed = state === 'collapsed'
   const logoSize = isCollapsed ? 'size-6' : 'size-8'
+
+  const logoIcon =
+    resolvedTheme === 'dark' ? '/logo/logo-icon-white.png' : '/logo/logo-icon-dark.png'
 
   return (
     <div
       className={cn('flex items-center gap-2.5 py-1', isCollapsed ? 'justify-center px-0' : 'px-2')}
     >
-      {/* Logo mark - show org logo if available, otherwise text mark */}
-      {currentOrg?.logo_url ? (
-        <div
-          className={cn(
-            'flex aspect-square shrink-0 items-center justify-center overflow-hidden rounded-lg border border-black/10 bg-black/5',
-            logoSize,
-          )}
-        >
-          <img src={currentOrg.logo_url} alt={currentOrg.name} className="size-full object-cover" />
-        </div>
-      ) : (
-        <div
-          className={cn(
-            'flex aspect-square shrink-0 items-center justify-center rounded-lg bg-brand/15',
-            logoSize,
-          )}
-        >
-          <span className={cn('font-black text-brand leading-none', isCollapsed ? 'text-[9px]' : 'text-[11px]')}>PL</span>
-        </div>
-      )}
+      {/* Logo mark */}
+      <div
+        className={cn(
+          'flex aspect-square shrink-0 items-center justify-center overflow-hidden rounded-lg',
+          logoSize,
+        )}
+      >
+        <img src={logoIcon} alt="PipLinePro" className="size-full object-contain" />
+      </div>
 
       {/* Brand text — hidden when sidebar is collapsed */}
       {!isCollapsed && (
@@ -419,8 +412,8 @@ function HeaderOrgSwitcher() {
               />
             </div>
           ) : (
-            <div className="flex size-4 items-center justify-center rounded bg-brand/15 text-brand text-[8px] font-black leading-none">
-              PL
+            <div className="flex size-4 items-center justify-center rounded bg-brand/10 text-brand text-[8px] font-bold leading-none">
+              {currentOrg?.name.charAt(0).toUpperCase() ?? 'O'}
             </div>
           )}
           <span className="max-w-[120px] truncate">

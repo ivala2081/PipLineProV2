@@ -132,9 +132,13 @@ export function ResetPasswordPage() {
         />
         <div className="flex w-full max-w-md flex-col items-center">
           <img
-            src={resolvedTheme === 'dark' ? '/for-dark.png' : '/for-white.png'}
+            src={
+              resolvedTheme === 'dark'
+                ? '/logo/logo-stacked-white.png'
+                : '/logo/logo-stacked-dark.png'
+            }
             alt="PipLinePro"
-            className="mb-8 h-16 w-auto object-contain"
+            className="mb-8 h-36 w-auto object-contain"
           />
           <Card className="w-full space-y-lg bg-bg1 border border-black/10">
             <div className="space-y-sm">
@@ -178,9 +182,13 @@ export function ResetPasswordPage() {
         />
         <div className="flex w-full max-w-md flex-col items-center">
           <img
-            src={resolvedTheme === 'dark' ? '/for-dark.png' : '/for-white.png'}
+            src={
+              resolvedTheme === 'dark'
+                ? '/logo/logo-stacked-white.png'
+                : '/logo/logo-stacked-dark.png'
+            }
             alt="PipLinePro"
-            className="mb-8 h-16 w-auto object-contain"
+            className="mb-8 h-36 w-auto object-contain"
           />
           <Card className="w-full space-y-lg bg-bg1 border border-black/10">
             <div className="space-y-sm">
@@ -215,9 +223,13 @@ export function ResetPasswordPage() {
 
       <div className="flex w-full max-w-md flex-col items-center">
         <img
-          src={resolvedTheme === 'dark' ? '/for-dark.png' : '/for-white.png'}
+          src={
+            resolvedTheme === 'dark'
+              ? '/logo/logo-stacked-white.png'
+              : '/logo/logo-stacked-dark.png'
+          }
           alt="PipLinePro"
-          className="mb-8 h-16 w-auto object-contain"
+          className="mb-8 h-36 w-auto object-contain"
         />
 
         <Card className="w-full space-y-lg bg-bg1 border border-black/10">

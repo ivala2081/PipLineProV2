@@ -2,7 +2,7 @@
  * Centralized logging service
  *
  * Provides environment-aware logging that can be disabled in production.
- * Replace all console.log/warn/error calls with this logger.
+ * In production, errors are forwarded to Sentry automatically.
  *
  * Usage:
  *   import { logger } from '@/lib/logger'
@@ -11,6 +11,8 @@
  *   logger.warn('Deprecated API usage')
  *   logger.error('Failed to fetch', error)
  */
+
+import { Sentry } from '@/lib/sentry'
 
 const isDevelopment = import.meta.env.DEV
 
@@ -42,10 +44,14 @@ class Logger implements LoggerInterface {
         break
       case 'error':
         console.error(prefix, ...args)
-        // In production, you could send errors to Sentry here:
-        // if (!isDevelopment) {
-        //   Sentry.captureException(args[0]);
-        // }
+        if (!isDevelopment) {
+          const exception = args[0]
+          if (exception instanceof Error) {
+            Sentry.captureException(exception)
+          } else {
+            Sentry.captureMessage(String(exception), 'error')
+          }
+        }
         break
     }
   }

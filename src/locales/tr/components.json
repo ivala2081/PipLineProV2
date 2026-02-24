@@ -40,7 +40,9 @@
     "online": "Çevrimiçi",
     "offline": "Çevrimdışı",
     "lastSeen": "Son görülme",
-    "onlineMembers": "Organizasyonda çevrimiçi üyeler"
+    "onlineMembers": "Organizasyonda çevrimiçi üyeler",
+    "whoIsOnline": "Kim Çevrimiçi",
+    "noOneOnline": "Şu an kimse çevrimiçi değil"
   },
   "passwordStrength": {
     "label": "Şifre gücü",

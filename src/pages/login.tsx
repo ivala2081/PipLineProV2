@@ -231,13 +231,15 @@ export function LoginPage() {
 
         {/* Logo above card */}
         <div className="flex w-full max-w-md flex-col items-center">
-          <div className="mb-8 flex flex-col items-center gap-1">
-            <div className="flex items-baseline gap-0.5">
-              <span className="text-3xl font-black tracking-tight text-black">PipLine</span>
-              <span className="text-3xl font-black tracking-tight text-brand">Pro</span>
-            </div>
-            <span className="text-[11px] font-medium tracking-[0.2em] text-black/30 uppercase">v2.1</span>
-          </div>
+          <img
+            src={
+              resolvedTheme === 'dark'
+                ? '/logo/logo-stacked-white.png'
+                : '/logo/logo-stacked-dark.png'
+            }
+            alt="PipLinePro"
+            className="mb-8 h-36 w-auto object-contain"
+          />
 
           {/* Login card */}
           <Card className="w-full space-y-lg bg-bg1 border border-black/10 shadow-lg">
@@ -378,7 +380,7 @@ export function LoginPage() {
               </Link>
             </div>
           </Card>
-          <span className="mt-4 text-xs text-black/30">V2.1</span>
+          <span className="mt-4 text-xs text-black/30">v2.1</span>
         </div>
       </div>
     </TooltipProvider>

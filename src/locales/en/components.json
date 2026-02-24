@@ -40,7 +40,9 @@
     "online": "Online",
     "offline": "Offline",
     "lastSeen": "Last seen",
-    "onlineMembers": "Online members in organization"
+    "onlineMembers": "Online members in organization",
+    "whoIsOnline": "Who's Online",
+    "noOneOnline": "No one is online right now"
   },
   "passwordStrength": {
     "label": "Password strength",

@@ -34,9 +34,9 @@ export function usePresenceSubscription() {
         (payload) => {
           console.log('Presence update:', payload)
 
-          // Invalidate online count query
+          // Invalidate all presence queries (count + member list)
           queryClient.invalidateQueries({
-            queryKey: queryKeys.presence.onlineCount(currentOrg.id),
+            queryKey: queryKeys.presence.all,
           })
 
           // Invalidate organization members query (to update presence in lists)
