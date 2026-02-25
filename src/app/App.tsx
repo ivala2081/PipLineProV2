@@ -284,7 +284,7 @@ export function App() {
                           <Route
                             path="/hr"
                             element={
-                              <RoleRoute allowedRoles={['admin']}>
+                              <RoleRoute allowedRoles={['admin']} godOnly>
                                 <PageSuspense>
                                   <HrPage />
                                 </PageSuspense>

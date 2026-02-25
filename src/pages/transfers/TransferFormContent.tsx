@@ -50,7 +50,7 @@ type SelectOption = { value: string; label: string; searchText?: string }
 
 type RememberedTransferFields = Pick<
   TransferFormValues,
-  'payment_method_id' | 'psp_id' | 'category_id' | 'currency' | 'type_id'
+  'payment_method_id' | 'psp_id' | 'category_id' | 'currency'
 >
 
 const TRANSFER_PREFS_KEY = 'piplinepro:transfer-form-prefs'
@@ -75,13 +75,13 @@ function getDefaultFormValues(): TransferFormValues {
     transfer_date: getLocalDatetimeString(new Date()),
     category_id: '',
     raw_amount: 0,
-    currency: 'TL',
+    currency: '',
     type_id: 'client',
     exchange_rate: 1,
     crm_id: '',
     meta_id: '',
     employee_id: '',
-    is_first_deposit: true,
+    is_first_deposit: null,
     notes: '',
   }
 }
@@ -96,12 +96,14 @@ function loadRememberedFields(orgId?: string): Partial<RememberedTransferFields>
     const raw = window.localStorage.getItem(getPrefsKey(orgId))
     if (!raw) return {}
     const p = JSON.parse(raw) as Partial<RememberedTransferFields>
+    const pmId = typeof p.payment_method_id === 'string' ? p.payment_method_id : ''
+    const isTether = pmId === 'tether'
     return {
-      payment_method_id: typeof p.payment_method_id === 'string' ? p.payment_method_id : '',
-      psp_id: typeof p.psp_id === 'string' ? p.psp_id : '',
-      category_id: typeof p.category_id === 'string' ? p.category_id : '',
-      currency: p.currency === 'USD' ? 'USD' : 'TL',
-      type_id: typeof p.type_id === 'string' ? p.type_id : '',
+      payment_method_id: pmId,
+      // Tether ise psp otomatik ayarlanacak, remembered değeri kullanma
+      psp_id: isTether ? '' : typeof p.psp_id === 'string' ? p.psp_id : '',
+      category_id: '',
+      currency: '',
     }
   } catch {
     return {}
@@ -231,7 +233,12 @@ export function TransferFormContent({
 
   const [manualRate, setManualRate] = useState(false)
   const manualFtdRef = useRef(false)
+  const mountedRef = useRef(false)
   const [amountDisplay, setAmountDisplay] = useState('')
+
+  type NameSuggestion = { crm_id: string; meta_id: string }
+  const [nameSuggestions, setNameSuggestions] = useState<NameSuggestion[]>([])
+  const [autoFilledHint, setAutoFilledHint] = useState<NameSuggestion | null>(null)
 
   const { data: employees = [] } = useHrEmployeesQuery()
 
@@ -263,6 +270,7 @@ export function TransferFormContent({
   /* ── Form reset ───────────────────────────────────────────── */
   const transferId = transfer?.id
   useEffect(() => {
+    mountedRef.current = false
     setManualRate(false)
     manualFtdRef.current = false
     if (transfer) {
@@ -292,11 +300,16 @@ export function TransferFormContent({
       form.reset({
         ...defaults,
         ...remembered,
+        type_id: 'client',
         exchange_rate: normalizedFetchedRate ?? defaults.exchange_rate,
         transfer_date: defaults.transfer_date,
       })
       setAmountDisplay('')
     }
+    // Allow auto-select effects to run after initial mount settles
+    requestAnimationFrame(() => {
+      mountedRef.current = true
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transferId])
 
@@ -332,6 +345,28 @@ export function TransferFormContent({
   const fullName = form.watch('full_name')
   const isFirstDeposit = form.watch('is_first_deposit')
 
+  /* ── Tether auto-select: currency → USD, kasa → Tether ──── */
+  useEffect(() => {
+    if (!mountedRef.current) return
+    if (paymentMethodId === 'tether') {
+      form.setValue('currency', 'USD')
+      const tetherPsp = lookupData.psps.find(
+        (p) => p.is_active && p.name.toLowerCase().includes('tether'),
+      )
+      if (tetherPsp) form.setValue('psp_id', tetherPsp.id)
+    }
+  }, [paymentMethodId, lookupData.psps, form])
+
+  /* ── Crypay kasa seçilirse currency → TL ─────────────────── */
+  useEffect(() => {
+    if (!mountedRef.current) return
+    if (!pspId) return
+    const selectedPsp = lookupData.psps.find((p) => p.id === pspId)
+    if (selectedPsp && selectedPsp.name.toLowerCase().includes('cryppay')) {
+      form.setValue('currency', 'TL')
+    }
+  }, [pspId, lookupData.psps, form])
+
   const rawAmount = Number(watchedRawAmount) || 0
   const exchangeRateValue = Number(watchedExchangeRate) || 0
 
@@ -339,7 +374,11 @@ export function TransferFormContent({
   useEffect(() => {
     if (isEdit || !currentOrg) return
     const trimmed = fullName?.trim() ?? ''
-    if (trimmed.length < 3) return
+    if (trimmed.length < 3) {
+      setNameSuggestions([])
+      setAutoFilledHint(null)
+      return
+    }
 
     const timer = setTimeout(async () => {
       const { data } = await supabase
@@ -348,20 +387,49 @@ export function TransferFormContent({
         .eq('organization_id', currentOrg.id)
         .ilike('full_name', trimmed)
         .order('transfer_date', { ascending: false })
-        .limit(1)
+        .limit(50)
 
-      if (data && data.length > 0) {
-        if (!manualFtdRef.current) form.setValue('is_first_deposit', false)
+      if (!data || data.length === 0) {
+        setNameSuggestions([])
+        setAutoFilledHint(null)
+        return
+      }
+
+      // Benzersiz crm_id + meta_id çiftlerini bul
+      const seen = new Set<string>()
+      const unique: NameSuggestion[] = []
+      for (const row of data) {
+        const key = `${row.crm_id ?? ''}|${row.meta_id ?? ''}`
+        if (!seen.has(key)) {
+          seen.add(key)
+          unique.push({ crm_id: row.crm_id ?? '', meta_id: row.meta_id ?? '' })
+        }
+      }
+
+      if (unique.length === 1) {
+        // Tek kişi → otomatik doldur + uyarı göster (FTD/STD el ile seçilsin)
+        setNameSuggestions([])
+        setAutoFilledHint(unique[0])
         const cur = form.getValues()
-        if (!cur.crm_id && data[0].crm_id) form.setValue('crm_id', data[0].crm_id)
-        if (!cur.meta_id && data[0].meta_id) form.setValue('meta_id', data[0].meta_id)
+        if (!cur.crm_id && unique[0].crm_id) form.setValue('crm_id', unique[0].crm_id)
+        if (!cur.meta_id && unique[0].meta_id) form.setValue('meta_id', unique[0].meta_id)
       } else {
-        if (!manualFtdRef.current) form.setValue('is_first_deposit', true)
+        // Birden fazla kişi → kullanıcıya seç
+        setNameSuggestions(unique)
       }
     }, 600)
 
     return () => clearTimeout(timer)
   }, [fullName, currentOrg, isEdit, form])
+
+  const handlePickSuggestion = useCallback(
+    (s: NameSuggestion) => {
+      form.setValue('crm_id', s.crm_id)
+      form.setValue('meta_id', s.meta_id)
+      setNameSuggestions([])
+    },
+    [form],
+  )
 
   /* ── Computed / memos ─────────────────────────────────────── */
   const employeeOptions = useMemo(
@@ -413,7 +481,6 @@ export function TransferFormContent({
         psp_id: data.psp_id,
         category_id: data.category_id,
         currency: data.currency,
-        type_id: data.type_id,
       })
 
       if (isEdit && transfer) {
@@ -431,6 +498,7 @@ export function TransferFormContent({
         form.reset({
           ...defaults,
           ...remembered,
+          type_id: 'client',
           exchange_rate: normalizedFetchedRate ?? defaults.exchange_rate,
           transfer_date: defaults.transfer_date,
         })
@@ -449,7 +517,7 @@ export function TransferFormContent({
   const s = {
     direction: lang === 'tr' ? 'Transfer Yönü' : 'Transfer Direction',
     client: lang === 'tr' ? 'Müşteri' : 'Client',
-    payment: lang === 'tr' ? 'Ödeme Bilgileri' : 'Payment',
+    payment: lang === 'tr' ? 'Detaylar' : 'Details',
     amount: lang === 'tr' ? 'Tutar' : 'Amount',
     details: lang === 'tr' ? 'Detaylar' : 'Details',
   }
@@ -477,7 +545,46 @@ export function TransferFormContent({
               <Input
                 {...form.register('full_name')}
                 placeholder={t('transfers.form.fullNamePlaceholder')}
+                autoComplete="off"
               />
+              {nameSuggestions.length > 0 && (
+                <div className="mt-1.5 rounded-xl border border-black/[0.08] bg-bg1 p-1 shadow-sm dark:border-white/[0.08]">
+                  <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-black/35 dark:text-white/35">
+                    {lang === 'tr'
+                      ? `${nameSuggestions.length} farklı kayıt bulundu — birini seçin`
+                      : `${nameSuggestions.length} different records found — pick one`}
+                  </p>
+                  {nameSuggestions.map((s, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => handlePickSuggestion(s)}
+                      className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm transition-colors hover:bg-black/[0.05] dark:hover:bg-white/[0.05]"
+                    >
+                      <span className="min-w-0 shrink-0 font-medium text-black/70 dark:text-white/70">
+                        CRM: <span className="text-brand">{s.crm_id || '—'}</span>
+                      </span>
+                      <span className="min-w-0 shrink-0 font-medium text-black/70 dark:text-white/70">
+                        META: <span className="text-brand">{s.meta_id || '—'}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {autoFilledHint && nameSuggestions.length === 0 && (
+                <div className="mt-1.5 rounded-lg bg-orange/10 px-3 py-2.5 dark:bg-orange/15">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-bold text-black dark:text-white">
+                      {lang === 'tr'
+                        ? 'Önceki kayıttan otomatik dolduruldu — CRM ve META ID doğruluğunu mutlaka kontrol edin.'
+                        : 'Auto-filled from previous record — Please make sure to verify CRM and META ID.'}
+                    </p>
+                    <p className="whitespace-nowrap text-xs font-semibold text-black dark:text-white">
+                      CRM: {autoFilledHint.crm_id || '—'} · META: {autoFilledHint.meta_id || '—'}
+                    </p>
+                  </div>
+                </div>
+              )}
             </Field>
 
             {/* FTD / STD toggle */}
@@ -494,7 +601,7 @@ export function TransferFormContent({
                   }}
                   className={cn(
                     'flex-1 rounded-lg px-3 py-2 text-center text-sm font-semibold transition-all',
-                    isFirstDeposit
+                    isFirstDeposit === true
                       ? 'bg-brand text-white shadow-sm'
                       : 'bg-black/[0.04] text-black/35 hover:bg-black/[0.07]',
                   )}
@@ -512,7 +619,7 @@ export function TransferFormContent({
                   }}
                   className={cn(
                     'flex-1 rounded-lg px-3 py-2 text-center text-sm font-semibold transition-all',
-                    !isFirstDeposit
+                    isFirstDeposit === false
                       ? 'bg-brand text-white shadow-sm'
                       : 'bg-black/[0.04] text-black/35 hover:bg-black/[0.07]',
                   )}
@@ -545,7 +652,74 @@ export function TransferFormContent({
           {/* Divider between Client and Payment */}
           <div className="my-5" />
 
-          {/* Payment section */}
+          {/* Payment section — date/time, type, employee */}
+          <SectionHeader icon={<CreditCard size={14} weight="bold" />}>{s.payment}</SectionHeader>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-2 gap-3 sm:col-span-2">
+              <Field
+                label={t('transfers.form.type')}
+                error={form.formState.errors.type_id?.message}
+              >
+                <SearchableSelectField
+                  value={typeId}
+                  onValueChange={(v) => form.setValue('type_id', v)}
+                  placeholder={t('transfers.form.selectType')}
+                  options={transferTypeOptions}
+                  searchPlaceholder={t('transfers.form.searchInList')}
+                  noResultsText={t('transfers.form.noResults')}
+                />
+              </Field>
+              <Field
+                label={
+                  <span className="flex items-center gap-1">
+                    <UserCircle size={12} className="text-black/40" />
+                    {lang === 'tr' ? 'Çalışan' : 'Employee'}
+                  </span>
+                }
+              >
+                {employeeOptions.length === 0 ? (
+                  <p className="flex h-10 items-center rounded-xl border border-black/[0.07] bg-black/[0.02] px-3 text-xs text-black/35">
+                    {lang === 'tr'
+                      ? 'Aktif MT / Retention çalışanı yok'
+                      : 'No active MT / Retention employees'}
+                  </p>
+                ) : (
+                  <SearchableSelectField
+                    value={employeeId ? employeeId : '__none__'}
+                    onValueChange={(v) => form.setValue('employee_id', v === '__none__' ? '' : v)}
+                    placeholder={lang === 'tr' ? 'Seç (isteğe bağlı)' : 'Select (optional)'}
+                    options={[
+                      {
+                        value: '__none__',
+                        label: lang === 'tr' ? '— Çalışan yok —' : '-- No employee --',
+                      },
+                      ...employeeOptions,
+                    ]}
+                    searchPlaceholder={t('transfers.form.searchInList')}
+                    noResultsText={t('transfers.form.noResults')}
+                  />
+                )}
+              </Field>
+            </div>
+            <Field label={t('transfers.form.notes')} className="sm:col-span-2">
+              <textarea
+                {...form.register('notes')}
+                placeholder={t('transfers.form.notesPlaceholder')}
+                rows={3}
+                className={cn(
+                  basicInputClasses,
+                  disabledInputClasses,
+                  focusInputClasses,
+                  'w-full resize-none rounded-xl px-3 py-2.5 text-sm',
+                )}
+              />
+            </Field>
+          </div>
+        </Card>
+
+        {/* ─── RIGHT CARD: Payment, Amount & Details ──────────── */}
+        <Card padding="spacious">
+          {/* Payment method & PSP */}
           <SectionHeader icon={<CreditCard size={14} weight="bold" />}>{s.payment}</SectionHeader>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field
@@ -571,45 +745,11 @@ export function TransferFormContent({
                 noResultsText={t('transfers.form.noResults')}
               />
             </Field>
-            <div className="grid grid-cols-2 gap-3 sm:col-span-2">
-              <Field
-                label={t('transfers.form.date')}
-                error={form.formState.errors.transfer_date?.message}
-              >
-                <DatePickerField
-                  value={form.watch('transfer_date')?.split('T')[0] ?? ''}
-                  onChange={(e) => {
-                    const d = e.target.value
-                    const time = form.getValues('transfer_date')?.split('T')[1] ?? '00:00'
-                    form.setValue('transfer_date', d ? `${d}T${time}` : '', {
-                      shouldValidate: true,
-                    })
-                  }}
-                />
-              </Field>
-              <Field label={t('transfers.form.time')}>
-                <input
-                  type="time"
-                  value={form.watch('transfer_date')?.split('T')[1]?.slice(0, 5) ?? ''}
-                  onChange={(e) => {
-                    const time = e.target.value
-                    const d = form.getValues('transfer_date')?.split('T')[0] ?? ''
-                    if (d) form.setValue('transfer_date', `${d}T${time}`, { shouldValidate: true })
-                  }}
-                  className={cn(
-                    basicInputClasses,
-                    disabledInputClasses,
-                    focusInputClasses,
-                    'h-10 w-full cursor-pointer rounded-xl px-3 text-sm [&::-webkit-calendar-picker-indicator]:opacity-0',
-                  )}
-                />
-              </Field>
-            </div>
           </div>
-        </Card>
 
-        {/* ─── RIGHT CARD: Amount & Details ───────────────────── */}
-        <Card padding="spacious">
+          {/* Divider between Payment and Amount */}
+          <div className="my-5" />
+
           {/* Amount section */}
           <SectionHeader icon={<CurrencyCircleDollar size={14} weight="bold" />}>
             {s.amount}
@@ -637,11 +777,14 @@ export function TransferFormContent({
                   </button>
                 ))}
               </div>
+              {form.formState.errors.currency && (
+                <p className="mt-1 text-xs text-red">{form.formState.errors.currency.message}</p>
+              )}
             </div>
 
             {/* Amount input — large */}
             <Field
-              label={`${t('transfers.form.amount')} (${currency})`}
+              label={`${t('transfers.form.amount')}${currency ? ` (${currency})` : ''}`}
               error={form.formState.errors.raw_amount?.message}
             >
               <Input
@@ -743,7 +886,7 @@ export function TransferFormContent({
                   </>
                 )}
               </div>
-              {rawAmount > 0 && exchangeRateValue > 0 && (
+              {rawAmount > 0 && exchangeRateValue > 0 && currency !== '' && (
                 <div className="mt-2.5 flex items-center gap-2 border-t border-black/[0.06] pt-2.5">
                   <span className="text-sm font-semibold tabular-nums text-brand">
                     {rawAmount.toLocaleString(undefined, {
@@ -781,75 +924,44 @@ export function TransferFormContent({
             {form.formState.errors.exchange_rate && (
               <p className="text-xs text-red">{form.formState.errors.exchange_rate.message}</p>
             )}
-          </div>
 
-          {/* Divider between Amount and Details */}
-          <div className="my-5" />
-
-          {/* Details section */}
-          <SectionHeader icon={<Tag size={14} weight="bold" />}>{s.details}</SectionHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {/* Date & Time */}
+            <div className="grid grid-cols-2 gap-3">
               <Field
-                label={t('transfers.form.type')}
-                error={form.formState.errors.type_id?.message}
+                label={t('transfers.form.date')}
+                error={form.formState.errors.transfer_date?.message}
               >
-                <SearchableSelectField
-                  value={typeId}
-                  onValueChange={(v) => form.setValue('type_id', v)}
-                  placeholder={t('transfers.form.selectType')}
-                  options={transferTypeOptions}
-                  searchPlaceholder={t('transfers.form.searchInList')}
-                  noResultsText={t('transfers.form.noResults')}
+                <DatePickerField
+                  value={form.watch('transfer_date')?.split('T')[0] ?? ''}
+                  onChange={(e) => {
+                    const d = e.target.value
+                    const time = form.getValues('transfer_date')?.split('T')[1] ?? '00:00'
+                    form.setValue('transfer_date', d ? `${d}T${time}` : '', {
+                      shouldValidate: true,
+                    })
+                  }}
                 />
               </Field>
-              <Field
-                label={
-                  <span className="flex items-center gap-1">
-                    <UserCircle size={12} className="text-black/40" />
-                    {lang === 'tr' ? 'Çalışan' : 'Employee'}
-                  </span>
-                }
-              >
-                {employeeOptions.length === 0 ? (
-                  <p className="flex h-10 items-center rounded-xl border border-black/[0.07] bg-black/[0.02] px-3 text-xs text-black/35">
-                    {lang === 'tr'
-                      ? 'Aktif MT / Retention çalışanı yok'
-                      : 'No active MT / Retention employees'}
-                  </p>
-                ) : (
-                  <SearchableSelectField
-                    value={employeeId ? employeeId : '__none__'}
-                    onValueChange={(v) => form.setValue('employee_id', v === '__none__' ? '' : v)}
-                    placeholder={lang === 'tr' ? 'Seç (isteğe bağlı)' : 'Select (optional)'}
-                    options={[
-                      {
-                        value: '__none__',
-                        label: lang === 'tr' ? '— Çalışan yok —' : '-- No employee --',
-                      },
-                      ...employeeOptions,
-                    ]}
-                    searchPlaceholder={t('transfers.form.searchInList')}
-                    noResultsText={t('transfers.form.noResults')}
-                  />
-                )}
+              <Field label={t('transfers.form.time')}>
+                <input
+                  type="time"
+                  value={form.watch('transfer_date')?.split('T')[1]?.slice(0, 5) ?? ''}
+                  onChange={(e) => {
+                    const time = e.target.value
+                    const d = form.getValues('transfer_date')?.split('T')[0] ?? ''
+                    if (d) form.setValue('transfer_date', `${d}T${time}`, { shouldValidate: true })
+                  }}
+                  className={cn(
+                    basicInputClasses,
+                    disabledInputClasses,
+                    focusInputClasses,
+                    'h-10 w-full cursor-pointer rounded-xl px-3 text-sm [&::-webkit-calendar-picker-indicator]:opacity-0',
+                  )}
+                />
               </Field>
             </div>
-
-            <Field label={t('transfers.form.notes')}>
-              <textarea
-                {...form.register('notes')}
-                placeholder={t('transfers.form.notesPlaceholder')}
-                rows={3}
-                className={cn(
-                  basicInputClasses,
-                  disabledInputClasses,
-                  focusInputClasses,
-                  'w-full resize-none rounded-xl px-3 py-2.5 text-sm',
-                )}
-              />
-            </Field>
           </div>
+
         </Card>
       </div>
 

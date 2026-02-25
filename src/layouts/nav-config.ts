@@ -55,7 +55,7 @@ export const navGroups: NavGroup[] = [
         titleKey: 'nav.hr',
         href: '/hr',
         icon: IdentificationCard,
-        roles: ['god', 'admin'],
+        roles: ['god'],
       },
     ],
   },

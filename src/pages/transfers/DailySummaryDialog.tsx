@@ -87,6 +87,7 @@ export function DailySummaryDialog({
   const adjNetWithCommUsd = effectiveRate > 0 ? (s.net - s.commission) / effectiveRate : 0
   const vol = s.deposits + s.withdrawals
   const depositPct = vol > 0 ? (s.deposits / vol) * 100 : 50
+  const commPct = s.deposits > 0 ? (s.commission / s.deposits) * 100 : 0
 
   return (
     <>
@@ -97,8 +98,8 @@ export function DailySummaryDialog({
         }}
       >
         <DialogContent
-          size="md"
-          className="max-h-[85vh] gap-0 overflow-y-auto p-0"
+          size="2xl"
+          className="max-h-[85vh] gap-0 overflow-y-auto p-0 md:max-w-[720px]"
           aria-describedby={undefined}
         >
           {isFetching ? (
@@ -108,15 +109,13 @@ export function DailySummaryDialog({
             </div>
           ) : (
             <>
-              {/* ── Hero ── */}
-              <div className="relative overflow-hidden px-6 pt-6 pb-6">
-                {/* Subtle gradient bg */}
+              {/* ── Hero — date left, net right ── */}
+              <div className="relative overflow-hidden px-6 pt-5 pb-4">
                 <div
                   className={`absolute inset-0 ${s.net >= 0 ? 'bg-gradient-to-br from-green/[0.04] to-transparent' : 'bg-gradient-to-br from-red/[0.04] to-transparent'}`}
                 />
-
-                <div className="relative">
-                  {/* Date header */}
+                <div className="relative flex items-center justify-between">
+                  {/* Date */}
                   <div className="flex items-center gap-sm">
                     <div className="flex size-7 items-center justify-center rounded-lg bg-black/5">
                       <CalendarBlank size={14} weight="duotone" className="text-black/40" />
@@ -134,69 +133,89 @@ export function DailySummaryDialog({
                   </div>
 
                   {/* Net amount */}
-                  <div className="mt-5 flex items-end gap-3">
+                  <div className="flex items-center gap-2">
                     <div
-                      className={`flex size-10 items-center justify-center rounded-xl ${s.net >= 0 ? 'bg-green/10' : 'bg-red/10'}`}
+                      className={`flex size-9 items-center justify-center rounded-xl ${s.net >= 0 ? 'bg-green/10' : 'bg-red/10'}`}
                     >
                       {s.net >= 0 ? (
-                        <TrendUp size={20} weight="bold" className="text-green" />
+                        <TrendUp size={18} weight="bold" className="text-green" />
                       ) : (
-                        <TrendDown size={20} weight="bold" className="text-red" />
+                        <TrendDown size={18} weight="bold" className="text-red" />
                       )}
                     </div>
-                    <div>
-                      <p className="text-[11px] font-medium uppercase tracking-wider text-black/30">
+                    <div className="text-right">
+                      <p className="text-[10px] font-medium uppercase tracking-wider text-black/30">
                         {t('transfers.summary.net')}
                       </p>
                       <p
-                        className={`font-mono text-[1.75rem] font-bold leading-none tabular-nums ${s.net >= 0 ? 'text-green' : 'text-red'}`}
+                        className={`font-mono text-xl font-bold leading-none tabular-nums ${s.net >= 0 ? 'text-green' : 'text-red'}`}
                       >
                         {s.net >= 0 ? '+' : '−'}
                         {formatNumber(Math.abs(s.net), lang)}
-                        <span className="ml-1 text-sm font-semibold opacity-30">₺</span>
+                        <span className="ml-0.5 text-xs font-semibold opacity-30">₺</span>
                       </p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* ── Deposit / Withdrawal cards ── */}
-              <div className="grid grid-cols-2 gap-md px-6 pb-4">
-                <div className="rounded-xl border border-green/15 bg-green/[0.03] px-4 py-3">
+              {/* ── Deposit / Withdrawal / Commission cards ── */}
+              <div className="grid grid-cols-3 gap-2.5 px-6 pb-3">
+                {/* Deposits */}
+                <div className="rounded-xl border border-green/15 bg-green/[0.03] px-3 py-2.5">
                   <div className="flex items-center gap-1.5">
-                    <ArrowDown size={12} weight="bold" className="text-green" />
-                    <span className="text-[11px] font-medium uppercase tracking-wider text-green/60">
+                    <ArrowDown size={11} weight="bold" className="text-green" />
+                    <span className="text-[10px] font-medium uppercase tracking-wider text-green/60">
                       {t('transfers.summary.deposits')}
                     </span>
                   </div>
-                  <p className="mt-2 font-mono text-lg font-bold tabular-nums text-black/80">
+                  <p className="mt-1.5 font-mono text-base font-bold tabular-nums text-black/80">
                     {formatNumber(s.deposits, lang)}
-                    <span className="ml-1 text-[11px] font-medium text-black/20">₺</span>
+                    <span className="ml-0.5 text-[10px] font-medium text-black/20">₺</span>
                   </p>
-                  <p className="mt-0.5 text-[11px] tabular-nums text-black/25">
+                  <p className="mt-0.5 text-[10px] tabular-nums text-black/25">
                     {s.depositCount} {t('transfers.summary.deposits').toLowerCase()}
                   </p>
                 </div>
-                <div className="rounded-xl border border-red/15 bg-red/[0.03] px-4 py-3">
+
+                {/* Withdrawals */}
+                <div className="rounded-xl border border-red/15 bg-red/[0.03] px-3 py-2.5">
                   <div className="flex items-center gap-1.5">
-                    <ArrowUp size={12} weight="bold" className="text-red" />
-                    <span className="text-[11px] font-medium uppercase tracking-wider text-red/60">
+                    <ArrowUp size={11} weight="bold" className="text-red" />
+                    <span className="text-[10px] font-medium uppercase tracking-wider text-red/60">
                       {t('transfers.summary.withdrawals')}
                     </span>
                   </div>
-                  <p className="mt-2 font-mono text-lg font-bold tabular-nums text-black/80">
+                  <p className="mt-1.5 font-mono text-base font-bold tabular-nums text-black/80">
                     {formatNumber(s.withdrawals, lang)}
-                    <span className="ml-1 text-[11px] font-medium text-black/20">₺</span>
+                    <span className="ml-0.5 text-[10px] font-medium text-black/20">₺</span>
                   </p>
-                  <p className="mt-0.5 text-[11px] tabular-nums text-black/25">
+                  <p className="mt-0.5 text-[10px] tabular-nums text-black/25">
                     {s.withdrawalCount} {t('transfers.summary.withdrawals').toLowerCase()}
+                  </p>
+                </div>
+
+                {/* Commission */}
+                <div className="rounded-xl border border-orange/15 bg-orange/[0.03] px-3 py-2.5">
+                  <div className="flex items-center gap-1.5">
+                    <Coins size={11} weight="bold" className="text-orange" />
+                    <span className="text-[10px] font-medium uppercase tracking-wider text-orange/60">
+                      {t('transfers.summary.commission')}
+                    </span>
+                  </div>
+                  <p className="mt-1.5 font-mono text-base font-bold tabular-nums text-orange">
+                    −{formatNumber(s.commission, lang)}
+                    <span className="ml-0.5 text-[10px] font-medium opacity-30">₺</span>
+                  </p>
+                  <p className="mt-0.5 text-[10px] tabular-nums text-black/25">
+                    %{commPct.toFixed(1)}
                   </p>
                 </div>
               </div>
 
               {/* ── Proportion bar ── */}
-              <div className="px-6 pb-5">
-                <div className="flex h-2 overflow-hidden rounded-full">
+              <div className="px-6 pb-3">
+                <div className="flex h-1.5 overflow-hidden rounded-full">
                   <div
                     className="rounded-l-full bg-green/50 transition-all duration-500"
                     style={{ width: `${depositPct}%` }}
@@ -206,99 +225,83 @@ export function DailySummaryDialog({
                     style={{ width: `${100 - depositPct}%` }}
                   />
                 </div>
-                <div className="mt-1.5 flex justify-between text-[10px] tabular-nums text-black/25">
+                <div className="mt-1 flex justify-between text-[10px] tabular-nums text-black/25">
                   <span>{depositPct.toFixed(0)}%</span>
                   <span>{(100 - depositPct).toFixed(0)}%</span>
                 </div>
               </div>
 
-              {/* ── Breakdown ── */}
-              <div className="border-t border-black/[0.06] px-6 py-4">
-                <div className="mb-3 flex items-center gap-1.5">
+              {/* ── Breakdown — 3 column grid ── */}
+              <div className="border-t border-black/[0.06] px-6 py-3">
+                <div className="mb-2 flex items-center gap-1.5">
                   <ChartBar size={12} weight="bold" className="text-black/25" />
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-black/25">
                     {t('transfers.summary.breakdown')}
                   </span>
                 </div>
 
-                <div className="space-y-2.5">
+                <div className="grid grid-cols-3 gap-2">
                   {/* Bank */}
-                  <div className="flex items-center justify-between rounded-lg bg-black/[0.02] px-3 py-2.5">
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex size-7 items-center justify-center rounded-lg bg-blue/[0.08]">
-                        <Bank size={14} weight="duotone" className="text-blue" />
-                      </div>
-                      <span className="text-[13px] font-medium text-black/55">
-                        {t('transfers.summary.totalBank')}
-                      </span>
+                  <div className="flex items-center gap-2 rounded-lg bg-black/[0.02] px-2.5 py-2">
+                    <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-blue/[0.08]">
+                      <Bank size={12} weight="duotone" className="text-blue" />
                     </div>
-                    <span
-                      className={`font-mono text-[13px] font-bold tabular-nums ${s.totalBank >= 0 ? 'text-green' : 'text-red'}`}
-                    >
-                      {s.totalBank >= 0 ? '+' : '−'}
-                      {formatNumber(Math.abs(s.totalBank), lang)}
-                      <span className="ml-0.5 text-[11px] font-medium opacity-30">₺</span>
-                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-[10px] text-black/35">
+                        {t('transfers.summary.totalBank')}
+                      </p>
+                      <p
+                        className={`font-mono text-xs font-bold tabular-nums ${s.totalBank >= 0 ? 'text-green' : 'text-red'}`}
+                      >
+                        {s.totalBank >= 0 ? '+' : '−'}
+                        {formatNumber(Math.abs(s.totalBank), lang)}
+                        <span className="ml-0.5 text-[10px] opacity-30">₺</span>
+                      </p>
+                    </div>
                   </div>
 
                   {/* Credit Card */}
-                  <div className="flex items-center justify-between rounded-lg bg-black/[0.02] px-3 py-2.5">
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex size-7 items-center justify-center rounded-lg bg-purple/[0.08]">
-                        <CreditCard size={14} weight="duotone" className="text-purple" />
-                      </div>
-                      <span className="text-[13px] font-medium text-black/55">
-                        {t('transfers.summary.totalCreditCard')}
-                      </span>
+                  <div className="flex items-center gap-2 rounded-lg bg-black/[0.02] px-2.5 py-2">
+                    <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-purple/[0.08]">
+                      <CreditCard size={12} weight="duotone" className="text-purple" />
                     </div>
-                    <span
-                      className={`font-mono text-[13px] font-bold tabular-nums ${s.totalCreditCard >= 0 ? 'text-green' : 'text-red'}`}
-                    >
-                      {s.totalCreditCard >= 0 ? '+' : '−'}
-                      {formatNumber(Math.abs(s.totalCreditCard), lang)}
-                      <span className="ml-0.5 text-[11px] font-medium opacity-30">₺</span>
-                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-[10px] text-black/35">
+                        {t('transfers.summary.totalCreditCard')}
+                      </p>
+                      <p
+                        className={`font-mono text-xs font-bold tabular-nums ${s.totalCreditCard >= 0 ? 'text-green' : 'text-red'}`}
+                      >
+                        {s.totalCreditCard >= 0 ? '+' : '−'}
+                        {formatNumber(Math.abs(s.totalCreditCard), lang)}
+                        <span className="ml-0.5 text-[10px] opacity-30">₺</span>
+                      </p>
+                    </div>
                   </div>
 
                   {/* USD */}
-                  <div className="flex items-center justify-between rounded-lg bg-black/[0.02] px-3 py-2.5">
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex size-7 items-center justify-center rounded-lg bg-mint/[0.15]">
-                        <CurrencyDollar size={14} weight="duotone" className="text-green" />
-                      </div>
-                      <span className="text-[13px] font-medium text-black/55">
+                  <div className="flex items-center gap-2 rounded-lg bg-black/[0.02] px-2.5 py-2">
+                    <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-mint/[0.15]">
+                      <CurrencyDollar size={12} weight="duotone" className="text-green" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-[10px] text-black/35">
                         {t('transfers.summary.totalUsd')}
-                      </span>
+                      </p>
+                      <p
+                        className={`font-mono text-xs font-bold tabular-nums ${s.totalUsd >= 0 ? 'text-green' : 'text-red'}`}
+                      >
+                        {s.totalUsd >= 0 ? '+' : '−'}
+                        {formatNumber(Math.abs(s.totalUsd), lang)}
+                        <span className="ml-0.5 text-[10px] opacity-30">$</span>
+                      </p>
                     </div>
-                    <span
-                      className={`font-mono text-[13px] font-bold tabular-nums ${s.totalUsd >= 0 ? 'text-green' : 'text-red'}`}
-                    >
-                      {s.totalUsd >= 0 ? '+' : '−'}
-                      {formatNumber(Math.abs(s.totalUsd), lang)}
-                      <span className="ml-0.5 text-[11px] font-medium opacity-30">$</span>
-                    </span>
-                  </div>
-
-                  {/* Commission */}
-                  <div className="flex items-center justify-between rounded-lg bg-black/[0.02] px-3 py-2.5">
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex size-7 items-center justify-center rounded-lg bg-orange/[0.08]">
-                        <Coins size={14} weight="duotone" className="text-orange" />
-                      </div>
-                      <span className="text-[13px] font-medium text-black/55">
-                        {t('transfers.summary.commission')}
-                      </span>
-                    </div>
-                    <span className="font-mono text-[13px] font-bold tabular-nums text-orange">
-                      −{formatNumber(s.commission, lang)}
-                      <span className="ml-0.5 text-[11px] font-medium opacity-30">₺</span>
-                    </span>
                   </div>
                 </div>
               </div>
 
               {/* ── USD Conversion section ── */}
-              <div className="border-t border-black/[0.06] bg-black/[0.015] px-6 py-4">
+              <div className="border-t border-black/[0.06] bg-black/[0.015] px-6 py-3">
                 {/* Rate row */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-sm">
@@ -377,32 +380,32 @@ export function DailySummaryDialog({
                 </div>
 
                 {/* USD Net cards */}
-                <div className="mt-4 grid grid-cols-2 gap-md">
-                  <div className="rounded-xl border border-black/[0.06] bg-white px-4 py-3">
-                    <p className="text-[11px] font-medium text-black/35">
+                <div className="mt-3 grid grid-cols-2 gap-2.5">
+                  <div className="rounded-xl border border-black/[0.06] bg-white px-3 py-2.5">
+                    <p className="text-[10px] font-medium text-black/35">
                       {t('transfers.summary.netWithComm')}
                     </p>
                     <p
-                      className={`mt-1.5 font-mono text-lg font-bold tabular-nums ${adjNetWithCommUsd >= 0 ? 'text-green' : 'text-red'}`}
+                      className={`mt-1 font-mono text-base font-bold tabular-nums ${adjNetWithCommUsd >= 0 ? 'text-green' : 'text-red'}`}
                     >
                       {adjNetWithCommUsd >= 0 ? '+' : '−'}
                       {formatNumber(Math.abs(adjNetWithCommUsd), lang)}
-                      <span className="ml-0.5 text-[11px] font-medium opacity-30">$</span>
+                      <span className="ml-0.5 text-[10px] font-medium opacity-30">$</span>
                     </p>
                     <p className="mt-0.5 text-[10px] text-black/20">
                       {t('transfers.summary.afterCommission')}
                     </p>
                   </div>
-                  <div className="rounded-xl border border-black/[0.06] bg-white px-4 py-3">
-                    <p className="text-[11px] font-medium text-black/35">
+                  <div className="rounded-xl border border-black/[0.06] bg-white px-3 py-2.5">
+                    <p className="text-[10px] font-medium text-black/35">
                       {t('transfers.summary.netWithoutComm')}
                     </p>
                     <p
-                      className={`mt-1.5 font-mono text-lg font-bold tabular-nums ${adjNetWithoutCommUsd >= 0 ? 'text-green' : 'text-red'}`}
+                      className={`mt-1 font-mono text-base font-bold tabular-nums ${adjNetWithoutCommUsd >= 0 ? 'text-green' : 'text-red'}`}
                     >
                       {adjNetWithoutCommUsd >= 0 ? '+' : '−'}
                       {formatNumber(Math.abs(adjNetWithoutCommUsd), lang)}
-                      <span className="ml-0.5 text-[11px] font-medium opacity-30">$</span>
+                      <span className="ml-0.5 text-[10px] font-medium opacity-30">$</span>
                     </p>
                     <p className="mt-0.5 text-[10px] text-black/20">
                       {t('transfers.summary.beforeCommission')}

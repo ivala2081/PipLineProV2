@@ -7,13 +7,13 @@ export const transferFormSchema = z.object({
   transfer_date: z.string().min(1, 'Date is required'),
   category_id: z.string().min(1, 'Category is required'),
   raw_amount: z.coerce.number().positive('Amount must be positive'),
-  currency: z.enum(['TL', 'USD']),
+  currency: z.string().min(1, 'Currency is required'),
   type_id: z.string().min(1, 'Type is required'),
   exchange_rate: z.coerce.number().positive().max(200, 'Exchange rate seems too high').default(1),
   crm_id: z.string().optional(),
   meta_id: z.string().optional(),
   employee_id: z.string().optional(),
-  is_first_deposit: z.boolean().optional().default(false),
+  is_first_deposit: z.boolean().nullable().default(null),
   notes: z.string().optional(),
 })
 
