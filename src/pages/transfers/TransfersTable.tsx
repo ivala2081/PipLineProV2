@@ -170,8 +170,12 @@ export function TransfersTable({
   // Amount filter display states
   const [amountMinDisplay, setAmountMinDisplay] = useState('')
   const [amountMaxDisplay, setAmountMaxDisplay] = useState('')
-  useEffect(() => { if (!filters.amountMin) setAmountMinDisplay('') }, [filters.amountMin])
-  useEffect(() => { if (!filters.amountMax) setAmountMaxDisplay('') }, [filters.amountMax])
+  useEffect(() => {
+    if (!filters.amountMin) setAmountMinDisplay('')
+  }, [filters.amountMin]) // eslint-disable-line react-hooks/set-state-in-effect -- syncing derived display state
+  useEffect(() => {
+    if (!filters.amountMax) setAmountMaxDisplay('')
+  }, [filters.amountMax]) // eslint-disable-line react-hooks/set-state-in-effect -- syncing derived display state
 
   const totalPages = Math.ceil(total / pageSize)
   const from = (page - 1) * pageSize + 1

@@ -1,13 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import {
-  TrendUp,
-  Trophy,
-  Star,
-  ChartBar,
-  Trash,
-  CheckFat,
-  Money,
-} from '@phosphor-icons/react'
+import { TrendUp, Trophy, Star, ChartBar, Trash, CheckFat, Money } from '@phosphor-icons/react'
 import { localYMD } from '@/lib/date'
 import {
   Tag,
@@ -310,7 +302,11 @@ function computeMtStats(
   })
 }
 
-function computeReStats(employees: HrEmployee[], transfers: AutoBonusTransfer[], config: ReConfig): ReEmployeeStat[] {
+function computeReStats(
+  employees: HrEmployee[],
+  transfers: AutoBonusTransfer[],
+  config: ReConfig,
+): ReEmployeeStat[] {
   const reEmps = employees.filter((e) => e.role === 'Retention' && e.is_active)
   return reEmps.map((emp) => {
     const empTransfers = transfers.filter((t) => t.employee_id === emp.id)
@@ -372,11 +368,6 @@ function BonusCell({ value }: { value: number }) {
   return <span className="text-sm tabular-nums font-semibold text-purple">{fmt(value)} USDT</span>
 }
 
-function EmpAvatar({ emp }: { emp: HrEmployee }) {
-  // Avatar removed as per design change; return null to avoid rendering initials
-  return null
-}
-
 /* ------------------------------------------------------------------ */
 /*  Auto Bonus Payment Dialog                                           */
 /* ------------------------------------------------------------------ */
@@ -407,6 +398,7 @@ function AutoBonusPaymentDialog({
 
   useEffect(() => {
     if (open && target) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing form state on dialog open
       setAmount(target.amount)
       setAmountDisplay(target.amount > 0 ? numberToDisplay(target.amount, lang) : '')
     }
@@ -671,7 +663,6 @@ function MarketingBonusTable({
                   <TableRow key={stat.employee.id}>
                     <TableCell>
                       <div className="flex items-center gap-sm">
-                        <EmpAvatar emp={stat.employee} />
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
                             {idx === 0 && (
@@ -859,7 +850,6 @@ function ReattentionBonusTable({
                   <TableRow key={stat.employee.id}>
                     <TableCell>
                       <div className="flex items-center gap-sm">
-                        <EmpAvatar emp={stat.employee} />
                         <span className="truncate text-sm font-medium text-black">
                           {stat.employee.full_name}
                         </span>

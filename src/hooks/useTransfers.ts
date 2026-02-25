@@ -105,7 +105,7 @@ export function computeTransfer(
     amountUsd = exchangeRate > 0 ? Math.round((amount / exchangeRate) * 100) / 100 : 0
   } else {
     amountUsd = amount
-    amountTry = Math.round(amount * exchangeRate * 100) / 100
+    amountTry = exchangeRate > 0 ? Math.round(amount * exchangeRate * 100) / 100 : 0
   }
 
   // Blocked transfers always carry zero commission regardless of PSP rate
@@ -214,7 +214,7 @@ export function useTransfers(): UseTransfersReturn {
         amount_usd: amountUsd,
       })
 
-      if (!insertError) await fetchTransfers()
+      if (!insertError) await fetchTransfers().catch(() => {})
       return { error: insertError?.message ?? null }
     },
     [currentOrg, user, fetchTransfers],
@@ -259,7 +259,7 @@ export function useTransfers(): UseTransfersReturn {
         })
         .eq('id', id)
 
-      if (!updateError) await fetchTransfers()
+      if (!updateError) await fetchTransfers().catch(() => {})
       return { error: updateError?.message ?? null }
     },
     [currentOrg, fetchTransfers],
@@ -269,7 +269,7 @@ export function useTransfers(): UseTransfersReturn {
     async (id: string): Promise<{ error: string | null }> => {
       const { error: deleteError } = await supabase.from('transfers').delete().eq('id', id)
 
-      if (!deleteError) await fetchTransfers()
+      if (!deleteError) await fetchTransfers().catch(() => {})
       return { error: deleteError?.message ?? null }
     },
     [fetchTransfers],

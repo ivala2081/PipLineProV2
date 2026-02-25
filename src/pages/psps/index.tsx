@@ -163,8 +163,6 @@ export function PspsPage() {
 
   const localPsps = useMemo(() => psps.filter((p) => p.psp_scope === 'local'), [psps])
   const globalPsps = useMemo(() => psps.filter((p) => p.psp_scope === 'global'), [psps])
-  const currentPsps = scopeTab === 'local' ? localPsps : globalPsps
-
   const resetDialog = () => {
     setNewScope(null)
     setNewProvider('unipayment')
@@ -208,11 +206,10 @@ export function PspsPage() {
   }
 
   const canSubmit =
-    !!newScope && (
-      newScope === 'local'
-        ? !!newName.trim() && !!newRate
-        : !!newName.trim() && !!newProvider && !!newAppId.trim()
-    )
+    !!newScope &&
+    (newScope === 'local'
+      ? !!newName.trim() && !!newRate
+      : !!newName.trim() && !!newProvider && !!newAppId.trim())
 
   const renderCards = (items: PspSummary[]) => {
     if (isLoading) {
@@ -235,10 +232,13 @@ export function PspsPage() {
           description={t('psps.noPspsDesc')}
           action={
             isAdmin ? (
-              <Button variant="outline" onClick={() => {
-                setNewScope(null)
-                setAddDialogOpen(true)
-              }}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setNewScope(null)
+                  setAddDialogOpen(true)
+                }}
+              >
                 <Plus size={16} weight="bold" />
                 {t('psps.addPsp')}
               </Button>
@@ -270,10 +270,13 @@ export function PspsPage() {
         subtitle={t('psps.subtitle')}
         actions={
           isAdmin ? (
-            <Button variant="filled" onClick={() => {
-              setNewScope(null)
-              setAddDialogOpen(true)
-            }}>
+            <Button
+              variant="filled"
+              onClick={() => {
+                setNewScope(null)
+                setAddDialogOpen(true)
+              }}
+            >
               <Plus size={16} weight="bold" />
               {t('psps.addPsp')}
             </Button>
@@ -310,10 +313,13 @@ export function PspsPage() {
       </Tabs>
 
       {/* Add PSP Dialog */}
-      <Dialog open={addDialogOpen} onOpenChange={(open) => {
-        setAddDialogOpen(open)
-        if (!open) resetDialog()
-      }}>
+      <Dialog
+        open={addDialogOpen}
+        onOpenChange={(open) => {
+          setAddDialogOpen(open)
+          if (!open) resetDialog()
+        }}
+      >
         <DialogContent size="md" onInteractOutside={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>{t('psps.addPsp')}</DialogTitle>

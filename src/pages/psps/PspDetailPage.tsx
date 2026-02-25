@@ -188,7 +188,9 @@ function SettlementFormDialog({
                   onChange={(e) => {
                     const formatted = formatAmount(e.target.value, lang)
                     setAmountDisplay(formatted)
-                    setValue('amount', parseAmount(formatted, lang) as unknown as number, { shouldValidate: true })
+                    setValue('amount', parseAmount(formatted, lang) as unknown as number, {
+                      shouldValidate: true,
+                    })
                   }}
                 />
               </div>
@@ -1396,7 +1398,7 @@ export function PspDetailPage() {
   // Set default tab to 'wallet' for UniPayment PSPs
   useEffect(() => {
     if (psp && isUniPayment && activeTab === 'ledger') {
-      setActiveTab('wallet')
+      setActiveTab('wallet') // eslint-disable-line react-hooks/set-state-in-effect -- one-time tab redirect
     }
   }, [psp, isUniPayment]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1600,9 +1602,15 @@ export function PspDetailPage() {
             {isUniPayment && (
               <>
                 <TabsTrigger value="wallet">{t('psps.detail.tabs.wallet', 'Wallet')}</TabsTrigger>
-                <TabsTrigger value="up-transactions">{t('psps.detail.tabs.upTransactions', 'Transactions')}</TabsTrigger>
-                <TabsTrigger value="invoices">{t('psps.detail.tabs.invoices', 'Invoices')}</TabsTrigger>
-                <TabsTrigger value="up-payments">{t('psps.detail.tabs.upPayments', 'Payments')}</TabsTrigger>
+                <TabsTrigger value="up-transactions">
+                  {t('psps.detail.tabs.upTransactions', 'Transactions')}
+                </TabsTrigger>
+                <TabsTrigger value="invoices">
+                  {t('psps.detail.tabs.invoices', 'Invoices')}
+                </TabsTrigger>
+                <TabsTrigger value="up-payments">
+                  {t('psps.detail.tabs.upPayments', 'Payments')}
+                </TabsTrigger>
               </>
             )}
             <TabsTrigger value="ledger">{t('psps.detail.tabs.ledger', 'Ledger')}</TabsTrigger>

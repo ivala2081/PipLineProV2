@@ -8,7 +8,6 @@ import {
   Trash,
   CheckCircle,
   XCircle,
-  Money,
   Megaphone,
   ArrowsClockwise,
   Buildings,
@@ -142,7 +141,7 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
   const { data: agreements = [], isLoading } = useBonusAgreementsQuery()
   const { data: payments = [] } = useBonusPaymentsQuery()
   const { data: variablePending = [] } = useVariablePendingQuery()
-  const { deleteAgreement, deletePayment } = useBonusMutations()
+  const { deleteAgreement } = useBonusMutations()
 
   const now = new Date()
   const [otherYear, setOtherYear] = useState(now.getFullYear())
@@ -156,7 +155,9 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false)
   const [paymentAgreement, setPaymentAgreement] = useState<HrBonusAgreement | null>(null)
   const [variablePendingDialogOpen, setVariablePendingDialogOpen] = useState(false)
-  const [variablePendingAgreement, setVariablePendingAgreement] = useState<HrBonusAgreement | null>(null)
+  const [variablePendingAgreement, setVariablePendingAgreement] = useState<HrBonusAgreement | null>(
+    null,
+  )
   const [bulkPayoutOpen, setBulkPayoutOpen] = useState(false)
 
   const { data: advances = [] } = useAdvancesQuery(otherYear, otherMonth)
@@ -228,9 +229,7 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
       payments
         .filter(
           (p) =>
-            p.period === otherPeriodLabel &&
-            (!p.status || p.status === 'paid') &&
-            p.agreement_id,
+            p.period === otherPeriodLabel && (!p.status || p.status === 'paid') && p.agreement_id,
         )
         .map((p) => p.agreement_id!),
     )
@@ -280,7 +279,14 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
       })
 
     return [...fixedItems, ...variableItems]
-  }, [filtered, employeeMap, otherPeriodLabel, variablePendingForPeriod, agreements, paidAgreementIdsForPeriod])
+  }, [
+    filtered,
+    employeeMap,
+    otherPeriodLabel,
+    variablePendingForPeriod,
+    agreements,
+    paidAgreementIdsForPeriod,
+  ])
 
   const handleAddNew = () => {
     setDeptTab('other')
@@ -353,7 +359,10 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
 
         <TabsContent value="other" className="pt-lg">
           <div className="space-y-lg">
-            <Tabs value={otherSubTab} onValueChange={(v) => setOtherSubTab(v as 'agreements' | 'pending')}>
+            <Tabs
+              value={otherSubTab}
+              onValueChange={(v) => setOtherSubTab(v as 'agreements' | 'pending')}
+            >
               <TabsList>
                 <TabsTrigger value="agreements">
                   {lang === 'tr' ? 'Anlaşmalar' : 'Agreements'}
@@ -409,7 +418,9 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
                       <Select value={employeeFilter} onValueChange={setEmployeeFilter}>
                         <SelectTrigger>
                           <SelectValue
-                            placeholder={lang === 'tr' ? 'Çalışana göre filtrele' : 'Filter by employee'}
+                            placeholder={
+                              lang === 'tr' ? 'Çalışana göre filtrele' : 'Filter by employee'
+                            }
                           />
                         </SelectTrigger>
                         <SelectContent>
@@ -471,7 +482,9 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
                             </TableHead>
                             <TableHead>{lang === 'tr' ? 'Anlaşma' : 'Agreement'}</TableHead>
                             <TableHead>{lang === 'tr' ? 'Tür' : 'Type'}</TableHead>
-                            <TableHead>{lang === 'tr' ? 'Tutar / Oran' : 'Amount / Rate'}</TableHead>
+                            <TableHead>
+                              {lang === 'tr' ? 'Tutar / Oran' : 'Amount / Rate'}
+                            </TableHead>
                             <TableHead>{lang === 'tr' ? 'Durum' : 'Status'}</TableHead>
                             <TableHead>{lang === 'tr' ? 'Toplam Ödenen' : 'Total Paid'}</TableHead>
                             <TableHead className="w-14" />
@@ -482,7 +495,9 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
                             const emp = employeeMap.get(agreement.employee_id)
                             const typeInfo = getBonusTypeTag(agreement.bonus_type as HrBonusType)
                             const empPayments = payments.filter(
-                              (p) => p.agreement_id === agreement.id && (!p.status || p.status === 'paid'),
+                              (p) =>
+                                p.agreement_id === agreement.id &&
+                                (!p.status || p.status === 'paid'),
                             )
                             const totalPaid = empPayments.reduce((s, p) => s + p.amount_usdt, 0)
 
@@ -584,7 +599,9 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
                                               }}
                                             >
                                               <CurrencyDollar size={14} />
-                                              {lang === 'tr' ? 'Değişken Prim Gir' : 'Enter Variable Bonus'}
+                                              {lang === 'tr'
+                                                ? 'Değişken Prim Gir'
+                                                : 'Enter Variable Bonus'}
                                             </DropdownMenuItem>
                                           )}
                                           <DropdownMenuItem
@@ -624,7 +641,10 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
                   <div className="flex flex-wrap items-center justify-between gap-sm">
                     <div className="flex flex-wrap items-center gap-sm">
                       {/* Period filter */}
-                      <Select value={String(otherMonth)} onValueChange={(v) => setOtherMonth(Number(v))}>
+                      <Select
+                        value={String(otherMonth)}
+                        onValueChange={(v) => setOtherMonth(Number(v))}
+                      >
                         <SelectTrigger className="w-36">
                           <SelectValue />
                         </SelectTrigger>
@@ -636,7 +656,10 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
                           ))}
                         </SelectContent>
                       </Select>
-                      <Select value={String(otherYear)} onValueChange={(v) => setOtherYear(Number(v))}>
+                      <Select
+                        value={String(otherYear)}
+                        onValueChange={(v) => setOtherYear(Number(v))}
+                      >
                         <SelectTrigger className="w-24">
                           <SelectValue />
                         </SelectTrigger>
@@ -661,11 +684,7 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
                   {otherBulkItems.length === 0 ? (
                     <EmptyState
                       icon={CheckCircle}
-                      title={
-                        lang === 'tr'
-                          ? 'Bekleyen ödeme yok'
-                          : 'No pending payments'
-                      }
+                      title={lang === 'tr' ? 'Bekleyen ödeme yok' : 'No pending payments'}
                       description={
                         lang === 'tr'
                           ? `${otherPeriodLabel} dönemi için tüm ödemeler tamamlanmış veya henüz anlaşma eklenmemiş.`
@@ -708,24 +727,29 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
                                   </span>
                                 </TableCell>
                                 <TableCell>
-                                  <span className="text-sm text-black/60">
-                                    {agr?.title ?? '—'}
-                                  </span>
+                                  <span className="text-sm text-black/60">{agr?.title ?? '—'}</span>
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <span className="tabular-nums text-sm font-semibold text-purple">
-                                    {item.amount_usdt.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US', {
-                                      minimumFractionDigits: 2,
-                                    })}{' '}
+                                    {item.amount_usdt.toLocaleString(
+                                      lang === 'tr' ? 'tr-TR' : 'en-US',
+                                      {
+                                        minimumFractionDigits: 2,
+                                      },
+                                    )}{' '}
                                     USDT
                                   </span>
                                 </TableCell>
                                 <TableCell className="text-right">
                                   {empAdvance > 0 ? (
                                     <span className="tabular-nums text-sm font-semibold text-orange">
-                                      -{empAdvance.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US', {
-                                        minimumFractionDigits: 2,
-                                      })}{' '}
+                                      -
+                                      {empAdvance.toLocaleString(
+                                        lang === 'tr' ? 'tr-TR' : 'en-US',
+                                        {
+                                          minimumFractionDigits: 2,
+                                        },
+                                      )}{' '}
                                       USDT
                                     </span>
                                   ) : (

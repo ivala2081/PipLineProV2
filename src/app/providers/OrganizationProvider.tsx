@@ -188,6 +188,10 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
               membership: data as OrganizationMember | null,
             }))
           })
+          .catch((err) => {
+            console.error('[OrganizationProvider] Failed to fetch membership:', err)
+            setState((prev) => ({ ...prev, currentOrg: org, membership: null }))
+          })
       } else {
         setState((prev) => ({ ...prev, currentOrg: org, membership: null }))
       }

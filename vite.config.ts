@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
@@ -37,7 +37,10 @@ export default defineConfig({
   },
   // Security: prevent source map exposure in production
   build: {
-    sourcemap: false, // Disable source maps in production
-    minify: 'esbuild', // esbuild is faster; use terser if you need drop_console
+    sourcemap: false,
+    minify: 'esbuild',
   },
-})
+  esbuild: {
+    drop: mode === 'production' ? ['console', 'debugger'] : [],
+  },
+}))

@@ -145,8 +145,8 @@ const COMMON_PASSWORDS = [
   'welcome',
   'monkey',
   '1234567890',
-  'Password1',
-  'Password123',
+  'password1',
+  'password123',
 ]
 
 /**

@@ -137,10 +137,10 @@ export function LedgerTable({
 
   // Sync display when filters are cleared externally
   useEffect(() => {
-    if (!filters.amountMin) setAmountMinDisplay('')
+    if (!filters.amountMin) setAmountMinDisplay('') // eslint-disable-line react-hooks/set-state-in-effect -- syncing derived display state
   }, [filters.amountMin])
   useEffect(() => {
-    if (!filters.amountMax) setAmountMaxDisplay('')
+    if (!filters.amountMax) setAmountMaxDisplay('') // eslint-disable-line react-hooks/set-state-in-effect -- syncing derived display state
   }, [filters.amountMax])
 
   // Summary dialog state

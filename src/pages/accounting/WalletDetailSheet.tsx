@@ -1,13 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import {
-  Copy,
-  Camera,
-  ArrowsClockwise,
-  Trash,
-  ArrowRight,
-  PencilSimple,
-} from '@phosphor-icons/react'
+import { Copy, Camera, ArrowsClockwise, Trash, ArrowRight } from '@phosphor-icons/react'
 import type { Wallet } from '@/lib/database.types'
 import { useWalletBalanceQuery } from '@/hooks/queries/useWalletBalanceQuery'
 import { useWalletSnapshotsQuery } from '@/hooks/queries/useWalletSnapshotsQuery'
@@ -53,7 +46,7 @@ interface WalletDetailSheetProps {
   onEdit?: (wallet: Wallet) => void
 }
 
-export function WalletDetailSheet({ wallet, onClose, onEdit }: WalletDetailSheetProps) {
+export function WalletDetailSheet({ wallet, onClose }: WalletDetailSheetProps) {
   const { t } = useTranslation('pages')
   const navigate = useNavigate()
 

@@ -84,7 +84,10 @@
       "Bash(git -C /home/ivala/Documents/GitHub/PipLineProV2 diff HEAD --name-only)",
       "Bash(cat:*)",
       "Bash(^0[7-9][0-9])",
-      "Bash(^1 \")"
+      "Bash(^1 \")",
+      "Bash(npx vitest run)",
+      "Bash(npx vitest run --coverage)",
+      "Bash(npm run lint)"
     ]
   }
 }

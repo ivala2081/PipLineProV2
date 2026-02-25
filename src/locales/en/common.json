@@ -14,5 +14,7 @@
   "next": "Next",
   "previous": "Previous",
   "yes": "Yes",
-  "no": "No"
+  "no": "No",
+  "maintenanceTitle": "This page is currently under maintenance",
+  "maintenanceDescription": "This module has been temporarily disabled for maintenance. Please try again later."
 }

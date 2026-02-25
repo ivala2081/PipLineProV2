@@ -26,7 +26,7 @@ interface Props {
 export function UniPaymentSyncTab({ pspId, isAdmin }: Props) {
   const { t } = useTranslation('pages')
   const { toast } = useToast()
-  const { data: syncLog, isLoading } = useUniPaymentSyncStatus(pspId)
+  const { data: syncLog } = useUniPaymentSyncStatus(pspId)
   const syncMutation = useSyncTransactionsMutation(pspId)
 
   const handleSync = async () => {
@@ -92,11 +92,7 @@ export function UniPaymentSyncTab({ pspId, isAdmin }: Props) {
 
           {/* Sync Button */}
           {isAdmin && (
-            <Button
-              size="sm"
-              onClick={handleSync}
-              disabled={isRunning}
-            >
+            <Button size="sm" onClick={handleSync} disabled={isRunning}>
               <ArrowsClockwise
                 size={14}
                 weight="bold"

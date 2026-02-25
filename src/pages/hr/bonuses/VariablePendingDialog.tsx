@@ -49,6 +49,7 @@ export function VariablePendingDialog({
   useEffect(() => {
     if (open) {
       const existing = existingPending?.amount_usdt ?? 0
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing form state on dialog open
       setAmount(existing)
       setAmountDisplay(existing > 0 ? numberToDisplay(existing, lang) : '')
     }

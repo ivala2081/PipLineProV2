@@ -111,13 +111,24 @@ async function tatumFetch<T>(
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
 
-  const res = await fetch(url.toString(), {
-    headers: {
-      accept: 'application/json',
-      'x-api-key': API_KEY,
-    },
-    signal: controller.signal,
-  }).finally(() => clearTimeout(timer))
+  let res: Response
+  try {
+    res = await fetch(url.toString(), {
+      headers: {
+        accept: 'application/json',
+        'x-api-key': API_KEY,
+      },
+      signal: controller.signal,
+    })
+  } catch (err) {
+    clearTimeout(timer)
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new Error(`Tatum API request timed out after ${TIMEOUT_MS}ms: ${path}`)
+    }
+    throw err
+  } finally {
+    clearTimeout(timer)
+  }
 
   if (!res.ok) {
     const body = await res.text().catch(() => '')
@@ -138,10 +149,21 @@ async function tronGridFetch<T>(path: string, params: Record<string, string> = {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
 
-  const res = await fetch(url.toString(), {
-    headers: { accept: 'application/json' },
-    signal: controller.signal,
-  }).finally(() => clearTimeout(timer))
+  let res: Response
+  try {
+    res = await fetch(url.toString(), {
+      headers: { accept: 'application/json' },
+      signal: controller.signal,
+    })
+  } catch (err) {
+    clearTimeout(timer)
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new Error(`TronGrid API request timed out after ${TIMEOUT_MS}ms: ${path}`)
+    }
+    throw err
+  } finally {
+    clearTimeout(timer)
+  }
 
   if (!res.ok) {
     const body = await res.text().catch(() => '')
@@ -498,7 +520,8 @@ function decodeTronCursor(cursor?: string): { nativeNext?: string; trc20Next?: s
   try {
     const { n, t } = JSON.parse(atob(cursor))
     return { nativeNext: n || undefined, trc20Next: t || undefined }
-  } catch {
+  } catch (err) {
+    console.warn('[Tatum] Failed to decode TRON cursor:', err)
     return {}
   }
 }

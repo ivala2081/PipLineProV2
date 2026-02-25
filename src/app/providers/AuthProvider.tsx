@@ -143,8 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fetchWithRetry()
 
     return () => {
-      const id = currentFetchId
-      profileFetchId.current = id + 1
+      profileFetchId.current++
     }
   }, [state.user?.id])
 
@@ -236,9 +235,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshProfile = useCallback(async () => {
     if (!state.user) return
-    const { data } = await supabase.from('profiles').select('*').eq('id', state.user.id).single()
-    if (data) {
-      setState((prev) => ({ ...prev, profile: data as Profile }))
+    try {
+      const { data } = await supabase.from('profiles').select('*').eq('id', state.user.id).single()
+      if (data) {
+        setState((prev) => ({ ...prev, profile: data as Profile }))
+      }
+    } catch (err) {
+      console.error('[AuthProvider] refreshProfile failed:', err)
     }
   }, [state.user])
 

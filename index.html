@@ -9,8 +9,8 @@
       script-src 'self' https://hcaptcha.com https://*.hcaptcha.com https://*.sentry.io;
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       font-src 'self' https://fonts.gstatic.com;
-      img-src 'self' data: blob:;
-      connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://hcaptcha.com https://*.hcaptcha.com;
+      img-src 'self' data: blob: https://*.supabase.co;
+      connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://hcaptcha.com https://*.hcaptcha.com https://v6.exchangerate-api.com;
       frame-src https://hcaptcha.com https://*.hcaptcha.com;
       object-src 'none';
       base-uri 'self';

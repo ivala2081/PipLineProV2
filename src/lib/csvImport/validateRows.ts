@@ -98,7 +98,7 @@ export function validateRow(
       severity: 'error',
     })
   }
-  const isDeposit = cat?.is_deposit ?? raw.categoryName.toUpperCase() === 'YATIRIM'
+  const isDeposit = cat?.is_deposit ?? true
 
   // Type (matches by name or alias)
   const type = lookupMaps.typesByName.get(raw.typeName.toLowerCase())

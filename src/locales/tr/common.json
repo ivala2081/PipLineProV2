@@ -14,5 +14,7 @@
   "next": "İleri",
   "previous": "Önceki",
   "yes": "Evet",
-  "no": "Hayır"
+  "no": "Hayır",
+  "maintenanceTitle": "Bu sayfa şu anda bakımdadır",
+  "maintenanceDescription": "Bu modül geçici olarak bakım nedeniyle kullanıma kapatılmıştır. Lütfen daha sonra tekrar deneyiniz."
 }

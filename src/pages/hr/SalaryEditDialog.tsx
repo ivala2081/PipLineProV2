@@ -36,7 +36,13 @@ interface SalaryEditDialogProps {
   lang: 'tr' | 'en'
 }
 
-export function SalaryEditDialog({ open, onClose, payment, employee, lang }: SalaryEditDialogProps) {
+export function SalaryEditDialog({
+  open,
+  onClose,
+  payment,
+  employee,
+  lang,
+}: SalaryEditDialogProps) {
   const { toast } = useToast()
   const updateSalary = useUpdateSalaryPaymentMutation()
   const [amountDisplay, setAmountDisplay] = useState('')
@@ -53,7 +59,7 @@ export function SalaryEditDialog({ open, onClose, payment, employee, lang }: Sal
         paid_at: payment.paid_at,
         notes: payment.notes ?? '',
       })
-      setAmountDisplay(numberToDisplay(payment.amount_tl, lang))
+      setAmountDisplay(numberToDisplay(payment.amount_tl, lang)) // eslint-disable-line react-hooks/set-state-in-effect -- syncing form display on dialog open
     }
   }, [open, payment, form, lang])
 
@@ -71,7 +77,10 @@ export function SalaryEditDialog({ open, onClose, payment, employee, lang }: Sal
             ? `${employee.full_name} — ${payment.period} Maaş Ödemesi`
             : `${employee.full_name} — ${payment.period} Salary Payment`,
       })
-      toast({ title: lang === 'tr' ? 'Maaş ödemesi güncellendi' : 'Salary payment updated', variant: 'success' })
+      toast({
+        title: lang === 'tr' ? 'Maaş ödemesi güncellendi' : 'Salary payment updated',
+        variant: 'success',
+      })
       onClose()
     } catch {
       toast({ title: lang === 'tr' ? 'Bir hata oluştu' : 'Something went wrong', variant: 'error' })
@@ -94,7 +103,12 @@ export function SalaryEditDialog({ open, onClose, payment, employee, lang }: Sal
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-md">
+        <form
+          onSubmit={(e) => {
+            void handleSubmit(e)
+          }}
+          className="space-y-md"
+        >
           <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
             {/* Amount */}
             <div>
@@ -148,8 +162,12 @@ export function SalaryEditDialog({ open, onClose, payment, employee, lang }: Sal
             </Button>
             <Button type="submit" variant="filled" size="sm" disabled={updateSalary.isPending}>
               {updateSalary.isPending
-                ? lang === 'tr' ? 'Kaydediliyor...' : 'Saving...'
-                : lang === 'tr' ? 'Güncelle' : 'Update'}
+                ? lang === 'tr'
+                  ? 'Kaydediliyor...'
+                  : 'Saving...'
+                : lang === 'tr'
+                  ? 'Güncelle'
+                  : 'Update'}
             </Button>
           </div>
         </form>
