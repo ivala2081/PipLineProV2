@@ -1146,7 +1146,13 @@
       "roleManagerDescription": "Organizasyon içinde tam erişim",
       "roleOperation": "Operasyon",
       "roleOperationDescription": "Verileri görüntüleyebilir ve yönetebilir",
+      "method": "Ekleme Yöntemi",
+      "methodEmail": "Davet E-postası Gönder",
+      "methodEmailDescription": "Üyeye giriş bilgileri e-posta ile gönderilir",
+      "methodDirect": "Hesabı Doğrudan Oluştur",
+      "methodDirectDescription": "Hesap sessizce oluşturulur, e-posta gönderilmez",
       "invite": "Davet Gönder",
+      "createAccount": "Hesap Oluştur",
       "cancel": "İptal",
       "sending": "Gönderiliyor..."
     },

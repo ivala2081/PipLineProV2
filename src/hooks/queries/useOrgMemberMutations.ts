@@ -33,11 +33,13 @@ export function useInviteMember(orgId: string) {
       password,
       role,
       displayName,
+      skipEmail,
     }: {
       email: string
       password: string
       role: OrgMemberRole
       displayName?: string
+      skipEmail?: boolean
     }) => {
       const {
         data: { session },
@@ -56,6 +58,7 @@ export function useInviteMember(orgId: string) {
           role,
           password,
           displayName: displayName || undefined,
+          skipEmail: skipEmail || false,
         }),
       })
       const data = await res.json()

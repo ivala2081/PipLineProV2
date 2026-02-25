@@ -2,7 +2,16 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { UserPlus, ShieldCheck, User, Eye, EyeSlash, Crown } from '@phosphor-icons/react'
+import {
+  UserPlus,
+  ShieldCheck,
+  User,
+  Eye,
+  EyeSlash,
+  Crown,
+  EnvelopeSimple,
+  Lock,
+} from '@phosphor-icons/react'
 import {
   Dialog,
   DialogContent,
@@ -36,7 +45,7 @@ function RoleCard({
   onClick: () => void
   icon: React.ReactNode
   title: string
-  description: string
+  description?: string
 }) {
   return (
     <button
@@ -55,11 +64,13 @@ function RoleCard({
       </div>
       <div>
         <p className={`text-sm font-medium ${selected ? 'text-brand' : ''}`}>{title}</p>
-        <p className="mt-0.5 text-xs text-black/40">{description}</p>
+        {description && <p className="mt-0.5 text-xs text-black/40">{description}</p>}
       </div>
     </button>
   )
 }
+
+type AddMethod = 'email' | 'direct'
 
 export function InviteMemberDialog({
   open,
@@ -71,10 +82,17 @@ export function InviteMemberDialog({
   const { toast } = useToast()
   const inviteMember = useInviteMember(orgId)
   const [showPassword, setShowPassword] = useState(false)
+  const [method, setMethod] = useState<AddMethod>('email')
 
   const form = useForm<InviteMemberValues>({
     resolver: zodResolver(inviteMemberSchema),
-    defaultValues: { email: '', role: 'operation', password: '', displayName: '' },
+    defaultValues: {
+      email: '',
+      role: 'operation',
+      password: '',
+      displayName: '',
+      skipEmail: false,
+    },
   })
 
   // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch
@@ -83,15 +101,18 @@ export function InviteMemberDialog({
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
-      form.reset({ email: '', role: 'operation', password: '', displayName: '' })
+      form.reset({ email: '', role: 'operation', password: '', displayName: '', skipEmail: false })
       setShowPassword(false)
+      setMethod('email')
     }
   }, [open, form])
 
   const handleSubmit = form.handleSubmit(async (data) => {
     try {
-      const result = await inviteMember.mutateAsync(data)
-      if (result?.userAlreadyExisted) {
+      const result = await inviteMember.mutateAsync({ ...data, skipEmail: method === 'direct' })
+      if (method === 'direct') {
+        toast({ title: t('organizations.toast.memberAdded'), variant: 'success' })
+      } else if (result?.userAlreadyExisted) {
         toast({ title: t('organizations.toast.memberAdded'), variant: 'success' })
       } else {
         toast({ title: t('organizations.toast.invited'), variant: 'success' })
@@ -119,6 +140,25 @@ export function InviteMemberDialog({
           </div>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-md">
+          {/* Method selection */}
+          <div className="space-y-sm">
+            <Label>{t('organizations.inviteDialog.method')}</Label>
+            <div className="grid grid-cols-2 gap-sm">
+              <RoleCard
+                selected={method === 'email'}
+                onClick={() => setMethod('email')}
+                icon={<EnvelopeSimple size={18} />}
+                title={t('organizations.inviteDialog.methodEmail')}
+              />
+              <RoleCard
+                selected={method === 'direct'}
+                onClick={() => setMethod('direct')}
+                icon={<Lock size={18} />}
+                title={t('organizations.inviteDialog.methodDirect')}
+              />
+            </div>
+          </div>
+
           {/* Email */}
           <div className="space-y-sm">
             <Label>{t('organizations.inviteDialog.email')}</Label>
@@ -223,7 +263,9 @@ export function InviteMemberDialog({
             <Button type="submit" variant="filled" disabled={inviteMember.isPending}>
               {inviteMember.isPending
                 ? t('organizations.inviteDialog.sending')
-                : t('organizations.inviteDialog.invite')}
+                : method === 'direct'
+                  ? t('organizations.inviteDialog.createAccount')
+                  : t('organizations.inviteDialog.invite')}
             </Button>
           </DialogFooter>
         </form>

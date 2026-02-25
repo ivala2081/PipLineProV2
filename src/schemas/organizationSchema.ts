@@ -24,6 +24,7 @@ export const inviteMemberSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
   role: z.enum(['admin', 'manager', 'operation']),
   displayName: z.string().optional(),
+  skipEmail: z.boolean().optional(),
 })
 
 export type InviteMemberValues = z.infer<typeof inviteMemberSchema>

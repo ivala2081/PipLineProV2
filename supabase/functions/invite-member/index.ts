@@ -163,12 +163,13 @@ serve(async (req: Request) => {
 
     // ── 2. Parse & validate body ────────────────────────────────────
     const body = await req.json()
-    const { orgId, email, role, password, displayName } = body as {
+    const { orgId, email, role, password, displayName, skipEmail } = body as {
       orgId?: string
       email?: string
       role?: string
       password?: string
       displayName?: string
+      skipEmail?: boolean
     }
 
     if (!orgId || !email || !role || !password) {
@@ -302,7 +303,7 @@ serve(async (req: Request) => {
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
     let emailSent = false
 
-    if (RESEND_API_KEY) {
+    if (RESEND_API_KEY && !skipEmail) {
       const loginUrl = Deno.env.get('APP_URL') || 'https://app.piplinepro.com'
 
       const html = userAlreadyExisted

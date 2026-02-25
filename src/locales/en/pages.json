@@ -1146,7 +1146,13 @@
       "roleManagerDescription": "Full access within the organization",
       "roleOperation": "Operation",
       "roleOperationDescription": "Can view and manage data",
+      "method": "Add Method",
+      "methodEmail": "Send Invitation Email",
+      "methodEmailDescription": "Sends login credentials to the member via email",
+      "methodDirect": "Create Account Directly",
+      "methodDirectDescription": "Creates the account silently, no email sent",
       "invite": "Send Invite",
+      "createAccount": "Create Account",
       "cancel": "Cancel",
       "sending": "Sending..."
     },

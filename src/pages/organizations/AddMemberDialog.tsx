@@ -12,11 +12,44 @@ import {
   Input,
   Label,
 } from '@ds'
-import { Eye, EyeSlash } from '@phosphor-icons/react'
+import { Eye, EyeSlash, EnvelopeSimple, Lock } from '@phosphor-icons/react'
 import { useToast } from '@/hooks/useToast'
 import { useInviteMember } from '@/hooks/queries/useOrgMemberMutations'
 import { inviteMemberSchema, type InviteMemberValues } from '@/schemas/organizationSchema'
 import type { OrgMemberRole } from '@/lib/database.types'
+
+type AddMethod = 'email' | 'direct'
+
+function MethodCard({
+  selected,
+  onClick,
+  icon,
+  title,
+}: {
+  selected: boolean
+  onClick: () => void
+  icon: React.ReactNode
+  title: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex w-full items-center gap-3 rounded-xl border-2 p-4 text-left transition-colors ${
+        selected ? 'border-brand bg-brand/5' : 'border-black/10 hover:border-black/20'
+      }`}
+    >
+      <div
+        className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${
+          selected ? 'bg-brand/10 text-brand' : 'bg-black/5 text-black/40'
+        }`}
+      >
+        {icon}
+      </div>
+      <p className={`text-sm font-medium ${selected ? 'text-brand' : ''}`}>{title}</p>
+    </button>
+  )
+}
 
 interface AddMemberDialogProps {
   open: boolean
@@ -30,32 +63,39 @@ export function AddMemberDialog({ open, onClose, orgId, assignableRoles }: AddMe
   const { toast } = useToast()
   const inviteMember = useInviteMember(orgId)
   const [showPassword, setShowPassword] = useState(false)
+  const [method, setMethod] = useState<AddMethod>('email')
 
   const form = useForm<InviteMemberValues>({
     resolver: zodResolver(inviteMemberSchema),
-    defaultValues: { email: '', password: '', role: 'operation', displayName: '' },
+    defaultValues: {
+      email: '',
+      password: '',
+      role: 'operation',
+      displayName: '',
+      skipEmail: false,
+    },
   })
 
   const handleOpenChange = (o: boolean) => {
-    if (o) {
-      form.reset({ email: '', password: '', role: 'operation', displayName: '' })
-      setShowPassword(false)
-    } else {
-      onClose()
-    }
+    if (!o) onClose()
   }
 
   const handleSubmit = form.handleSubmit(async (data) => {
     try {
-      const result = await inviteMember.mutateAsync(data)
-      if (result?.userAlreadyExisted) {
+      await inviteMember.mutateAsync({ ...data, skipEmail: method === 'direct' })
+      if (method === 'direct') {
         toast({ title: t('organizations.toast.memberAdded'), variant: 'success' })
       } else {
-        toast({ title: t('organizations.toast.memberAdded'), variant: 'success' })
+        toast({ title: t('organizations.toast.invited'), variant: 'success' })
       }
       onClose()
     } catch (err) {
-      toast({ title: (err as Error).message, variant: 'error' })
+      const message = (err as Error).message
+      if (message.includes('DUPLICATE_INVITATION')) {
+        toast({ title: t('organizations.toast.duplicateInvitation'), variant: 'error' })
+      } else {
+        toast({ title: message, variant: 'error' })
+      }
     }
   })
 
@@ -66,6 +106,25 @@ export function AddMemberDialog({ open, onClose, orgId, assignableRoles }: AddMe
           <DialogTitle>{t('organizations.addMemberDialog.title')}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-md">
+          {/* Method selection */}
+          <div className="space-y-sm">
+            <Label>{t('organizations.inviteDialog.method')}</Label>
+            <div className="grid grid-cols-2 gap-sm">
+              <MethodCard
+                selected={method === 'email'}
+                onClick={() => setMethod('email')}
+                icon={<EnvelopeSimple size={18} />}
+                title={t('organizations.inviteDialog.methodEmail')}
+              />
+              <MethodCard
+                selected={method === 'direct'}
+                onClick={() => setMethod('direct')}
+                icon={<Lock size={18} />}
+                title={t('organizations.inviteDialog.methodDirect')}
+              />
+            </div>
+          </div>
+
           <div className="space-y-sm">
             <Label>{t('organizations.addMemberDialog.displayName')}</Label>
             <Input
@@ -157,7 +216,9 @@ export function AddMemberDialog({ open, onClose, orgId, assignableRoles }: AddMe
             <Button type="submit" variant="filled" disabled={inviteMember.isPending}>
               {inviteMember.isPending
                 ? t('organizations.addMemberDialog.adding')
-                : t('organizations.addMemberDialog.add')}
+                : method === 'direct'
+                  ? t('organizations.inviteDialog.createAccount')
+                  : t('organizations.addMemberDialog.add')}
             </Button>
           </DialogFooter>
         </form>
