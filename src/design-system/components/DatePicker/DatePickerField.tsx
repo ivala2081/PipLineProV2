@@ -70,7 +70,7 @@ export const DatePickerField = forwardRef<HTMLInputElement, DatePickerFieldProps
     },
     ref,
   ) {
-    const { t } = useTranslation('components')
+    const { t, i18n } = useTranslation('components')
 
     const isControlled = value !== undefined
     const [internalValue, setInternalValue] = useState(defaultValue ?? '')
@@ -139,7 +139,7 @@ export const DatePickerField = forwardRef<HTMLInputElement, DatePickerFieldProps
     const hasValue = Boolean(resolvedValue) && Boolean(selectedDate)
     const displayText =
       hasValue && selectedDate
-        ? selectedDate.toLocaleDateString(undefined, {
+        ? selectedDate.toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US', {
             day: '2-digit',
             month: 'short',
             year: 'numeric',

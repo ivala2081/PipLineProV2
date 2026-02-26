@@ -8,6 +8,7 @@ import type {
   HrDocumentType,
   HrBonusType,
   HrAttendanceStatus,
+  HrLeaveType,
 } from '@/lib/database.types'
 
 /* ------------------------------------------------------------------ */
@@ -64,8 +65,22 @@ export type HrAttendance = {
   status: HrAttendanceStatus
   check_in: string | null
   check_out: string | null
+  absent_hours: number | null
+  deduction_exempt: boolean
   notes: string | null
   recorded_by: string | null
+  created_at: string
+}
+
+export type HrLeave = {
+  id: string
+  employee_id: string
+  organization_id: string
+  leave_type: HrLeaveType
+  start_date: string
+  end_date: string
+  notes: string | null
+  created_by: string | null
   created_at: string
 }
 
@@ -166,6 +181,12 @@ export type HrSettings = {
   supplement_tl: number
   absence_full_day_divisor: number
   absence_half_day_divisor: number
+  absence_hourly_divisor: number
+  daily_deduction_enabled: boolean
+  hourly_deduction_enabled: boolean
+  standard_check_in: string
+  standard_check_out: string
+  timezone: string
 }
 
 export const DEFAULT_HR_SETTINGS: HrSettings = {
@@ -176,6 +197,12 @@ export const DEFAULT_HR_SETTINGS: HrSettings = {
   supplement_tl: 4000,
   absence_full_day_divisor: 30,
   absence_half_day_divisor: 60,
+  absence_hourly_divisor: 240,
+  daily_deduction_enabled: true,
+  hourly_deduction_enabled: true,
+  standard_check_in: '10:00',
+  standard_check_out: '18:30',
+  timezone: 'Europe/Istanbul',
 }
 
 export const DEFAULT_MT_CONFIG: MtConfig = {
@@ -236,6 +263,9 @@ export const hrKeys = {
   mtConfig: (orgId: string) => ['hr', orgId, 'mt-config'] as const,
   reConfig: (orgId: string) => ['hr', orgId, 're-config'] as const,
   hrSettings: (orgId: string) => ['hr', orgId, 'settings'] as const,
+  leaves: (orgId: string) => ['hr', orgId, 'leaves'] as const,
+  leavesMonth: (orgId: string, year: number, month: number) =>
+    ['hr', orgId, 'leaves-month', year, month] as const,
 }
 
 /* ------------------------------------------------------------------ */
@@ -906,6 +936,8 @@ export function useHrAttendanceMutations() {
       status: HrAttendanceStatus
       check_in?: string | null
       check_out?: string | null
+      absent_hours?: number | null
+      deduction_exempt?: boolean
       notes?: string | null
     }) => {
       const { data, error } = await supabase
@@ -947,6 +979,152 @@ export function useHrAttendanceMutations() {
   })
 
   return { upsertAttendance, deleteAttendance }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Leaves Queries                                                    */
+/* ------------------------------------------------------------------ */
+
+export function useHrLeavesQuery() {
+  const { currentOrg } = useOrganization()
+  const orgId = currentOrg?.id ?? ''
+
+  return useQuery<HrLeave[]>({
+    queryKey: hrKeys.leaves(orgId),
+    enabled: !!orgId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('hr_leaves')
+        .select('*')
+        .eq('organization_id', orgId)
+        .order('start_date', { ascending: false })
+      if (error) throw error
+      return data as HrLeave[]
+    },
+  })
+}
+
+export function useHrMonthlyLeavesQuery(year: number, month: number) {
+  const { currentOrg } = useOrganization()
+  const orgId = currentOrg?.id ?? ''
+
+  const dateFrom = `${year}-${String(month).padStart(2, '0')}-01`
+  const lastDay = new Date(year, month, 0).getDate()
+  const dateTo = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+
+  return useQuery<HrLeave[]>({
+    queryKey: hrKeys.leavesMonth(orgId, year, month),
+    enabled: !!orgId,
+    queryFn: async () => {
+      // Fetch leaves that overlap with the month range
+      const { data, error } = await supabase
+        .from('hr_leaves')
+        .select('*')
+        .eq('organization_id', orgId)
+        .lte('start_date', dateTo)
+        .gte('end_date', dateFrom)
+      if (error) throw error
+      return data as HrLeave[]
+    },
+  })
+}
+
+export function useHrLeaveMutations() {
+  const { currentOrg } = useOrganization()
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+  const orgId = currentOrg?.id ?? ''
+
+  const createLeave = useMutation({
+    mutationFn: async (payload: {
+      employee_id: string
+      leave_type: HrLeaveType
+      start_date: string
+      end_date: string
+      notes?: string | null
+    }) => {
+      const { data, error } = await supabase
+        .from('hr_leaves')
+        .insert({
+          ...payload,
+          organization_id: orgId,
+          created_by: user?.id ?? null,
+        })
+        .select()
+        .single()
+      if (error) throw error
+      return data as HrLeave
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: hrKeys.leaves(orgId) })
+      void queryClient.invalidateQueries({ queryKey: ['hr', orgId, 'leaves-month'] })
+    },
+  })
+
+  const updateLeave = useMutation({
+    mutationFn: async ({ id, payload }: {
+      id: string
+      payload: {
+        employee_id: string
+        leave_type: HrLeaveType
+        start_date: string
+        end_date: string
+        notes?: string | null
+      }
+    }) => {
+      const { data, error } = await supabase
+        .from('hr_leaves')
+        .update(payload)
+        .eq('id', id)
+        .eq('organization_id', orgId)
+        .select()
+        .single()
+      if (error) throw error
+      return data as HrLeave
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: hrKeys.leaves(orgId) })
+      void queryClient.invalidateQueries({ queryKey: ['hr', orgId, 'leaves-month'] })
+    },
+  })
+
+  const deleteLeave = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('hr_leaves')
+        .delete()
+        .eq('id', id)
+        .eq('organization_id', orgId)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: hrKeys.leaves(orgId) })
+      void queryClient.invalidateQueries({ queryKey: ['hr', orgId, 'leaves-month'] })
+    },
+  })
+
+  return { createLeave, updateLeave, deleteLeave }
+}
+
+/** Count how many calendar days a leave overlaps with a given month. */
+export function countLeaveDaysInMonth(
+  leave: HrLeave,
+  year: number,
+  month: number,
+): number {
+  const monthStart = new Date(year, month - 1, 1)
+  const monthEnd = new Date(year, month, 0) // last day of month
+  const leaveStart = new Date(leave.start_date)
+  const leaveEnd = new Date(leave.end_date)
+
+  const overlapStart = leaveStart > monthStart ? leaveStart : monthStart
+  const overlapEnd = leaveEnd < monthEnd ? leaveEnd : monthEnd
+
+  if (overlapStart > overlapEnd) return 0
+
+  // Count calendar days (inclusive)
+  const diffMs = overlapEnd.getTime() - overlapStart.getTime()
+  return Math.floor(diffMs / 86_400_000) + 1
 }
 
 /* ------------------------------------------------------------------ */
@@ -1129,6 +1307,7 @@ export type BulkSalaryPayoutItem = {
   amount_tl: number
   supplement_tl: number
   attendance_deduction_tl: number
+  unpaid_leave_deduction_tl: number
   period: string
   description: string
 }
@@ -1173,7 +1352,7 @@ export function useBulkSalaryPayoutMutation() {
         organization_id: orgId,
         employee_id: item.employee_id,
         period: item.period,
-        amount_tl: Math.max(0, item.amount_tl - item.attendance_deduction_tl),
+        amount_tl: Math.max(0, item.amount_tl - item.attendance_deduction_tl - item.unpaid_leave_deduction_tl),
         paid_at: paidAt,
         notes: null as string | null,
         created_by: user.id,
@@ -1340,6 +1519,12 @@ export function useHrSettingsQuery() {
         supplement_tl: Number(data.supplement_tl) || DEFAULT_HR_SETTINGS.supplement_tl,
         absence_full_day_divisor: Number(data.absence_full_day_divisor) || DEFAULT_HR_SETTINGS.absence_full_day_divisor,
         absence_half_day_divisor: Number(data.absence_half_day_divisor) || DEFAULT_HR_SETTINGS.absence_half_day_divisor,
+        absence_hourly_divisor: Number(data.absence_hourly_divisor) || DEFAULT_HR_SETTINGS.absence_hourly_divisor,
+        daily_deduction_enabled: data.daily_deduction_enabled ?? DEFAULT_HR_SETTINGS.daily_deduction_enabled,
+        hourly_deduction_enabled: data.hourly_deduction_enabled ?? DEFAULT_HR_SETTINGS.hourly_deduction_enabled,
+        standard_check_in: data.standard_check_in ?? DEFAULT_HR_SETTINGS.standard_check_in,
+        standard_check_out: data.standard_check_out ?? DEFAULT_HR_SETTINGS.standard_check_out,
+        timezone: data.timezone ?? DEFAULT_HR_SETTINGS.timezone,
       } as HrSettings
     },
     enabled: !!orgId,
@@ -1360,6 +1545,12 @@ export function useUpdateHrSettingsMutation() {
           supplement_tl: settings.supplement_tl,
           absence_full_day_divisor: settings.absence_full_day_divisor,
           absence_half_day_divisor: settings.absence_half_day_divisor,
+          absence_hourly_divisor: settings.absence_hourly_divisor,
+          daily_deduction_enabled: settings.daily_deduction_enabled,
+          hourly_deduction_enabled: settings.hourly_deduction_enabled,
+          standard_check_in: settings.standard_check_in,
+          standard_check_out: settings.standard_check_out,
+          timezone: settings.timezone,
           updated_at: new Date().toISOString(),
         },
         { onConflict: 'organization_id' },

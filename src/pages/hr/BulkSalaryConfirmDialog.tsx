@@ -48,7 +48,8 @@ export function BulkSalaryConfirmDialog({
   const totalSalary = eligibleItems.reduce((s, i) => s + i.amount_tl, 0)
   const totalSupplement = eligibleItems.reduce((s, i) => s + (i.supplement_tl ?? 0), 0)
   const totalDeduction = eligibleItems.reduce((s, i) => s + (i.attendance_deduction_tl ?? 0), 0)
-  const total = totalSalary + totalSupplement - totalDeduction
+  const totalLeaveDeduction = eligibleItems.reduce((s, i) => s + (i.unpaid_leave_deduction_tl ?? 0), 0)
+  const total = totalSalary + totalSupplement - totalDeduction - totalLeaveDeduction
   const hasItems = eligibleItems.length > 0
 
   const handleConfirm = async () => {
@@ -113,7 +114,10 @@ export function BulkSalaryConfirmDialog({
                         {lang === 'tr' ? 'Sigorta Elden Ödeme' : 'Insurance Supplement'}
                       </TableHead>
                       <TableHead className="text-right">
-                        {lang === 'tr' ? 'Devam Kesintisi' : 'Absence Deduction'}
+                        {lang === 'tr' ? 'Devam Kesintisi' : 'Absence Ded.'}
+                      </TableHead>
+                      <TableHead className="text-right">
+                        {lang === 'tr' ? 'İzin Kesintisi' : 'Leave Ded.'}
                       </TableHead>
                     </TableRow>
                   </TableHeader>
@@ -151,12 +155,21 @@ export function BulkSalaryConfirmDialog({
                             <span className="text-xs text-black/25">—</span>
                           )}
                         </TableCell>
+                        <TableCell className="text-right">
+                          {(item.unpaid_leave_deduction_tl ?? 0) > 0 ? (
+                            <span className="tabular-nums text-sm font-semibold text-red">
+                              -{fmtTL(item.unpaid_leave_deduction_tl)} TL
+                            </span>
+                          ) : (
+                            <span className="text-xs text-black/25">—</span>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                     {/* Total row */}
                     <TableRow className="bg-black/[0.02]">
                       <TableCell
-                        colSpan={4}
+                        colSpan={5}
                         className="text-right text-xs font-semibold text-black/50"
                       >
                         {lang === 'tr' ? 'Toplam' : 'Total'}
@@ -182,8 +195,8 @@ export function BulkSalaryConfirmDialog({
                 <CheckFat size={16} weight="fill" className="mt-0.5 shrink-0 text-green" />
                 <p className="text-xs text-black/60">
                   {lang === 'tr'
-                    ? `${eligibleItems.length} çalışan için toplam ${fmtTL(totalSalary)} TL maaş${totalSupplement > 0 ? ` + ${fmtTL(totalSupplement)} TL ek ücret` : ''}${totalDeduction > 0 ? ` − ${fmtTL(totalDeduction)} TL devam kesintisi` : ''} ödemesi oluşturulacak ve muhasebe kasa defterine (Nakit TL) işlenecek.`
-                    : `${eligibleItems.length} salary payment records totaling ${fmtTL(totalSalary)} TL${totalSupplement > 0 ? ` + ${fmtTL(totalSupplement)} TL supplement` : ''}${totalDeduction > 0 ? ` − ${fmtTL(totalDeduction)} TL absence deduction` : ''} will be created and recorded in the accounting ledger (Cash TL).`}
+                    ? `${eligibleItems.length} çalışan için toplam ${fmtTL(totalSalary)} TL maaş${totalSupplement > 0 ? ` + ${fmtTL(totalSupplement)} TL ek ücret` : ''}${totalDeduction > 0 ? ` − ${fmtTL(totalDeduction)} TL devam kesintisi` : ''}${totalLeaveDeduction > 0 ? ` − ${fmtTL(totalLeaveDeduction)} TL izin kesintisi` : ''} ödemesi oluşturulacak ve muhasebe kasa defterine (Nakit TL) işlenecek.`
+                    : `${eligibleItems.length} salary payment records totaling ${fmtTL(totalSalary)} TL${totalSupplement > 0 ? ` + ${fmtTL(totalSupplement)} TL supplement` : ''}${totalDeduction > 0 ? ` − ${fmtTL(totalDeduction)} TL absence deduction` : ''}${totalLeaveDeduction > 0 ? ` − ${fmtTL(totalLeaveDeduction)} TL leave deduction` : ''} will be created and recorded in the accounting ledger (Cash TL).`}
                 </p>
               </div>
             </>

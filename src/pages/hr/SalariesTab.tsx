@@ -20,6 +20,8 @@ import {
   useAllSalaryPaymentsQuery,
   useAdvancesQuery,
   useHrMonthlyAttendanceQuery,
+  useHrMonthlyLeavesQuery,
+  countLeaveDaysInMonth,
   useHrSettingsQuery,
   type HrEmployee,
   type HrSalaryPaymentLocal,
@@ -102,10 +104,14 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
   const { data: allSalaryPayments = [], isLoading } = useAllSalaryPaymentsQuery()
   const { data: advances = [] } = useAdvancesQuery(year, month)
   const { data: monthlyAttendance = [] } = useHrMonthlyAttendanceQuery(year, month)
+  const { data: monthlyLeaves = [] } = useHrMonthlyLeavesQuery(year, month)
   const { data: hrSettings } = useHrSettingsQuery()
   const supplementTl = hrSettings?.supplement_tl ?? 4000
   const fullDayDivisor = hrSettings?.absence_full_day_divisor ?? 30
   const halfDayDivisor = hrSettings?.absence_half_day_divisor ?? 60
+  const hourlyDivisor = hrSettings?.absence_hourly_divisor ?? 240
+  const dailyDeductionEnabled = hrSettings?.daily_deduction_enabled ?? true
+  const hourlyDeductionEnabled = hrSettings?.hourly_deduction_enabled ?? true
 
   const monthNames = lang === 'tr' ? MONTH_NAMES_TR : MONTH_NAMES_EN
   const periodLabel = `${monthNames[month - 1]} ${year}`
@@ -143,13 +149,45 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
     const map = new Map<string, number>()
     for (const emp of activeEmployees) {
       const empAttendance = monthlyAttendance.filter((a) => a.employee_id === emp.id)
-      const absentDays = empAttendance.filter((a) => a.status === 'absent').length
-      const halfDays = empAttendance.filter((a) => a.status === 'half_day').length
-      const deduction = Math.round((emp.salary_tl * absentDays) / fullDayDivisor) + Math.round((emp.salary_tl * halfDays) / halfDayDivisor)
+      const nonExempt = empAttendance.filter((a) => !a.deduction_exempt)
+
+      let deduction = 0
+
+      if (dailyDeductionEnabled) {
+        const absentDays = nonExempt.filter((a) => a.status === 'absent').length
+        const halfDays = nonExempt.filter((a) => a.status === 'half_day').length
+        deduction +=
+          Math.round((emp.salary_tl * absentDays) / fullDayDivisor) +
+          Math.round((emp.salary_tl * halfDays) / halfDayDivisor)
+      }
+
+      if (hourlyDeductionEnabled) {
+        const totalAbsentHours = nonExempt.reduce((sum, a) => sum + (a.absent_hours ?? 0), 0)
+        deduction += Math.round((emp.salary_tl * totalAbsentHours) / hourlyDivisor)
+      }
+
       if (deduction > 0) map.set(emp.id, deduction)
     }
     return map
-  }, [monthlyAttendance, activeEmployees, fullDayDivisor, halfDayDivisor])
+  }, [monthlyAttendance, activeEmployees, fullDayDivisor, halfDayDivisor, hourlyDivisor, dailyDeductionEnabled, hourlyDeductionEnabled])
+
+  /* Map of employee_id → unpaid leave deduction for this period */
+  const unpaidLeaveDeductionByEmp = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const emp of activeEmployees) {
+      const empUnpaidLeaves = monthlyLeaves.filter(
+        (l) => l.employee_id === emp.id && l.leave_type === 'unpaid',
+      )
+      const unpaidDays = empUnpaidLeaves.reduce(
+        (sum, l) => sum + countLeaveDaysInMonth(l, year, month),
+        0,
+      )
+      if (unpaidDays > 0) {
+        map.set(emp.id, Math.round((emp.salary_tl * unpaidDays) / fullDayDivisor))
+      }
+    }
+    return map
+  }, [monthlyLeaves, activeEmployees, fullDayDivisor, year, month])
 
 
   /* Build bulk payout items: employees not yet paid this period */
@@ -159,12 +197,14 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
       .map((e) => {
         const hasSupp = !e.is_insured && e.receives_supplement
         const deduction = attendanceDeductionByEmp.get(e.id) ?? 0
+        const leaveDeduction = unpaidLeaveDeductionByEmp.get(e.id) ?? 0
         return {
           employee_id: e.id,
           employee_name: e.full_name,
           amount_tl: e.salary_tl,
           supplement_tl: hasSupp ? supplementTl : 0,
           attendance_deduction_tl: deduction,
+          unpaid_leave_deduction_tl: leaveDeduction,
           period: periodLabel,
           description:
             lang === 'tr'
@@ -172,7 +212,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
               : `${e.full_name} — ${periodLabel} Salary Payment`,
         }
       })
-  }, [activeEmployees, paidByEmp, periodLabel, lang, attendanceDeductionByEmp, supplementTl])
+  }, [activeEmployees, paidByEmp, periodLabel, lang, attendanceDeductionByEmp, unpaidLeaveDeductionByEmp, supplementTl])
 
   const unpaidCount = bulkItems.length
   const paidCount = paidByEmp.size
@@ -311,17 +351,20 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-56">{lang === 'tr' ? 'Çalışan' : 'Employee'}</TableHead>
+                <TableHead className="w-48">{lang === 'tr' ? 'Çalışan' : 'Employee'}</TableHead>
                 <TableHead>{lang === 'tr' ? 'Rol' : 'Role'}</TableHead>
                 <TableHead className="text-right">
                   {lang === 'tr' ? 'Brüt Maaş' : 'Gross Salary'}
                 </TableHead>
                 <TableHead className="text-right">
-                  {lang === 'tr' ? 'Sigorta Elden Ödeme' : 'Insurance Supplement'}
+                  {lang === 'tr' ? 'Sigorta Elden' : 'Supplement'}
                 </TableHead>
                 <TableHead className="text-right">{lang === 'tr' ? 'Avans' : 'Advance'}</TableHead>
                 <TableHead className="text-right">
-                  {lang === 'tr' ? 'Devam Kesintisi' : 'Absence Deduction'}
+                  {lang === 'tr' ? 'Devam Kesintisi' : 'Absence Ded.'}
+                </TableHead>
+                <TableHead className="text-right">
+                  {lang === 'tr' ? 'İzin Kesintisi' : 'Leave Ded.'}
                 </TableHead>
                 <TableHead className="text-right">
                   {lang === 'tr' ? 'Net Ödeme' : 'Net Payment'}
@@ -333,7 +376,8 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                 const advance = salaryAdvanceByEmp.get(emp.id) ?? 0
                 const supplement = !emp.is_insured && emp.receives_supplement ? supplementTl : 0
                 const deduction = attendanceDeductionByEmp.get(emp.id) ?? 0
-                const net = emp.salary_tl + supplement - advance - deduction
+                const leaveDeduction = unpaidLeaveDeductionByEmp.get(emp.id) ?? 0
+                const net = emp.salary_tl + supplement - advance - deduction - leaveDeduction
 
                 return (
                   <TableRow key={emp.id}>
@@ -383,6 +427,17 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                       {deduction > 0 ? (
                         <span className="tabular-nums text-sm font-medium text-red">
                           -{fmtTL(deduction)} TL
+                        </span>
+                      ) : (
+                        <span className="text-xs text-black/25">—</span>
+                      )}
+                    </TableCell>
+
+                    {/* Unpaid leave deduction */}
+                    <TableCell className="text-right">
+                      {leaveDeduction > 0 ? (
+                        <span className="tabular-nums text-sm font-medium text-red">
+                          -{fmtTL(leaveDeduction)} TL
                         </span>
                       ) : (
                         <span className="text-xs text-black/25">—</span>

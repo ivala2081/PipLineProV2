@@ -63,6 +63,7 @@ import { DocumentsDialog } from './DocumentsDialog'
 import { BonusesTab } from './bonuses'
 import { AttendanceTab } from './AttendanceTab'
 import { SalariesTab } from './SalariesTab'
+import { LeavesTab } from './LeavesTab'
 import { SettingsTab } from './SettingsTab'
 import type { HrEmployeeRole } from '@/lib/database.types'
 
@@ -346,6 +347,9 @@ export function HrPage() {
           <TabsTrigger value="attendance">
             {lang === 'tr' ? 'Devam Takibi' : 'Attendance'}
           </TabsTrigger>
+          <TabsTrigger value="leaves">
+            {lang === 'tr' ? 'İzinler' : 'Leaves'}
+          </TabsTrigger>
           {canManage && (
             <TabsTrigger value="settings">
               <GearSix size={14} className="mr-1" />
@@ -606,6 +610,13 @@ export function HrPage() {
         <TabsContent value="attendance">
           <div className="pt-lg">
             <AttendanceTab employees={employees} canManage={canManage} lang={lang} />
+          </div>
+        </TabsContent>
+
+        {/* ── Leaves Tab ── */}
+        <TabsContent value="leaves">
+          <div className="pt-lg">
+            <LeavesTab employees={employees} canManage={canManage} lang={lang} />
           </div>
         </TabsContent>
 

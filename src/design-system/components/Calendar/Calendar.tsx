@@ -1,5 +1,7 @@
 import { CaretLeft, CaretRight } from '@phosphor-icons/react'
 import type { ComponentProps, FC } from 'react'
+import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '@ds/utils'
 import { Button } from '../Button'
 
@@ -12,21 +14,20 @@ export type CalendarProps = ComponentProps<'div'> & {
   onYearChange?: (year: number) => void
 }
 
-const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
-const MONTHS = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-]
+function getLocalizedDays(locale: string): string[] {
+  const base = new Date(2024, 0, 7) // Sunday
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(base)
+    d.setDate(base.getDate() + i)
+    return d.toLocaleDateString(locale, { weekday: 'short' }).slice(0, 2)
+  })
+}
+
+function getLocalizedMonths(locale: string): string[] {
+  return Array.from({ length: 12 }, (_, i) =>
+    new Date(2024, i, 1).toLocaleDateString(locale, { month: 'long' }),
+  )
+}
 
 function getDaysInMonth(month: number, year: number) {
   return new Date(year, month + 1, 0).getDate()
@@ -46,6 +47,11 @@ export const Calendar: FC<CalendarProps> = ({
   onYearChange,
   ...props
 }) => {
+  const { i18n } = useTranslation()
+  const locale = i18n.language === 'tr' ? 'tr-TR' : 'en-US'
+  const MONTHS = useMemo(() => getLocalizedMonths(locale), [locale])
+  const DAYS = useMemo(() => getLocalizedDays(locale), [locale])
+
   const now = new Date()
   const month = controlledMonth ?? now.getMonth()
   const year = controlledYear ?? now.getFullYear()

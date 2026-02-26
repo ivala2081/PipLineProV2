@@ -25,6 +25,7 @@ export type PspScope = 'local' | 'global'
 export type PspProvider = 'unipayment'
 export type HrBonusType = 'fixed' | 'percentage' | 'tiered' | 'custom' | 'variable'
 export type HrAttendanceStatus = 'present' | 'absent' | 'late' | 'half_day'
+export type HrLeaveType = 'paid' | 'unpaid' | 'annual'
 export type HrDocumentType =
   | 'ikametgah'
   | 'adli_sicil'
@@ -570,6 +571,8 @@ export interface Database {
           status: HrAttendanceStatus
           check_in: string | null
           check_out: string | null
+          absent_hours: number | null
+          deduction_exempt: boolean
           notes: string | null
           recorded_by: string | null
           created_at: string
@@ -582,6 +585,8 @@ export interface Database {
           status?: HrAttendanceStatus
           check_in?: string | null
           check_out?: string | null
+          absent_hours?: number | null
+          deduction_exempt?: boolean
           notes?: string | null
           recorded_by?: string | null
           created_at?: string
@@ -594,6 +599,8 @@ export interface Database {
           status?: HrAttendanceStatus
           check_in?: string | null
           check_out?: string | null
+          absent_hours?: number | null
+          deduction_exempt?: boolean
           notes?: string | null
           recorded_by?: string | null
           created_at?: string
@@ -615,6 +622,58 @@ export interface Database {
           },
         ]
       }
+      /* ──────────── HR Leaves ──────────── */
+      hr_leaves: {
+        Row: {
+          id: string
+          employee_id: string
+          organization_id: string
+          leave_type: HrLeaveType
+          start_date: string
+          end_date: string
+          notes: string | null
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          employee_id: string
+          organization_id: string
+          leave_type: HrLeaveType
+          start_date: string
+          end_date: string
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          employee_id?: string
+          organization_id?: string
+          leave_type?: HrLeaveType
+          start_date?: string
+          end_date?: string
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'hr_leaves_employee_id_fkey'
+            columns: ['employee_id']
+            isOneToOne: false
+            referencedRelation: 'hr_employees'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'hr_leaves_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       /* ──────────── HR Settings ──────────── */
       hr_settings: {
         Row: {
@@ -624,6 +683,12 @@ export interface Database {
           supplement_tl: number
           absence_full_day_divisor: number
           absence_half_day_divisor: number
+          absence_hourly_divisor: number
+          daily_deduction_enabled: boolean
+          hourly_deduction_enabled: boolean
+          standard_check_in: string
+          standard_check_out: string
+          timezone: string
           updated_at: string
         }
         Insert: {
@@ -632,12 +697,24 @@ export interface Database {
           supplement_tl?: number
           absence_full_day_divisor?: number
           absence_half_day_divisor?: number
+          absence_hourly_divisor?: number
+          daily_deduction_enabled?: boolean
+          hourly_deduction_enabled?: boolean
+          standard_check_in?: string
+          standard_check_out?: string
+          timezone?: string
         }
         Update: {
           roles?: string[]
           supplement_tl?: number
           absence_full_day_divisor?: number
           absence_half_day_divisor?: number
+          absence_hourly_divisor?: number
+          daily_deduction_enabled?: boolean
+          hourly_deduction_enabled?: boolean
+          standard_check_in?: string
+          standard_check_out?: string
+          timezone?: string
         }
         Relationships: [
           {
