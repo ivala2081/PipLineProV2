@@ -9,7 +9,6 @@ import {
   User,
   CreditCard,
   CurrencyCircleDollar,
-  Tag,
   UserCircle,
 } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
@@ -285,7 +284,7 @@ export function TransferFormContent({
         raw_amount: Math.abs(transfer.amount),
         currency: transfer.currency,
         type_id: transfer.type_id,
-        exchange_rate: transfer.exchange_rate ?? 1,
+        exchange_rate: normalizedFetchedRate ?? transfer.exchange_rate ?? 1,
         crm_id: transfer.crm_id ?? '',
         meta_id: transfer.meta_id ?? '',
         employee_id: (transfer as TransferRow & { employee_id?: string }).employee_id ?? '',
@@ -314,10 +313,10 @@ export function TransferFormContent({
   }, [transferId])
 
   useEffect(() => {
-    if (!isEdit && !manualRate && normalizedFetchedRate != null) {
+    if (!manualRate && normalizedFetchedRate != null) {
       form.setValue('exchange_rate', normalizedFetchedRate)
     }
-  }, [normalizedFetchedRate, form, isEdit, manualRate])
+  }, [normalizedFetchedRate, form, manualRate])
 
   useEffect(() => {
     if (rateError) {
@@ -961,7 +960,6 @@ export function TransferFormContent({
               </Field>
             </div>
           </div>
-
         </Card>
       </div>
 

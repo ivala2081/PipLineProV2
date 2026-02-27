@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { Plus, UploadSimple } from '@phosphor-icons/react'
 import { useLookupQueries } from '@/hooks/queries/useLookupQueries'
 import { useTransfersQuery } from '@/hooks/queries/useTransfersQuery'
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
+import { queryKeys } from '@/lib/queryKeys'
 import type { TransferRow } from '@/hooks/useTransfers'
 import { Button, Tabs, TabsList, TabsTrigger, TabsContent, PageHeader } from '@ds'
 import { TransfersTable } from './TransfersTable'
@@ -17,6 +19,8 @@ export function TransfersPage() {
   const navigate = useNavigate()
   const lookupData = useLookupQueries()
   const transfers = useTransfersQuery()
+
+  useRealtimeSubscription('transfers', [queryKeys.transfers.all, ['dashboard']])
 
   const [deleteTarget, setDeleteTarget] = useState<TransferRow | null>(null)
   const [importOpen, setImportOpen] = useState(false)

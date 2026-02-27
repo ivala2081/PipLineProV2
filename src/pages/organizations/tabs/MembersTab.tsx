@@ -123,7 +123,7 @@ export function MembersTab({ orgId, canManage, assignableRoles = [], isGod }: Me
           <EmptyState icon={Users} title={t('organizations.members.empty')} />
         ) : (
           <div className="rounded-lg border border-black/5 bg-bg1">
-            <Table>
+            <Table cardOnMobile>
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('organizations.members.columns.name')}</TableHead>
@@ -150,7 +150,7 @@ export function MembersTab({ orgId, canManage, assignableRoles = [], isGod }: Me
                       className="cursor-pointer"
                       onClick={() => navigate(`/members/${member.user_id}`)}
                     >
-                      <TableCell>
+                      <TableCell data-label={t('organizations.members.columns.name')}>
                         <div className="flex items-center gap-sm">
                           <UserAvatar
                             src={member.profile?.avatar_url}
@@ -162,10 +162,10 @@ export function MembersTab({ orgId, canManage, assignableRoles = [], isGod }: Me
                           <span className="font-medium">{displayName}</span>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell data-label={t('organizations.members.columns.status')}>
                         <LastSeen lastSeenAt={member.profile?.last_seen_at} />
                       </TableCell>
-                      <TableCell>
+                      <TableCell data-label={t('organizations.members.columns.role')}>
                         <Tag
                           variant={
                             member.role === 'admin'
@@ -178,11 +178,14 @@ export function MembersTab({ orgId, canManage, assignableRoles = [], isGod }: Me
                           {t(`memberProfile.roles.${member.role}`)}
                         </Tag>
                       </TableCell>
-                      <TableCell className="text-sm text-black/60">
+                      <TableCell
+                        data-label={t('organizations.members.columns.joined')}
+                        className="text-sm text-black/60"
+                      >
                         {new Date(member.created_at).toLocaleDateString()}
                       </TableCell>
                       {canManage && (
-                        <TableCell>
+                        <TableCell isActions>
                           {canActOnMember && (
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>

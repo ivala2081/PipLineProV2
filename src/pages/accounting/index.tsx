@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { Plus, UploadSimple, DownloadSimple } from '@phosphor-icons/react'
 import { localYMD } from '@/lib/date'
 import { useAccountingQuery } from '@/hooks/queries/useAccountingQuery'
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
+import { queryKeys } from '@/lib/queryKeys'
 import { useWalletsQuery } from '@/hooks/queries/useWalletsQuery'
 import type { AccountingEntry } from '@/lib/database.types'
 import { Button, Tabs, TabsList, TabsTrigger, TabsContent, PageHeader } from '@ds'
@@ -21,6 +23,8 @@ export function AccountingPage() {
   const { t } = useTranslation('pages')
   const accounting = useAccountingQuery()
   const wallets = useWalletsQuery()
+
+  useRealtimeSubscription('accounting_entries', [queryKeys.accounting.all])
 
   const [activeTab, setActiveTab] = useState('ledger')
   const [entryDialogOpen, setEntryDialogOpen] = useState(false)

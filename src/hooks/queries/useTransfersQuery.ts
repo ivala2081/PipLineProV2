@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/app/providers/AuthProvider'
@@ -99,18 +100,47 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
   const { user } = useAuth()
   const { currentOrg } = useOrganization()
   const queryClient = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [page, setPage] = useState(1)
-  const [filters, setFilters] = useState<TransferFilters>(EMPTY_FILTERS)
+
+  // Read initial filters from URL search params
+  const initialFilters = useMemo<TransferFilters>(() => {
+    const get = (key: string) => searchParams.get(key) || null
+    return {
+      search: get('search'),
+      categoryType: get('categoryType'),
+      currency: get('currency'),
+      paymentMethodId: get('paymentMethodId'),
+      typeId: get('typeId'),
+      dateFrom: get('dateFrom'),
+      dateTo: get('dateTo'),
+      amountMin: get('amountMin'),
+      amountMax: get('amountMax'),
+    }
+    // Only read on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const [filters, setFilters] = useState<TransferFilters>(initialFilters)
   const prevOrgId = useRef(currentOrg?.id)
 
   // IMPORTANT: Reset pagination when org changes
   useEffect(() => {
     if (currentOrg?.id !== prevOrgId.current) {
-      setPage(1) // eslint-disable-line react-hooks/set-state-in-effect -- intentional reset on org switch
+      setPage(1)
       setFilters(EMPTY_FILTERS)
       prevOrgId.current = currentOrg?.id
     }
   }, [currentOrg?.id])
+
+  // Sync filter state → URL params after render (avoids setState-during-render warning)
+  useEffect(() => {
+    const params = new URLSearchParams()
+    for (const [k, v] of Object.entries(filters)) {
+      if (v != null && v !== '') params.set(k, v)
+    }
+    setSearchParams(params, { replace: true })
+  }, [filters, setSearchParams])
 
   const setFilter = useCallback(
     <K extends keyof TransferFilters>(key: K, value: TransferFilters[K]) => {
@@ -452,7 +482,7 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
     },
   })
 
-  // Delete mutation
+  // Delete mutation — optimistic
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       // hr_bonus_payments.transfer_id FK has ON DELETE CASCADE,
@@ -461,7 +491,34 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
 
       if (error) throw error
     },
-    onSuccess: () => {
+    onMutate: async (id: string) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: queryKeys.transfers.lists() })
+      // Snapshot current cache
+      const snapshot = queryClient.getQueriesData({ queryKey: queryKeys.transfers.lists() })
+      // Optimistically remove the item from all cached transfer lists
+      queryClient.setQueriesData(
+        { queryKey: queryKeys.transfers.lists() },
+        (old: { data: TransferRow[]; count: number } | undefined) => {
+          if (!old) return old
+          return {
+            ...old,
+            data: old.data.filter((t: TransferRow) => t.id !== id),
+            count: Math.max(0, old.count - 1),
+          }
+        },
+      )
+      return { snapshot }
+    },
+    onError: (_err, _id, context) => {
+      // Restore snapshot on failure
+      if (context?.snapshot) {
+        for (const [key, data] of context.snapshot) {
+          queryClient.setQueryData(key, data)
+        }
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.transfers.lists() })
       queryClient.invalidateQueries({ queryKey: hrKeys.bonusPayments(currentOrg?.id ?? '') })
     },

@@ -5,7 +5,7 @@ import { useOrganization } from '@/app/providers/OrganizationProvider'
 
 /* ── Types ─────────────────────────────────────────── */
 
-export type DashboardPeriod = 'today' | 'week' | 'month'
+export type DashboardPeriod = 'today' | 'week' | 'month' | 'custom'
 
 export interface CurrencySplit {
   /** Raw amount in TRY for TL-denominated transfers */
@@ -51,7 +51,11 @@ export interface DashboardKpis {
 
 /* ── Date range helpers ────────────────────────────── */
 
-export function getDateRange(period: DashboardPeriod): { from: string; to: string } {
+export function getDateRange(
+  period: DashboardPeriod,
+  customFrom?: string,
+  customTo?: string,
+): { from: string; to: string } {
   const now = new Date()
   const todayStr = localYMD(now)
   const to = localDayEnd(todayStr)
@@ -68,11 +72,20 @@ export function getDateRange(period: DashboardPeriod): { from: string; to: strin
     }
     case 'month':
       return { from: localDayStart(`${todayStr.slice(0, 7)}-01`), to }
+    case 'custom': {
+      const cf = customFrom || todayStr
+      const ct = customTo || todayStr
+      return { from: localDayStart(cf), to: localDayEnd(ct) }
+    }
   }
 }
 
-export function getPreviousDateRange(period: DashboardPeriod): { from: string; to: string } {
-  const current = getDateRange(period)
+export function getPreviousDateRange(
+  period: DashboardPeriod,
+  customFrom?: string,
+  customTo?: string,
+): { from: string; to: string } {
+  const current = getDateRange(period, customFrom, customTo)
   const fromDate = new Date(current.from)
 
   switch (period) {
@@ -100,6 +113,17 @@ export function getPreviousDateRange(period: DashboardPeriod): { from: string; t
       return {
         from: localDayStart(localYMD(prevMonthStart)),
         to: localDayEnd(localYMD(prevMonthEnd)),
+      }
+    }
+    case 'custom': {
+      // Equal-length preceding window
+      const toDate = new Date(current.to)
+      const durationMs = toDate.getTime() - fromDate.getTime()
+      const prevTo = new Date(fromDate.getTime() - 1)
+      const prevFrom = new Date(prevTo.getTime() - durationMs)
+      return {
+        from: localDayStart(localYMD(prevFrom)),
+        to: localDayEnd(localYMD(prevTo)),
       }
     }
   }
@@ -238,11 +262,11 @@ async function fetchKpis(orgId: string, from: string, to: string): Promise<Dashb
   return computeKpis((data ?? []) as RawTransferRow[])
 }
 
-export function useDashboardQuery(period: DashboardPeriod) {
+export function useDashboardQuery(period: DashboardPeriod, customFrom?: string, customTo?: string) {
   const { currentOrg } = useOrganization()
 
-  const currentRange = getDateRange(period)
-  const prevRange = getPreviousDateRange(period)
+  const currentRange = getDateRange(period, customFrom, customTo)
+  const prevRange = getPreviousDateRange(period, customFrom, customTo)
 
   const currentQuery = useQuery({
     queryKey: ['dashboard', 'current', currentOrg?.id, period, currentRange.from],

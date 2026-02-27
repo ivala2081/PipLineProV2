@@ -15,7 +15,8 @@
     "members": "Members",
     "organizations": "Organizations",
     "security": "Security",
-    "hr": "HR"
+    "hr": "HR",
+    "settings": "Settings"
   },
   "layout": {
     "noOrganization": "No Organization",
@@ -51,7 +52,8 @@
     "period": {
       "today": "Today",
       "week": "This Week",
-      "month": "This Month"
+      "month": "This Month",
+      "custom": "Custom"
     },
     "kpi": {
       "deposits": "Deposits",
@@ -402,7 +404,9 @@
       "settingsChangeWarning": "Be aware that changing these settings may cause numbers to become unrealistic. Enter your manager PIN to continue.",
       "managerPin": "Manager PIN",
       "pinConfirm": "Confirm",
-      "pinInvalid": "Invalid PIN. Please try again."
+      "pinInvalid": "Invalid PIN. Please try again.",
+      "pinRateLimited": "Too many attempts. Please wait a few minutes.",
+      "pinVerifying": "Verifying..."
     },
     "validation": {
       "fullNameRequired": "Full name is required",
@@ -1450,5 +1454,24 @@
       "avatarRemoved": "Profile picture removed"
     },
     "notesHint": "Only visible to admins"
+  },
+  "settings": {
+    "pin": {
+      "title": "Organization PIN",
+      "description": "This PIN is required for sensitive operations like PSP management and rate changes.",
+      "pinIsSet": "PIN is configured",
+      "noPinSet": "No PIN set — sensitive operations are unprotected",
+      "setPin": "Set PIN",
+      "changePin": "Change PIN",
+      "newPin": "New PIN",
+      "confirmPin": "Confirm PIN",
+      "mismatch": "PINs do not match.",
+      "invalidFormat": "PIN must be 4-6 digits.",
+      "saved": "Organization PIN updated.",
+      "saving": "Saving...",
+      "unauthorized": "Only admins can change the PIN.",
+      "error": "Failed to update PIN.",
+      "hint": "PIN must be 4-6 digits. All org members will use this PIN."
+    }
   }
 }

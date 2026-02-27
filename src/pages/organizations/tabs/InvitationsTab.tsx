@@ -151,7 +151,7 @@ export function InvitationsTab({ orgId }: InvitationsTabProps) {
           </Card>
         ) : (
           <div className="rounded-lg border border-black/5 bg-bg1">
-            <Table>
+            <Table cardOnMobile>
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('organizations.invitations.columns.email')}</TableHead>
@@ -165,13 +165,18 @@ export function InvitationsTab({ orgId }: InvitationsTabProps) {
               <TableBody>
                 {filtered.map((inv) => (
                   <TableRow key={inv.id}>
-                    <TableCell className="font-medium">{inv.email}</TableCell>
-                    <TableCell>
+                    <TableCell
+                      data-label={t('organizations.invitations.columns.email')}
+                      className="font-medium"
+                    >
+                      {inv.email}
+                    </TableCell>
+                    <TableCell data-label={t('organizations.invitations.columns.role')}>
                       <Tag variant={inv.role === 'admin' ? 'green' : 'blue'}>
                         {t(`organizations.members.roles.${inv.role}`)}
                       </Tag>
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label={t('organizations.invitations.columns.status')}>
                       <Tag variant={statusVariant[inv.status] ?? 'default'}>
                         <span className="flex items-center gap-1">
                           {statusIcon[inv.status]}
@@ -179,13 +184,19 @@ export function InvitationsTab({ orgId }: InvitationsTabProps) {
                         </span>
                       </Tag>
                     </TableCell>
-                    <TableCell className="text-sm text-black/60">
+                    <TableCell
+                      data-label={t('organizations.invitations.columns.createdAt')}
+                      className="text-sm text-black/60"
+                    >
                       {formatDate(inv.created_at)}
                     </TableCell>
-                    <TableCell className="text-sm text-black/60">
+                    <TableCell
+                      data-label={t('organizations.invitations.columns.expiresAt')}
+                      className="text-sm text-black/60"
+                    >
                       {formatDate(inv.expires_at)}
                     </TableCell>
-                    <TableCell>
+                    <TableCell isActions>
                       {inv.status === 'pending' && (
                         <Button
                           variant="outline"

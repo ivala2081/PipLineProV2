@@ -29,6 +29,8 @@ import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { usePspDashboardQuery, type PspSummary } from '@/hooks/queries/usePspDashboardQuery'
 import { useLookupMutation } from '@/hooks/queries/useLookupMutation'
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
+import { queryKeys } from '@/lib/queryKeys'
 
 function formatCurrency(value: number): string {
   return value.toLocaleString('en-US', {
@@ -149,6 +151,8 @@ export function PspsPage() {
 
   const { psps, isLoading } = usePspDashboardQuery()
   const pspMutation = useLookupMutation('psps')
+
+  useRealtimeSubscription('psps', [queryKeys.pspDashboard.all])
 
   const [scopeTab, setScopeTab] = useState<'local' | 'global'>('local')
   const [addDialogOpen, setAddDialogOpen] = useState(false)

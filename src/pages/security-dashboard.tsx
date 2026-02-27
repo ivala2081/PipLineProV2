@@ -10,7 +10,6 @@ import {
   Lightning,
   Clock,
   Database,
-  Plugs,
 } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/app/providers/AuthProvider'
@@ -381,12 +380,7 @@ export function SecurityDashboard() {
               </Table>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center gap-sm rounded-xl border border-black/10 bg-bg1 py-20">
-              <div className="flex size-12 items-center justify-center rounded-full bg-black/[0.04]">
-                <Shield size={20} className="text-black/30" />
-              </div>
-              <p className="text-sm text-black/60">{t('security.noSuspiciousActivity')}</p>
-            </div>
+            <EmptyState icon={Shield} title={t('security.noSuspiciousActivity')} />
           )}
         </TabsContent>
 
@@ -456,12 +450,7 @@ export function SecurityDashboard() {
               </Table>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center gap-sm rounded-xl border border-black/10 bg-bg1 py-20">
-              <div className="flex size-12 items-center justify-center rounded-full bg-black/[0.04]">
-                <Eye size={20} className="text-black/30" />
-              </div>
-              <p className="text-sm text-black/60">{t('security.noGodActivity')}</p>
-            </div>
+            <EmptyState icon={Eye} title={t('security.noGodActivity')} />
           )}
         </TabsContent>
 

@@ -222,43 +222,123 @@ async function handleGeminiRequest(
 
 /* ── Exchange Rate API handlers ────────────────────────────────────── */
 
+async function fetchRateExchangeRateApi(currency: string): Promise<number> {
+  if (!EXCHANGE_RATE_API_KEY) throw new Error('No API key')
+  const res = await fetch(
+    `https://v6.exchangerate-api.com/v6/${EXCHANGE_RATE_API_KEY}/pair/${currency}/TRY`,
+  )
+  if (!res.ok) throw new Error(`exchangerate-api: ${res.status}`)
+  const json = await res.json()
+  if (json?.result !== 'success') throw new Error('exchangerate-api error')
+  const rate = json?.conversion_rate
+  if (typeof rate !== 'number' || rate <= 0) throw new Error('Invalid rate')
+  return rate
+}
+
+async function fetchRateYahooFinance(currency: string): Promise<number> {
+  const symbol = `${currency}TRY=X`
+  const res = await fetch(
+    `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`,
+  )
+  if (!res.ok) throw new Error(`yahoo: ${res.status}`)
+  const json = await res.json()
+  const rate = json?.chart?.result?.[0]?.meta?.regularMarketPrice
+  if (typeof rate !== 'number' || rate <= 0) throw new Error('Invalid rate')
+  return rate
+}
+
+async function fetchRateTcmb(currency: string): Promise<number> {
+  const res = await fetch('https://www.tcmb.gov.tr/kurlar/today.xml')
+  if (!res.ok) throw new Error(`tcmb: ${res.status}`)
+  const text = await res.text()
+  // Parse XML to find currency rate
+  const regex = new RegExp(
+    `<Currency[^>]*CurrencyCode="${currency}"[^>]*>[\\s\\S]*?<BanknoteSelling>([\\d.]+)</BanknoteSelling>`,
+  )
+  const match = text.match(regex)
+  if (!match?.[1]) throw new Error(`tcmb: rate not found for ${currency}`)
+  const rate = parseFloat(match[1])
+  if (isNaN(rate) || rate <= 0) throw new Error('Invalid rate from TCMB')
+  return rate
+}
+
+async function fetchRateOpenErApi(currency: string): Promise<number> {
+  const res = await fetch(`https://open.er-api.com/v6/latest/${currency}`)
+  if (!res.ok) throw new Error(`open-er-api: ${res.status}`)
+  const json = await res.json()
+  if (json?.result !== 'success') throw new Error('open-er-api error')
+  const rate = json?.rates?.TRY
+  if (typeof rate !== 'number' || rate <= 0) throw new Error('Invalid rate')
+  return rate
+}
+
+async function fetchRateFawazahmed0(currency: string): Promise<number> {
+  const from = currency.toLowerCase()
+  const res = await fetch(
+    `https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/${from}.json`,
+  )
+  if (!res.ok) throw new Error(`fawazahmed0: ${res.status}`)
+  const json = await res.json()
+  const rate = json?.[from]?.['try']
+  if (typeof rate !== 'number' || rate <= 0) throw new Error('Invalid rate')
+  return rate
+}
+
 async function handleExchangeRateRequest(
   action: string,
   params: Record<string, unknown>,
   origin?: string,
 ): Promise<Response> {
-  if (!EXCHANGE_RATE_API_KEY) {
-    return errorResponse(500, 'EXCHANGE_RATE_API_KEY not configured', origin)
-  }
-
   try {
-    let url: URL
-
     switch (action) {
+      case 'getRate': {
+        const currency = String(params.currency || 'USD')
+        if (currency === 'TL') return jsonResponse({ rate: 1 }, 200, origin)
+
+        const providers = [
+          { name: 'ExchangeRate-API', fn: () => fetchRateExchangeRateApi(currency) },
+          { name: 'Yahoo Finance', fn: () => fetchRateYahooFinance(currency) },
+          { name: 'TCMB', fn: () => fetchRateTcmb(currency) },
+          { name: 'Open ER API', fn: () => fetchRateOpenErApi(currency) },
+          { name: 'Fawazahmed0', fn: () => fetchRateFawazahmed0(currency) },
+        ]
+
+        for (const provider of providers) {
+          try {
+            const rate = await provider.fn()
+            return jsonResponse({ rate, provider: provider.name }, 200, origin)
+          } catch {
+            // Try next
+          }
+        }
+        return errorResponse(502, 'All exchange rate providers failed', origin)
+      }
+
       case 'getLatestRates': {
+        // Legacy: forward to freecurrencyapi
+        if (!EXCHANGE_RATE_API_KEY) {
+          return errorResponse(500, 'EXCHANGE_RATE_API_KEY not configured', origin)
+        }
         const { baseCurrency, currencies } = params
-        url = new URL(`${EXCHANGE_RATE_BASE}/latest`)
+        const url = new URL(`${EXCHANGE_RATE_BASE}/latest`)
         url.searchParams.set('apikey', EXCHANGE_RATE_API_KEY)
         if (baseCurrency) url.searchParams.set('base_currency', String(baseCurrency))
         if (currencies) url.searchParams.set('currencies', String(currencies))
-        break
+
+        const response = await fetch(url.toString(), {
+          headers: { accept: 'application/json' },
+        })
+        if (!response.ok) {
+          const errorText = await response.text()
+          return errorResponse(response.status, `ExchangeRate API error: ${errorText}`, origin)
+        }
+        const data = await response.json()
+        return jsonResponse(data, 200, origin)
       }
 
       default:
         return errorResponse(400, `Unknown ExchangeRate action: ${action}`, origin)
     }
-
-    const response = await fetch(url.toString(), {
-      headers: { accept: 'application/json' },
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      return errorResponse(response.status, `ExchangeRate API error: ${errorText}`, origin)
-    }
-
-    const data = await response.json()
-    return jsonResponse(data, 200, origin)
   } catch (error) {
     console.error('[ExchangeRate] Error:', error)
     return errorResponse(500, error instanceof Error ? error.message : 'Unknown error', origin)

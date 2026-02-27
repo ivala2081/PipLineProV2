@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from '@/app/providers/AuthProvider'
 import { OrganizationProvider } from '@/app/providers/OrganizationProvider'
 import { AppToastProvider } from '@/hooks/useToast'
 import { usePresence } from '@/hooks/usePresence'
+import { useMutationErrorHandler } from '@/hooks/useMutationErrorHandler'
 import { AppLayout } from '@/layouts/AppLayout'
 import { PageErrorBoundary } from '@/components/ErrorBoundary'
 import { RoleRoute } from '@/app/components/RoleRoute'
@@ -65,6 +66,9 @@ const OrganizationDetailPage = lazy(() =>
 )
 const SecurityDashboard = lazy(() => import('@/pages/security-dashboard'))
 const HrPage = lazy(() => import('@/pages/hr').then((m) => ({ default: m.HrPage })))
+const SettingsPage = lazy(() =>
+  import('@/pages/settings').then((m) => ({ default: m.SettingsPage })),
+)
 
 /* ------------------------------------------------------------------ */
 /*  Route guards                                                       */
@@ -84,6 +88,8 @@ function PrivateRoute({ children }: { children: ReactNode }) {
 
   // Enable presence tracking for authenticated users
   usePresence()
+  // Global mutation error toasts
+  useMutationErrorHandler()
 
   if (isLoading) return <LoadingScreen />
   if (!user) return <Navigate to="/login" replace />
@@ -289,6 +295,14 @@ export function App() {
                                   <HrPage />
                                 </PageSuspense>
                               </RoleRoute>
+                            }
+                          />
+                          <Route
+                            path="/settings"
+                            element={
+                              <PageSuspense>
+                                <SettingsPage />
+                              </PageSuspense>
                             }
                           />
                           <Route path="*" element={<Navigate to="/" replace />} />

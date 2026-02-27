@@ -28,6 +28,8 @@ import { PinDialog } from '@/pages/transfers/PinDialog'
 import { UserAvatar } from '@/components/UserAvatar'
 import { LastSeen } from '@/components/LastSeen'
 import { usePresenceSubscription } from '@/hooks/usePresenceSubscription'
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
+import { queryKeys } from '@/lib/queryKeys'
 import { canManageMembers, getAssignableRoles } from '@/lib/roles'
 
 type RoleKey = 'manager' | 'admin' | 'operation'
@@ -52,6 +54,8 @@ export function MembersPage() {
   const assignableRoles = getAssignableRoles(membership?.role, isGod)
 
   const { data: rawMembers = [], isLoading } = useOrgMembersQuery(orgId)
+
+  useRealtimeSubscription('organization_members', [queryKeys.organizations.members(orgId)])
 
   const membersByRole = ROLE_ORDER.reduce(
     (acc, role) => {

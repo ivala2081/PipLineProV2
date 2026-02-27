@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { verifyManagerPin } from '@/lib/managerPin'
+import { useVerifyOrgPin } from '@/hooks/queries/useOrgPinQuery'
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,9 @@ export function ManagerPinDialog({ open, onClose, onConfirm }: ManagerPinDialogP
   const { t } = useTranslation('pages')
   const [pin, setPin] = useState('')
   const [error, setError] = useState('')
+  const verifyPin = useVerifyOrgPin()
+
+  const isVerifying = verifyPin.isPending
 
   const handleClose = () => {
     setPin('')
@@ -30,15 +33,30 @@ export function ManagerPinDialog({ open, onClose, onConfirm }: ManagerPinDialogP
     onClose()
   }
 
-  const handleConfirm = () => {
-    if (!verifyManagerPin(pin)) {
-      setError(t('transfers.settings.pinInvalid'))
-      return
-    }
-    setPin('')
+  const handleConfirm = async () => {
+    if (!pin || isVerifying) return
     setError('')
-    onConfirm()
-    onClose()
+
+    try {
+      const valid = await verifyPin.mutateAsync(pin)
+      if (!valid) {
+        setError(t('transfers.settings.pinInvalid'))
+        return
+      }
+      setPin('')
+      setError('')
+      onConfirm()
+      onClose()
+    } catch (err) {
+      const msg = (err as Error)?.message ?? ''
+      if (msg.includes('RATE_LIMITED')) {
+        setError(
+          t('transfers.settings.pinRateLimited', 'Too many attempts. Please wait a few minutes.'),
+        )
+      } else {
+        setError(t('transfers.settings.pinInvalid'))
+      }
+    }
   }
 
   return (
@@ -64,17 +82,25 @@ export function ManagerPinDialog({ open, onClose, onConfirm }: ManagerPinDialogP
                 setError('')
               }}
               onKeyDown={(e) => e.key === 'Enter' && handleConfirm()}
+              disabled={isVerifying}
             />
             {error && <p className="mt-1 text-xs text-red">{error}</p>}
           </div>
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={handleClose}>
+          <Button type="button" variant="outline" onClick={handleClose} disabled={isVerifying}>
             {t('transfers.settings.cancel')}
           </Button>
-          <Button type="button" variant="filled" onClick={handleConfirm} disabled={!pin}>
-            {t('transfers.settings.pinConfirm')}
+          <Button
+            type="button"
+            variant="filled"
+            onClick={handleConfirm}
+            disabled={!pin || isVerifying}
+          >
+            {isVerifying
+              ? t('transfers.settings.pinVerifying', 'Verifying...')
+              : t('transfers.settings.pinConfirm')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -20,6 +20,7 @@ import {
   CalendarStar,
   Fire,
   CalendarCheck,
+  Hash,
 } from '@phosphor-icons/react'
 import {
   ResponsiveContainer,
@@ -43,11 +44,13 @@ import {
   getPreviousDateRange,
   type DashboardPeriod,
 } from '@/hooks/queries/useDashboardQuery'
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
+import { queryKeys } from '@/lib/queryKeys'
 import { useMonthlyAnalysisQuery } from '@/hooks/queries/useMonthlyAnalysisQuery'
 import { useDashboardRecentQuery } from '@/hooks/queries/useDashboardRecentQuery'
 import type { RecentTransfer } from '@/hooks/queries/useDashboardRecentQuery'
 import type { BreakdownItem } from '@/hooks/queries/useMonthlyAnalysisQuery'
-import { Tag, Tabs, TabsList, TabsTrigger, Skeleton, Grid } from '@ds'
+import { Tag, Tabs, TabsList, TabsTrigger, Skeleton, Grid, EmptyState } from '@ds'
 import { UserAvatar } from '@/components/UserAvatar'
 import { useTheme } from '@ds'
 import { cn } from '@ds/utils'
@@ -182,6 +185,7 @@ function HeroKpiCard({
   splitLeft,
   splitRight,
   className,
+  onClick,
 }: {
   icon: ComponentType<IconProps>
   iconBg: string
@@ -193,13 +197,16 @@ function HeroKpiCard({
   splitLeft?: { label: string; value: string }
   splitRight?: { label: string; value: string }
   className?: string
+  onClick?: () => void
 }) {
   return (
     <div
+      onClick={onClick}
       className={cn(
         'group relative overflow-hidden rounded-2xl border bg-bg1 p-3 md:p-5',
         'border-black/[0.06] transition-all duration-200',
         'hover:border-black/[0.1] hover:shadow-[0_2px_16px_rgba(0,0,0,0.04)]',
+        onClick && 'cursor-pointer',
         className,
       )}
     >
@@ -300,11 +307,7 @@ function ChartSkeleton() {
 /* ── Chart: No Data ──────────────────────────────────── */
 
 function ChartEmpty({ message }: { message: string }) {
-  return (
-    <div className="flex h-[260px] items-center justify-center rounded-xl border border-dashed border-black/[0.06]">
-      <p className="text-xs text-black/25">{message}</p>
-    </div>
-  )
+  return <EmptyState icon={ChartLine} title={message} className="h-[260px] border-dashed py-0" />
 }
 
 /* ── Recent Transfers List ───────────────────────────── */
@@ -332,9 +335,11 @@ function RecentTransfersTable({
 
   if (transfers.length === 0) {
     return (
-      <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-black/[0.06]">
-        <p className="text-xs text-black/25">{t('dashboard.tables.noTransfers')}</p>
-      </div>
+      <EmptyState
+        icon={ListBullets}
+        title={t('dashboard.tables.noTransfers')}
+        className="h-40 py-0"
+      />
     )
   }
 
@@ -433,11 +438,7 @@ function TopCustomersList({
 
   const items = customers.slice(0, 5)
   if (items.length === 0) {
-    return (
-      <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-black/[0.06]">
-        <p className="text-xs text-black/25">{t('dashboard.charts.noData')}</p>
-      </div>
-    )
+    return <EmptyState icon={Trophy} title={t('dashboard.charts.noData')} className="h-40 py-0" />
   }
 
   const maxVal = Math.max(...items.map((c) => c.volume))
@@ -550,12 +551,24 @@ export function DashboardPage() {
   const { currentOrg } = useOrganization()
   const ct = useChartTheme()
 
+  const [activeFilter, setActiveFilter] = useState<
+    'deposits' | 'withdrawals' | 'commission' | null
+  >(null)
+
+  useRealtimeSubscription('transfers', [queryKeys.transfers.all, ['dashboard']])
+
   /* ── Data hooks ──────────────────────────────────── */
   const [period, setPeriod] = useState<DashboardPeriod>('month')
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo, setCustomTo] = useState('')
   const [pmView, setPmView] = useState<'volume' | 'count'>('volume')
   const [primaryCurrency, setPrimaryCurrency] = useState<'USD' | 'TRY'>('USD')
   const [viewMode, setViewMode] = useState<'gross' | 'net'>('gross')
-  const { kpis, prevKpis, isLoading } = useDashboardQuery(period)
+  const { kpis, prevKpis, isLoading } = useDashboardQuery(
+    period,
+    period === 'custom' ? customFrom : undefined,
+    period === 'custom' ? customTo : undefined,
+  )
 
   const now = useMemo(() => new Date(), [])
   const { data: monthlyData, isLoading: isMonthlyLoading } = useMonthlyAnalysisQuery(
@@ -572,9 +585,25 @@ export function DashboardPage() {
   )
   const { recentTransfers, isTransfersLoading } = useDashboardRecentQuery()
 
+  const filteredRecentTransfers = useMemo(
+    () =>
+      activeFilter === 'deposits'
+        ? recentTransfers.filter((tx) => tx.isDeposit)
+        : activeFilter === 'withdrawals'
+          ? recentTransfers.filter((tx) => !tx.isDeposit)
+          : recentTransfers,
+    [recentTransfers, activeFilter],
+  )
+
   /* ── PSP Commission by Period ────────────────────── */
-  const currentRange = useMemo(() => getDateRange(period), [period])
-  const prevRange = useMemo(() => getPreviousDateRange(period), [period])
+  const currentRange = useMemo(
+    () => getDateRange(period, customFrom, customTo),
+    [period, customFrom, customTo],
+  )
+  const prevRange = useMemo(
+    () => getPreviousDateRange(period, customFrom, customTo),
+    [period, customFrom, customTo],
+  )
 
   /* ── PSP metadata (name / rate / is_internal) ────── */
   const { data: pspMeta } = useQuery({
@@ -763,6 +792,17 @@ export function DashboardPage() {
     ? { label: 'TRY', value: fmtCompact(netTryActive) + ' ₺' }
     : { label: 'USD', value: fmtCompact(netUsdActive) + ' $' }
 
+  /* ── Card filter helpers ─────────────────────────── */
+  const cardCls = (filter: 'deposits' | 'withdrawals' | 'commission') => {
+    if (activeFilter === filter) {
+      if (filter === 'deposits') return 'ring-2 ring-green/40 border-green/20'
+      if (filter === 'withdrawals') return 'ring-2 ring-red/40 border-red/20'
+      return 'ring-2 ring-orange/40 border-orange/20'
+    }
+    return activeFilter !== null ? 'opacity-50' : ''
+  }
+  const neutralCardCls = activeFilter !== null ? 'opacity-50' : ''
+
   /* ── Render ──────────────────────────────────────── */
   return (
     <div className="w-full max-w-full space-y-6">
@@ -832,13 +872,33 @@ export function DashboardPage() {
             </button>
           </div>
           {/* Period toggle */}
-          <Tabs value={period} onValueChange={(v) => setPeriod(v as DashboardPeriod)}>
-            <TabsList>
-              <TabsTrigger value="today">{t('dashboard.period.today')}</TabsTrigger>
-              <TabsTrigger value="week">{t('dashboard.period.week')}</TabsTrigger>
-              <TabsTrigger value="month">{t('dashboard.period.month')}</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex items-center gap-2">
+            <Tabs value={period} onValueChange={(v) => setPeriod(v as DashboardPeriod)}>
+              <TabsList>
+                <TabsTrigger value="today">{t('dashboard.period.today')}</TabsTrigger>
+                <TabsTrigger value="week">{t('dashboard.period.week')}</TabsTrigger>
+                <TabsTrigger value="month">{t('dashboard.period.month')}</TabsTrigger>
+                <TabsTrigger value="custom">{t('dashboard.period.custom', 'Custom')}</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            {period === 'custom' && (
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="date"
+                  value={customFrom}
+                  onChange={(e) => setCustomFrom(e.target.value)}
+                  className="h-8 rounded-md border border-black/10 bg-bg1 px-2 text-xs text-black"
+                />
+                <span className="text-xs text-black/30">–</span>
+                <input
+                  type="date"
+                  value={customTo}
+                  onChange={(e) => setCustomTo(e.target.value)}
+                  className="h-8 rounded-md border border-black/10 bg-bg1 px-2 text-xs text-black"
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -853,6 +913,8 @@ export function DashboardPage() {
           isLoading={isLoading}
           trend={<TrendBadge {...depositTrend} />}
           splitLeft={depositSecondary}
+          className={cardCls('deposits')}
+          onClick={() => setActiveFilter((f) => (f === 'deposits' ? null : 'deposits'))}
         />
         <HeroKpiCard
           icon={ArrowCircleUp}
@@ -863,6 +925,8 @@ export function DashboardPage() {
           isLoading={isLoading}
           trend={<TrendBadge {...withdrawalTrend} />}
           splitLeft={withdrawalSecondary}
+          className={cardCls('withdrawals')}
+          onClick={() => setActiveFilter((f) => (f === 'withdrawals' ? null : 'withdrawals'))}
         />
         <HeroKpiCard
           icon={Wallet}
@@ -873,6 +937,8 @@ export function DashboardPage() {
           isLoading={isLoading}
           trend={<TrendBadge {...netTrend} />}
           splitLeft={netSecondary}
+          className={neutralCardCls}
+          onClick={() => setActiveFilter(null)}
         />
         <HeroKpiCard
           icon={Percent}
@@ -884,17 +950,26 @@ export function DashboardPage() {
           trend={
             <TrendBadge current={kpis?.totalCommission ?? 0} previous={prevKpis?.totalCommission} />
           }
+          className={cardCls('commission')}
+          onClick={() => setActiveFilter((f) => (f === 'commission' ? null : 'commission'))}
         />
         <HeroKpiCard
-          icon={Coins}
-          iconBg="bg-cyan/10"
-          iconColor="text-cyan"
-          label={t('dashboard.kpi.netCashUsd')}
-          value={fmtMoney(netUsdActive, lang, '$')}
+          icon={Hash}
+          iconBg="bg-purple/10"
+          iconColor="text-purple"
+          label={t('dashboard.kpi.transactions', 'Transactions')}
+          value={fmtCount(kpis?.transactionCount ?? 0, lang)}
           isLoading={isLoading}
-          className="sm:col-span-2 lg:col-span-1"
-          trend={<TrendBadge current={netUsdActive} previous={prevNetUsdActive} />}
-          splitLeft={{ label: '₺', value: fmtCompact(netTryActive) + ' ₺' }}
+          trend={
+            <TrendBadge
+              current={kpis?.transactionCount ?? 0}
+              previous={prevKpis?.transactionCount}
+            />
+          }
+          splitLeft={{ label: '↓', value: fmtCount(kpis?.depositCount ?? 0, lang) }}
+          splitRight={{ label: '↑', value: fmtCount(kpis?.withdrawalCount ?? 0, lang) }}
+          className={cn('sm:col-span-2 lg:col-span-1', neutralCardCls)}
+          onClick={() => setActiveFilter(null)}
         />
       </div>
 
@@ -956,6 +1031,7 @@ export function DashboardPage() {
                     stroke={GREEN}
                     strokeWidth={2}
                     fill="url(#gradDep)"
+                    opacity={activeFilter === 'withdrawals' ? 0.12 : 1}
                   />
                   <Area
                     type="monotone"
@@ -963,6 +1039,7 @@ export function DashboardPage() {
                     stroke={RED}
                     strokeWidth={2}
                     fill="url(#gradWd)"
+                    opacity={activeFilter === 'deposits' ? 0.12 : 1}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -1120,7 +1197,12 @@ export function DashboardPage() {
         </ChartCard>
 
         {/* ─ Commission by PSP (Top 3) ────────────────── */}
-        <ChartCard title={t('dashboard.charts.pspCommission')} icon={Coins} iconColor="text-orange">
+        <ChartCard
+          title={t('dashboard.charts.pspCommission')}
+          icon={Coins}
+          iconColor="text-orange"
+          className={activeFilter === 'commission' ? 'ring-2 ring-orange/40 border-orange/20' : ''}
+        >
           {isCommissionLoading || !pspCommissionData ? (
             <ChartSkeleton />
           ) : !pspCommissionData.length ? (
@@ -1276,7 +1358,7 @@ export function DashboardPage() {
             </Link>
           </div>
           <RecentTransfersTable
-            transfers={recentTransfers.slice(0, 5)}
+            transfers={filteredRecentTransfers.slice(0, 5)}
             isLoading={isTransfersLoading}
             lang={lang}
             t={t as (key: string) => string}

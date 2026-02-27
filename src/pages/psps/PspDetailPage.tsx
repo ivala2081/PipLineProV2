@@ -1439,22 +1439,18 @@ export function PspDetailPage() {
   /* Not Found */
   if (!psp) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 py-20">
-        <div className="flex size-14 items-center justify-center rounded-2xl bg-black/5">
-          <CreditCard size={28} className="text-black/40" />
-        </div>
-        <div className="text-center">
-          <p className="text-sm font-medium text-black/60">
-            {t('psps.detail.notFound', 'PSP not found')}
-          </p>
-          <p className="mt-1 text-xs text-black/40">
-            {t('psps.detail.notFoundDesc', 'The PSP you are looking for does not exist.')}
-          </p>
-        </div>
-        <Button variant="outline" onClick={() => navigate('/psps')}>
-          <ArrowLeft size={16} />
-          {t('psps.backToList')}
-        </Button>
+      <div className="py-20">
+        <EmptyState
+          icon={CreditCard}
+          title={t('psps.detail.notFound', 'PSP not found')}
+          description={t('psps.detail.notFoundDesc', 'The PSP you are looking for does not exist.')}
+          action={
+            <Button variant="outline" onClick={() => navigate('/psps')}>
+              <ArrowLeft size={16} />
+              {t('psps.backToList')}
+            </Button>
+          }
+        />
       </div>
     )
   }

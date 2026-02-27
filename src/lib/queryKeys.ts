@@ -88,4 +88,8 @@ export const queryKeys = {
     all: ['apiHealth'] as const,
     status: () => [...queryKeys.apiHealth.all, 'status'] as const,
   },
+  search: {
+    all: ['search'] as const,
+    query: (q: string) => ['search', q] as const,
+  },
 } as const

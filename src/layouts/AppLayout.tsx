@@ -10,6 +10,8 @@ import {
   Sun,
   Monitor,
   Globe,
+  MagnifyingGlass,
+  Gear,
 } from '@phosphor-icons/react'
 
 import { useAuth } from '@/app/providers/AuthProvider'
@@ -59,6 +61,7 @@ import { cn } from '@ds/utils'
 import { navGroups } from '@/layouts/nav-config'
 import { AvatarUpload } from '@/components/AvatarUpload'
 import { OnlineCount } from '@/components/OnlineCount'
+import { CommandPalette } from '@/components/CommandPalette/CommandPalette'
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar Brand (logo + org name)                                    */
@@ -128,9 +131,9 @@ function SidebarNav() {
         if (visibleItems.length === 0) return null
 
         return (
-          <SidebarGroup key={group.titleKey}>
+          <SidebarGroup key={group.titleKey || `group-${idx}`}>
             {idx > 0 && <SidebarSeparator className="mb-2" />}
-            <SidebarGroupLabel>{tNav(group.titleKey)}</SidebarGroupLabel>
+            {group.titleKey && <SidebarGroupLabel>{tNav(group.titleKey)}</SidebarGroupLabel>}
             <SidebarGroupContent>
               <SidebarMenu>
                 {visibleItems.map((item) => {
@@ -374,6 +377,10 @@ function UserMenu() {
                 <PencilSimple size={16} />
                 <span>{t('layout.profile.edit')}</span>
               </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => navigate('/settings')}>
+                <Gear size={16} />
+                <span>{t('nav.settings', 'Settings')}</span>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={() => void handleSignOut()}>
                 <SignOut size={16} />
@@ -489,6 +496,20 @@ function HeaderBar() {
 
       {/* Right side controls */}
       <div className="ml-auto flex items-center gap-1">
+        {/* Cmd+K search trigger */}
+        <button
+          onClick={() =>
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))
+          }
+          className="flex h-8 items-center gap-2 rounded-md border border-black/10 bg-black/[0.02] px-2.5 text-xs text-black/50 hover:bg-black/8 hover:text-black/70"
+        >
+          <MagnifyingGlass size={14} />
+          <span className="hidden sm:inline">{t('search.placeholder', 'Search...')}</span>
+          <kbd className="hidden rounded border border-black/10 bg-black/[0.04] px-1 py-0.5 font-mono text-[10px] sm:inline">
+            Ctrl+K
+          </kbd>
+        </button>
+        <Separator orientation="vertical" className="mx-1 h-4" />
         <OnlineCount />
         <Separator orientation="vertical" className="mx-1 h-4" />
         <HeaderOrgSwitcher />
@@ -544,6 +565,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         <HeaderBar />
         <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 md:p-6">{children}</div>
       </SidebarInset>
+      <CommandPalette />
     </SidebarProvider>
   )
 }

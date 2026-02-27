@@ -1,7 +1,17 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ArrowLeft, Buildings, ChartLineUp, Diamond } from '@phosphor-icons/react'
-import { Tabs, TabsList, TabsTrigger, TabsContent, Button, Tag, Card, Skeleton } from '@ds'
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+  Button,
+  Tag,
+  Card,
+  Skeleton,
+  EmptyState,
+} from '@ds'
 import { useLocale } from '@ds/hooks'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganizationDetailQuery } from '@/hooks/queries/useOrganizationDetailQuery'
@@ -108,18 +118,18 @@ export function OrganizationDetailPage() {
 
   if (!org) {
     return (
-      <div className="flex flex-col items-center justify-center gap-md py-20">
-        <div className="flex size-14 items-center justify-center rounded-2xl bg-black/5">
-          <Buildings size={28} className="text-black/40" />
-        </div>
-        <div className="text-center">
-          <p className="text-sm font-medium text-black/60">{t('organizations.notFound')}</p>
-          <p className="mt-1 text-xs text-black/40">{t('organizations.notFoundDescription')}</p>
-        </div>
-        <Button variant="outline" onClick={() => navigate('/organizations')}>
-          <ArrowLeft size={16} />
-          {t('organizations.backToList')}
-        </Button>
+      <div className="py-20">
+        <EmptyState
+          icon={Buildings}
+          title={t('organizations.notFound')}
+          description={t('organizations.notFoundDescription')}
+          action={
+            <Button variant="outline" onClick={() => navigate('/organizations')}>
+              <ArrowLeft size={16} />
+              {t('organizations.backToList')}
+            </Button>
+          }
+        />
       </div>
     )
   }

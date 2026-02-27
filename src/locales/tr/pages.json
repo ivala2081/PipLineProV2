@@ -15,7 +15,8 @@
     "members": "Üyeler",
     "organizations": "Organizasyonlar",
     "security": "Güvenlik",
-    "hr": "İK"
+    "hr": "İK",
+    "settings": "Ayarlar"
   },
   "layout": {
     "noOrganization": "Organizasyon Yok",
@@ -51,7 +52,8 @@
     "period": {
       "today": "Bugün",
       "week": "Bu Hafta",
-      "month": "Bu Ay"
+      "month": "Bu Ay",
+      "custom": "Özel"
     },
     "kpi": {
       "deposits": "Yatırımlar",
@@ -402,7 +404,9 @@
       "settingsChangeWarning": "Bu ayarları değiştirmenin sayıların gerçekçi olmayan değerlere dönüşmesine neden olabileceğini unutmayın. Devam etmek için yönetici PIN'ini girin.",
       "managerPin": "Yönetici PIN",
       "pinConfirm": "Onayla",
-      "pinInvalid": "Geçersiz PIN. Lütfen tekrar deneyin."
+      "pinInvalid": "Geçersiz PIN. Lütfen tekrar deneyin.",
+      "pinRateLimited": "Çok fazla deneme. Lütfen birkaç dakika bekleyin.",
+      "pinVerifying": "Doğrulanıyor..."
     },
     "validation": {
       "fullNameRequired": "Ad soyad gereklidir",
@@ -1450,5 +1454,24 @@
       "avatarRemoved": "Profil fotoğrafı kaldırıldı"
     },
     "notesHint": "Yalnızca yöneticiler görebilir"
+  },
+  "settings": {
+    "pin": {
+      "title": "Organizasyon PIN",
+      "description": "Bu PIN, kasa yönetimi ve oran değişiklikleri gibi hassas işlemler için gereklidir.",
+      "pinIsSet": "PIN yapılandırılmış",
+      "noPinSet": "PIN ayarlanmamış — hassas işlemler korumasız",
+      "setPin": "PIN Ayarla",
+      "changePin": "PIN Değiştir",
+      "newPin": "Yeni PIN",
+      "confirmPin": "PIN Onayla",
+      "mismatch": "PIN'ler eşleşmiyor.",
+      "invalidFormat": "PIN 4-6 haneli olmalıdır.",
+      "saved": "Organizasyon PIN güncellendi.",
+      "saving": "Kaydediliyor...",
+      "unauthorized": "Yalnızca yöneticiler PIN'i değiştirebilir.",
+      "error": "PIN güncellenemedi.",
+      "hint": "PIN 4-6 haneli olmalıdır. Tüm organizasyon üyeleri bu PIN'i kullanacaktır."
+    }
   }
 }

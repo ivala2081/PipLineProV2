@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useVerifyOrgPin } from '@/hooks/queries/useOrgPinQuery'
 import {
   Dialog,
   DialogContent,
@@ -19,8 +20,6 @@ interface BulkDeleteConfirmDialogProps {
   isDeleting: boolean
 }
 
-const SECURITY_PIN = '4561'
-
 export function BulkDeleteConfirmDialog({
   ids,
   count: countOverride,
@@ -30,18 +29,41 @@ export function BulkDeleteConfirmDialog({
 }: BulkDeleteConfirmDialogProps) {
   const { t } = useTranslation('pages')
   const [pin, setPin] = useState('')
+  const [error, setError] = useState('')
+  const verifyPin = useVerifyOrgPin()
 
   const count = countOverride ?? ids?.length ?? 0
-  const pinValid = pin === SECURITY_PIN
+  const isVerifying = verifyPin.isPending
+  const isBusy = isDeleting || isVerifying
 
   const handleConfirm = async () => {
-    if (!pinValid) return
-    await onConfirm()
-    setPin('')
+    if (!pin || isBusy) return
+    setError('')
+
+    try {
+      const valid = await verifyPin.mutateAsync(pin)
+      if (!valid) {
+        setError(t('transfers.settings.pinInvalid'))
+        return
+      }
+      await onConfirm()
+      setPin('')
+      setError('')
+    } catch (err) {
+      const msg = (err as Error)?.message ?? ''
+      if (msg.includes('RATE_LIMITED')) {
+        setError(
+          t('transfers.settings.pinRateLimited', 'Too many attempts. Please wait a few minutes.'),
+        )
+      } else {
+        setError(t('transfers.settings.pinInvalid'))
+      }
+    }
   }
 
   const handleClose = () => {
     setPin('')
+    setError('')
     onClose()
   }
 
@@ -61,26 +83,35 @@ export function BulkDeleteConfirmDialog({
             type="password"
             inputSize="sm"
             placeholder="PIN"
+            inputMode="numeric"
             value={pin}
-            onChange={(e) => setPin(e.target.value)}
+            onChange={(e) => {
+              setPin(e.target.value.replace(/\D/g, ''))
+              setError('')
+            }}
+            onKeyDown={(e) => e.key === 'Enter' && handleConfirm()}
             className="w-40"
             autoComplete="off"
+            disabled={isBusy}
           />
+          {error && <p className="mt-1 text-xs text-red">{error}</p>}
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={handleClose} disabled={isDeleting}>
+          <Button variant="outline" onClick={handleClose} disabled={isBusy}>
             {t('transfers.bulkDelete.cancel')}
           </Button>
           <Button
             variant="filled"
             className="bg-red hover:bg-red/80"
             onClick={handleConfirm}
-            disabled={!pinValid || isDeleting}
+            disabled={!pin || isBusy}
           >
-            {isDeleting
-              ? t('transfers.bulkDelete.deleting', 'Deleting...')
-              : t('transfers.bulkDelete.confirm')}
+            {isVerifying
+              ? t('transfers.settings.pinVerifying', 'Verifying...')
+              : isDeleting
+                ? t('transfers.bulkDelete.deleting', 'Deleting...')
+                : t('transfers.bulkDelete.confirm')}
           </Button>
         </DialogFooter>
       </DialogContent>

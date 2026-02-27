@@ -14,6 +14,7 @@ import type { Organization } from '@/lib/database.types'
 import { uploadOrganizationLogo, deleteOrganizationLogo } from '@/lib/storageService'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { ImageCropperDialog } from '@/components/ImageCropperDialog'
+import { OrgPinSettings } from '@/components/OrgPinSettings'
 
 interface SettingsTabProps {
   org: Organization
@@ -302,6 +303,9 @@ export function SettingsTab({ org, orgId }: SettingsTabProps) {
           </div>
         </form>
       </Card>
+
+      {/* Organization PIN */}
+      <OrgPinSettings />
 
       {/* Danger Zone */}
       <Card padding="spacious" className="space-y-md border border-red/20 bg-red/5">

@@ -10,7 +10,16 @@ export const queryClient = new QueryClient({
       refetchOnReconnect: true,
     },
     mutations: {
-      retry: 0,
+      retry: (failureCount, error) => {
+        if (failureCount >= 1) return false
+        const msg = (error as Error)?.message?.toLowerCase() ?? ''
+        // Don't retry auth or validation errors
+        if (msg.includes('unauthorized') || msg.includes('forbidden')) return false
+        if (msg.includes('validation') || msg.includes('constraint')) return false
+        if (msg.includes('rate_limited')) return false
+        // Retry network/timeout errors once
+        return true
+      },
     },
   },
 })

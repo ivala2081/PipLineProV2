@@ -238,7 +238,7 @@ export function useAccountingQuery(): UseAccountingQueryReturn {
     },
   })
 
-  // Delete (with cascade to linked HR payments)
+  // Delete (with cascade to linked HR payments) — optimistic
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       // Fetch the entry first to check for linked HR payment
@@ -268,7 +268,30 @@ export function useAccountingQuery(): UseAccountingQueryReturn {
         }
       }
     },
-    onSuccess: () => {
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.accounting.lists() })
+      const snapshot = queryClient.getQueriesData({ queryKey: queryKeys.accounting.lists() })
+      queryClient.setQueriesData(
+        { queryKey: queryKeys.accounting.lists() },
+        (old: { entries: AccountingEntry[]; total: number } | undefined) => {
+          if (!old) return old
+          return {
+            ...old,
+            entries: old.entries.filter((e) => e.id !== id),
+            total: Math.max(0, old.total - 1),
+          }
+        },
+      )
+      return { snapshot }
+    },
+    onError: (_err, _id, context) => {
+      if (context?.snapshot) {
+        for (const [key, data] of context.snapshot) {
+          queryClient.setQueryData(key, data)
+        }
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.accounting.lists() })
       queryClient.invalidateQueries({
         queryKey: queryKeys.accounting.summary(currentOrg?.id ?? ''),

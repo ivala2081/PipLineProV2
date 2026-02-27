@@ -70,6 +70,15 @@ interface TransfersTableProps {
 
 /* ── State ──────────────────────────────────────────── */
 
+interface TransferOriginal {
+  id: string
+  currency: string
+  amount: number
+  exchange_rate: number | null
+  amount_try: number | null
+  amount_usd: number
+}
+
 interface TableState {
   detailRow: TransferRow | null
   auditRow: TransferRow | null
@@ -78,6 +87,7 @@ interface TableState {
   isFetchingSummary: boolean
   isApplyingRate: boolean
   customRates: Record<string, number>
+  originalRatesData: Record<string, TransferOriginal[]>
 }
 
 type TableAction =
@@ -93,6 +103,8 @@ type TableAction =
   | { type: 'RESET_RATE'; dateKey: string }
   | { type: 'APPLY_RATE_START' }
   | { type: 'APPLY_RATE_DONE'; transfers: TransferRow[] }
+  | { type: 'STORE_ORIGINALS'; dateKey: string; originals: TransferOriginal[] }
+  | { type: 'CLEAR_ORIGINALS'; dateKey: string }
 
 const initialState: TableState = {
   detailRow: null,
@@ -102,6 +114,7 @@ const initialState: TableState = {
   isFetchingSummary: false,
   isApplyingRate: false,
   customRates: {},
+  originalRatesData: {},
 }
 
 function reducer(state: TableState, action: TableAction): TableState {
@@ -133,6 +146,19 @@ function reducer(state: TableState, action: TableAction): TableState {
       return { ...state, isApplyingRate: true }
     case 'APPLY_RATE_DONE':
       return { ...state, isApplyingRate: false, summaryTransfers: action.transfers }
+    case 'STORE_ORIGINALS': {
+      // Guard: only store once per dateKey — prevents subsequent saves from overwriting true originals
+      if (state.originalRatesData[action.dateKey]) return state
+      return {
+        ...state,
+        originalRatesData: { ...state.originalRatesData, [action.dateKey]: action.originals },
+      }
+    }
+    case 'CLEAR_ORIGINALS': {
+      const newOriginals = { ...state.originalRatesData }
+      delete newOriginals[action.dateKey]
+      return { ...state, originalRatesData: newOriginals }
+    }
     default:
       return state
   }
@@ -171,11 +197,11 @@ export function TransfersTable({
   const [amountMinDisplay, setAmountMinDisplay] = useState('')
   const [amountMaxDisplay, setAmountMaxDisplay] = useState('')
   useEffect(() => {
-    if (!filters.amountMin) setAmountMinDisplay('')
-  }, [filters.amountMin]) // eslint-disable-line react-hooks/set-state-in-effect -- syncing derived display state
+    if (!filters.amountMin) setAmountMinDisplay('') // eslint-disable-line react-hooks/set-state-in-effect -- syncing derived display state
+  }, [filters.amountMin])
   useEffect(() => {
-    if (!filters.amountMax) setAmountMaxDisplay('')
-  }, [filters.amountMax]) // eslint-disable-line react-hooks/set-state-in-effect -- syncing derived display state
+    if (!filters.amountMax) setAmountMaxDisplay('') // eslint-disable-line react-hooks/set-state-in-effect -- syncing derived display state
+  }, [filters.amountMax])
 
   const totalPages = Math.ceil(total / pageSize)
   const from = (page - 1) * pageSize + 1
@@ -214,33 +240,49 @@ export function TransfersTable({
       dispatch({ type: 'APPLY_RATE_START' })
 
       try {
-        // Fetch all USD transfers for this date
         const startOfDay = localDayStart(dateKey)
         const endOfDay = localDayEnd(dateKey)
 
-        const { data: usdTransfers } = await supabase
+        // Unified fetch: get all fields needed for snapshot + updates in one query
+        const { data: allTransfers } = await supabase
           .from('transfers')
-          .select('id, amount')
+          .select('id, currency, amount, exchange_rate, amount_try, amount_usd')
           .eq('organization_id', currentOrg.id)
-          .eq('currency', 'USD')
           .gte('transfer_date', startOfDay)
           .lte('transfer_date', endOfDay)
 
-        const typedUsdTransfers = (usdTransfers || []) as { id: string; amount: number }[]
-        if (typedUsdTransfers.length > 0) {
-          // Update each USD transfer with the new rate and recalculated amount_try
-          await Promise.all(
-            typedUsdTransfers.map((t) =>
-              supabase
-                .from('transfers')
-                .update({
-                  exchange_rate: rate,
-                  amount_try: Math.round(t.amount * rate * 100) / 100,
-                })
-                .eq('id', t.id),
-            ),
-          )
-        }
+        const typed = (allTransfers || []) as TransferOriginal[]
+
+        // Snapshot originals BEFORE applying new rate (guard prevents overwrite on re-save)
+        dispatch({ type: 'STORE_ORIGINALS', dateKey, originals: typed })
+
+        const usdTransfers = typed.filter((t) => t.currency === 'USD')
+        const tryTransfers = typed.filter((t) => t.currency !== 'USD')
+
+        const updates: Promise<unknown>[] = [
+          // USD transfers: recalculate TRY equivalent
+          ...usdTransfers.map((t) =>
+            supabase
+              .from('transfers')
+              .update({
+                exchange_rate: rate,
+                amount_try: Math.round(t.amount * rate * 100) / 100,
+              })
+              .eq('id', t.id),
+          ),
+          // TRY transfers: recalculate USD equivalent
+          ...tryTransfers.map((t) =>
+            supabase
+              .from('transfers')
+              .update({
+                exchange_rate: rate,
+                amount_usd: rate > 0 ? Math.round((t.amount / rate) * 100) / 100 : 0,
+              })
+              .eq('id', t.id),
+          ),
+        ]
+
+        if (updates.length > 0) await Promise.all(updates)
 
         // Invalidate transfer queries so lists refresh
         queryClient.invalidateQueries({ queryKey: queryKeys.transfers.lists() })
@@ -256,9 +298,57 @@ export function TransfersTable({
     [currentOrg, fetchTransfersByDate, queryClient, state.summaryTransfers],
   )
 
-  const handleResetRate = useCallback((dateKey: string) => {
-    dispatch({ type: 'RESET_RATE', dateKey })
-  }, [])
+  const handleResetRate = useCallback(
+    async (dateKey: string) => {
+      const originals = state.originalRatesData[dateKey]
+
+      if (originals && currentOrg) {
+        dispatch({ type: 'APPLY_RATE_START' })
+        try {
+          const usdOriginals = originals.filter((t) => t.currency === 'USD')
+          const tryOriginals = originals.filter((t) => t.currency !== 'USD')
+
+          const updates: Promise<unknown>[] = [
+            // USD transfers: restore original exchange_rate + amount_try
+            ...usdOriginals.map((t) =>
+              supabase
+                .from('transfers')
+                .update({ exchange_rate: t.exchange_rate, amount_try: t.amount_try })
+                .eq('id', t.id),
+            ),
+            // TRY transfers: restore original exchange_rate + amount_usd
+            ...tryOriginals.map((t) =>
+              supabase
+                .from('transfers')
+                .update({ exchange_rate: t.exchange_rate, amount_usd: t.amount_usd })
+                .eq('id', t.id),
+            ),
+          ]
+
+          if (updates.length > 0) await Promise.all(updates)
+
+          queryClient.invalidateQueries({ queryKey: queryKeys.transfers.lists() })
+
+          const refreshed = await fetchTransfersByDate(dateKey)
+          dispatch({ type: 'APPLY_RATE_DONE', transfers: refreshed })
+        } catch (error) {
+          console.error('Failed to restore original exchange rates:', error)
+          dispatch({ type: 'APPLY_RATE_DONE', transfers: state.summaryTransfers })
+        }
+      }
+
+      // Always clear local state regardless of DB outcome
+      dispatch({ type: 'RESET_RATE', dateKey })
+      dispatch({ type: 'CLEAR_ORIGINALS', dateKey })
+    },
+    [
+      currentOrg,
+      fetchTransfersByDate,
+      queryClient,
+      state.originalRatesData,
+      state.summaryTransfers,
+    ],
+  )
 
   /* ── Filter bar ──────────────────────────────── */
 

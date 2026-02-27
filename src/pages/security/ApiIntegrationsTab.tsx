@@ -9,7 +9,7 @@ import {
   Clock,
   Lightning,
 } from '@phosphor-icons/react'
-import { Card, Tag, Button, Skeleton } from '@ds'
+import { Card, Tag, Button, Skeleton, EmptyState } from '@ds'
 import { useApiHealthQuery } from '@/hooks/queries/useApiHealthQuery'
 import type { ApiHealthResult } from '@/lib/apiHealthApi'
 import { UpdateKeyDialog } from './UpdateKeyDialog'
@@ -31,10 +31,7 @@ const SERVICE_META: Record<string, ServiceMeta> = {
 
 /* ── Status helpers ─────────────────────────────────────── */
 
-function getStatusTag(
-  status: ApiHealthResult['status'],
-  t: (key: string) => string,
-) {
+function getStatusTag(status: ApiHealthResult['status'], t: (key: string) => string) {
   switch (status) {
     case 'healthy':
       return (
@@ -80,13 +77,7 @@ function getErrorLabel(
 
 /* ── Service Card ───────────────────────────────────────── */
 
-function ServiceCard({
-  result,
-  onUpdate,
-}: {
-  result: ApiHealthResult
-  onUpdate: () => void
-}) {
+function ServiceCard({ result, onUpdate }: { result: ApiHealthResult; onUpdate: () => void }) {
   const { t } = useTranslation('pages')
   const meta = SERVICE_META[result.service]
   const errorLabel = result.errorType ? getErrorLabel(result.errorType, t) : null
@@ -117,31 +108,19 @@ function ServiceCard({
         )}
 
         {/* Error info */}
-        {errorLabel && (
-          <p className="text-xs font-medium text-red/80">{errorLabel}</p>
-        )}
+        {errorLabel && <p className="text-xs font-medium text-red/80">{errorLabel}</p>}
         {result.errorMessage && (
-          <p
-            className="line-clamp-2 text-xs text-black/40"
-            title={result.errorMessage}
-          >
+          <p className="line-clamp-2 text-xs text-black/40" title={result.errorMessage}>
             {result.errorMessage}
           </p>
         )}
 
         {/* Affected pages */}
-        <p className="text-xs text-black/40">
-          {t(meta?.affectedKey ?? '')}
-        </p>
+        <p className="text-xs text-black/40">{t(meta?.affectedKey ?? '')}</p>
       </div>
 
       {/* Update button */}
-      <Button
-        variant="outline"
-        size="sm"
-        className="mt-auto w-full"
-        onClick={onUpdate}
-      >
+      <Button variant="outline" size="sm" className="mt-auto w-full" onClick={onUpdate}>
         <Key size={14} className="mr-1" />
         {t('security.api.updateKey')}
       </Button>
@@ -186,17 +165,13 @@ export function ApiIntegrationsTab() {
       {/* Header row */}
       <div className="flex flex-wrap items-center justify-between gap-sm">
         <Button onClick={handleCheck} disabled={isFetching}>
-          <ArrowsClockwise
-            size={16}
-            className={isFetching ? 'animate-spin' : ''}
-          />
+          <ArrowsClockwise size={16} className={isFetching ? 'animate-spin' : ''} />
           {t('security.api.checkHealth')}
         </Button>
 
         {dataUpdatedAt > 0 && (
           <span className="text-xs text-black/40">
-            {t('security.api.lastCheck')}{' '}
-            {new Date(dataUpdatedAt).toLocaleTimeString(locale)}
+            {t('security.api.lastCheck')} {new Date(dataUpdatedAt).toLocaleTimeString(locale)}
           </span>
         )}
       </div>
@@ -211,20 +186,11 @@ export function ApiIntegrationsTab() {
       ) : results && results.length > 0 ? (
         <div className="grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-3">
           {results.map((r) => (
-            <ServiceCard
-              key={r.service}
-              result={r}
-              onUpdate={() => setEditService(r.service)}
-            />
+            <ServiceCard key={r.service} result={r} onUpdate={() => setEditService(r.service)} />
           ))}
         </div>
       ) : !enabled ? (
-        <div className="flex flex-col items-center justify-center gap-sm rounded-xl border border-black/10 bg-bg1 py-20">
-          <div className="flex size-12 items-center justify-center rounded-full bg-black/[0.04]">
-            <Lightning size={20} className="text-black/30" />
-          </div>
-          <p className="text-sm text-black/60">{t('security.api.emptyState')}</p>
-        </div>
+        <EmptyState icon={Lightning} title={t('security.api.emptyState')} />
       ) : null}
 
       {/* Warning note */}

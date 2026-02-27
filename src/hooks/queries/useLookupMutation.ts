@@ -129,14 +129,28 @@ export function useLookupMutation(table: LookupTable): UseLookupMutationReturn {
     onSuccess: invalidateQueries,
   })
 
-  // Delete mutation
+  // Delete mutation — optimistic
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from(table).delete().eq('id', id)
 
       if (error) throw error
     },
-    onSuccess: invalidateQueries,
+    onMutate: async (id: string) => {
+      const qk = [...queryKeys.lookups.all, table, orgId ?? '']
+      await queryClient.cancelQueries({ queryKey: qk })
+      const snapshot = queryClient.getQueryData<LookupItem[]>(qk)
+      queryClient.setQueryData<LookupItem[]>(qk, (old) =>
+        old ? old.filter((item) => item.id !== id) : old,
+      )
+      return { snapshot, qk }
+    },
+    onError: (_err, _id, context) => {
+      if (context?.snapshot && context?.qk) {
+        queryClient.setQueryData(context.qk, context.snapshot)
+      }
+    },
+    onSettled: invalidateQueries,
   })
 
   return {
