@@ -269,6 +269,7 @@ export interface Database {
           email: string
           role: HrEmployeeRole
           salary_tl: number
+          salary_currency: 'TL' | 'USD'
           is_insured: boolean
           receives_supplement: boolean
           is_active: boolean
@@ -285,6 +286,7 @@ export interface Database {
           email: string
           role: HrEmployeeRole
           salary_tl?: number
+          salary_currency?: 'TL' | 'USD'
           is_insured?: boolean
           receives_supplement?: boolean
           is_active?: boolean
@@ -301,6 +303,7 @@ export interface Database {
           email?: string
           role?: HrEmployeeRole
           salary_tl?: number
+          salary_currency?: 'TL' | 'USD'
           is_insured?: boolean
           receives_supplement?: boolean
           is_active?: boolean
@@ -519,6 +522,7 @@ export interface Database {
           organization_id: string
           period: string
           amount_tl: number
+          salary_currency: 'TL' | 'USD'
           paid_at: string
           notes: string | null
           created_by: string | null
@@ -530,6 +534,7 @@ export interface Database {
           organization_id: string
           period: string
           amount_tl: number
+          salary_currency?: 'TL' | 'USD'
           paid_at: string
           notes?: string | null
           created_by?: string | null
@@ -541,6 +546,7 @@ export interface Database {
           organization_id?: string
           period?: string
           amount_tl?: number
+          salary_currency?: 'TL' | 'USD'
           paid_at?: string
           notes?: string | null
           created_by?: string | null

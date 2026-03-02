@@ -559,6 +559,9 @@ function MarketingBonusTable({
   paidEmployeeIds,
   onPayEmployee,
   search,
+  selectedIds,
+  onToggleSelect,
+  onToggleSelectAll,
 }: {
   stats: MtEmployeeStat[]
   isLoading: boolean
@@ -569,6 +572,9 @@ function MarketingBonusTable({
   paidEmployeeIds?: Set<string>
   onPayEmployee?: (emp: HrEmployee, amount: number) => void
   search: string
+  selectedIds?: Set<string>
+  onToggleSelect?: (id: string) => void
+  onToggleSelectAll?: () => void
 }) {
   const [page, setPage] = useState(1)
 
@@ -619,6 +625,8 @@ function MarketingBonusTable({
     )
   }
 
+  const allMtSelected = selectedIds && filteredStats.length > 0 && selectedIds.size === filteredStats.length
+
   if (filteredStats.length === 0) {
     return (
       <EmptyState
@@ -660,6 +668,16 @@ function MarketingBonusTable({
         <Table>
           <TableHeader>
             <TableRow>
+              {canManage && onToggleSelectAll && (
+                <TableHead className="w-10">
+                  <input
+                    type="checkbox"
+                    className="size-3.5 cursor-pointer rounded border-black/20 accent-brand"
+                    checked={!!allMtSelected}
+                    onChange={onToggleSelectAll}
+                  />
+                </TableHead>
+              )}
               <TableHead className="w-48">{lang === 'tr' ? 'Çalışan' : 'Employee'}</TableHead>
               <TableHead className="text-right">{lang === 'tr' ? 'FD Adet' : 'FD Count'}</TableHead>
               <TableHead className="text-right">
@@ -684,7 +702,17 @@ function MarketingBonusTable({
                 const advance = advancesByEmp.get(stat.employee.id) ?? 0
                 const net = Math.max(0, stat.totalBonus - advance)
                 return (
-                  <TableRow key={stat.employee.id}>
+                  <TableRow key={stat.employee.id} className={selectedIds?.has(stat.employee.id) ? 'bg-brand/[0.03]' : ''}>
+                    {canManage && onToggleSelect && (
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          className="size-3.5 cursor-pointer rounded border-black/20 accent-brand"
+                          checked={selectedIds?.has(stat.employee.id) ?? false}
+                          onChange={() => onToggleSelect(stat.employee.id)}
+                        />
+                      </TableCell>
+                    )}
                     <TableCell>
                       <div className="flex items-center gap-sm">
                         <div className="min-w-0">
@@ -800,6 +828,9 @@ function ReattentionBonusTable({
   paidEmployeeIds,
   onPayEmployee,
   search,
+  selectedIds,
+  onToggleSelect,
+  onToggleSelectAll,
 }: {
   stats: ReEmployeeStat[]
   isLoading: boolean
@@ -809,6 +840,9 @@ function ReattentionBonusTable({
   paidEmployeeIds?: Set<string>
   onPayEmployee?: (emp: HrEmployee, amount: number) => void
   search: string
+  selectedIds?: Set<string>
+  onToggleSelect?: (id: string) => void
+  onToggleSelectAll?: () => void
 }) {
   const [page, setPage] = useState(1)
 
@@ -822,6 +856,8 @@ function ReattentionBonusTable({
     const q = search.toLowerCase()
     return unpaidReStats.filter((s) => s.employee.full_name.toLowerCase().includes(q))
   }, [unpaidReStats, search])
+
+  const allReSelected = selectedIds && filteredReStats.length > 0 && selectedIds.size === filteredReStats.length
 
   const sortedReStats = useMemo(
     () => [...filteredReStats].sort((a, b) => b.bonus - a.bonus),
@@ -879,6 +915,16 @@ function ReattentionBonusTable({
         <Table>
           <TableHeader>
             <TableRow>
+              {canManage && onToggleSelectAll && (
+                <TableHead className="w-10">
+                  <input
+                    type="checkbox"
+                    className="size-3.5 cursor-pointer rounded border-black/20 accent-brand"
+                    checked={!!allReSelected}
+                    onChange={onToggleSelectAll}
+                  />
+                </TableHead>
+              )}
               <TableHead className="w-52">{lang === 'tr' ? 'Çalışan' : 'Employee'}</TableHead>
               <TableHead className="text-right">
                 {lang === 'tr' ? 'Toplam Dep. (USD)' : 'Total Dep. (USD)'}
@@ -904,7 +950,17 @@ function ReattentionBonusTable({
                 const advance = advancesByEmp.get(stat.employee.id) ?? 0
                 const net = Math.max(0, stat.bonus - advance)
                 return (
-                  <TableRow key={stat.employee.id}>
+                  <TableRow key={stat.employee.id} className={selectedIds?.has(stat.employee.id) ? 'bg-brand/[0.03]' : ''}>
+                    {canManage && onToggleSelect && (
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          className="size-3.5 cursor-pointer rounded border-black/20 accent-brand"
+                          checked={selectedIds?.has(stat.employee.id) ?? false}
+                          onChange={() => onToggleSelect(stat.employee.id)}
+                        />
+                      </TableCell>
+                    )}
                     <TableCell>
                       <div className="flex items-center gap-sm">
                         <span className="truncate text-sm font-medium text-black">
@@ -974,7 +1030,7 @@ function ReattentionBonusTable({
             {/* Total row */}
             {stats.length > 1 && (
               <TableRow className="bg-black/[0.02]">
-                <TableCell colSpan={6} className="text-right text-xs font-semibold text-black/50">
+                <TableCell colSpan={canManage && onToggleSelectAll ? 7 : 6} className="text-right text-xs font-semibold text-black/50">
                   {lang === 'tr' ? 'Toplam' : 'Total'}
                 </TableCell>
                 <TableCell className="text-right">
@@ -1026,6 +1082,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [bulkPayoutOpen, setBulkPayoutOpen] = useState(false)
   const [search, setSearch] = useState('')
+  const [selectedAutoIds, setSelectedAutoIds] = useState<Set<string>>(new Set())
   const { toast } = useToast()
 
   const { data: employees = [], isLoading: empLoading } = useHrEmployeesQuery()
@@ -1161,6 +1218,47 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
     setPayTarget({ employee: emp, amount, period: periodLabel })
   }
 
+  /* Selection helpers for auto bonus tables */
+  const toggleAutoSelect = (id: string) => {
+    setSelectedAutoIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  // Get unpaid stats for the current dept (used for select-all logic)
+  const unpaidMtStats = useMemo(
+    () => mtStats.filter((s) => s.totalBonus > 0 && !paidMtIds.has(s.employee.id)),
+    [mtStats, paidMtIds],
+  )
+  const unpaidReStats = useMemo(
+    () => reStats.filter((s) => s.bonus > 0 && !paidReIds.has(s.employee.id)),
+    [reStats, paidReIds],
+  )
+
+  const toggleAutoSelectAll = () => {
+    const currentUnpaid = dept === 'marketing' ? unpaidMtStats : unpaidReStats
+    const ids = currentUnpaid.map((s) => s.employee.id)
+    if (selectedAutoIds.size === ids.length) {
+      setSelectedAutoIds(new Set())
+    } else {
+      setSelectedAutoIds(new Set(ids))
+    }
+  }
+  const hasAutoSelection = selectedAutoIds.size > 0
+
+  // Reset selection when period or search changes
+  useEffect(() => { setSelectedAutoIds(new Set()) }, [year, month, search])
+
+  // Build bulk items filtered by selection
+  const buildFilteredBulkItems = (): BulkPayoutItem[] => {
+    const all = buildBulkItems()
+    if (!hasAutoSelection) return all
+    return all.filter((item) => selectedAutoIds.has(item.employee_id))
+  }
+
   const handleSinglePayment = async (amount: number) => {
     if (!payTarget) return
     try {
@@ -1201,7 +1299,13 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
             {canManage && !isLoading && mtStats.some((s) => s.totalBonus > 0) && (
               <Button variant="filled" size="sm" onClick={() => setBulkPayoutOpen(true)}>
                 <CheckFat size={14} weight="fill" />
-                {lang === 'tr' ? 'Toplu Ödendi İşaretle' : 'Mark All Paid'}
+                {hasAutoSelection
+                  ? lang === 'tr'
+                    ? `Seçilenleri Öde (${selectedAutoIds.size})`
+                    : `Pay Selected (${selectedAutoIds.size})`
+                  : lang === 'tr'
+                    ? 'Toplu Ödendi İşaretle'
+                    : 'Mark All Paid'}
               </Button>
             )}
           </div>
@@ -1221,6 +1325,9 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
           paidEmployeeIds={paidMtIds}
           onPayEmployee={handlePayEmployee}
           search={search}
+          selectedIds={selectedAutoIds}
+          onToggleSelect={toggleAutoSelect}
+          onToggleSelectAll={toggleAutoSelectAll}
         />
         <RecentPaymentsSection
           pmts={pmts}
@@ -1231,8 +1338,8 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
         />
         <BulkPayoutConfirmDialog
           open={bulkPayoutOpen}
-          onClose={() => setBulkPayoutOpen(false)}
-          items={buildBulkItems()}
+          onClose={() => { setBulkPayoutOpen(false); setSelectedAutoIds(new Set()) }}
+          items={buildFilteredBulkItems()}
           dept="marketing"
           periodLabel={periodLabel}
           lang={lang}
@@ -1270,7 +1377,13 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
             {canManage && !isLoading && reStats.some((s) => s.bonus > 0) && (
               <Button variant="filled" size="sm" onClick={() => setBulkPayoutOpen(true)}>
                 <CheckFat size={14} weight="fill" />
-                {lang === 'tr' ? 'Toplu Ödendi İşaretle' : 'Mark All Paid'}
+                {hasAutoSelection
+                  ? lang === 'tr'
+                    ? `Seçilenleri Öde (${selectedAutoIds.size})`
+                    : `Pay Selected (${selectedAutoIds.size})`
+                  : lang === 'tr'
+                    ? 'Toplu Ödendi İşaretle'
+                    : 'Mark All Paid'}
               </Button>
             )}
           </div>
@@ -1289,6 +1402,9 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
           paidEmployeeIds={paidReIds}
           onPayEmployee={handlePayEmployee}
           search={search}
+          selectedIds={selectedAutoIds}
+          onToggleSelect={toggleAutoSelect}
+          onToggleSelectAll={toggleAutoSelectAll}
         />
         <RecentPaymentsSection
           pmts={pmts}
@@ -1299,8 +1415,8 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
         />
         <BulkPayoutConfirmDialog
           open={bulkPayoutOpen}
-          onClose={() => setBulkPayoutOpen(false)}
-          items={buildBulkItems()}
+          onClose={() => { setBulkPayoutOpen(false); setSelectedAutoIds(new Set()) }}
+          items={buildFilteredBulkItems()}
           dept="reattention"
           periodLabel={periodLabel}
           lang={lang}

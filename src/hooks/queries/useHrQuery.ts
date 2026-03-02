@@ -22,6 +22,7 @@ export type HrEmployee = {
   email: string
   role: HrEmployeeRole
   salary_tl: number
+  salary_currency: 'TL' | 'USD'
   is_insured: boolean
   receives_supplement: boolean
   is_active: boolean
@@ -50,6 +51,7 @@ export type HrEmployeeInsert = {
   email: string
   role: HrEmployeeRole
   salary_tl?: number
+  salary_currency?: 'TL' | 'USD'
   is_insured?: boolean
   receives_supplement?: boolean
   is_active?: boolean
@@ -1297,6 +1299,7 @@ export type HrSalaryPaymentLocal = {
   organization_id: string
   period: string
   amount_tl: number
+  salary_currency: 'TL' | 'USD'
   paid_at: string
   notes: string | null
   created_by: string | null
@@ -1307,6 +1310,7 @@ export type BulkSalaryPayoutItem = {
   employee_id: string
   employee_name: string
   amount_tl: number
+  salary_currency: 'TL' | 'USD'
   supplement_tl: number
   attendance_deduction_tl: number
   unpaid_leave_deduction_tl: number
@@ -1355,16 +1359,21 @@ export function useBulkSalaryPayoutMutation() {
         employee_id: item.employee_id,
         period: item.period,
         amount_tl: Math.max(0, item.amount_tl - item.attendance_deduction_tl - item.unpaid_leave_deduction_tl),
+        salary_currency: item.salary_currency,
         paid_at: paidAt,
         notes: null as string | null,
         created_by: user.id,
       }))
 
+      console.log('Salary insert payload:', JSON.stringify(paymentsPayload[0]))
       const { data: payments, error: paymentError } = await supabase
         .from('hr_salary_payments')
         .insert(paymentsPayload)
         .select('id, employee_id')
-      if (paymentError) throw paymentError
+      if (paymentError) {
+        console.error('Salary insert error details:', JSON.stringify(paymentError))
+        throw paymentError
+      }
 
       const paymentIdByEmployee = new Map<string, string>(
         (payments ?? []).map((p) => [p.employee_id, p.id]),
@@ -1376,11 +1385,11 @@ export function useBulkSalaryPayoutMutation() {
         description: item.description,
         entry_type: 'ODEME' as const,
         direction: 'out' as const,
-        amount: Math.max(0, item.amount_tl - item.attendance_deduction_tl),
-        currency: 'TL',
+        amount: Math.max(0, item.amount_tl - item.attendance_deduction_tl - item.unpaid_leave_deduction_tl),
+        currency: item.salary_currency === 'USD' ? 'USD' : 'TL',
         entry_date: paidAt,
         payment_period: item.period,
-        register: 'NAKIT_TL',
+        register: item.salary_currency === 'USD' ? 'NAKIT_USD' : 'NAKIT_TL',
         hr_payment_id: paymentIdByEmployee.get(item.employee_id) ?? null,
         hr_payment_type: 'salary' as const,
         created_by: user.id,
@@ -1451,6 +1460,7 @@ export function useUpdateSalaryPaymentMutation() {
       id: string
       amount_tl: number
       old_amount_tl: number
+      salary_currency: 'TL' | 'USD'
       paid_at: string
       notes: string | null
       description: string
@@ -1474,6 +1484,8 @@ export function useUpdateSalaryPaymentMutation() {
           amount: payload.amount_tl,
           entry_date: payload.paid_at,
           description: payload.description,
+          currency: payload.salary_currency === 'USD' ? 'USD' : 'TL',
+          register: payload.salary_currency === 'USD' ? 'NAKIT_USD' : 'NAKIT_TL',
         })
         .eq('hr_payment_id', payload.id)
         .eq('organization_id', orgId)

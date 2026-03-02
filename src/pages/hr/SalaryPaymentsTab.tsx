@@ -42,8 +42,8 @@ const MONTH_NAMES_EN = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ]
 
-function fmtTL(n: number) {
-  return n.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+function fmtAmount(n: number, currency: 'TL' | 'USD' = 'TL') {
+  return n.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + (currency === 'USD' ? ' $' : ' TL')
 }
 
 interface SalaryPaymentsTabProps {
@@ -99,7 +99,11 @@ export function SalaryPaymentsTab({ employees, canManage, lang }: SalaryPayments
   }, [allPayments, year, month, search, deptFilter, employees])
 
   const totalTl = useMemo(
-    () => filtered.reduce((s, p) => s + p.amount_tl, 0),
+    () => filtered.filter((p) => (p.salary_currency ?? 'TL') === 'TL').reduce((s, p) => s + p.amount_tl, 0),
+    [filtered],
+  )
+  const totalUsd = useMemo(
+    () => filtered.filter((p) => (p.salary_currency ?? 'TL') === 'USD').reduce((s, p) => s + p.amount_tl, 0),
     [filtered],
   )
 
@@ -157,9 +161,13 @@ export function SalaryPaymentsTab({ employees, canManage, lang }: SalaryPayments
           <Money size={16} className="shrink-0 text-green" />
           <span className="text-xs text-black/50">
             {lang === 'tr' ? 'Toplam Ödeme' : 'Total Paid'}&nbsp;—&nbsp;
-            <span className="font-semibold text-black/80">
-              {fmtTL(totalTl)} TL
-            </span>
+            {totalTl > 0 && (
+              <span className="font-semibold text-black/80">{fmtAmount(totalTl, 'TL')}</span>
+            )}
+            {totalTl > 0 && totalUsd > 0 && ' + '}
+            {totalUsd > 0 && (
+              <span className="font-semibold text-black/80">{fmtAmount(totalUsd, 'USD')}</span>
+            )}
           </span>
           <span className="ml-auto text-xs text-black/40">
             {filtered.length} {lang === 'tr' ? 'kayıt' : 'records'}
@@ -268,8 +276,7 @@ export function SalaryPaymentsTab({ employees, canManage, lang }: SalaryPayments
 
                     {/* Amount */}
                     <TableCell className="py-3 text-right tabular-nums text-sm font-semibold text-black/80">
-                      {fmtTL(payment.amount_tl)}{' '}
-                      <span className="text-xs font-normal text-black/40">TL</span>
+                      {fmtAmount(payment.amount_tl, payment.salary_currency ?? 'TL')}
                     </TableCell>
 
                     {/* Paid Date */}

@@ -105,11 +105,12 @@ function EmployeeRow({
 }) {
   const roleInfo = getRoleTag(emp.role)
 
+  const salaryCurrency = emp.salary_currency ?? 'TL'
   const formattedSalary =
     emp.salary_tl > 0
       ? new Intl.NumberFormat(lang === 'tr' ? 'tr-TR' : 'en-US', {
           style: 'currency',
-          currency: 'TRY',
+          currency: salaryCurrency === 'USD' ? 'USD' : 'TRY',
           minimumFractionDigits: 0,
           maximumFractionDigits: 0,
         }).format(emp.salary_tl)

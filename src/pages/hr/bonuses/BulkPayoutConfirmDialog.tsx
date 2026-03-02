@@ -85,9 +85,13 @@ export function BulkPayoutConfirmDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Money size={20} weight="duotone" className="text-brand" />
-            {lang === 'tr'
-              ? `Toplu Prim Ödemesi — ${deptLabel}`
-              : `Bulk Bonus Payout — ${deptLabel}`}
+            {items.length === 1
+              ? lang === 'tr'
+                ? `Prim Ödemesi — ${deptLabel}`
+                : `Bonus Payout — ${deptLabel}`
+              : lang === 'tr'
+                ? `Toplu Prim Ödemesi — ${deptLabel}`
+                : `Bulk Bonus Payout — ${deptLabel}`}
           </DialogTitle>
         </DialogHeader>
 

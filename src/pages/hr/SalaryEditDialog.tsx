@@ -70,6 +70,7 @@ export function SalaryEditDialog({
         id: payment.id,
         amount_tl: data.amount_tl,
         old_amount_tl: payment.amount_tl,
+        salary_currency: employee.salary_currency ?? 'TL',
         paid_at: data.paid_at,
         notes: data.notes?.trim() || null,
         description:
@@ -113,7 +114,9 @@ export function SalaryEditDialog({
             {/* Amount */}
             <div>
               <Label className="mb-1 text-xs font-medium tracking-wide text-black/70">
-                {lang === 'tr' ? 'Tutar (TL)' : 'Amount (TL)'}
+                {lang === 'tr'
+                  ? `Tutar (${(employee?.salary_currency ?? 'TL') === 'USD' ? '$' : 'TL'})`
+                  : `Amount (${(employee?.salary_currency ?? 'TL') === 'USD' ? '$' : 'TL'})`}
               </Label>
               <Input
                 type="text"

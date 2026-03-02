@@ -163,6 +163,7 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
   const [bulkPayoutOpen, setBulkPayoutOpen] = useState(false)
   const [pendingSearch, setPendingSearch] = useState('')
   const [pendingPage, setPendingPage] = useState(1)
+  const [selectedBonusIds, setSelectedBonusIds] = useState<Set<string>>(new Set())
 
   const { data: advances = [] } = useAdvancesQuery(otherYear, otherMonth)
 
@@ -306,7 +307,32 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
     [filteredPendingItems, pendingPage],
   )
 
-  useEffect(() => { setPendingPage(1) }, [pendingSearch, otherPeriodLabel])
+  useEffect(() => { setPendingPage(1); setSelectedBonusIds(new Set()) }, [pendingSearch, otherPeriodLabel])
+
+  /* Bonus selection helpers */
+  const toggleBonusSelect = (key: string) => {
+    setSelectedBonusIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+  const bonusItemKey = (item: BulkPayoutItem) => item.pending_payment_id ?? item.agreement_id ?? item.employee_id
+  const toggleBonusSelectAll = () => {
+    if (selectedBonusIds.size === filteredPendingItems.length) {
+      setSelectedBonusIds(new Set())
+    } else {
+      setSelectedBonusIds(new Set(filteredPendingItems.map(bonusItemKey)))
+    }
+  }
+  const allBonusSelected = filteredPendingItems.length > 0 && selectedBonusIds.size === filteredPendingItems.length
+  const hasBonusSelection = selectedBonusIds.size > 0
+
+  const bonusPayoutItems = useMemo(() => {
+    if (!hasBonusSelection) return otherBulkItems
+    return otherBulkItems.filter((item) => selectedBonusIds.has(bonusItemKey(item)))
+  }, [otherBulkItems, selectedBonusIds, hasBonusSelection])
 
   const handleAddNew = () => {
     setDeptTab('other')
@@ -700,7 +726,13 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
                     {canManage && otherBulkItems.length > 0 && (
                       <Button variant="filled" size="sm" onClick={() => setBulkPayoutOpen(true)}>
                         <CheckFat size={14} weight="fill" />
-                        {lang === 'tr' ? 'Toplu Ödendi İşaretle' : 'Mark All Paid'}
+                        {hasBonusSelection
+                          ? lang === 'tr'
+                            ? `Seçilenleri Öde (${selectedBonusIds.size})`
+                            : `Pay Selected (${selectedBonusIds.size})`
+                          : lang === 'tr'
+                            ? 'Toplu Ödendi İşaretle'
+                            : 'Mark All Paid'}
                       </Button>
                     )}
                   </div>
@@ -722,6 +754,16 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
                       <Table>
                         <TableHeader>
                           <TableRow>
+                            {canManage && (
+                              <TableHead className="w-10">
+                                <input
+                                  type="checkbox"
+                                  className="size-3.5 cursor-pointer rounded border-black/20 accent-brand"
+                                  checked={allBonusSelected}
+                                  onChange={toggleBonusSelectAll}
+                                />
+                              </TableHead>
+                            )}
                             <TableHead className="w-52">
                               {lang === 'tr' ? 'Çalışan' : 'Employee'}
                             </TableHead>
@@ -745,8 +787,19 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
                               : null
                             const empAdvance = bonusAdvancesByEmp.get(item.employee_id) ?? 0
                             const net = Math.max(0, item.amount_usdt - empAdvance)
+                            const itemKey = bonusItemKey(item)
                             return (
-                              <TableRow key={item.agreement_id ?? item.employee_id}>
+                              <TableRow key={itemKey} className={selectedBonusIds.has(itemKey) ? 'bg-brand/[0.03]' : ''}>
+                                {canManage && (
+                                  <TableCell>
+                                    <input
+                                      type="checkbox"
+                                      className="size-3.5 cursor-pointer rounded border-black/20 accent-brand"
+                                      checked={selectedBonusIds.has(itemKey)}
+                                      onChange={() => toggleBonusSelect(itemKey)}
+                                    />
+                                  </TableCell>
+                                )}
                                 <TableCell>
                                   <span className="truncate text-sm font-medium text-black">
                                     {emp?.full_name ?? item.employee_name}
@@ -797,7 +850,7 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
                           {otherBulkItems.length > 1 && (
                             <TableRow className="bg-black/[0.02]">
                               <TableCell
-                                colSpan={4}
+                                colSpan={canManage ? 5 : 4}
                                 className="text-right text-xs font-semibold text-black/50"
                               >
                                 {lang === 'tr' ? 'Toplam' : 'Total'}
@@ -873,8 +926,8 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
             />
             <BulkPayoutConfirmDialog
               open={bulkPayoutOpen}
-              onClose={() => setBulkPayoutOpen(false)}
-              items={otherBulkItems}
+              onClose={() => { setBulkPayoutOpen(false); setSelectedBonusIds(new Set()) }}
+              items={bonusPayoutItems}
               dept="other"
               periodLabel={otherPeriodLabel}
               lang={lang}

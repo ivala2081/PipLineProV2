@@ -21,8 +21,11 @@ import { useBulkSalaryPayoutMutation, type BulkSalaryPayoutItem } from '@/hooks/
 
 /* ------------------------------------------------------------------ */
 
-function fmtTL(n: number) {
+function fmtNum(n: number) {
   return n.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+}
+function fmtAmount(n: number, currency: 'TL' | 'USD' = 'TL') {
+  return fmtNum(n) + (currency === 'USD' ? ' $' : ' TL')
 }
 
 interface BulkSalaryConfirmDialogProps {
@@ -45,11 +48,14 @@ export function BulkSalaryConfirmDialog({
   const [paidAt, setPaidAt] = useState(new Date().toISOString().split('T')[0])
 
   const eligibleItems = items.filter((i) => i.amount_tl > 0)
-  const totalSalary = eligibleItems.reduce((s, i) => s + i.amount_tl, 0)
+  const tlItems = eligibleItems.filter((i) => (i.salary_currency ?? 'TL') === 'TL')
+  const usdItems = eligibleItems.filter((i) => (i.salary_currency ?? 'TL') === 'USD')
+  const totalSalaryTl = tlItems.reduce((s, i) => s + i.amount_tl, 0)
+  const totalSalaryUsd = usdItems.reduce((s, i) => s + i.amount_tl, 0)
   const totalSupplement = eligibleItems.reduce((s, i) => s + (i.supplement_tl ?? 0), 0)
   const totalDeduction = eligibleItems.reduce((s, i) => s + (i.attendance_deduction_tl ?? 0), 0)
   const totalLeaveDeduction = eligibleItems.reduce((s, i) => s + (i.unpaid_leave_deduction_tl ?? 0), 0)
-  const total = totalSalary + totalSupplement - totalDeduction - totalLeaveDeduction
+  const hasMixed = totalSalaryTl > 0 && totalSalaryUsd > 0
   const hasItems = eligibleItems.length > 0
 
   const handleConfirm = async () => {
@@ -78,7 +84,13 @@ export function BulkSalaryConfirmDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Money size={20} weight="duotone" className="text-green" />
-            {lang === 'tr' ? 'Toplu Maaş Ödemesi' : 'Bulk Salary Payment'}
+            {items.length === 1
+              ? lang === 'tr'
+                ? 'Maaş Ödemesi'
+                : 'Salary Payment'
+              : lang === 'tr'
+                ? 'Toplu Maaş Ödemesi'
+                : 'Bulk Salary Payment'}
           </DialogTitle>
         </DialogHeader>
 
@@ -108,7 +120,7 @@ export function BulkSalaryConfirmDialog({
                       <TableHead>{lang === 'tr' ? 'Çalışan' : 'Employee'}</TableHead>
                       <TableHead>{lang === 'tr' ? 'Açıklama' : 'Description'}</TableHead>
                       <TableHead className="text-right">
-                        {lang === 'tr' ? 'Maaş (TL)' : 'Salary (TL)'}
+                        {lang === 'tr' ? 'Maaş' : 'Salary'}
                       </TableHead>
                       <TableHead className="text-right">
                         {lang === 'tr' ? 'Sigorta Elden Ödeme' : 'Insurance Supplement'}
@@ -134,13 +146,13 @@ export function BulkSalaryConfirmDialog({
                         </TableCell>
                         <TableCell className="text-right">
                           <span className="tabular-nums text-sm font-semibold text-green">
-                            {fmtTL(item.amount_tl)} TL
+                            {fmtAmount(item.amount_tl, item.salary_currency ?? 'TL')}
                           </span>
                         </TableCell>
                         <TableCell className="text-right">
                           {(item.supplement_tl ?? 0) > 0 ? (
                             <span className="tabular-nums text-sm font-semibold text-orange">
-                              +{fmtTL(item.supplement_tl)} TL
+                              +{fmtAmount(item.supplement_tl, 'TL')}
                             </span>
                           ) : (
                             <span className="text-xs text-black/25">—</span>
@@ -149,7 +161,7 @@ export function BulkSalaryConfirmDialog({
                         <TableCell className="text-right">
                           {(item.attendance_deduction_tl ?? 0) > 0 ? (
                             <span className="tabular-nums text-sm font-semibold text-red">
-                              -{fmtTL(item.attendance_deduction_tl)} TL
+                              -{fmtAmount(item.attendance_deduction_tl, item.salary_currency ?? 'TL')}
                             </span>
                           ) : (
                             <span className="text-xs text-black/25">—</span>
@@ -158,7 +170,7 @@ export function BulkSalaryConfirmDialog({
                         <TableCell className="text-right">
                           {(item.unpaid_leave_deduction_tl ?? 0) > 0 ? (
                             <span className="tabular-nums text-sm font-semibold text-red">
-                              -{fmtTL(item.unpaid_leave_deduction_tl)} TL
+                              -{fmtAmount(item.unpaid_leave_deduction_tl, item.salary_currency ?? 'TL')}
                             </span>
                           ) : (
                             <span className="text-xs text-black/25">—</span>
@@ -175,9 +187,18 @@ export function BulkSalaryConfirmDialog({
                         {lang === 'tr' ? 'Toplam' : 'Total'}
                       </TableCell>
                       <TableCell className="text-right">
-                        <span className="tabular-nums text-base font-bold text-green">
-                          {fmtTL(total)} TL
-                        </span>
+                        <div className="flex flex-col items-end gap-0.5">
+                          {totalSalaryTl > 0 && (
+                            <span className="tabular-nums text-base font-bold text-green">
+                              {fmtAmount(totalSalaryTl + totalSupplement - tlItems.reduce((s, i) => s + (i.attendance_deduction_tl ?? 0) + (i.unpaid_leave_deduction_tl ?? 0), 0), 'TL')}
+                            </span>
+                          )}
+                          {totalSalaryUsd > 0 && (
+                            <span className="tabular-nums text-base font-bold text-green">
+                              {fmtAmount(totalSalaryUsd - usdItems.reduce((s, i) => s + (i.attendance_deduction_tl ?? 0) + (i.unpaid_leave_deduction_tl ?? 0), 0), 'USD')}
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   </TableBody>
@@ -195,8 +216,8 @@ export function BulkSalaryConfirmDialog({
                 <CheckFat size={16} weight="fill" className="mt-0.5 shrink-0 text-green" />
                 <p className="text-xs text-black/60">
                   {lang === 'tr'
-                    ? `${eligibleItems.length} çalışan için toplam ${fmtTL(totalSalary)} TL maaş${totalSupplement > 0 ? ` + ${fmtTL(totalSupplement)} TL ek ücret` : ''}${totalDeduction > 0 ? ` − ${fmtTL(totalDeduction)} TL devam kesintisi` : ''}${totalLeaveDeduction > 0 ? ` − ${fmtTL(totalLeaveDeduction)} TL izin kesintisi` : ''} ödemesi oluşturulacak ve muhasebe kasa defterine (Nakit TL) işlenecek.`
-                    : `${eligibleItems.length} salary payment records totaling ${fmtTL(totalSalary)} TL${totalSupplement > 0 ? ` + ${fmtTL(totalSupplement)} TL supplement` : ''}${totalDeduction > 0 ? ` − ${fmtTL(totalDeduction)} TL absence deduction` : ''}${totalLeaveDeduction > 0 ? ` − ${fmtTL(totalLeaveDeduction)} TL leave deduction` : ''} will be created and recorded in the accounting ledger (Cash TL).`}
+                    ? `${eligibleItems.length} çalışan için${totalSalaryTl > 0 ? ` ${fmtNum(totalSalaryTl)} TL` : ''}${totalSalaryUsd > 0 ? `${totalSalaryTl > 0 ? ' +' : ''} ${fmtNum(totalSalaryUsd)} $` : ''} maaş${totalSupplement > 0 ? ` + ${fmtNum(totalSupplement)} TL ek ücret` : ''} ödemesi oluşturulacak.${hasMixed ? ' TL ödemeler Nakit TL, USD ödemeler Nakit USD kasasına işlenecek.' : totalSalaryUsd > 0 ? ' Nakit USD kasasına işlenecek.' : ' Nakit TL kasasına işlenecek.'}`
+                    : `${eligibleItems.length} salary payments will be created.${hasMixed ? ' TL payments → Cash TL, USD payments → Cash USD register.' : totalSalaryUsd > 0 ? ' Recorded in Cash USD register.' : ' Recorded in Cash TL register.'}`}
                 </p>
               </div>
             </>

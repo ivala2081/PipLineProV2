@@ -42,6 +42,7 @@ const employeeSchema = z.object({
     'Programmer',
   ]),
   salary_tl: z.coerce.number().min(0, 'Maaş negatif olamaz'),
+  salary_currency: z.enum(['TL', 'USD']),
   is_insured: z.boolean(),
   receives_supplement: z.boolean(),
   is_active: z.boolean(),
@@ -79,6 +80,7 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
       email: '',
       role: 'Operation',
       salary_tl: 0,
+      salary_currency: 'TL' as const,
       is_insured: true,
       receives_supplement: false,
       is_active: true,
@@ -95,6 +97,7 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
           email: employee.email,
           role: employee.role,
           salary_tl: employee.salary_tl ?? 0,
+          salary_currency: employee.salary_currency ?? 'TL',
           is_insured: employee.is_insured ?? true,
           receives_supplement: employee.receives_supplement ?? false,
           is_active: employee.is_active,
@@ -108,6 +111,7 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
           email: '',
           role: 'Operation',
           salary_tl: 0,
+          salary_currency: 'TL' as const,
           is_insured: true,
           receives_supplement: false,
           is_active: true,
@@ -126,6 +130,7 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
         email: data.email.trim().toLowerCase(),
         role: data.role,
         salary_tl: data.salary_tl,
+        salary_currency: data.salary_currency,
         is_insured: data.is_insured,
         receives_supplement: data.is_insured ? false : data.receives_supplement,
         is_active: data.is_active,
@@ -218,10 +223,38 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
                 <Input type="date" {...form.register('hire_date')} />
               </div>
 
-              <div>
+              <div className="sm:col-span-2 space-y-sm">
                 <Label className="mb-1 text-xs font-medium tracking-wide text-black/70">
-                  {lang === 'tr' ? 'Maaş (₺)' : 'Salary (₺)'}
+                  {lang === 'tr' ? 'Maaş' : 'Salary'}
                 </Label>
+
+                {/* Currency selector */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => form.setValue('salary_currency', 'TL')}
+                    className={`rounded-lg border px-3 py-2 text-center transition-colors ${
+                      form.watch('salary_currency') === 'TL'
+                        ? 'border-brand/40 bg-brand/5 text-black'
+                        : 'border-black/[0.09] bg-bg1 text-black/70'
+                    }`}
+                  >
+                    <span className="text-xs font-medium">₺ Türk Lirası (TL)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => form.setValue('salary_currency', 'USD')}
+                    className={`rounded-lg border px-3 py-2 text-center transition-colors ${
+                      form.watch('salary_currency') === 'USD'
+                        ? 'border-brand/40 bg-brand/5 text-black'
+                        : 'border-black/[0.09] bg-bg1 text-black/70'
+                    }`}
+                  >
+                    <span className="text-xs font-medium">$ Amerikan Doları (USD)</span>
+                  </button>
+                </div>
+
+                {/* Amount input */}
                 <Input
                   type="text"
                   inputMode="decimal"
