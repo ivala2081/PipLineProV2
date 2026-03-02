@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   CurrencyDollar,
   Plus,
@@ -14,6 +14,8 @@ import {
   GearSix,
   CheckFat,
   ClockCounterClockwise,
+  CaretLeft,
+  CaretRight,
 } from '@phosphor-icons/react'
 import {
   Button,
@@ -159,6 +161,8 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
     null,
   )
   const [bulkPayoutOpen, setBulkPayoutOpen] = useState(false)
+  const [pendingSearch, setPendingSearch] = useState('')
+  const [pendingPage, setPendingPage] = useState(1)
 
   const { data: advances = [] } = useAdvancesQuery(otherYear, otherMonth)
 
@@ -287,6 +291,22 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
     agreements,
     paidAgreementIdsForPeriod,
   ])
+
+  const PAGE_SIZE = 15
+
+  const filteredPendingItems = useMemo(() => {
+    if (!pendingSearch.trim()) return otherBulkItems
+    const q = pendingSearch.toLowerCase()
+    return otherBulkItems.filter((item) => item.employee_name.toLowerCase().includes(q))
+  }, [otherBulkItems, pendingSearch])
+
+  const pendingTotalPages = Math.max(1, Math.ceil(filteredPendingItems.length / PAGE_SIZE))
+  const paginatedPendingItems = useMemo(
+    () => filteredPendingItems.slice((pendingPage - 1) * PAGE_SIZE, pendingPage * PAGE_SIZE),
+    [filteredPendingItems, pendingPage],
+  )
+
+  useEffect(() => { setPendingPage(1) }, [pendingSearch, otherPeriodLabel])
 
   const handleAddNew = () => {
     setDeptTab('other')
@@ -671,6 +691,11 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
                           ))}
                         </SelectContent>
                       </Select>
+                      {/* Search */}
+                      <div className="relative min-w-48">
+                        <MagnifyingGlass size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30" />
+                        <Input className="pl-9" placeholder={lang === 'tr' ? 'Çalışan ara...' : 'Search employee...'} value={pendingSearch} onChange={(e) => setPendingSearch(e.target.value)} />
+                      </div>
                     </div>
                     {canManage && otherBulkItems.length > 0 && (
                       <Button variant="filled" size="sm" onClick={() => setBulkPayoutOpen(true)}>
@@ -681,7 +706,7 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
                   </div>
 
                   {/* Pending payments table */}
-                  {otherBulkItems.length === 0 ? (
+                  {filteredPendingItems.length === 0 ? (
                     <EmptyState
                       icon={CheckCircle}
                       title={lang === 'tr' ? 'Bekleyen ödeme yok' : 'No pending payments'}
@@ -712,7 +737,7 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {otherBulkItems.map((item) => {
+                          {paginatedPendingItems.map((item) => {
                             const emp = employeeMap.get(item.employee_id)
                             const agr = item.agreement_id
                               ? agreements.find((a) => a.id === item.agreement_id)
@@ -794,6 +819,17 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
                         </TableBody>
                       </Table>
                     </div>
+                    {pendingTotalPages > 1 && (
+                      <div className="flex items-center justify-center gap-2 pt-sm">
+                        <Button variant="ghost" size="icon-sm" onClick={() => setPendingPage((p) => Math.max(1, p - 1))} disabled={pendingPage === 1}>
+                          <CaretLeft size={14} />
+                        </Button>
+                        <span className="text-xs tabular-nums text-black/50">{pendingPage} / {pendingTotalPages}</span>
+                        <Button variant="ghost" size="icon-sm" onClick={() => setPendingPage((p) => Math.min(pendingTotalPages, p + 1))} disabled={pendingPage === pendingTotalPages}>
+                          <CaretRight size={14} />
+                        </Button>
+                      </div>
+                    )}
                   )}
                 </div>
               </TabsContent>

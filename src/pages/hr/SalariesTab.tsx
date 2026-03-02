@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react'
-import { Money, CheckCircle, Clock, ArrowLeft, ArrowRight, CheckFat, PencilSimple, ClockCounterClockwise } from '@phosphor-icons/react'
+import { useState, useMemo, useEffect } from 'react'
+import { Money, CheckCircle, Clock, ArrowLeft, ArrowRight, CheckFat, PencilSimple, ClockCounterClockwise, MagnifyingGlass, CaretLeft, CaretRight } from '@phosphor-icons/react'
 import {
   Button,
+  Input,
   Table,
   TableHeader,
   TableBody,
@@ -100,6 +101,9 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
   const [bulkPayoutOpen, setBulkPayoutOpen] = useState(false)
   const [editingPayment, setEditingPayment] = useState<HrSalaryPaymentLocal | null>(null)
   const [editingEmployee, setEditingEmployee] = useState<HrEmployee | null>(null)
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 15
 
   const { data: allSalaryPayments = [], isLoading } = useAllSalaryPaymentsQuery()
   const { data: advances = [] } = useAdvancesQuery(year, month)
@@ -132,6 +136,23 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
     }
     return map
   }, [allSalaryPayments, periodLabel])
+
+  /* Search-filtered unpaid employees */
+  const filteredUnpaid = useMemo(() => {
+    const unpaid = activeEmployees.filter((e) => !paidByEmp.has(e.id))
+    if (!search.trim()) return unpaid
+    const q = search.toLowerCase()
+    return unpaid.filter((e) => e.full_name.toLowerCase().includes(q))
+  }, [activeEmployees, paidByEmp, search])
+
+  const totalPages = Math.max(1, Math.ceil(filteredUnpaid.length / PAGE_SIZE))
+  const paginatedUnpaid = useMemo(
+    () => filteredUnpaid.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filteredUnpaid, page],
+  )
+
+  // Reset page when search or period changes
+  useEffect(() => { setPage(1) }, [search, periodLabel])
 
   /* Map of employee_id → salary advance total for this period */
   const salaryAdvanceByEmp = useMemo(() => {
@@ -285,6 +306,17 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
           </Button>
         </div>
 
+        {/* Search */}
+        <div className="relative min-w-48">
+          <MagnifyingGlass size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30" />
+          <Input
+            className="pl-9"
+            placeholder={lang === 'tr' ? 'Çalışan ara...' : 'Search employee...'}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+
         {/* Stats */}
         {!isLoading && activeEmployees.length > 0 && (
           <div className="flex items-center gap-sm">
@@ -336,7 +368,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
               : 'No active employees with a salary configured.'
           }
         />
-      ) : unpaidCount === 0 ? (
+      ) : filteredUnpaid.length === 0 ? (
         <EmptyState
           icon={CheckCircle}
           title={lang === 'tr' ? 'Tüm maaşlar ödendi' : 'All salaries paid'}
@@ -347,6 +379,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
           }
         />
       ) : (
+        <>
         <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
           <Table>
             <TableHeader>
@@ -372,7 +405,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {activeEmployees.filter((e) => !paidByEmp.has(e.id)).map((emp) => {
+              {paginatedUnpaid.map((emp) => {
                 const advance = salaryAdvanceByEmp.get(emp.id) ?? 0
                 const supplement = !emp.is_insured && emp.receives_supplement ? supplementTl : 0
                 const deduction = attendanceDeductionByEmp.get(emp.id) ?? 0
@@ -456,6 +489,18 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
             </TableBody>
           </Table>
         </div>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 pt-sm">
+            <Button variant="ghost" size="icon-sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+              <CaretLeft size={14} />
+            </Button>
+            <span className="text-xs tabular-nums text-black/50">{page} / {totalPages}</span>
+            <Button variant="ghost" size="icon-sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
+              <CaretRight size={14} />
+            </Button>
+          </div>
+        )}
+        </>
       )}
 
       {/* ── Geçmiş Ödemeler (paid salary records for this period) ── */}

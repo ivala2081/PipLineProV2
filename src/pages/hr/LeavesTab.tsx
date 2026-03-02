@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   CalendarBlank,
   Plus,
@@ -10,9 +10,11 @@ import {
   TreePalm,
   ProhibitInset,
   ChatText,
+  MagnifyingGlass,
 } from '@phosphor-icons/react'
 import {
   Button,
+  Input,
   Tag,
   Skeleton,
   Table,
@@ -98,6 +100,8 @@ interface LeavesTabProps {
   lang: 'tr' | 'en'
 }
 
+const PAGE_SIZE = 15
+
 export function LeavesTab({ employees, canManage, lang }: LeavesTabProps) {
   const { toast } = useToast()
   const { data: leaves = [], isLoading } = useHrLeavesQuery()
@@ -105,6 +109,8 @@ export function LeavesTab({ employees, canManage, lang }: LeavesTabProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<HrLeave | null>(null)
   const [noteLeave, setNoteLeave] = useState<HrLeave | null>(null)
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
 
   // Period filter
   const today = new Date()
@@ -140,6 +146,24 @@ export function LeavesTab({ employees, canManage, lang }: LeavesTabProps) {
     return leaves.filter((l) => l.start_date <= monthEnd && l.end_date >= monthStart)
   }, [leaves, filterYear, filterMonth])
 
+  // Apply employee search
+  const searchedLeaves = useMemo(() => {
+    if (!search.trim()) return filteredLeaves
+    const q = search.toLowerCase()
+    return filteredLeaves.filter((l) => {
+      const emp = empMap.get(l.employee_id)
+      return emp?.full_name.toLowerCase().includes(q)
+    })
+  }, [filteredLeaves, search, empMap])
+
+  const totalPages = Math.max(1, Math.ceil(searchedLeaves.length / PAGE_SIZE))
+  const paginatedLeaves = useMemo(
+    () => searchedLeaves.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [searchedLeaves, page],
+  )
+
+  useEffect(() => { setPage(1) }, [search, filterYear, filterMonth])
+
   const handleDelete = async (id: string) => {
     try {
       await deleteLeave.mutateAsync(id)
@@ -169,16 +193,22 @@ export function LeavesTab({ employees, canManage, lang }: LeavesTabProps) {
     <div className="space-y-lg">
       {/* Header row */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon-sm" onClick={prevMonth}>
-            <CaretLeft size={14} />
-          </Button>
-          <span className="min-w-[120px] text-center text-sm font-medium text-black">
-            {monthNames[filterMonth - 1]} {filterYear}
-          </span>
-          <Button variant="ghost" size="icon-sm" onClick={nextMonth}>
-            <CaretRight size={14} />
-          </Button>
+        <div className="flex items-center gap-sm">
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon-sm" onClick={prevMonth}>
+              <CaretLeft size={14} />
+            </Button>
+            <span className="min-w-[120px] text-center text-sm font-medium text-black">
+              {monthNames[filterMonth - 1]} {filterYear}
+            </span>
+            <Button variant="ghost" size="icon-sm" onClick={nextMonth}>
+              <CaretRight size={14} />
+            </Button>
+          </div>
+          <div className="relative min-w-48">
+            <MagnifyingGlass size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30" />
+            <Input className="pl-9" placeholder={lang === 'tr' ? 'Çalışan ara...' : 'Search employee...'} value={search} onChange={(e) => setSearch(e.target.value)} />
+          </div>
         </div>
 
         {canManage && (
@@ -196,7 +226,7 @@ export function LeavesTab({ employees, canManage, lang }: LeavesTabProps) {
             <Skeleton key={i} className="h-10 w-full rounded-lg" />
           ))}
         </div>
-      ) : filteredLeaves.length === 0 ? (
+      ) : searchedLeaves.length === 0 ? (
         <EmptyState
           icon={CalendarBlank}
           title={lang === 'tr' ? 'Bu dönemde izin kaydı yok' : 'No leave records for this period'}
@@ -209,6 +239,7 @@ export function LeavesTab({ employees, canManage, lang }: LeavesTabProps) {
           }
         />
       ) : (
+        <>
         <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
           <Table>
             <TableHeader>
@@ -222,7 +253,7 @@ export function LeavesTab({ employees, canManage, lang }: LeavesTabProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredLeaves.map((leave) => {
+              {paginatedLeaves.map((leave) => {
                 const emp = empMap.get(leave.employee_id)
                 const cfg = getLeaveTypeConfig(leave.leave_type, lang)
                 const days = dayCount(leave.start_date, leave.end_date)
@@ -290,6 +321,18 @@ export function LeavesTab({ employees, canManage, lang }: LeavesTabProps) {
             </TableBody>
           </Table>
         </div>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 pt-sm">
+            <Button variant="ghost" size="icon-sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+              <CaretLeft size={14} />
+            </Button>
+            <span className="text-xs tabular-nums text-black/50">{page} / {totalPages}</span>
+            <Button variant="ghost" size="icon-sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
+              <CaretRight size={14} />
+            </Button>
+          </div>
+        )}
+        </>
       )}
 
       {/* Leave create/edit dialog */}

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   CalendarBlank,
   CheckCircle,
@@ -8,9 +8,11 @@ import {
   CaretLeft,
   CaretRight,
   ShieldCheck,
+  MagnifyingGlass,
 } from '@phosphor-icons/react'
 import {
   Button,
+  Input,
   Tag,
   Skeleton,
   Table,
@@ -342,16 +344,25 @@ function MonthlySummary({
   year,
   month,
   lang,
+  search,
 }: {
   employees: HrEmployee[]
   year: number
   month: number
   lang: 'tr' | 'en'
+  search: string
 }) {
+  const [page, setPage] = useState(1)
   const { data: monthlyRecords = [], isLoading } = useHrMonthlyAttendanceQuery(year, month)
 
+  const filteredEmps = useMemo(() => {
+    if (!search.trim()) return employees
+    const q = search.toLowerCase()
+    return employees.filter((e) => e.full_name.toLowerCase().includes(q))
+  }, [employees, search])
+
   const summary = useMemo(() => {
-    return employees.map((emp) => {
+    return filteredEmps.map((emp) => {
       const recs = monthlyRecords.filter((r) => r.employee_id === emp.id)
       const totalAbsentHours = recs.reduce((sum, r) => sum + (r.absent_hours ?? 0), 0)
       return {
@@ -364,7 +375,15 @@ function MonthlySummary({
         total: recs.length,
       }
     })
-  }, [employees, monthlyRecords])
+  }, [filteredEmps, monthlyRecords])
+
+  const summaryTotalPages = Math.max(1, Math.ceil(summary.length / PAGE_SIZE))
+  const paginatedSummary = useMemo(
+    () => summary.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [summary, page],
+  )
+
+  useEffect(() => { setPage(1) }, [search])
 
   if (isLoading) {
     return (
@@ -377,6 +396,7 @@ function MonthlySummary({
   }
 
   return (
+    <>
     <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
         <Table>
           <TableHeader>
@@ -403,7 +423,7 @@ function MonthlySummary({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {summary.map(({ emp, present, absent, late, half_day, total_absent_hours, total }) => (
+            {paginatedSummary.map(({ emp, present, absent, late, half_day, total_absent_hours, total }) => (
               <TableRow key={emp.id}>
                 <TableCell>
                   <span className="text-sm font-medium text-black">{emp.full_name}</span>
@@ -437,6 +457,18 @@ function MonthlySummary({
           </TableBody>
         </Table>
     </div>
+    {summaryTotalPages > 1 && (
+      <div className="flex items-center justify-center gap-2 pt-sm">
+        <Button variant="ghost" size="icon-sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+          <CaretLeft size={14} />
+        </Button>
+        <span className="text-xs tabular-nums text-black/50">{page} / {summaryTotalPages}</span>
+        <Button variant="ghost" size="icon-sm" onClick={() => setPage((p) => Math.min(summaryTotalPages, p + 1))} disabled={page === summaryTotalPages}>
+          <CaretRight size={14} />
+        </Button>
+      </div>
+    )}
+    </>
   )
 }
 
@@ -450,13 +482,31 @@ interface AttendanceTabProps {
   lang: 'tr' | 'en'
 }
 
+const PAGE_SIZE = 15
+
 export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps) {
   const [selectedDate, setSelectedDate] = useState(todayString())
   const [view, setView] = useState<'daily' | 'summary'>('daily')
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
   const { data: hrSettings } = useHrSettingsQuery()
   const settings = hrSettings ?? DEFAULT_HR_SETTINGS
 
   const activeEmployees = useMemo(() => employees.filter((e) => e.is_active), [employees])
+
+  const filteredEmployees = useMemo(() => {
+    if (!search.trim()) return activeEmployees
+    const q = search.toLowerCase()
+    return activeEmployees.filter((e) => e.full_name.toLowerCase().includes(q))
+  }, [activeEmployees, search])
+
+  const totalPages = Math.max(1, Math.ceil(filteredEmployees.length / PAGE_SIZE))
+  const paginatedEmployees = useMemo(
+    () => filteredEmployees.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filteredEmployees, page],
+  )
+
+  useEffect(() => { setPage(1) }, [search, selectedDate])
 
   const { data: dayRecords = [], isLoading } = useHrAttendanceQuery(selectedDate)
 
@@ -509,6 +559,10 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
               <CaretRight size={14} />
             </Button>
           </div>
+          <div className="relative min-w-48">
+            <MagnifyingGlass size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30" />
+            <Input className="pl-9" placeholder={lang === 'tr' ? 'Çalışan ara...' : 'Search employee...'} value={search} onChange={(e) => setSearch(e.target.value)} />
+          </div>
         </div>
 
         {activeEmployees.length === 0 ? (
@@ -527,6 +581,7 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
             year={summaryYear}
             month={summaryMonth}
             lang={lang}
+            search={search}
           />
         )}
       </div>
@@ -536,7 +591,7 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
   /* ---- Daily Screen (default) ---- */
   return (
     <div className="space-y-lg">
-      {/* Date picker */}
+      {/* Date picker + search */}
       <div className="flex items-center gap-sm">
         <DatePicker
           dateFrom={selectedDate}
@@ -546,13 +601,17 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
           }}
           minWidth="9rem"
         />
+        <div className="relative min-w-48">
+          <MagnifyingGlass size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30" />
+          <Input className="pl-9" placeholder={lang === 'tr' ? 'Çalışan ara...' : 'Search employee...'} value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
         <Button variant="outline" size="sm" onClick={() => setView('summary')}>
           {lang === 'tr' ? 'Aylık Özet' : 'Monthly Summary'}
         </Button>
       </div>
 
       {/* Daily table */}
-      {activeEmployees.length === 0 ? (
+      {filteredEmployees.length === 0 ? (
         <EmptyState
           icon={CalendarBlank}
           title={lang === 'tr' ? 'Aktif çalışan yok' : 'No active employees'}
@@ -569,6 +628,7 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
           ))}
         </div>
       ) : (
+        <>
         <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
           <Table className="table-fixed">
             <colgroup>
@@ -592,7 +652,7 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
               </TableRow>
             </TableHeader>
             <TableBody>
-              {activeEmployees.map((emp) => (
+              {paginatedEmployees.map((emp) => (
                 <AttendanceRow
                   key={emp.id}
                   employee={emp}
@@ -606,6 +666,18 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
             </TableBody>
           </Table>
         </div>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 pt-sm">
+            <Button variant="ghost" size="icon-sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+              <CaretLeft size={14} />
+            </Button>
+            <span className="text-xs tabular-nums text-black/50">{page} / {totalPages}</span>
+            <Button variant="ghost" size="icon-sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
+              <CaretRight size={14} />
+            </Button>
+          </div>
+        )}
+        </>
       )}
     </div>
   )

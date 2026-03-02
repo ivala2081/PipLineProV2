@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
@@ -13,6 +13,7 @@ import {
   Button,
   Input,
   Label,
+  DatePickerField,
   Select,
   SelectTrigger,
   SelectValue,
@@ -345,7 +346,19 @@ export function BonusAgreementDialog({
                 <Label className="mb-1 text-xs font-medium tracking-wide text-black/70">
                   {lang === 'tr' ? 'Başlangıç Tarihi' : 'Effective From'}
                 </Label>
-                <Input type="date" {...form.register('effective_from')} />
+                <Controller
+                  control={form.control}
+                  name="effective_from"
+                  render={({ field }) => (
+                    <DatePickerField
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      placeholder={lang === 'tr' ? 'Tarih seç...' : 'Pick date...'}
+                      inputSize="sm"
+                    />
+                  )}
+                />
               </div>
 
               {/* Info: agreement ends automatically when employee is deactivated */}

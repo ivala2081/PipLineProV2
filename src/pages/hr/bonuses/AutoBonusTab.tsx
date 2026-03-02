@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { TrendUp, Trophy, Star, ChartBar, Trash, CheckFat, Money } from '@phosphor-icons/react'
+import { TrendUp, Trophy, Star, ChartBar, Trash, CheckFat, Money, MagnifyingGlass, CaretLeft, CaretRight } from '@phosphor-icons/react'
 import { localYMD } from '@/lib/date'
 import {
   Tag,
@@ -547,6 +547,8 @@ function PeriodSelector({ year, month, onYearChange, onMonthChange, lang }: Peri
 /*  Marketing Tab                                                       */
 /* ------------------------------------------------------------------ */
 
+const PAGE_SIZE = 15
+
 function MarketingBonusTable({
   stats,
   isLoading,
@@ -556,6 +558,7 @@ function MarketingBonusTable({
   canManage = false,
   paidEmployeeIds,
   onPayEmployee,
+  search,
 }: {
   stats: MtEmployeeStat[]
   isLoading: boolean
@@ -565,7 +568,33 @@ function MarketingBonusTable({
   canManage?: boolean
   paidEmployeeIds?: Set<string>
   onPayEmployee?: (emp: HrEmployee, amount: number) => void
+  search: string
 }) {
+  const [page, setPage] = useState(1)
+
+  const unpaidStats = useMemo(
+    () => stats.filter((s) => !paidEmployeeIds?.has(s.employee.id)),
+    [stats, paidEmployeeIds],
+  )
+
+  const filteredStats = useMemo(() => {
+    if (!search.trim()) return unpaidStats
+    const q = search.toLowerCase()
+    return unpaidStats.filter((s) => s.employee.full_name.toLowerCase().includes(q))
+  }, [unpaidStats, search])
+
+  const totalPages = Math.max(1, Math.ceil(filteredStats.length / PAGE_SIZE))
+  const sortedStats = useMemo(
+    () => [...filteredStats].sort((a, b) => b.count - a.count || b.totalVolumeUsd - a.totalVolumeUsd),
+    [filteredStats],
+  )
+  const paginatedStats = useMemo(
+    () => sortedStats.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [sortedStats, page],
+  )
+
+  useEffect(() => { setPage(1) }, [search])
+
   if (isLoading) {
     return (
       <div className="space-y-2 rounded-xl border border-black/[0.07] p-4">
@@ -590,9 +619,7 @@ function MarketingBonusTable({
     )
   }
 
-  const unpaidStats = stats.filter((s) => !paidEmployeeIds?.has(s.employee.id))
-
-  if (unpaidStats.length === 0) {
+  if (filteredStats.length === 0) {
     return (
       <EmptyState
         icon={ChartBar}
@@ -653,10 +680,7 @@ function MarketingBonusTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {stats
-              .filter((s) => !paidEmployeeIds?.has(s.employee.id))
-              .sort((a, b) => b.count - a.count || b.totalVolumeUsd - a.totalVolumeUsd)
-              .map((stat, idx) => {
+            {paginatedStats.map((stat, idx) => {
                 const advance = advancesByEmp.get(stat.employee.id) ?? 0
                 const net = Math.max(0, stat.totalBonus - advance)
                 return (
@@ -748,6 +772,17 @@ function MarketingBonusTable({
           </TableBody>
         </Table>
       </div>
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-sm">
+          <Button variant="ghost" size="icon-sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+            <CaretLeft size={14} />
+          </Button>
+          <span className="text-xs tabular-nums text-black/50">{page} / {totalPages}</span>
+          <Button variant="ghost" size="icon-sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
+            <CaretRight size={14} />
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
@@ -764,6 +799,7 @@ function ReattentionBonusTable({
   canManage = false,
   paidEmployeeIds,
   onPayEmployee,
+  search,
 }: {
   stats: ReEmployeeStat[]
   isLoading: boolean
@@ -772,7 +808,33 @@ function ReattentionBonusTable({
   canManage?: boolean
   paidEmployeeIds?: Set<string>
   onPayEmployee?: (emp: HrEmployee, amount: number) => void
+  search: string
 }) {
+  const [page, setPage] = useState(1)
+
+  const unpaidReStats = useMemo(
+    () => stats.filter((s) => !paidEmployeeIds?.has(s.employee.id)),
+    [stats, paidEmployeeIds],
+  )
+
+  const filteredReStats = useMemo(() => {
+    if (!search.trim()) return unpaidReStats
+    const q = search.toLowerCase()
+    return unpaidReStats.filter((s) => s.employee.full_name.toLowerCase().includes(q))
+  }, [unpaidReStats, search])
+
+  const sortedReStats = useMemo(
+    () => [...filteredReStats].sort((a, b) => b.bonus - a.bonus),
+    [filteredReStats],
+  )
+  const totalPages = Math.max(1, Math.ceil(sortedReStats.length / PAGE_SIZE))
+  const paginatedReStats = useMemo(
+    () => sortedReStats.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [sortedReStats, page],
+  )
+
+  useEffect(() => { setPage(1) }, [search])
+
   if (isLoading) {
     return (
       <div className="space-y-2 rounded-xl border border-black/[0.07] p-4">
@@ -797,9 +859,7 @@ function ReattentionBonusTable({
     )
   }
 
-  const unpaidReStats = stats.filter((s) => !paidEmployeeIds?.has(s.employee.id))
-
-  if (unpaidReStats.length === 0) {
+  if (filteredReStats.length === 0) {
     return (
       <EmptyState
         icon={TrendUp}
@@ -840,10 +900,7 @@ function ReattentionBonusTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {stats
-              .filter((s) => !paidEmployeeIds?.has(s.employee.id))
-              .sort((a, b) => b.bonus - a.bonus)
-              .map((stat) => {
+            {paginatedReStats.map((stat) => {
                 const advance = advancesByEmp.get(stat.employee.id) ?? 0
                 const net = Math.max(0, stat.bonus - advance)
                 return (
@@ -937,6 +994,17 @@ function ReattentionBonusTable({
           </TableBody>
         </Table>
       </div>
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-sm">
+          <Button variant="ghost" size="icon-sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+            <CaretLeft size={14} />
+          </Button>
+          <span className="text-xs tabular-nums text-black/50">{page} / {totalPages}</span>
+          <Button variant="ghost" size="icon-sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
+            <CaretRight size={14} />
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
@@ -957,6 +1025,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [bulkPayoutOpen, setBulkPayoutOpen] = useState(false)
+  const [search, setSearch] = useState('')
   const { toast } = useToast()
 
   const { data: employees = [], isLoading: empLoading } = useHrEmployeesQuery()
@@ -1117,7 +1186,13 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
     return (
       <div className="space-y-lg">
         <div className="flex flex-wrap items-center justify-between gap-sm">
-          {periodSelector}
+          <div className="flex flex-wrap items-center gap-sm">
+            {periodSelector}
+            <div className="relative min-w-48">
+              <MagnifyingGlass size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30" />
+              <Input className="pl-9" placeholder={lang === 'tr' ? 'Çalışan ara...' : 'Search employee...'} value={search} onChange={(e) => setSearch(e.target.value)} />
+            </div>
+          </div>
           <div className="flex items-center gap-sm">
             <div className="flex items-center gap-2 rounded-lg border border-black/[0.07] bg-bg1 px-3 py-2 shadow-sm">
               <span className="text-xs text-black/50">{lang === 'tr' ? 'Toplam' : 'Total'}</span>
@@ -1145,6 +1220,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
           canManage={canManage}
           paidEmployeeIds={paidMtIds}
           onPayEmployee={handlePayEmployee}
+          search={search}
         />
         <RecentPaymentsSection
           pmts={pmts}
@@ -1179,7 +1255,13 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
     return (
       <div className="space-y-lg">
         <div className="flex flex-wrap items-center justify-between gap-sm">
-          {periodSelector}
+          <div className="flex flex-wrap items-center gap-sm">
+            {periodSelector}
+            <div className="relative min-w-48">
+              <MagnifyingGlass size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30" />
+              <Input className="pl-9" placeholder={lang === 'tr' ? 'Çalışan ara...' : 'Search employee...'} value={search} onChange={(e) => setSearch(e.target.value)} />
+            </div>
+          </div>
           <div className="flex items-center gap-sm">
             <div className="flex items-center gap-2 rounded-lg border border-black/[0.07] bg-bg1 px-3 py-2 shadow-sm">
               <span className="text-xs text-black/50">{lang === 'tr' ? 'Toplam' : 'Total'}</span>
@@ -1206,6 +1288,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
           canManage={canManage}
           paidEmployeeIds={paidReIds}
           onPayEmployee={handlePayEmployee}
+          search={search}
         />
         <RecentPaymentsSection
           pmts={pmts}
@@ -1270,6 +1353,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
             lang={lang}
             config={config}
             advancesByEmp={advancesByEmp}
+            search=""
           />
         </TabsContent>
         <TabsContent value="reattention" className="pt-lg">
@@ -1278,6 +1362,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
             isLoading={isLoading}
             lang={lang}
             advancesByEmp={advancesByEmp}
+            search=""
           />
         </TabsContent>
       </Tabs>
