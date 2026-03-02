@@ -1,0 +1,2 @@
+ALTER TABLE hr_settings
+ADD COLUMN weekend_off BOOLEAN NOT NULL DEFAULT true;

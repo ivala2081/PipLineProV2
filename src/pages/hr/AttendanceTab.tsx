@@ -9,6 +9,7 @@ import {
   CaretRight,
   ShieldCheck,
   MagnifyingGlass,
+  SunHorizon,
 } from '@phosphor-icons/react'
 import {
   Button,
@@ -104,6 +105,48 @@ function getStatusConfig(status: HrAttendanceStatus | undefined, lang: 'tr' | 'e
   if (!status) return null
   const cfg = configs[status]
   return { ...cfg, displayLabel: lang === 'tr' ? cfg.label : cfg.labelEn }
+}
+
+/** Check if a YYYY-MM-DD date string falls on Saturday (6) or Sunday (0). */
+function isWeekendDate(dateStr: string): boolean {
+  const d = new Date(dateStr + 'T00:00:00')
+  const day = d.getDay()
+  return day === 0 || day === 6
+}
+
+/* ------------------------------------------------------------------ */
+/*  Weekend OFF Row (read-only)                                         */
+/* ------------------------------------------------------------------ */
+
+function AttendanceOffRow({ employee, lang }: { employee: HrEmployee; lang: 'tr' | 'en' }) {
+  return (
+    <TableRow className="opacity-60">
+      <TableCell>
+        <span className="text-sm font-medium text-black">{employee.full_name}</span>
+      </TableCell>
+      <TableCell>
+        <span className="inline-flex h-8 w-16 items-center justify-center rounded-md bg-bg2/40 text-xs text-black/15">—</span>
+      </TableCell>
+      <TableCell>
+        <span className="inline-flex h-8 items-center rounded-md bg-bg2/40 px-2 text-xs text-black/15">—</span>
+      </TableCell>
+      <TableCell>
+        <span className="inline-flex h-8 items-center rounded-md bg-bg2/40 px-2 text-xs text-black/15">—</span>
+      </TableCell>
+      <TableCell>
+        <span className="text-xs text-black/30">—</span>
+      </TableCell>
+      <TableCell>
+        <Tag variant="cyan">
+          <SunHorizon size={12} weight="fill" className="mr-0.5" />
+          OFF
+        </Tag>
+      </TableCell>
+      <TableCell>
+        <span className="text-xs text-black/15">—</span>
+      </TableCell>
+    </TableRow>
+  )
 }
 
 /* ------------------------------------------------------------------ */
@@ -345,12 +388,14 @@ function MonthlySummary({
   month,
   lang,
   search,
+  weekendOff,
 }: {
   employees: HrEmployee[]
   year: number
   month: number
   lang: 'tr' | 'en'
   search: string
+  weekendOff: boolean
 }) {
   const [page, setPage] = useState(1)
   const { data: monthlyRecords = [], isLoading } = useHrMonthlyAttendanceQuery(year, month)
@@ -363,7 +408,10 @@ function MonthlySummary({
 
   const summary = useMemo(() => {
     return filteredEmps.map((emp) => {
-      const recs = monthlyRecords.filter((r) => r.employee_id === emp.id)
+      let recs = monthlyRecords.filter((r) => r.employee_id === emp.id)
+      if (weekendOff) {
+        recs = recs.filter((r) => !isWeekendDate(r.date))
+      }
       const totalAbsentHours = recs.reduce((sum, r) => sum + (r.absent_hours ?? 0), 0)
       return {
         emp,
@@ -375,7 +423,7 @@ function MonthlySummary({
         total: recs.length,
       }
     })
-  }, [filteredEmps, monthlyRecords])
+  }, [filteredEmps, monthlyRecords, weekendOff])
 
   const summaryTotalPages = Math.max(1, Math.ceil(summary.length / PAGE_SIZE))
   const paginatedSummary = useMemo(
@@ -582,6 +630,7 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
             month={summaryMonth}
             lang={lang}
             search={search}
+            weekendOff={settings.weekend_off}
           />
         )}
       </div>
@@ -610,6 +659,18 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
         </Button>
       </div>
 
+      {/* Weekend OFF banner */}
+      {settings.weekend_off && isWeekendDate(selectedDate) && (
+        <div className="flex items-center gap-2 rounded-xl border border-cyan/30 bg-cyan/5 px-4 py-3">
+          <SunHorizon size={18} weight="duotone" className="shrink-0 text-cyan" />
+          <p className="text-sm text-black/60">
+            {lang === 'tr'
+              ? 'Bu gün hafta sonu — devam takibi yapılmıyor. Tüm çalışanlar otomatik OFF.'
+              : 'This is a weekend day — no attendance tracking. All employees are automatically OFF.'}
+          </p>
+        </div>
+      )}
+
       {/* Daily table */}
       {filteredEmployees.length === 0 ? (
         <EmptyState
@@ -621,7 +682,7 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
               : 'Add active employees to track attendance.'
           }
         />
-      ) : isLoading ? (
+      ) : isLoading && !(settings.weekend_off && isWeekendDate(selectedDate)) ? (
         <div className="space-y-2 rounded-xl border border-black/[0.07] p-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-12 w-full rounded-lg" />
@@ -652,17 +713,21 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedEmployees.map((emp) => (
-                <AttendanceRow
-                  key={emp.id}
-                  employee={emp}
-                  record={recordMap.get(emp.id)}
-                  date={selectedDate}
-                  canManage={canManage}
-                  lang={lang}
-                  settings={settings}
-                />
-              ))}
+              {settings.weekend_off && isWeekendDate(selectedDate)
+                ? paginatedEmployees.map((emp) => (
+                    <AttendanceOffRow key={emp.id} employee={emp} lang={lang} />
+                  ))
+                : paginatedEmployees.map((emp) => (
+                    <AttendanceRow
+                      key={emp.id}
+                      employee={emp}
+                      record={recordMap.get(emp.id)}
+                      date={selectedDate}
+                      canManage={canManage}
+                      lang={lang}
+                      settings={settings}
+                    />
+                  ))}
             </TableBody>
           </Table>
         </div>

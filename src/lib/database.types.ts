@@ -724,6 +724,7 @@ export interface Database {
           standard_check_in: string
           standard_check_out: string
           timezone: string
+          weekend_off: boolean
           updated_at: string
         }
         Insert: {
@@ -738,6 +739,7 @@ export interface Database {
           standard_check_in?: string
           standard_check_out?: string
           timezone?: string
+          weekend_off?: boolean
         }
         Update: {
           roles?: string[]
@@ -750,6 +752,7 @@ export interface Database {
           standard_check_in?: string
           standard_check_out?: string
           timezone?: string
+          weekend_off?: boolean
         }
         Relationships: [
           {

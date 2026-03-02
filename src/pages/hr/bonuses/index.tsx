@@ -717,6 +717,7 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
                       }
                     />
                   ) : (
+                    <>
                     <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
                       <Table>
                         <TableHeader>
@@ -830,6 +831,7 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
                         </Button>
                       </div>
                     )}
+                    </>
                   )}
                 </div>
               </TabsContent>

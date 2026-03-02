@@ -418,6 +418,55 @@ export function SettingsTab({ employees, canManage, lang }: SettingsTabProps) {
         </div>
       </div>
 
+      {/* ── Section: Hafta Sonu Tatili ── */}
+      <div className="space-y-sm">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-black/40">
+          {lang === 'tr' ? 'Hafta Sonu Tatili' : 'Weekend Off'}
+        </h3>
+        <div className="rounded-xl border border-black/[0.07] bg-bg1 p-4 space-y-md">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-black/70">
+                {lang === 'tr' ? 'Hafta Sonu Devam Takibi' : 'Weekend Attendance Tracking'}
+              </p>
+              <p className="text-[11px] text-black/30">
+                {lang === 'tr'
+                  ? 'Aktif olduğunda Cumartesi ve Pazar günleri otomatik OFF olarak işaretlenir, devam takibi yapılmaz'
+                  : 'When enabled, Saturday and Sunday are automatically marked as OFF, no attendance tracking is performed'}
+              </p>
+            </div>
+            {isEditing ? (
+              <button
+                type="button"
+                role="switch"
+                aria-checked={current.weekend_off}
+                onClick={() =>
+                  setDraft({
+                    ...current,
+                    weekend_off: !current.weekend_off,
+                  })
+                }
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+                  current.weekend_off ? 'bg-brand' : 'bg-black/15'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-sm ring-0 transition-transform ${
+                    current.weekend_off ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            ) : (
+              <Tag variant={current.weekend_off ? 'green' : 'red'}>
+                {current.weekend_off
+                  ? lang === 'tr' ? 'Aktif' : 'Active'
+                  : lang === 'tr' ? 'Kapalı' : 'Disabled'}
+              </Tag>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* ── Section 3: Devam Kesintisi ── */}
       <div className="space-y-sm">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-black/40">

@@ -35,6 +35,13 @@ import type { HrEmployeeRole } from '@/lib/database.types'
 
 /* ------------------------------------------------------------------ */
 
+/** Check if a YYYY-MM-DD date string falls on Saturday (6) or Sunday (0). */
+function isWeekendDate(dateStr: string): boolean {
+  const d = new Date(dateStr + 'T00:00:00')
+  const day = d.getDay()
+  return day === 0 || day === 6
+}
+
 function fmtTL(n: number) {
   return n.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 }
@@ -116,6 +123,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
   const hourlyDivisor = hrSettings?.absence_hourly_divisor ?? 240
   const dailyDeductionEnabled = hrSettings?.daily_deduction_enabled ?? true
   const hourlyDeductionEnabled = hrSettings?.hourly_deduction_enabled ?? true
+  const weekendOff = hrSettings?.weekend_off ?? true
 
   const monthNames = lang === 'tr' ? MONTH_NAMES_TR : MONTH_NAMES_EN
   const periodLabel = `${monthNames[month - 1]} ${year}`
@@ -169,7 +177,10 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
   const attendanceDeductionByEmp = useMemo(() => {
     const map = new Map<string, number>()
     for (const emp of activeEmployees) {
-      const empAttendance = monthlyAttendance.filter((a) => a.employee_id === emp.id)
+      let empAttendance = monthlyAttendance.filter((a) => a.employee_id === emp.id)
+      if (weekendOff) {
+        empAttendance = empAttendance.filter((a) => !isWeekendDate(a.date))
+      }
       const nonExempt = empAttendance.filter((a) => !a.deduction_exempt)
 
       let deduction = 0
@@ -190,7 +201,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
       if (deduction > 0) map.set(emp.id, deduction)
     }
     return map
-  }, [monthlyAttendance, activeEmployees, fullDayDivisor, halfDayDivisor, hourlyDivisor, dailyDeductionEnabled, hourlyDeductionEnabled])
+  }, [monthlyAttendance, activeEmployees, fullDayDivisor, halfDayDivisor, hourlyDivisor, dailyDeductionEnabled, hourlyDeductionEnabled, weekendOff])
 
   /* Map of employee_id → unpaid leave deduction for this period */
   const unpaidLeaveDeductionByEmp = useMemo(() => {

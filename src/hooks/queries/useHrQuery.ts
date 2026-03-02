@@ -187,6 +187,7 @@ export type HrSettings = {
   standard_check_in: string
   standard_check_out: string
   timezone: string
+  weekend_off: boolean
 }
 
 export const DEFAULT_HR_SETTINGS: HrSettings = {
@@ -203,6 +204,7 @@ export const DEFAULT_HR_SETTINGS: HrSettings = {
   standard_check_in: '10:00',
   standard_check_out: '18:30',
   timezone: 'Europe/Istanbul',
+  weekend_off: true,
 }
 
 export const DEFAULT_MT_CONFIG: MtConfig = {
@@ -1525,6 +1527,7 @@ export function useHrSettingsQuery() {
         standard_check_in: data.standard_check_in ?? DEFAULT_HR_SETTINGS.standard_check_in,
         standard_check_out: data.standard_check_out ?? DEFAULT_HR_SETTINGS.standard_check_out,
         timezone: data.timezone ?? DEFAULT_HR_SETTINGS.timezone,
+        weekend_off: data.weekend_off ?? DEFAULT_HR_SETTINGS.weekend_off,
       } as HrSettings
     },
     enabled: !!orgId,
@@ -1551,6 +1554,7 @@ export function useUpdateHrSettingsMutation() {
           standard_check_in: settings.standard_check_in,
           standard_check_out: settings.standard_check_out,
           timezone: settings.timezone,
+          weekend_off: settings.weekend_off,
           updated_at: new Date().toISOString(),
         },
         { onConflict: 'organization_id' },
