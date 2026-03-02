@@ -95,7 +95,8 @@
       "Bash(taskkill /F /PID 23792)",
       "Bash(cmd /c \"taskkill /F /PID 39540 & taskkill /F /PID 23792\")",
       "Bash(cmd /c \"taskkill /F /PID 39540\")",
-      "Bash(cmd /c \"taskkill /F /PID 23792\")"
+      "Bash(cmd /c \"taskkill /F /PID 23792\")",
+      "Bash(npm run build:check)"
     ]
   }
 }

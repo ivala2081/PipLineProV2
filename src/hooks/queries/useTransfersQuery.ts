@@ -91,9 +91,11 @@ interface UseTransfersQueryReturn {
   createTransfer: (data: TransferFormData, category: TransferCategory) => Promise<void>
   updateTransfer: (id: string, data: TransferFormData, category: TransferCategory) => Promise<void>
   deleteTransfer: (id: string) => Promise<void>
+  bulkDeleteTransfers: (ids: string[]) => Promise<unknown>
   isCreating: boolean
   isUpdating: boolean
   isDeleting: boolean
+  isBulkDeleting: boolean
 }
 
 export function useTransfersQuery(): UseTransfersQueryReturn {

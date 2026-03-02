@@ -1,5 +1,16 @@
 import { useState, useMemo, useEffect } from 'react'
-import { Money, CheckCircle, Clock, ArrowLeft, ArrowRight, CheckFat, ClockCounterClockwise, MagnifyingGlass, CaretLeft, CaretRight } from '@phosphor-icons/react'
+import {
+  Money,
+  CheckCircle,
+  Clock,
+  ArrowLeft,
+  ArrowRight,
+  CheckFat,
+  ClockCounterClockwise,
+  MagnifyingGlass,
+  CaretLeft,
+  CaretRight,
+} from '@phosphor-icons/react'
 import {
   Button,
   Input,
@@ -41,7 +52,10 @@ function isWeekendDate(dateStr: string): boolean {
 }
 
 function fmtAmount(n: number, currency: 'TL' | 'USD' = 'TL') {
-  return n.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + (currency === 'USD' ? ' $' : ' TL')
+  return (
+    n.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) +
+    (currency === 'USD' ? ' $' : ' TL')
+  )
 }
 
 const MONTH_NAMES_TR = [
@@ -82,7 +96,7 @@ function getRoleVariant(
     Manager: 'blue',
     Marketing: 'purple',
     Operation: 'green',
-    'Retention': 'orange',
+    Retention: 'orange',
     'Project Management': 'cyan',
     'Social Media': 'purple',
     'Sales Development': 'red',
@@ -157,7 +171,11 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
   )
 
   // Reset page and selection when search or period changes
-  useEffect(() => { setPage(1); setSelectedIds(new Set()) }, [search, periodLabel])
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- pagination reset on filter change
+  useEffect(() => {
+    setPage(1)
+    setSelectedIds(new Set())
+  }, [search, periodLabel])
 
   /* Map of employee_id → salary advance total for this period */
   const salaryAdvanceByEmp = useMemo(() => {
@@ -198,7 +216,16 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
       if (deduction > 0) map.set(emp.id, deduction)
     }
     return map
-  }, [monthlyAttendance, activeEmployees, fullDayDivisor, halfDayDivisor, hourlyDivisor, dailyDeductionEnabled, hourlyDeductionEnabled, weekendOff])
+  }, [
+    monthlyAttendance,
+    activeEmployees,
+    fullDayDivisor,
+    halfDayDivisor,
+    hourlyDivisor,
+    dailyDeductionEnabled,
+    hourlyDeductionEnabled,
+    weekendOff,
+  ])
 
   /* Map of employee_id → unpaid leave deduction for this period */
   const unpaidLeaveDeductionByEmp = useMemo(() => {
@@ -218,7 +245,6 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
     return map
   }, [monthlyLeaves, activeEmployees, fullDayDivisor, year, month])
 
-
   /* Build bulk payout items: employees not yet paid this period */
   const bulkItems = useMemo<BulkSalaryPayoutItem[]>(() => {
     return activeEmployees
@@ -231,7 +257,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
           employee_id: e.id,
           employee_name: e.full_name,
           amount_tl: e.salary_tl,
-          salary_currency: e.salary_currency ?? 'TL' as const,
+          salary_currency: e.salary_currency ?? ('TL' as const),
           supplement_tl: hasSupp ? supplementTl : 0,
           attendance_deduction_tl: deduction,
           unpaid_leave_deduction_tl: leaveDeduction,
@@ -242,7 +268,15 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
               : `${e.full_name} — ${periodLabel} Salary Payment`,
         }
       })
-  }, [activeEmployees, paidByEmp, periodLabel, lang, attendanceDeductionByEmp, unpaidLeaveDeductionByEmp, supplementTl])
+  }, [
+    activeEmployees,
+    paidByEmp,
+    periodLabel,
+    lang,
+    attendanceDeductionByEmp,
+    unpaidLeaveDeductionByEmp,
+    supplementTl,
+  ])
 
   const unpaidCount = bulkItems.length
   const paidCount = paidByEmp.size
@@ -307,264 +341,299 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
 
         <TabsContent value="pending" className="pt-lg">
           <div className="space-y-lg">
-      {/* Controls row */}
-      <div className="flex flex-wrap items-center gap-sm">
-        {/* Period navigator */}
-        <div className="flex items-center gap-1 rounded-lg border border-black/[0.07] bg-bg1 px-1 py-1">
-          <Button variant="ghost" size="icon-sm" onClick={prevMonth}>
-            <ArrowLeft size={14} />
-          </Button>
-          <span className="min-w-32 text-center text-sm font-semibold text-black">
-            {periodLabel}
-          </span>
-          <Button variant="ghost" size="icon-sm" onClick={nextMonth}>
-            <ArrowRight size={14} />
-          </Button>
-        </div>
+            {/* Controls row */}
+            <div className="flex flex-wrap items-center gap-sm">
+              {/* Period navigator */}
+              <div className="flex items-center gap-1 rounded-lg border border-black/[0.07] bg-bg1 px-1 py-1">
+                <Button variant="ghost" size="icon-sm" onClick={prevMonth}>
+                  <ArrowLeft size={14} />
+                </Button>
+                <span className="min-w-32 text-center text-sm font-semibold text-black">
+                  {periodLabel}
+                </span>
+                <Button variant="ghost" size="icon-sm" onClick={nextMonth}>
+                  <ArrowRight size={14} />
+                </Button>
+              </div>
 
-        {/* Search */}
-        <div className="relative min-w-48">
-          <MagnifyingGlass size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30" />
-          <Input
-            className="pl-9"
-            placeholder={lang === 'tr' ? 'Çalışan ara...' : 'Search employee...'}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
+              {/* Search */}
+              <div className="relative min-w-48">
+                <MagnifyingGlass
+                  size={15}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30"
+                />
+                <Input
+                  className="pl-9"
+                  placeholder={lang === 'tr' ? 'Çalışan ara...' : 'Search employee...'}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
 
-        {/* Stats */}
-        {!isLoading && activeEmployees.length > 0 && (
-          <div className="flex items-center gap-sm">
-            <div className="flex items-center gap-2 rounded-lg border border-black/[0.07] bg-bg1 px-3 py-2">
-              <CheckCircle size={14} weight="fill" className="text-green" />
-              <span className="text-xs text-black/50">{lang === 'tr' ? 'Ödendi' : 'Paid'}</span>
-              <span className="text-sm font-bold text-green tabular-nums">{paidCount}</span>
+              {/* Stats */}
+              {!isLoading && activeEmployees.length > 0 && (
+                <div className="flex items-center gap-sm">
+                  <div className="flex items-center gap-2 rounded-lg border border-black/[0.07] bg-bg1 px-3 py-2">
+                    <CheckCircle size={14} weight="fill" className="text-green" />
+                    <span className="text-xs text-black/50">
+                      {lang === 'tr' ? 'Ödendi' : 'Paid'}
+                    </span>
+                    <span className="text-sm font-bold text-green tabular-nums">{paidCount}</span>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-lg border border-black/[0.07] bg-bg1 px-3 py-2">
+                    <Clock size={14} weight="fill" className="text-orange" />
+                    <span className="text-xs text-black/50">
+                      {lang === 'tr' ? 'Bekleyen' : 'Pending'}
+                    </span>
+                    <span className="text-sm font-bold text-orange tabular-nums">
+                      {unpaidCount}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Pay button — selected or all */}
+              {canManage && unpaidCount > 0 && (
+                <Button
+                  variant="filled"
+                  className="ml-auto"
+                  onClick={() => setBulkPayoutOpen(true)}
+                >
+                  <CheckFat size={15} weight="fill" />
+                  {hasSelection
+                    ? lang === 'tr'
+                      ? `Seçilenleri Öde (${selectedIds.size})`
+                      : `Pay Selected (${selectedIds.size})`
+                    : lang === 'tr'
+                      ? `Maaşları Toplu Öde (${unpaidCount})`
+                      : `Bulk Pay Salaries (${unpaidCount})`}
+                </Button>
+              )}
             </div>
-            <div className="flex items-center gap-2 rounded-lg border border-black/[0.07] bg-bg1 px-3 py-2">
-              <Clock size={14} weight="fill" className="text-orange" />
-              <span className="text-xs text-black/50">
-                {lang === 'tr' ? 'Bekleyen' : 'Pending'}
-              </span>
-              <span className="text-sm font-bold text-orange tabular-nums">{unpaidCount}</span>
-            </div>
-          </div>
-        )}
 
-        {/* Pay button — selected or all */}
-        {canManage && unpaidCount > 0 && (
-          <Button variant="filled" className="ml-auto" onClick={() => setBulkPayoutOpen(true)}>
-            <CheckFat size={15} weight="fill" />
-            {hasSelection
-              ? lang === 'tr'
-                ? `Seçilenleri Öde (${selectedIds.size})`
-                : `Pay Selected (${selectedIds.size})`
-              : lang === 'tr'
-                ? `Maaşları Toplu Öde (${unpaidCount})`
-                : `Bulk Pay Salaries (${unpaidCount})`}
-          </Button>
-        )}
-      </div>
-
-      {/* Table — Bekleyen Ödemeler */}
-      {!isLoading && unpaidCount > 0 && (
-        <h3 className="text-sm font-semibold text-black/70">
-          {lang === 'tr' ? 'Bekleyen Ödemeler' : 'Pending Payments'}
-        </h3>
-      )}
-      {isLoading ? (
-        <div className="space-y-2 rounded-xl border border-black/[0.07] p-4">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-12 w-full rounded-lg" />
-          ))}
-        </div>
-      ) : activeEmployees.length === 0 ? (
-        <EmptyState
-          icon={Money}
-          title={lang === 'tr' ? 'Maaşlı çalışan yok' : 'No salaried employees'}
-          description={
-            lang === 'tr'
-              ? 'Maaş girilmiş aktif çalışan bulunamadı.'
-              : 'No active employees with a salary configured.'
-          }
-        />
-      ) : filteredUnpaid.length === 0 ? (
-        <EmptyState
-          icon={CheckCircle}
-          title={lang === 'tr' ? 'Tüm maaşlar ödendi' : 'All salaries paid'}
-          description={
-            lang === 'tr'
-              ? `${periodLabel} dönemi maaşlarının tamamı ödenmiştir.`
-              : `All salaries for ${periodLabel} have been paid.`
-          }
-        />
-      ) : (
-        <>
-        <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {canManage && (
-                  <TableHead className="w-10">
-                    <input
-                      type="checkbox"
-                      className="size-3.5 cursor-pointer rounded border-black/20 accent-brand"
-                      checked={allSelected}
-                      onChange={toggleSelectAll}
-                    />
-                  </TableHead>
-                )}
-                <TableHead className="w-48">{lang === 'tr' ? 'Çalışan' : 'Employee'}</TableHead>
-                <TableHead>{lang === 'tr' ? 'Rol' : 'Role'}</TableHead>
-                <TableHead className="text-right">
-                  {lang === 'tr' ? 'Brüt Maaş' : 'Gross Salary'}
-                </TableHead>
-                <TableHead className="text-right">
-                  {lang === 'tr' ? 'Sigorta Elden' : 'Supplement'}
-                </TableHead>
-                <TableHead className="text-right">{lang === 'tr' ? 'Avans' : 'Advance'}</TableHead>
-                <TableHead className="text-right">
-                  {lang === 'tr' ? 'Devam Kesintisi' : 'Absence Ded.'}
-                </TableHead>
-                <TableHead className="text-right">
-                  {lang === 'tr' ? 'İzin Kesintisi' : 'Leave Ded.'}
-                </TableHead>
-                <TableHead className="text-right">
-                  {lang === 'tr' ? 'Net Ödeme' : 'Net Payment'}
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedUnpaid.map((emp) => {
-                const cur = emp.salary_currency ?? 'TL'
-                const advance = salaryAdvanceByEmp.get(emp.id) ?? 0
-                const supplement = !emp.is_insured && emp.receives_supplement ? supplementTl : 0
-                const deduction = attendanceDeductionByEmp.get(emp.id) ?? 0
-                const leaveDeduction = unpaidLeaveDeductionByEmp.get(emp.id) ?? 0
-                // Net salary in employee's currency (supplement excluded for USD employees)
-                const netSalary = emp.salary_tl - advance - deduction - leaveDeduction
-                // For TL employees supplement is same currency, for USD it stays separate
-                const netTl = cur === 'TL' ? netSalary + supplement : netSalary
-                const hasMixedNet = cur === 'USD' && supplement > 0
-
-                return (
-                  <TableRow key={emp.id} className={selectedIds.has(emp.id) ? 'bg-brand/[0.03]' : ''}>
-                    {/* Checkbox */}
-                    {canManage && (
-                      <TableCell>
-                        <input
-                          type="checkbox"
-                          className="size-3.5 cursor-pointer rounded border-black/20 accent-brand"
-                          checked={selectedIds.has(emp.id)}
-                          onChange={() => toggleSelect(emp.id)}
-                        />
-                      </TableCell>
-                    )}
-                    {/* Employee */}
-                    <TableCell>
-                      <div className="flex items-center gap-sm">
-                        <span className="text-sm font-medium text-black">{emp.full_name}</span>
-                      </div>
-                    </TableCell>
-
-                    {/* Role */}
-                    <TableCell>
-                      <Tag variant={getRoleVariant(emp.role)}>{emp.role}</Tag>
-                    </TableCell>
-
-                    {/* Gross salary */}
-                    <TableCell className="text-right">
-                      <span className="tabular-nums text-sm font-medium text-black/70">
-                        {fmtAmount(emp.salary_tl, cur)}
-                      </span>
-                    </TableCell>
-
-                    {/* Supplement */}
-                    <TableCell className="text-right">
-                      {supplement > 0 ? (
-                        <span className="tabular-nums text-sm font-medium text-orange">
-                          +{fmtAmount(supplement, 'TL')}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-black/25">—</span>
-                      )}
-                    </TableCell>
-
-                    {/* Advance */}
-                    <TableCell className="text-right">
-                      {advance > 0 ? (
-                        <span className="tabular-nums text-sm font-medium text-orange">
-                          -{fmtAmount(advance, cur)}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-black/25">—</span>
-                      )}
-                    </TableCell>
-
-                    {/* Attendance deduction */}
-                    <TableCell className="text-right">
-                      {deduction > 0 ? (
-                        <span className="tabular-nums text-sm font-medium text-red">
-                          -{fmtAmount(deduction, cur)}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-black/25">—</span>
-                      )}
-                    </TableCell>
-
-                    {/* Unpaid leave deduction */}
-                    <TableCell className="text-right">
-                      {leaveDeduction > 0 ? (
-                        <span className="tabular-nums text-sm font-medium text-red">
-                          -{fmtAmount(leaveDeduction, cur)}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-black/25">—</span>
-                      )}
-                    </TableCell>
-
-                    {/* Net */}
-                    <TableCell className="text-right">
-                      <div className="flex flex-col items-end">
-                        <span className="tabular-nums text-sm font-semibold text-black">
-                          {fmtAmount(netTl > 0 ? netTl : 0, cur === 'TL' ? 'TL' : 'USD')}
-                        </span>
-                        {hasMixedNet && (
-                          <span className="tabular-nums text-xs font-medium text-orange">
-                            + {fmtAmount(supplement, 'TL')}
-                          </span>
+            {/* Table — Bekleyen Ödemeler */}
+            {!isLoading && unpaidCount > 0 && (
+              <h3 className="text-sm font-semibold text-black/70">
+                {lang === 'tr' ? 'Bekleyen Ödemeler' : 'Pending Payments'}
+              </h3>
+            )}
+            {isLoading ? (
+              <div className="space-y-2 rounded-xl border border-black/[0.07] p-4">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full rounded-lg" />
+                ))}
+              </div>
+            ) : activeEmployees.length === 0 ? (
+              <EmptyState
+                icon={Money}
+                title={lang === 'tr' ? 'Maaşlı çalışan yok' : 'No salaried employees'}
+                description={
+                  lang === 'tr'
+                    ? 'Maaş girilmiş aktif çalışan bulunamadı.'
+                    : 'No active employees with a salary configured.'
+                }
+              />
+            ) : filteredUnpaid.length === 0 ? (
+              <EmptyState
+                icon={CheckCircle}
+                title={lang === 'tr' ? 'Tüm maaşlar ödendi' : 'All salaries paid'}
+                description={
+                  lang === 'tr'
+                    ? `${periodLabel} dönemi maaşlarının tamamı ödenmiştir.`
+                    : `All salaries for ${periodLabel} have been paid.`
+                }
+              />
+            ) : (
+              <>
+                <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        {canManage && (
+                          <TableHead className="w-10">
+                            <input
+                              type="checkbox"
+                              className="size-3.5 cursor-pointer rounded border-black/20 accent-brand"
+                              checked={allSelected}
+                              onChange={toggleSelectAll}
+                            />
+                          </TableHead>
                         )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        </div>
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 pt-sm">
-            <Button variant="ghost" size="icon-sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
-              <CaretLeft size={14} />
-            </Button>
-            <span className="text-xs tabular-nums text-black/50">{page} / {totalPages}</span>
-            <Button variant="ghost" size="icon-sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
-              <CaretRight size={14} />
-            </Button>
-          </div>
-        )}
-        </>
-      )}
+                        <TableHead className="w-48">
+                          {lang === 'tr' ? 'Çalışan' : 'Employee'}
+                        </TableHead>
+                        <TableHead>{lang === 'tr' ? 'Rol' : 'Role'}</TableHead>
+                        <TableHead className="text-right">
+                          {lang === 'tr' ? 'Brüt Maaş' : 'Gross Salary'}
+                        </TableHead>
+                        <TableHead className="text-right">
+                          {lang === 'tr' ? 'Sigorta Elden' : 'Supplement'}
+                        </TableHead>
+                        <TableHead className="text-right">
+                          {lang === 'tr' ? 'Avans' : 'Advance'}
+                        </TableHead>
+                        <TableHead className="text-right">
+                          {lang === 'tr' ? 'Devam Kesintisi' : 'Absence Ded.'}
+                        </TableHead>
+                        <TableHead className="text-right">
+                          {lang === 'tr' ? 'İzin Kesintisi' : 'Leave Ded.'}
+                        </TableHead>
+                        <TableHead className="text-right">
+                          {lang === 'tr' ? 'Net Ödeme' : 'Net Payment'}
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedUnpaid.map((emp) => {
+                        const cur = emp.salary_currency ?? 'TL'
+                        const advance = salaryAdvanceByEmp.get(emp.id) ?? 0
+                        const supplement =
+                          !emp.is_insured && emp.receives_supplement ? supplementTl : 0
+                        const deduction = attendanceDeductionByEmp.get(emp.id) ?? 0
+                        const leaveDeduction = unpaidLeaveDeductionByEmp.get(emp.id) ?? 0
+                        // Net salary in employee's currency (supplement excluded for USD employees)
+                        const netSalary = emp.salary_tl - advance - deduction - leaveDeduction
+                        // For TL employees supplement is same currency, for USD it stays separate
+                        const netTl = cur === 'TL' ? netSalary + supplement : netSalary
+                        const hasMixedNet = cur === 'USD' && supplement > 0
 
-      {/* Salary confirm dialog */}
-      <BulkSalaryConfirmDialog
-        open={bulkPayoutOpen}
-        onClose={() => { setBulkPayoutOpen(false); setSelectedIds(new Set()) }}
-        items={payoutItems}
-        periodLabel={periodLabel}
-        lang={lang}
-      />
+                        return (
+                          <TableRow
+                            key={emp.id}
+                            className={selectedIds.has(emp.id) ? 'bg-brand/[0.03]' : ''}
+                          >
+                            {/* Checkbox */}
+                            {canManage && (
+                              <TableCell>
+                                <input
+                                  type="checkbox"
+                                  className="size-3.5 cursor-pointer rounded border-black/20 accent-brand"
+                                  checked={selectedIds.has(emp.id)}
+                                  onChange={() => toggleSelect(emp.id)}
+                                />
+                              </TableCell>
+                            )}
+                            {/* Employee */}
+                            <TableCell>
+                              <div className="flex items-center gap-sm">
+                                <span className="text-sm font-medium text-black">
+                                  {emp.full_name}
+                                </span>
+                              </div>
+                            </TableCell>
 
+                            {/* Role */}
+                            <TableCell>
+                              <Tag variant={getRoleVariant(emp.role)}>{emp.role}</Tag>
+                            </TableCell>
+
+                            {/* Gross salary */}
+                            <TableCell className="text-right">
+                              <span className="tabular-nums text-sm font-medium text-black/70">
+                                {fmtAmount(emp.salary_tl, cur)}
+                              </span>
+                            </TableCell>
+
+                            {/* Supplement */}
+                            <TableCell className="text-right">
+                              {supplement > 0 ? (
+                                <span className="tabular-nums text-sm font-medium text-orange">
+                                  +{fmtAmount(supplement, 'TL')}
+                                </span>
+                              ) : (
+                                <span className="text-xs text-black/25">—</span>
+                              )}
+                            </TableCell>
+
+                            {/* Advance */}
+                            <TableCell className="text-right">
+                              {advance > 0 ? (
+                                <span className="tabular-nums text-sm font-medium text-orange">
+                                  -{fmtAmount(advance, cur)}
+                                </span>
+                              ) : (
+                                <span className="text-xs text-black/25">—</span>
+                              )}
+                            </TableCell>
+
+                            {/* Attendance deduction */}
+                            <TableCell className="text-right">
+                              {deduction > 0 ? (
+                                <span className="tabular-nums text-sm font-medium text-red">
+                                  -{fmtAmount(deduction, cur)}
+                                </span>
+                              ) : (
+                                <span className="text-xs text-black/25">—</span>
+                              )}
+                            </TableCell>
+
+                            {/* Unpaid leave deduction */}
+                            <TableCell className="text-right">
+                              {leaveDeduction > 0 ? (
+                                <span className="tabular-nums text-sm font-medium text-red">
+                                  -{fmtAmount(leaveDeduction, cur)}
+                                </span>
+                              ) : (
+                                <span className="text-xs text-black/25">—</span>
+                              )}
+                            </TableCell>
+
+                            {/* Net */}
+                            <TableCell className="text-right">
+                              <div className="flex flex-col items-end">
+                                <span className="tabular-nums text-sm font-semibold text-black">
+                                  {fmtAmount(netTl > 0 ? netTl : 0, cur === 'TL' ? 'TL' : 'USD')}
+                                </span>
+                                {hasMixedNet && (
+                                  <span className="tabular-nums text-xs font-medium text-orange">
+                                    + {fmtAmount(supplement, 'TL')}
+                                  </span>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 pt-sm">
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                    >
+                      <CaretLeft size={14} />
+                    </Button>
+                    <span className="text-xs tabular-nums text-black/50">
+                      {page} / {totalPages}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={page === totalPages}
+                    >
+                      <CaretRight size={14} />
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Salary confirm dialog */}
+            <BulkSalaryConfirmDialog
+              open={bulkPayoutOpen}
+              onClose={() => {
+                setBulkPayoutOpen(false)
+                setSelectedIds(new Set())
+              }}
+              items={payoutItems}
+              periodLabel={periodLabel}
+              lang={lang}
+            />
           </div>
         </TabsContent>
 

@@ -144,7 +144,7 @@ export function validateRow(
 
   // Currency
   const currency = raw.currency.toUpperCase() as Currency
-  if (currency !== 'TL' && currency !== 'USD') {
+  if (currency !== 'TL' && currency !== 'USD' && currency !== 'USDT') {
     issues.push({
       field: 'currency',
       message: `Invalid currency "${raw.currency}"`,
@@ -158,7 +158,7 @@ export function validateRow(
     const rate = exchangeRates.get(isoDate)
     if (rate) {
       exchangeRate = rate
-    } else if (currency === 'USD') {
+    } else if (currency === 'USD' || currency === 'USDT') {
       issues.push({
         field: 'exchangeRate',
         message: `No exchange rate for ${isoDate}`,
@@ -193,7 +193,7 @@ export function validateRow(
     pspId: psp?.id ?? null,
     transferDate,
     amount,
-    currency: currency === 'TL' || currency === 'USD' ? currency : 'TL',
+    currency: currency === 'TL' || currency === 'USD' || currency === 'USDT' ? currency : 'TL',
     exchangeRate,
     amountTry,
     amountUsd,

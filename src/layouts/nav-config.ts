@@ -78,6 +78,6 @@ export const navGroups: NavGroup[] = [
   },
   {
     titleKey: 'nav.groups.ai',
-    items: [{ titleKey: 'nav.future', href: '/future', icon: Brain }],
+    items: [{ titleKey: 'nav.future', href: '/ai', icon: Brain }],
   },
 ]

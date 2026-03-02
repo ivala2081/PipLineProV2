@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, Trash, FloppyDisk, GearSix, PencilSimple, X } from '@phosphor-icons/react'
 import { Button, Input, Skeleton } from '@ds'
-import { formatAmount, parseAmount, numberToDisplay, amountPlaceholder } from '@/lib/formatAmount'
+import { formatAmount, parseAmount, numberToDisplay } from '@/lib/formatAmount'
 import {
   useMtConfigQuery,
   useUpdateMtConfigMutation,
@@ -74,7 +74,7 @@ function TierTable({
 
   // Sync displays when tiers change externally (e.g. cancel → re-edit)
   useEffect(() => {
-    setMinDisplays(tiers.map((t) => (t.min ? numberToDisplay(t.min, lang) : '')))
+    setMinDisplays(tiers.map((t) => (t.min ? numberToDisplay(t.min, lang) : ''))) // eslint-disable-line react-hooks/set-state-in-effect
     setBonusDisplays(tiers.map((t) => (t.bonus ? numberToDisplay(t.bonus, lang) : '')))
   }, [tiers.length, lang]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -457,7 +457,12 @@ export function MtConfigTab({ lang }: MtConfigTabProps) {
                           const formatted = formatAmount(e.target.value, lang)
                           setWeeklyPrizeDisplay(formatted)
                           setDraft((d) =>
-                            d ? { ...d, weekly_prize_amount: Math.round(parseAmount(formatted, lang)) } : d,
+                            d
+                              ? {
+                                  ...d,
+                                  weekly_prize_amount: Math.round(parseAmount(formatted, lang)),
+                                }
+                              : d,
                           )
                         }}
                         className="h-8 pr-14 text-sm font-semibold tabular-nums text-yellow-700"
@@ -505,7 +510,12 @@ export function MtConfigTab({ lang }: MtConfigTabProps) {
                           const formatted = formatAmount(e.target.value, lang)
                           setMonthlyPrizeDisplay(formatted)
                           setDraft((d) =>
-                            d ? { ...d, monthly_prize_amount: Math.round(parseAmount(formatted, lang)) } : d,
+                            d
+                              ? {
+                                  ...d,
+                                  monthly_prize_amount: Math.round(parseAmount(formatted, lang)),
+                                }
+                              : d,
                           )
                         }}
                         className="h-8 pr-14 text-sm font-semibold tabular-nums text-yellow-700"

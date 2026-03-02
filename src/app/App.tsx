@@ -49,7 +49,7 @@ const PspsPage = lazy(() => import('@/pages/psps').then((m) => ({ default: m.Psp
 const PspDetailPage = lazy(() =>
   import('@/pages/psps/PspDetailPage').then((m) => ({ default: m.PspDetailPage })),
 )
-const FuturePage = lazy(() => import('@/pages/future').then((m) => ({ default: m.FuturePage })))
+const AiPage = lazy(() => import('@/pages/ai').then((m) => ({ default: m.AiPage })))
 const MembersPage = lazy(() =>
   import('@/pages/management/members').then((m) => ({ default: m.MembersPage })),
 )
@@ -234,10 +234,10 @@ export function App() {
                             }
                           />
                           <Route
-                            path="/future"
+                            path="/ai"
                             element={
                               <PageSuspense>
-                                <FuturePage />
+                                <AiPage />
                               </PageSuspense>
                             }
                           />

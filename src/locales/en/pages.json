@@ -112,6 +112,10 @@
       "withdrawals": "Withdrawal Count",
       "avgTransaction": "Avg Transaction"
     },
+    "prevMonth": {
+      "title": "Previous Month",
+      "historical": "Historical"
+    },
     "insights": {
       "registerBalances": "Register Balances",
       "noBalances": "No register data",
@@ -181,16 +185,16 @@
       "transfersLabel": "transfers",
       "totalBank": "Total Bank",
       "totalCreditCard": "Total Credit Card",
-      "totalUsd": "Total USD",
-      "dayRate": "Day Rate (USD/TRY)",
-      "netWithComm": "Net Cash (USD)",
-      "netWithoutComm": "Gross Cash (USD)",
+      "totalUsd": "Total USDT",
+      "dayRate": "Day Rate (USDT/TRY)",
+      "netWithComm": "Net Cash (USDT)",
+      "netWithoutComm": "Gross Cash (USDT)",
       "afterCommission": "After commission",
       "beforeCommission": "Before commission",
       "editRate": "Adjust rate",
       "resetRate": "Reset to average",
       "original": "avg",
-      "usdTransferCount": "{{count}} USD",
+      "usdTransferCount": "{{count}} USDT",
       "applyingRate": "Applying...",
       "breakdown": "Breakdown"
     },
@@ -1007,13 +1011,29 @@
     }
   },
   "future": {
-    "title": "Future",
+    "title": "AI Assistant",
     "subtitle": "AI-powered assistant for PipLinePro.",
-    "placeholder": "Type a message...",
+    "placeholder": "Ask about your data...",
     "send": "Send",
-    "welcome": "Hi! I'm your PipLinePro AI assistant. Ask me anything about the system.",
+    "welcome": "Hi! How can I help?",
+    "welcomeSub": "Ask me anything about {{org}}",
     "error": "Failed to get a response. Please try again.",
-    "thinking": "Thinking..."
+    "thinking": "Thinking",
+    "model": "Claude claude-sonnet-4-6",
+    "newChat": "New chat",
+    "disclaimer": "Read-only access · Responses may contain errors",
+    "prompt": {
+      "monthly": "This month's KPI summary",
+      "topCustomers": "Top 10 customers this month",
+      "pspBreakdown": "PSP volume breakdown",
+      "lastMonth": "Last month's performance"
+    },
+    "tool": {
+      "monthly": "Fetching monthly summary...",
+      "transfers": "Querying transfers...",
+      "customers": "Loading customer data...",
+      "psps": "Fetching PSP list..."
+    }
   },
   "members": {
     "title": "Members",

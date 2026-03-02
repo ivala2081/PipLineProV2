@@ -1,5 +1,16 @@
 import { useState, useMemo, useEffect } from 'react'
-import { TrendUp, Trophy, Star, ChartBar, Trash, CheckFat, Money, MagnifyingGlass, CaretLeft, CaretRight } from '@phosphor-icons/react'
+import {
+  TrendUp,
+  Trophy,
+  Star,
+  ChartBar,
+  Trash,
+  CheckFat,
+  Money,
+  MagnifyingGlass,
+  CaretLeft,
+  CaretRight,
+} from '@phosphor-icons/react'
 import { localYMD } from '@/lib/date'
 import {
   Tag,
@@ -591,7 +602,8 @@ function MarketingBonusTable({
 
   const totalPages = Math.max(1, Math.ceil(filteredStats.length / PAGE_SIZE))
   const sortedStats = useMemo(
-    () => [...filteredStats].sort((a, b) => b.count - a.count || b.totalVolumeUsd - a.totalVolumeUsd),
+    () =>
+      [...filteredStats].sort((a, b) => b.count - a.count || b.totalVolumeUsd - a.totalVolumeUsd),
     [filteredStats],
   )
   const paginatedStats = useMemo(
@@ -599,7 +611,10 @@ function MarketingBonusTable({
     [sortedStats, page],
   )
 
-  useEffect(() => { setPage(1) }, [search])
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- pagination reset on search change
+  useEffect(() => {
+    setPage(1)
+  }, [search])
 
   if (isLoading) {
     return (
@@ -625,7 +640,8 @@ function MarketingBonusTable({
     )
   }
 
-  const allMtSelected = selectedIds && filteredStats.length > 0 && selectedIds.size === filteredStats.length
+  const allMtSelected =
+    selectedIds && filteredStats.length > 0 && selectedIds.size === filteredStats.length
 
   if (filteredStats.length === 0) {
     return (
@@ -699,114 +715,129 @@ function MarketingBonusTable({
           </TableHeader>
           <TableBody>
             {paginatedStats.map((stat, idx) => {
-                const advance = advancesByEmp.get(stat.employee.id) ?? 0
-                const net = Math.max(0, stat.totalBonus - advance)
-                return (
-                  <TableRow key={stat.employee.id} className={selectedIds?.has(stat.employee.id) ? 'bg-brand/[0.03]' : ''}>
-                    {canManage && onToggleSelect && (
-                      <TableCell>
-                        <input
-                          type="checkbox"
-                          className="size-3.5 cursor-pointer rounded border-black/20 accent-brand"
-                          checked={selectedIds?.has(stat.employee.id) ?? false}
-                          onChange={() => onToggleSelect(stat.employee.id)}
-                        />
-                      </TableCell>
-                    )}
+              const advance = advancesByEmp.get(stat.employee.id) ?? 0
+              const net = Math.max(0, stat.totalBonus - advance)
+              return (
+                <TableRow
+                  key={stat.employee.id}
+                  className={selectedIds?.has(stat.employee.id) ? 'bg-brand/[0.03]' : ''}
+                >
+                  {canManage && onToggleSelect && (
                     <TableCell>
-                      <div className="flex items-center gap-sm">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            {idx === 0 && (
-                              <Star size={12} weight="fill" className="text-yellow-500" />
-                            )}
-                            <span className="truncate text-sm font-medium text-black">
-                              {stat.employee.full_name}
-                            </span>
-                          </div>
-                          {stat.monthlyPrize && (
-                            <Tag variant="orange" className="mt-0.5 text-[10px]">
-                              {lang === 'tr' ? 'Ay Birincisi' : '1st Monthly'}
-                            </Tag>
+                      <input
+                        type="checkbox"
+                        className="size-3.5 cursor-pointer rounded border-black/20 accent-brand"
+                        checked={selectedIds?.has(stat.employee.id) ?? false}
+                        onChange={() => onToggleSelect(stat.employee.id)}
+                      />
+                    </TableCell>
+                  )}
+                  <TableCell>
+                    <div className="flex items-center gap-sm">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          {idx === 0 && (
+                            <Star size={12} weight="fill" className="text-yellow-500" />
                           )}
+                          <span className="truncate text-sm font-medium text-black">
+                            {stat.employee.full_name}
+                          </span>
                         </div>
+                        {stat.monthlyPrize && (
+                          <Tag variant="orange" className="mt-0.5 text-[10px]">
+                            {lang === 'tr' ? 'Ay Birincisi' : '1st Monthly'}
+                          </Tag>
+                        )}
                       </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span className="tabular-nums text-sm font-semibold text-black/80">
-                        {stat.count}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <span className="tabular-nums text-sm font-semibold text-black/80">
+                      {stat.count}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <BonusCell value={stat.depositBonus} />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <BonusCell value={stat.countBonus} />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <BonusCell value={stat.volumeBonus} />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {stat.weeklyPrize > 0 || stat.monthlyPrize ? (
+                      <span className="tabular-nums text-sm font-semibold text-yellow-600">
+                        {fmt(
+                          stat.weeklyPrize +
+                            (stat.monthlyPrize ? (config?.monthly_prize_amount ?? 200) : 0),
+                        )}{' '}
+                        USDT
                       </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <BonusCell value={stat.depositBonus} />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <BonusCell value={stat.countBonus} />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <BonusCell value={stat.volumeBonus} />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {stat.weeklyPrize > 0 || stat.monthlyPrize ? (
-                        <span className="tabular-nums text-sm font-semibold text-yellow-600">
-                          {fmt(
-                            stat.weeklyPrize +
-                              (stat.monthlyPrize ? (config?.monthly_prize_amount ?? 200) : 0),
-                          )}{' '}
-                          USDT
-                        </span>
-                      ) : (
-                        <span className="text-xs text-black/30">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {advance > 0 ? (
-                        <span className="tabular-nums text-sm font-semibold text-orange">
-                          -{fmt(advance)} USDT
-                        </span>
-                      ) : (
-                        <span className="text-xs text-black/30">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {stat.totalBonus > 0 ? (
-                        <span
-                          className={`tabular-nums text-sm font-bold ${advance > 0 ? 'text-blue' : 'text-green'}`}
-                        >
-                          {fmt(net)} USDT
-                        </span>
-                      ) : (
-                        <span className="text-xs text-black/30">—</span>
-                      )}
-                    </TableCell>
-                    {canManage && (
-                      <TableCell className="w-28 text-right">
-                        {stat.totalBonus > 0 && onPayEmployee ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 gap-1 px-2 text-xs"
-                            onClick={() => onPayEmployee(stat.employee, stat.totalBonus)}
-                          >
-                            <Money size={13} />
-                            {lang === 'tr' ? 'Ödeme Ekle' : 'Add Payment'}
-                          </Button>
-                        ) : null}
-                      </TableCell>
+                    ) : (
+                      <span className="text-xs text-black/30">—</span>
                     )}
-                  </TableRow>
-                )
-              })}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {advance > 0 ? (
+                      <span className="tabular-nums text-sm font-semibold text-orange">
+                        -{fmt(advance)} USDT
+                      </span>
+                    ) : (
+                      <span className="text-xs text-black/30">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {stat.totalBonus > 0 ? (
+                      <span
+                        className={`tabular-nums text-sm font-bold ${advance > 0 ? 'text-blue' : 'text-green'}`}
+                      >
+                        {fmt(net)} USDT
+                      </span>
+                    ) : (
+                      <span className="text-xs text-black/30">—</span>
+                    )}
+                  </TableCell>
+                  {canManage && (
+                    <TableCell className="w-28 text-right">
+                      {stat.totalBonus > 0 && onPayEmployee ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 gap-1 px-2 text-xs"
+                          onClick={() => onPayEmployee(stat.employee, stat.totalBonus)}
+                        >
+                          <Money size={13} />
+                          {lang === 'tr' ? 'Ödeme Ekle' : 'Add Payment'}
+                        </Button>
+                      ) : null}
+                    </TableCell>
+                  )}
+                </TableRow>
+              )
+            })}
           </TableBody>
         </Table>
       </div>
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 pt-sm">
-          <Button variant="ghost" size="icon-sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+          >
             <CaretLeft size={14} />
           </Button>
-          <span className="text-xs tabular-nums text-black/50">{page} / {totalPages}</span>
-          <Button variant="ghost" size="icon-sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
+          <span className="text-xs tabular-nums text-black/50">
+            {page} / {totalPages}
+          </span>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+          >
             <CaretRight size={14} />
           </Button>
         </div>
@@ -857,7 +888,8 @@ function ReattentionBonusTable({
     return unpaidReStats.filter((s) => s.employee.full_name.toLowerCase().includes(q))
   }, [unpaidReStats, search])
 
-  const allReSelected = selectedIds && filteredReStats.length > 0 && selectedIds.size === filteredReStats.length
+  const allReSelected =
+    selectedIds && filteredReStats.length > 0 && selectedIds.size === filteredReStats.length
 
   const sortedReStats = useMemo(
     () => [...filteredReStats].sort((a, b) => b.bonus - a.bonus),
@@ -869,7 +901,10 @@ function ReattentionBonusTable({
     [sortedReStats, page],
   )
 
-  useEffect(() => { setPage(1) }, [search])
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- pagination reset on search change
+  useEffect(() => {
+    setPage(1)
+  }, [search])
 
   if (isLoading) {
     return (
@@ -947,90 +982,96 @@ function ReattentionBonusTable({
           </TableHeader>
           <TableBody>
             {paginatedReStats.map((stat) => {
-                const advance = advancesByEmp.get(stat.employee.id) ?? 0
-                const net = Math.max(0, stat.bonus - advance)
-                return (
-                  <TableRow key={stat.employee.id} className={selectedIds?.has(stat.employee.id) ? 'bg-brand/[0.03]' : ''}>
-                    {canManage && onToggleSelect && (
-                      <TableCell>
-                        <input
-                          type="checkbox"
-                          className="size-3.5 cursor-pointer rounded border-black/20 accent-brand"
-                          checked={selectedIds?.has(stat.employee.id) ?? false}
-                          onChange={() => onToggleSelect(stat.employee.id)}
-                        />
-                      </TableCell>
-                    )}
+              const advance = advancesByEmp.get(stat.employee.id) ?? 0
+              const net = Math.max(0, stat.bonus - advance)
+              return (
+                <TableRow
+                  key={stat.employee.id}
+                  className={selectedIds?.has(stat.employee.id) ? 'bg-brand/[0.03]' : ''}
+                >
+                  {canManage && onToggleSelect && (
                     <TableCell>
-                      <div className="flex items-center gap-sm">
-                        <span className="truncate text-sm font-medium text-black">
-                          {stat.employee.full_name}
-                        </span>
-                      </div>
+                      <input
+                        type="checkbox"
+                        className="size-3.5 cursor-pointer rounded border-black/20 accent-brand"
+                        checked={selectedIds?.has(stat.employee.id) ?? false}
+                        onChange={() => onToggleSelect(stat.employee.id)}
+                      />
                     </TableCell>
-                    <TableCell className="text-right">
-                      <span className="tabular-nums text-sm text-green">
-                        +{fmt(stat.totalDepositsUsd, 0)}
+                  )}
+                  <TableCell>
+                    <div className="flex items-center gap-sm">
+                      <span className="truncate text-sm font-medium text-black">
+                        {stat.employee.full_name}
                       </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span className="tabular-nums text-sm text-red">
-                        −{fmt(stat.totalWithdrawalsUsd, 0)}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <span className="tabular-nums text-sm text-green">
+                      +{fmt(stat.totalDepositsUsd, 0)}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <span className="tabular-nums text-sm text-red">
+                      −{fmt(stat.totalWithdrawalsUsd, 0)}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <span
+                      className={`tabular-nums text-sm font-semibold ${stat.netUsd >= 0 ? 'text-blue' : 'text-red'}`}
+                    >
+                      {stat.netUsd >= 0 ? '+' : ''}
+                      {fmt(stat.netUsd, 0)} USD
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <BonusCell value={stat.bonus} />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {advance > 0 ? (
+                      <span className="tabular-nums text-sm font-semibold text-orange">
+                        -{fmt(advance)} USDT
                       </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span
-                        className={`tabular-nums text-sm font-semibold ${stat.netUsd >= 0 ? 'text-blue' : 'text-red'}`}
-                      >
-                        {stat.netUsd >= 0 ? '+' : ''}
-                        {fmt(stat.netUsd, 0)} USD
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <BonusCell value={stat.bonus} />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {advance > 0 ? (
-                        <span className="tabular-nums text-sm font-semibold text-orange">
-                          -{fmt(advance)} USDT
-                        </span>
-                      ) : (
-                        <span className="text-xs text-black/30">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {stat.bonus > 0 ? (
-                        <span
-                          className={`tabular-nums text-sm font-bold ${advance > 0 ? 'text-blue' : 'text-green'}`}
-                        >
-                          {fmt(net)} USDT
-                        </span>
-                      ) : (
-                        <span className="text-xs text-black/30">—</span>
-                      )}
-                    </TableCell>
-                    {canManage && (
-                      <TableCell className="w-28 text-right">
-                        {stat.bonus > 0 && onPayEmployee ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 gap-1 px-2 text-xs"
-                            onClick={() => onPayEmployee(stat.employee, stat.bonus)}
-                          >
-                            <Money size={13} />
-                            {lang === 'tr' ? 'Ödeme Ekle' : 'Add Payment'}
-                          </Button>
-                        ) : null}
-                      </TableCell>
+                    ) : (
+                      <span className="text-xs text-black/30">—</span>
                     )}
-                  </TableRow>
-                )
-              })}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {stat.bonus > 0 ? (
+                      <span
+                        className={`tabular-nums text-sm font-bold ${advance > 0 ? 'text-blue' : 'text-green'}`}
+                      >
+                        {fmt(net)} USDT
+                      </span>
+                    ) : (
+                      <span className="text-xs text-black/30">—</span>
+                    )}
+                  </TableCell>
+                  {canManage && (
+                    <TableCell className="w-28 text-right">
+                      {stat.bonus > 0 && onPayEmployee ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 gap-1 px-2 text-xs"
+                          onClick={() => onPayEmployee(stat.employee, stat.bonus)}
+                        >
+                          <Money size={13} />
+                          {lang === 'tr' ? 'Ödeme Ekle' : 'Add Payment'}
+                        </Button>
+                      ) : null}
+                    </TableCell>
+                  )}
+                </TableRow>
+              )
+            })}
             {/* Total row */}
             {stats.length > 1 && (
               <TableRow className="bg-black/[0.02]">
-                <TableCell colSpan={canManage && onToggleSelectAll ? 7 : 6} className="text-right text-xs font-semibold text-black/50">
+                <TableCell
+                  colSpan={canManage && onToggleSelectAll ? 7 : 6}
+                  className="text-right text-xs font-semibold text-black/50"
+                >
                   {lang === 'tr' ? 'Toplam' : 'Total'}
                 </TableCell>
                 <TableCell className="text-right">
@@ -1052,11 +1093,23 @@ function ReattentionBonusTable({
       </div>
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 pt-sm">
-          <Button variant="ghost" size="icon-sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+          >
             <CaretLeft size={14} />
           </Button>
-          <span className="text-xs tabular-nums text-black/50">{page} / {totalPages}</span>
-          <Button variant="ghost" size="icon-sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
+          <span className="text-xs tabular-nums text-black/50">
+            {page} / {totalPages}
+          </span>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+          >
             <CaretRight size={14} />
           </Button>
         </div>
@@ -1250,7 +1303,10 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
   const hasAutoSelection = selectedAutoIds.size > 0
 
   // Reset selection when period or search changes
-  useEffect(() => { setSelectedAutoIds(new Set()) }, [year, month, search])
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- selection reset on filter change
+  useEffect(() => {
+    setSelectedAutoIds(new Set())
+  }, [year, month, search])
 
   // Build bulk items filtered by selection
   const buildFilteredBulkItems = (): BulkPayoutItem[] => {
@@ -1287,8 +1343,16 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
           <div className="flex flex-wrap items-center gap-sm">
             {periodSelector}
             <div className="relative min-w-48">
-              <MagnifyingGlass size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30" />
-              <Input className="pl-9" placeholder={lang === 'tr' ? 'Çalışan ara...' : 'Search employee...'} value={search} onChange={(e) => setSearch(e.target.value)} />
+              <MagnifyingGlass
+                size={15}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30"
+              />
+              <Input
+                className="pl-9"
+                placeholder={lang === 'tr' ? 'Çalışan ara...' : 'Search employee...'}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
             </div>
           </div>
           <div className="flex items-center gap-sm">
@@ -1338,7 +1402,10 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
         />
         <BulkPayoutConfirmDialog
           open={bulkPayoutOpen}
-          onClose={() => { setBulkPayoutOpen(false); setSelectedAutoIds(new Set()) }}
+          onClose={() => {
+            setBulkPayoutOpen(false)
+            setSelectedAutoIds(new Set())
+          }}
           items={buildFilteredBulkItems()}
           dept="marketing"
           periodLabel={periodLabel}
@@ -1365,8 +1432,16 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
           <div className="flex flex-wrap items-center gap-sm">
             {periodSelector}
             <div className="relative min-w-48">
-              <MagnifyingGlass size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30" />
-              <Input className="pl-9" placeholder={lang === 'tr' ? 'Çalışan ara...' : 'Search employee...'} value={search} onChange={(e) => setSearch(e.target.value)} />
+              <MagnifyingGlass
+                size={15}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30"
+              />
+              <Input
+                className="pl-9"
+                placeholder={lang === 'tr' ? 'Çalışan ara...' : 'Search employee...'}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
             </div>
           </div>
           <div className="flex items-center gap-sm">
@@ -1415,7 +1490,10 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
         />
         <BulkPayoutConfirmDialog
           open={bulkPayoutOpen}
-          onClose={() => { setBulkPayoutOpen(false); setSelectedAutoIds(new Set()) }}
+          onClose={() => {
+            setBulkPayoutOpen(false)
+            setSelectedAutoIds(new Set())
+          }}
           items={buildFilteredBulkItems()}
           dept="reattention"
           periodLabel={periodLabel}

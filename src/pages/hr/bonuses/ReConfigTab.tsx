@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, Trash, FloppyDisk, GearSix, PencilSimple, X } from '@phosphor-icons/react'
 import { Button, Input, Skeleton } from '@ds'
-import { formatAmount, parseAmount, numberToDisplay, amountPlaceholder } from '@/lib/formatAmount'
+import { formatAmount, parseAmount, numberToDisplay } from '@/lib/formatAmount'
 import {
   useReConfigQuery,
   useUpdateReConfigMutation,
@@ -32,9 +32,7 @@ function TierDisplay({ tiers }: { tiers: ReTier[] }) {
         <div key={i} className="flex items-center gap-2 text-xs text-black/60">
           <span className="w-32 tabular-nums">≥ {tier.min.toLocaleString()} USD</span>
           <span className="text-black/25">→</span>
-          <span className="tabular-nums font-semibold text-orange">
-            %{tier.rate}
-          </span>
+          <span className="tabular-nums font-semibold text-orange">%{tier.rate}</span>
         </div>
       ))}
     </div>
@@ -60,7 +58,7 @@ function TierTable({ tiers, onChange, lang }: TierTableProps) {
   )
 
   useEffect(() => {
-    setMinDisplays(tiers.map((t) => (t.min ? numberToDisplay(t.min, lang) : '')))
+    setMinDisplays(tiers.map((t) => (t.min ? numberToDisplay(t.min, lang) : ''))) // eslint-disable-line react-hooks/set-state-in-effect
     setRateDisplays(tiers.map((t) => (t.rate ? numberToDisplay(t.rate, lang) : '')))
   }, [tiers.length, lang]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -218,10 +216,7 @@ export function ReConfigTab({ lang }: ReConfigTabProps) {
 
     if (clean.rate_tiers.length === 0) {
       toast({
-        title:
-          lang === 'tr'
-            ? 'En az 1 oran kademesi gerekli'
-            : 'At least 1 rate tier is required',
+        title: lang === 'tr' ? 'En az 1 oran kademesi gerekli' : 'At least 1 rate tier is required',
         variant: 'error',
       })
       return
@@ -285,7 +280,7 @@ export function ReConfigTab({ lang }: ReConfigTabProps) {
           <p className="mb-3 text-[11px] text-black/40 leading-relaxed">
             {lang === 'tr'
               ? 'Her Retention çalışanının aylık net USD tutarına (deposit − withdrawal) göre ilk eşleşen kademe oranı uygulanır.'
-              : 'The first matching tier rate is applied based on each Retention employee\'s monthly net USD (deposits − withdrawals).'}
+              : "The first matching tier rate is applied based on each Retention employee's monthly net USD (deposits − withdrawals)."}
           </p>
           <TierDisplay tiers={savedConfig.rate_tiers} />
         </Section>

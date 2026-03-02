@@ -112,6 +112,10 @@
       "withdrawals": "Çekim Sayısı",
       "avgTransaction": "Ort. İşlem"
     },
+    "prevMonth": {
+      "title": "Geçen Ay",
+      "historical": "Geçmiş"
+    },
     "insights": {
       "registerBalances": "Kasa Bakiyeleri",
       "noBalances": "Kasa verisi yok",
@@ -181,16 +185,16 @@
       "transfersLabel": "transfer",
       "totalBank": "Toplam Banka",
       "totalCreditCard": "Toplam Kredi Kartı",
-      "totalUsd": "Toplam USD",
-      "dayRate": "Günlük Kur (USD/TRY)",
-      "netWithComm": "Net Nakit (USD)",
-      "netWithoutComm": "Brüt Nakit (USD)",
+      "totalUsd": "Toplam USDT",
+      "dayRate": "Günlük Kur (USDT/TRY)",
+      "netWithComm": "Net Nakit (USDT)",
+      "netWithoutComm": "Brüt Nakit (USDT)",
       "afterCommission": "Komisyon sonrası",
       "beforeCommission": "Komisyon öncesi",
       "editRate": "Kuru düzenle",
       "resetRate": "Ortalamaya sıfırla",
       "original": "ort",
-      "usdTransferCount": "{{count}} USD",
+      "usdTransferCount": "{{count}} USDT",
       "applyingRate": "Uygulanıyor...",
       "breakdown": "Dağılım"
     },
@@ -1007,13 +1011,29 @@
     }
   },
   "future": {
-    "title": "Gelecek",
+    "title": "YZ Asistanı",
     "subtitle": "PipLinePro için yapay zeka destekli asistan.",
-    "placeholder": "Bir mesaj yazın...",
+    "placeholder": "Veriniz hakkında sorun...",
     "send": "Gönder",
-    "welcome": "Merhaba! Ben PipLinePro yapay zeka asistanınızım. Sistem hakkında her şeyi sorabilirsiniz.",
+    "welcome": "Merhaba! Size nasıl yardımcı olabilirim?",
+    "welcomeSub": "{{org}} hakkında her şeyi sorabilirsiniz",
     "error": "Yanıt alınamadı. Lütfen tekrar deneyin.",
-    "thinking": "Düşünüyor..."
+    "thinking": "Düşünüyor",
+    "model": "Claude claude-sonnet-4-6",
+    "newChat": "Yeni sohbet",
+    "disclaimer": "Salt okunur erişim · Yanıtlar hata içerebilir",
+    "prompt": {
+      "monthly": "Bu ayın KPI özeti",
+      "topCustomers": "Bu ayın en iyi 10 müşterisi",
+      "pspBreakdown": "PSP hacim dağılımı",
+      "lastMonth": "Geçen ayın performansı"
+    },
+    "tool": {
+      "monthly": "Aylık özet getiriliyor...",
+      "transfers": "Transferler sorgulanıyor...",
+      "customers": "Müşteri verileri yükleniyor...",
+      "psps": "PSP listesi getiriliyor..."
+    }
   },
   "members": {
     "title": "Üyeler",

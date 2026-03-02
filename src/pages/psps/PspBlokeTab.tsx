@@ -157,7 +157,7 @@ interface BlokeTabProps {
 
 export function BlokeTab({ pspId, isAdmin }: BlokeTabProps) {
   const { t } = useTranslation('pages')
-  const toast = useToast()
+  const { toast } = useToast()
   const { data: transfers, isLoading } = usePspBlokeQuery(pspId)
   const resolutionMutation = useBlokeResolutionMutation(pspId)
 
@@ -199,15 +199,17 @@ export function BlokeTab({ pspId, isAdmin }: BlokeTabProps) {
         date,
         notes,
       })
-      toast.success(
-        dialogTarget === 'resolved'
-          ? t('psps.bloke.toast.resolved', 'Transfer marked as resolved')
-          : t('psps.bloke.toast.writtenOff', 'Transfer marked as written off'),
-      )
+      toast({
+        title:
+          dialogTarget === 'resolved'
+            ? t('psps.bloke.toast.resolved', 'Transfer marked as resolved')
+            : t('psps.bloke.toast.writtenOff', 'Transfer marked as written off'),
+        variant: 'success',
+      })
       setDialogOpen(false)
       setSelectedTransfer(null)
     } catch {
-      toast.error(t('psps.bloke.toast.error', 'An error occurred'))
+      toast({ title: t('psps.bloke.toast.error', 'An error occurred'), variant: 'error' })
     }
   }
 

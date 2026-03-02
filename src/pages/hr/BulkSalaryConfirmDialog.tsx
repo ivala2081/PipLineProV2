@@ -53,8 +53,6 @@ export function BulkSalaryConfirmDialog({
   const totalSalaryTl = tlItems.reduce((s, i) => s + i.amount_tl, 0)
   const totalSalaryUsd = usdItems.reduce((s, i) => s + i.amount_tl, 0)
   const totalSupplement = eligibleItems.reduce((s, i) => s + (i.supplement_tl ?? 0), 0)
-  const totalDeduction = eligibleItems.reduce((s, i) => s + (i.attendance_deduction_tl ?? 0), 0)
-  const totalLeaveDeduction = eligibleItems.reduce((s, i) => s + (i.unpaid_leave_deduction_tl ?? 0), 0)
   const hasMixed = totalSalaryTl > 0 && totalSalaryUsd > 0
   const hasItems = eligibleItems.length > 0
 
@@ -138,7 +136,9 @@ export function BulkSalaryConfirmDialog({
                       <TableRow key={item.employee_id}>
                         <TableCell>
                           <div className="flex items-center gap-sm">
-                            <span className="text-sm font-medium text-black">{item.employee_name}</span>
+                            <span className="text-sm font-medium text-black">
+                              {item.employee_name}
+                            </span>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -161,7 +161,11 @@ export function BulkSalaryConfirmDialog({
                         <TableCell className="text-right">
                           {(item.attendance_deduction_tl ?? 0) > 0 ? (
                             <span className="tabular-nums text-sm font-semibold text-red">
-                              -{fmtAmount(item.attendance_deduction_tl, item.salary_currency ?? 'TL')}
+                              -
+                              {fmtAmount(
+                                item.attendance_deduction_tl,
+                                item.salary_currency ?? 'TL',
+                              )}
                             </span>
                           ) : (
                             <span className="text-xs text-black/25">—</span>
@@ -170,7 +174,11 @@ export function BulkSalaryConfirmDialog({
                         <TableCell className="text-right">
                           {(item.unpaid_leave_deduction_tl ?? 0) > 0 ? (
                             <span className="tabular-nums text-sm font-semibold text-red">
-                              -{fmtAmount(item.unpaid_leave_deduction_tl, item.salary_currency ?? 'TL')}
+                              -
+                              {fmtAmount(
+                                item.unpaid_leave_deduction_tl,
+                                item.salary_currency ?? 'TL',
+                              )}
                             </span>
                           ) : (
                             <span className="text-xs text-black/25">—</span>
@@ -190,12 +198,33 @@ export function BulkSalaryConfirmDialog({
                         <div className="flex flex-col items-end gap-0.5">
                           {totalSalaryTl > 0 && (
                             <span className="tabular-nums text-base font-bold text-green">
-                              {fmtAmount(totalSalaryTl + totalSupplement - tlItems.reduce((s, i) => s + (i.attendance_deduction_tl ?? 0) + (i.unpaid_leave_deduction_tl ?? 0), 0), 'TL')}
+                              {fmtAmount(
+                                totalSalaryTl +
+                                  totalSupplement -
+                                  tlItems.reduce(
+                                    (s, i) =>
+                                      s +
+                                      (i.attendance_deduction_tl ?? 0) +
+                                      (i.unpaid_leave_deduction_tl ?? 0),
+                                    0,
+                                  ),
+                                'TL',
+                              )}
                             </span>
                           )}
                           {totalSalaryUsd > 0 && (
                             <span className="tabular-nums text-base font-bold text-green">
-                              {fmtAmount(totalSalaryUsd - usdItems.reduce((s, i) => s + (i.attendance_deduction_tl ?? 0) + (i.unpaid_leave_deduction_tl ?? 0), 0), 'USD')}
+                              {fmtAmount(
+                                totalSalaryUsd -
+                                  usdItems.reduce(
+                                    (s, i) =>
+                                      s +
+                                      (i.attendance_deduction_tl ?? 0) +
+                                      (i.unpaid_leave_deduction_tl ?? 0),
+                                    0,
+                                  ),
+                                'USD',
+                              )}
                             </span>
                           )}
                         </div>

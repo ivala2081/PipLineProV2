@@ -38,7 +38,7 @@ const NAV_ITEMS = [
   { label: 'Security', href: '/security', icon: Shield },
   { label: 'HR', href: '/hr', icon: IdentificationCard },
   { label: 'Settings', href: '/settings', icon: Gear },
-  { label: 'Future', href: '/future', icon: Brain },
+  { label: 'AI Assistant', href: '/ai', icon: Brain },
 ]
 
 const GROUP_ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {

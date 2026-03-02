@@ -21,6 +21,7 @@ import {
   Fire,
   CalendarCheck,
   Hash,
+  CalendarBlank,
 } from '@phosphor-icons/react'
 import {
   ResponsiveContainer,
@@ -579,7 +580,7 @@ export function DashboardPage() {
     const d = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     return d
   }, [now])
-  const { data: prevMonthlyData } = useMonthlyAnalysisQuery(
+  const { data: prevMonthlyData, isLoading: isPrevMonthlyLoading } = useMonthlyAnalysisQuery(
     prevMonthDate.getFullYear(),
     prevMonthDate.getMonth() + 1,
   )
@@ -1419,6 +1420,345 @@ export function DashboardPage() {
             value={fmtMoney(monthlyData.insights.avg_per_transfer, lang)}
           />
         </Grid>
+      )}
+
+      {/* ── Previous Month Overview ──────────────────── */}
+      {(isPrevMonthlyLoading || prevMonthlyData) && (
+        <div className="rounded-2xl border border-dashed border-black/[0.08] p-1">
+          <div className="rounded-xl bg-black/[0.015] px-4 py-5 md:px-5">
+            {/* Header */}
+            <div className="mb-5 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="flex size-8 items-center justify-center rounded-xl bg-black/[0.05]">
+                  <CalendarBlank size={15} weight="duotone" className="text-black/35" />
+                </div>
+                <div>
+                  {isPrevMonthlyLoading ? (
+                    <Skeleton className="h-4 w-36 rounded-md" />
+                  ) : (
+                    <>
+                      <h2 className="text-[13px] font-semibold text-black/55">
+                        {t('dashboard.prevMonth.title')}
+                      </h2>
+                      <p className="text-[11px] text-black/30">
+                        {prevMonthDate.toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', {
+                          month: 'long',
+                          year: 'numeric',
+                        })}
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+              <span className="rounded-full border border-black/[0.06] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-black/25">
+                {t('dashboard.prevMonth.historical')}
+              </span>
+            </div>
+
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              {isPrevMonthlyLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-24 w-full rounded-2xl" />
+                ))
+              ) : prevMonthlyData ? (
+                <>
+                  {/* Deposits */}
+                  <HeroKpiCard
+                    icon={ArrowCircleDown}
+                    iconBg="bg-green/[0.07]"
+                    iconColor="text-green"
+                    label={t('dashboard.kpi.deposits')}
+                    value={
+                      isUSD
+                        ? fmtMoney(
+                            isNet
+                              ? prevMonthlyData.kpis.total_deposits_usd -
+                                  prevMonthlyData.kpis.commission_usd
+                              : prevMonthlyData.kpis.total_deposits_usd,
+                            lang,
+                            '$',
+                          )
+                        : fmtMoney(
+                            isNet
+                              ? prevMonthlyData.kpis.total_deposits_try -
+                                  prevMonthlyData.kpis.total_commission_try
+                              : prevMonthlyData.kpis.total_deposits_try,
+                            lang,
+                          )
+                    }
+                    splitLeft={
+                      isUSD
+                        ? {
+                            label: 'TRY',
+                            value:
+                              fmtCompact(
+                                isNet
+                                  ? prevMonthlyData.kpis.total_deposits_try -
+                                      prevMonthlyData.kpis.total_commission_try
+                                  : prevMonthlyData.kpis.total_deposits_try,
+                              ) + ' ₺',
+                          }
+                        : {
+                            label: 'USD',
+                            value:
+                              fmtCompact(
+                                isNet
+                                  ? prevMonthlyData.kpis.total_deposits_usd -
+                                      prevMonthlyData.kpis.commission_usd
+                                  : prevMonthlyData.kpis.total_deposits_usd,
+                              ) + ' $',
+                          }
+                    }
+                  />
+
+                  {/* Withdrawals */}
+                  <HeroKpiCard
+                    icon={ArrowCircleUp}
+                    iconBg="bg-red/[0.07]"
+                    iconColor="text-red"
+                    label={t('dashboard.kpi.withdrawals')}
+                    value={
+                      isUSD
+                        ? fmtMoney(prevMonthlyData.kpis.total_withdrawals_usd, lang, '$')
+                        : fmtMoney(prevMonthlyData.kpis.total_withdrawals_try, lang)
+                    }
+                    splitLeft={
+                      isUSD
+                        ? {
+                            label: 'TRY',
+                            value: fmtCompact(prevMonthlyData.kpis.total_withdrawals_try) + ' ₺',
+                          }
+                        : {
+                            label: 'USD',
+                            value: fmtCompact(prevMonthlyData.kpis.total_withdrawals_usd) + ' $',
+                          }
+                    }
+                  />
+
+                  {/* Net Cash */}
+                  <HeroKpiCard
+                    icon={Wallet}
+                    iconBg="bg-indigo/[0.07]"
+                    iconColor="text-indigo"
+                    label={t('dashboard.kpi.netCash')}
+                    value={
+                      isUSD
+                        ? fmtMoney(
+                            (isNet
+                              ? prevMonthlyData.kpis.total_deposits_usd -
+                                prevMonthlyData.kpis.commission_usd
+                              : prevMonthlyData.kpis.total_deposits_usd) -
+                              prevMonthlyData.kpis.total_withdrawals_usd,
+                            lang,
+                            '$',
+                          )
+                        : fmtMoney(
+                            (isNet
+                              ? prevMonthlyData.kpis.total_deposits_try -
+                                prevMonthlyData.kpis.total_commission_try
+                              : prevMonthlyData.kpis.total_deposits_try) -
+                              prevMonthlyData.kpis.total_withdrawals_try,
+                            lang,
+                          )
+                    }
+                    splitLeft={
+                      isUSD
+                        ? {
+                            label: 'TRY',
+                            value:
+                              fmtCompact(
+                                (isNet
+                                  ? prevMonthlyData.kpis.total_deposits_try -
+                                    prevMonthlyData.kpis.total_commission_try
+                                  : prevMonthlyData.kpis.total_deposits_try) -
+                                  prevMonthlyData.kpis.total_withdrawals_try,
+                              ) + ' ₺',
+                          }
+                        : {
+                            label: 'USD',
+                            value:
+                              fmtCompact(
+                                (isNet
+                                  ? prevMonthlyData.kpis.total_deposits_usd -
+                                    prevMonthlyData.kpis.commission_usd
+                                  : prevMonthlyData.kpis.total_deposits_usd) -
+                                  prevMonthlyData.kpis.total_withdrawals_usd,
+                              ) + ' $',
+                          }
+                    }
+                  />
+
+                  {/* Commission */}
+                  <HeroKpiCard
+                    icon={Percent}
+                    iconBg="bg-orange/[0.07]"
+                    iconColor="text-orange"
+                    label={t('dashboard.kpi.commission')}
+                    value={fmtMoney(prevMonthlyData.kpis.total_commission_try, lang)}
+                    splitLeft={{
+                      label: 'USD',
+                      value: fmtCompact(prevMonthlyData.kpis.commission_usd) + ' $',
+                    }}
+                  />
+
+                  {/* Transactions */}
+                  <HeroKpiCard
+                    icon={Hash}
+                    iconBg="bg-purple/[0.07]"
+                    iconColor="text-purple"
+                    label={t('dashboard.kpi.transactions')}
+                    value={fmtCount(prevMonthlyData.kpis.transfer_count, lang)}
+                    splitLeft={{
+                      label: '↓',
+                      value: fmtCount(prevMonthlyData.kpis.deposit_count, lang),
+                    }}
+                    splitRight={{
+                      label: '↑',
+                      value: fmtCount(prevMonthlyData.kpis.withdrawal_count, lang),
+                    }}
+                    className="sm:col-span-2 lg:col-span-1"
+                  />
+                </>
+              ) : null}
+            </div>
+
+            {/* Chart + Insights row */}
+            {isPrevMonthlyLoading ? (
+              <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <Skeleton className="h-48 w-full rounded-2xl" />
+                <Skeleton className="h-48 w-full rounded-2xl" />
+              </div>
+            ) : (
+              prevMonthlyData && (
+                <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  {/* Daily Volume Mini Chart */}
+                  {prevMonthlyData.daily_volume?.length > 0 && (
+                    <ChartCard
+                      title={t('dashboard.charts.dailyVolume')}
+                      icon={ChartLine}
+                      iconColor="text-indigo/60"
+                    >
+                      <ResponsiveContainer width="100%" height={180}>
+                        <AreaChart data={prevMonthlyData.daily_volume}>
+                          <defs>
+                            <linearGradient id="gradDepPrev" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor={GREEN} stopOpacity={0.15} />
+                              <stop offset="100%" stopColor={GREEN} stopOpacity={0} />
+                            </linearGradient>
+                            <linearGradient id="gradWdPrev" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor={RED} stopOpacity={0.1} />
+                              <stop offset="100%" stopColor={RED} stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke={ct.gridStroke}
+                            vertical={false}
+                          />
+                          <XAxis
+                            dataKey="day"
+                            tickFormatter={fmtDay}
+                            tick={ct.axisTick}
+                            axisLine={ct.axisLine}
+                            tickLine={false}
+                          />
+                          <YAxis
+                            tickFormatter={fmtCompact}
+                            tick={ct.axisTick}
+                            axisLine={false}
+                            tickLine={false}
+                            width={50}
+                          />
+                          <Tooltip
+                            formatter={(value: number, name: string) => [
+                              fmtMoney(value, lang),
+                              name === 'deposits'
+                                ? t('dashboard.charts.deposits')
+                                : t('dashboard.charts.withdrawals'),
+                            ]}
+                            labelFormatter={fmtDay}
+                            contentStyle={ct.tooltipStyle}
+                            cursor={{ strokeDasharray: '4 4', stroke: ct.cursorStroke }}
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="deposits"
+                            stroke={GREEN}
+                            strokeWidth={1.5}
+                            fill="url(#gradDepPrev)"
+                            strokeOpacity={0.7}
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="withdrawals"
+                            stroke={RED}
+                            strokeWidth={1.5}
+                            fill="url(#gradWdPrev)"
+                            strokeOpacity={0.7}
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                      {/* Legend */}
+                      <div className="mt-3 flex items-center justify-center gap-6">
+                        <div className="flex items-center gap-1.5">
+                          <div className="size-2 rounded-full bg-green opacity-70" />
+                          <span className="text-[11px] text-black/35">
+                            {t('dashboard.charts.deposits')}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <div className="size-2 rounded-full bg-red opacity-70" />
+                          <span className="text-[11px] text-black/35">
+                            {t('dashboard.charts.withdrawals')}
+                          </span>
+                        </div>
+                      </div>
+                    </ChartCard>
+                  )}
+
+                  {/* Insights 2x2 */}
+                  {prevMonthlyData.insights && (
+                    <Grid cols={2}>
+                      <InsightCard
+                        icon={CalendarStar}
+                        iconBg="bg-yellow/10"
+                        iconColor="text-yellow"
+                        label={t('dashboard.insights.peakDay')}
+                        value={
+                          prevMonthlyData.insights.peak_day
+                            ? `${fmtDate(prevMonthlyData.insights.peak_day, lang)} — ${fmtCompact(prevMonthlyData.insights.peak_day_volume)} ₺`
+                            : '—'
+                        }
+                      />
+                      <InsightCard
+                        icon={CalendarCheck}
+                        iconBg="bg-green/10"
+                        iconColor="text-green"
+                        label={t('dashboard.insights.activeDays')}
+                        value={`${prevMonthlyData.insights.active_days} ${t('dashboard.insights.days')}`}
+                      />
+                      <InsightCard
+                        icon={Fire}
+                        iconBg="bg-orange/10"
+                        iconColor="text-orange"
+                        label={t('dashboard.insights.avgDailyVolume')}
+                        value={fmtMoney(prevMonthlyData.insights.avg_daily_volume, lang)}
+                      />
+                      <InsightCard
+                        icon={Receipt}
+                        iconBg="bg-blue/10"
+                        iconColor="text-blue"
+                        label={t('dashboard.insights.avgPerTransfer')}
+                        value={fmtMoney(prevMonthlyData.insights.avg_per_transfer, lang)}
+                      />
+                    </Grid>
+                  )}
+                </div>
+              )
+            )}
+          </div>
+        </div>
       )}
     </div>
   )

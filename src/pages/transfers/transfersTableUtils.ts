@@ -93,7 +93,7 @@ export function groupByDate(transfers: TransferRow[], lang: string): DateGroup[]
 
 export function countUsdTransfers(transfers: TransferRow[]): number {
   return transfers.filter((t) => {
-    if (t.currency !== 'USD') return false
+    if (t.currency !== 'USDT') return false
     const typeName = t.type?.name?.toLowerCase() ?? ''
     return !typeName.includes('blocked') && !typeName.includes('bloke')
   }).length
@@ -143,7 +143,7 @@ export function computeDaySummary(transfers: TransferRow[]): DaySummary {
     const method = t.payment_method?.name?.toLowerCase() ?? ''
     if (method.includes('bank')) totalBank += isDeposit ? tryAmount : -tryAmount
     if (method.includes('credit')) totalCreditCard += isDeposit ? tryAmount : -tryAmount
-    if (t.currency === 'USD') {
+    if (t.currency === 'USDT') {
       const usdAmt = Math.abs(t.amount ?? 0)
       totalUsd += t.category?.is_deposit ? usdAmt : -usdAmt
     }

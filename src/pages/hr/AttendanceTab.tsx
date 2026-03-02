@@ -118,20 +118,26 @@ function isWeekendDate(dateStr: string): boolean {
 /*  Weekend OFF Row (read-only)                                         */
 /* ------------------------------------------------------------------ */
 
-function AttendanceOffRow({ employee, lang }: { employee: HrEmployee; lang: 'tr' | 'en' }) {
+function AttendanceOffRow({ employee }: { employee: HrEmployee; lang: 'tr' | 'en' }) {
   return (
     <TableRow className="opacity-60">
       <TableCell>
         <span className="text-sm font-medium text-black">{employee.full_name}</span>
       </TableCell>
       <TableCell>
-        <span className="inline-flex h-8 w-16 items-center justify-center rounded-md bg-bg2/40 text-xs text-black/15">—</span>
+        <span className="inline-flex h-8 w-16 items-center justify-center rounded-md bg-bg2/40 text-xs text-black/15">
+          —
+        </span>
       </TableCell>
       <TableCell>
-        <span className="inline-flex h-8 items-center rounded-md bg-bg2/40 px-2 text-xs text-black/15">—</span>
+        <span className="inline-flex h-8 items-center rounded-md bg-bg2/40 px-2 text-xs text-black/15">
+          —
+        </span>
       </TableCell>
       <TableCell>
-        <span className="inline-flex h-8 items-center rounded-md bg-bg2/40 px-2 text-xs text-black/15">—</span>
+        <span className="inline-flex h-8 items-center rounded-md bg-bg2/40 px-2 text-xs text-black/15">
+          —
+        </span>
       </TableCell>
       <TableCell>
         <span className="text-xs text-black/30">—</span>
@@ -259,7 +265,9 @@ function AttendanceRow({
               {absentHours} {lang === 'tr' ? 'sa' : 'h'}
             </span>
           ) : (
-            <span className="inline-flex h-8 w-16 items-center justify-center rounded-md bg-bg2/40 text-xs text-black/15">—</span>
+            <span className="inline-flex h-8 w-16 items-center justify-center rounded-md bg-bg2/40 text-xs text-black/15">
+              —
+            </span>
           )}
         </div>
       </TableCell>
@@ -298,7 +306,9 @@ function AttendanceRow({
       <TableCell>
         <div className="flex h-8 items-center">
           <span className="inline-flex h-8 items-center rounded-md bg-bg2/40 px-2 text-xs tabular-nums text-black/50">
-            {fmtTime(record?.check_out) !== '—' ? fmtTime(record?.check_out) : fmtTime(settings.standard_check_out)}
+            {fmtTime(record?.check_out) !== '—'
+              ? fmtTime(record?.check_out)
+              : fmtTime(settings.standard_check_out)}
           </span>
         </div>
       </TableCell>
@@ -359,8 +369,12 @@ function AttendanceRow({
             disabled={saving}
             title={
               exempt
-                ? lang === 'tr' ? 'Kesinti istisnasını kaldır' : 'Remove deduction exemption'
-                : lang === 'tr' ? 'Kesintiden muaf tut' : 'Exempt from deduction'
+                ? lang === 'tr'
+                  ? 'Kesinti istisnasını kaldır'
+                  : 'Remove deduction exemption'
+                : lang === 'tr'
+                  ? 'Kesintiden muaf tut'
+                  : 'Exempt from deduction'
             }
             className={`rounded-md p-1.5 transition-colors ${
               exempt
@@ -431,7 +445,10 @@ function MonthlySummary({
     [summary, page],
   )
 
-  useEffect(() => { setPage(1) }, [search])
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- pagination reset on search change
+  useEffect(() => {
+    setPage(1)
+  }, [search])
 
   if (isLoading) {
     return (
@@ -445,7 +462,7 @@ function MonthlySummary({
 
   return (
     <>
-    <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
+      <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
         <Table>
           <TableHeader>
             <TableRow>
@@ -471,51 +488,65 @@ function MonthlySummary({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedSummary.map(({ emp, present, absent, late, half_day, total_absent_hours, total }) => (
-              <TableRow key={emp.id}>
-                <TableCell>
-                  <span className="text-sm font-medium text-black">{emp.full_name}</span>
-                </TableCell>
-                <TableCell className="text-center">
-                  <span className="text-sm font-semibold tabular-nums text-green">{present}</span>
-                </TableCell>
-                <TableCell className="text-center">
-                  <span className="text-sm font-semibold tabular-nums text-red">{absent}</span>
-                </TableCell>
-                <TableCell className="text-center">
-                  <span className="text-sm font-semibold tabular-nums text-orange">{late}</span>
-                </TableCell>
-                <TableCell className="text-center">
-                  <span className="text-sm font-semibold tabular-nums text-blue">{half_day}</span>
-                </TableCell>
-                <TableCell className="text-center">
-                  {total_absent_hours > 0 ? (
-                    <span className="text-sm font-semibold tabular-nums text-purple">
-                      {total_absent_hours} {lang === 'tr' ? 'sa' : 'h'}
-                    </span>
-                  ) : (
-                    <span className="text-sm tabular-nums text-black/20">0</span>
-                  )}
-                </TableCell>
-                <TableCell className="text-center">
-                  <span className="text-sm tabular-nums text-black/50">{total}</span>
-                </TableCell>
-              </TableRow>
-            ))}
+            {paginatedSummary.map(
+              ({ emp, present, absent, late, half_day, total_absent_hours, total }) => (
+                <TableRow key={emp.id}>
+                  <TableCell>
+                    <span className="text-sm font-medium text-black">{emp.full_name}</span>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className="text-sm font-semibold tabular-nums text-green">{present}</span>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className="text-sm font-semibold tabular-nums text-red">{absent}</span>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className="text-sm font-semibold tabular-nums text-orange">{late}</span>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className="text-sm font-semibold tabular-nums text-blue">{half_day}</span>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {total_absent_hours > 0 ? (
+                      <span className="text-sm font-semibold tabular-nums text-purple">
+                        {total_absent_hours} {lang === 'tr' ? 'sa' : 'h'}
+                      </span>
+                    ) : (
+                      <span className="text-sm tabular-nums text-black/20">0</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className="text-sm tabular-nums text-black/50">{total}</span>
+                  </TableCell>
+                </TableRow>
+              ),
+            )}
           </TableBody>
         </Table>
-    </div>
-    {summaryTotalPages > 1 && (
-      <div className="flex items-center justify-center gap-2 pt-sm">
-        <Button variant="ghost" size="icon-sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
-          <CaretLeft size={14} />
-        </Button>
-        <span className="text-xs tabular-nums text-black/50">{page} / {summaryTotalPages}</span>
-        <Button variant="ghost" size="icon-sm" onClick={() => setPage((p) => Math.min(summaryTotalPages, p + 1))} disabled={page === summaryTotalPages}>
-          <CaretRight size={14} />
-        </Button>
       </div>
-    )}
+      {summaryTotalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-sm">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+          >
+            <CaretLeft size={14} />
+          </Button>
+          <span className="text-xs tabular-nums text-black/50">
+            {page} / {summaryTotalPages}
+          </span>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setPage((p) => Math.min(summaryTotalPages, p + 1))}
+            disabled={page === summaryTotalPages}
+          >
+            <CaretRight size={14} />
+          </Button>
+        </div>
+      )}
     </>
   )
 }
@@ -554,7 +585,10 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
     [filteredEmployees, page],
   )
 
-  useEffect(() => { setPage(1) }, [search, selectedDate])
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- pagination reset on filter change
+  useEffect(() => {
+    setPage(1)
+  }, [search, selectedDate])
 
   const { data: dayRecords = [], isLoading } = useHrAttendanceQuery(selectedDate)
 
@@ -585,8 +619,34 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
   /* ---- Monthly Summary Screen ---- */
   if (view === 'summary') {
     const monthNames = {
-      tr: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'],
-      en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+      tr: [
+        'Ocak',
+        'Şubat',
+        'Mart',
+        'Nisan',
+        'Mayıs',
+        'Haziran',
+        'Temmuz',
+        'Ağustos',
+        'Eylül',
+        'Ekim',
+        'Kasım',
+        'Aralık',
+      ],
+      en: [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
+      ],
     }
     return (
       <div className="space-y-lg">
@@ -608,8 +668,16 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
             </Button>
           </div>
           <div className="relative min-w-48">
-            <MagnifyingGlass size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30" />
-            <Input className="pl-9" placeholder={lang === 'tr' ? 'Çalışan ara...' : 'Search employee...'} value={search} onChange={(e) => setSearch(e.target.value)} />
+            <MagnifyingGlass
+              size={15}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30"
+            />
+            <Input
+              className="pl-9"
+              placeholder={lang === 'tr' ? 'Çalışan ara...' : 'Search employee...'}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
         </div>
 
@@ -651,8 +719,16 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
           minWidth="9rem"
         />
         <div className="relative min-w-48">
-          <MagnifyingGlass size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30" />
-          <Input className="pl-9" placeholder={lang === 'tr' ? 'Çalışan ara...' : 'Search employee...'} value={search} onChange={(e) => setSearch(e.target.value)} />
+          <MagnifyingGlass
+            size={15}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30"
+          />
+          <Input
+            className="pl-9"
+            placeholder={lang === 'tr' ? 'Çalışan ara...' : 'Search employee...'}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
         <Button variant="outline" size="sm" onClick={() => setView('summary')}>
           {lang === 'tr' ? 'Aylık Özet' : 'Monthly Summary'}
@@ -690,58 +766,72 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
         </div>
       ) : (
         <>
-        <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
-          <Table className="table-fixed">
-            <colgroup>
-              <col className="w-[22%]" />   {/* Çalışan */}
-              <col className="w-[12%]" />   {/* Eksik Saat */}
-              <col className="w-[13%]" />   {/* Giriş */}
-              <col className="w-[10%]" />   {/* Çıkış */}
-              <col className="w-[15%]" />   {/* Durum */}
-              <col className="w-[20%]" />   {/* Etiket */}
-              <col className="w-[8%]" />    {/* İstisna */}
-            </colgroup>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{lang === 'tr' ? 'Çalışan' : 'Employee'}</TableHead>
-                <TableHead>{lang === 'tr' ? 'Eksik Saat' : 'Missing Hrs'}</TableHead>
-                <TableHead>{lang === 'tr' ? 'Giriş' : 'Check-in'}</TableHead>
-                <TableHead>{lang === 'tr' ? 'Çıkış' : 'Check-out'}</TableHead>
-                <TableHead>{lang === 'tr' ? 'Durum' : 'Status'}</TableHead>
-                <TableHead>{lang === 'tr' ? 'Etiket' : 'Badge'}</TableHead>
-                <TableHead className="text-center">{lang === 'tr' ? 'İstisna' : 'Exempt'}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {settings.weekend_off && isWeekendDate(selectedDate)
-                ? paginatedEmployees.map((emp) => (
-                    <AttendanceOffRow key={emp.id} employee={emp} lang={lang} />
-                  ))
-                : paginatedEmployees.map((emp) => (
-                    <AttendanceRow
-                      key={emp.id}
-                      employee={emp}
-                      record={recordMap.get(emp.id)}
-                      date={selectedDate}
-                      canManage={canManage}
-                      lang={lang}
-                      settings={settings}
-                    />
-                  ))}
-            </TableBody>
-          </Table>
-        </div>
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 pt-sm">
-            <Button variant="ghost" size="icon-sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
-              <CaretLeft size={14} />
-            </Button>
-            <span className="text-xs tabular-nums text-black/50">{page} / {totalPages}</span>
-            <Button variant="ghost" size="icon-sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
-              <CaretRight size={14} />
-            </Button>
+          <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
+            <Table className="table-fixed">
+              <colgroup>
+                <col className="w-[22%]" /> {/* Çalışan */}
+                <col className="w-[12%]" /> {/* Eksik Saat */}
+                <col className="w-[13%]" /> {/* Giriş */}
+                <col className="w-[10%]" /> {/* Çıkış */}
+                <col className="w-[15%]" /> {/* Durum */}
+                <col className="w-[20%]" /> {/* Etiket */}
+                <col className="w-[8%]" /> {/* İstisna */}
+              </colgroup>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{lang === 'tr' ? 'Çalışan' : 'Employee'}</TableHead>
+                  <TableHead>{lang === 'tr' ? 'Eksik Saat' : 'Missing Hrs'}</TableHead>
+                  <TableHead>{lang === 'tr' ? 'Giriş' : 'Check-in'}</TableHead>
+                  <TableHead>{lang === 'tr' ? 'Çıkış' : 'Check-out'}</TableHead>
+                  <TableHead>{lang === 'tr' ? 'Durum' : 'Status'}</TableHead>
+                  <TableHead>{lang === 'tr' ? 'Etiket' : 'Badge'}</TableHead>
+                  <TableHead className="text-center">
+                    {lang === 'tr' ? 'İstisna' : 'Exempt'}
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {settings.weekend_off && isWeekendDate(selectedDate)
+                  ? paginatedEmployees.map((emp) => (
+                      <AttendanceOffRow key={emp.id} employee={emp} lang={lang} />
+                    ))
+                  : paginatedEmployees.map((emp) => (
+                      <AttendanceRow
+                        key={emp.id}
+                        employee={emp}
+                        record={recordMap.get(emp.id)}
+                        date={selectedDate}
+                        canManage={canManage}
+                        lang={lang}
+                        settings={settings}
+                      />
+                    ))}
+              </TableBody>
+            </Table>
           </div>
-        )}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-sm">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+              >
+                <CaretLeft size={14} />
+              </Button>
+              <span className="text-xs tabular-nums text-black/50">
+                {page} / {totalPages}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+              >
+                <CaretRight size={14} />
+              </Button>
+            </div>
+          )}
         </>
       )}
     </div>

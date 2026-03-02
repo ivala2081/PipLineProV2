@@ -307,7 +307,10 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
     [filteredPendingItems, pendingPage],
   )
 
-  useEffect(() => { setPendingPage(1); setSelectedBonusIds(new Set()) }, [pendingSearch, otherPeriodLabel])
+  useEffect(() => {
+    setPendingPage(1)
+    setSelectedBonusIds(new Set())
+  }, [pendingSearch, otherPeriodLabel])
 
   /* Bonus selection helpers */
   const toggleBonusSelect = (key: string) => {
@@ -318,7 +321,8 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
       return next
     })
   }
-  const bonusItemKey = (item: BulkPayoutItem) => item.pending_payment_id ?? item.agreement_id ?? item.employee_id
+  const bonusItemKey = (item: BulkPayoutItem) =>
+    item.pending_payment_id ?? item.agreement_id ?? item.employee_id
   const toggleBonusSelectAll = () => {
     if (selectedBonusIds.size === filteredPendingItems.length) {
       setSelectedBonusIds(new Set())
@@ -326,13 +330,15 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
       setSelectedBonusIds(new Set(filteredPendingItems.map(bonusItemKey)))
     }
   }
-  const allBonusSelected = filteredPendingItems.length > 0 && selectedBonusIds.size === filteredPendingItems.length
+  const allBonusSelected =
+    filteredPendingItems.length > 0 && selectedBonusIds.size === filteredPendingItems.length
   const hasBonusSelection = selectedBonusIds.size > 0
 
   const bonusPayoutItems = useMemo(() => {
     if (!hasBonusSelection) return otherBulkItems
     return otherBulkItems.filter((item) => selectedBonusIds.has(bonusItemKey(item)))
-  }, [otherBulkItems, selectedBonusIds, hasBonusSelection])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- hasBonusSelection is derived from selectedBonusIds
+  }, [otherBulkItems, selectedBonusIds])
 
   const handleAddNew = () => {
     setDeptTab('other')
@@ -719,8 +725,16 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
                       </Select>
                       {/* Search */}
                       <div className="relative min-w-48">
-                        <MagnifyingGlass size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30" />
-                        <Input className="pl-9" placeholder={lang === 'tr' ? 'Çalışan ara...' : 'Search employee...'} value={pendingSearch} onChange={(e) => setPendingSearch(e.target.value)} />
+                        <MagnifyingGlass
+                          size={15}
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30"
+                        />
+                        <Input
+                          className="pl-9"
+                          placeholder={lang === 'tr' ? 'Çalışan ara...' : 'Search employee...'}
+                          value={pendingSearch}
+                          onChange={(e) => setPendingSearch(e.target.value)}
+                        />
                       </div>
                     </div>
                     {canManage && otherBulkItems.length > 0 && (
@@ -750,80 +764,72 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
                     />
                   ) : (
                     <>
-                    <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            {canManage && (
-                              <TableHead className="w-10">
-                                <input
-                                  type="checkbox"
-                                  className="size-3.5 cursor-pointer rounded border-black/20 accent-brand"
-                                  checked={allBonusSelected}
-                                  onChange={toggleBonusSelectAll}
-                                />
+                      <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              {canManage && (
+                                <TableHead className="w-10">
+                                  <input
+                                    type="checkbox"
+                                    className="size-3.5 cursor-pointer rounded border-black/20 accent-brand"
+                                    checked={allBonusSelected}
+                                    onChange={toggleBonusSelectAll}
+                                  />
+                                </TableHead>
+                              )}
+                              <TableHead className="w-52">
+                                {lang === 'tr' ? 'Çalışan' : 'Employee'}
                               </TableHead>
-                            )}
-                            <TableHead className="w-52">
-                              {lang === 'tr' ? 'Çalışan' : 'Employee'}
-                            </TableHead>
-                            <TableHead>{lang === 'tr' ? 'Anlaşma' : 'Agreement'}</TableHead>
-                            <TableHead className="text-right">
-                              {lang === 'tr' ? 'Tutar (USDT)' : 'Amount (USDT)'}
-                            </TableHead>
-                            <TableHead className="text-right">
-                              {lang === 'tr' ? 'Avans' : 'Advance'}
-                            </TableHead>
-                            <TableHead className="text-right">
-                              {lang === 'tr' ? 'Net Ödeme' : 'Net Payment'}
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {paginatedPendingItems.map((item) => {
-                            const emp = employeeMap.get(item.employee_id)
-                            const agr = item.agreement_id
-                              ? agreements.find((a) => a.id === item.agreement_id)
-                              : null
-                            const empAdvance = bonusAdvancesByEmp.get(item.employee_id) ?? 0
-                            const net = Math.max(0, item.amount_usdt - empAdvance)
-                            const itemKey = bonusItemKey(item)
-                            return (
-                              <TableRow key={itemKey} className={selectedBonusIds.has(itemKey) ? 'bg-brand/[0.03]' : ''}>
-                                {canManage && (
+                              <TableHead>{lang === 'tr' ? 'Anlaşma' : 'Agreement'}</TableHead>
+                              <TableHead className="text-right">
+                                {lang === 'tr' ? 'Tutar (USDT)' : 'Amount (USDT)'}
+                              </TableHead>
+                              <TableHead className="text-right">
+                                {lang === 'tr' ? 'Avans' : 'Advance'}
+                              </TableHead>
+                              <TableHead className="text-right">
+                                {lang === 'tr' ? 'Net Ödeme' : 'Net Payment'}
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {paginatedPendingItems.map((item) => {
+                              const emp = employeeMap.get(item.employee_id)
+                              const agr = item.agreement_id
+                                ? agreements.find((a) => a.id === item.agreement_id)
+                                : null
+                              const empAdvance = bonusAdvancesByEmp.get(item.employee_id) ?? 0
+                              const net = Math.max(0, item.amount_usdt - empAdvance)
+                              const itemKey = bonusItemKey(item)
+                              return (
+                                <TableRow
+                                  key={itemKey}
+                                  className={selectedBonusIds.has(itemKey) ? 'bg-brand/[0.03]' : ''}
+                                >
+                                  {canManage && (
+                                    <TableCell>
+                                      <input
+                                        type="checkbox"
+                                        className="size-3.5 cursor-pointer rounded border-black/20 accent-brand"
+                                        checked={selectedBonusIds.has(itemKey)}
+                                        onChange={() => toggleBonusSelect(itemKey)}
+                                      />
+                                    </TableCell>
+                                  )}
                                   <TableCell>
-                                    <input
-                                      type="checkbox"
-                                      className="size-3.5 cursor-pointer rounded border-black/20 accent-brand"
-                                      checked={selectedBonusIds.has(itemKey)}
-                                      onChange={() => toggleBonusSelect(itemKey)}
-                                    />
+                                    <span className="truncate text-sm font-medium text-black">
+                                      {emp?.full_name ?? item.employee_name}
+                                    </span>
                                   </TableCell>
-                                )}
-                                <TableCell>
-                                  <span className="truncate text-sm font-medium text-black">
-                                    {emp?.full_name ?? item.employee_name}
-                                  </span>
-                                </TableCell>
-                                <TableCell>
-                                  <span className="text-sm text-black/60">{agr?.title ?? '—'}</span>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <span className="tabular-nums text-sm font-semibold text-purple">
-                                    {item.amount_usdt.toLocaleString(
-                                      lang === 'tr' ? 'tr-TR' : 'en-US',
-                                      {
-                                        minimumFractionDigits: 2,
-                                      },
-                                    )}{' '}
-                                    USDT
-                                  </span>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  {empAdvance > 0 ? (
-                                    <span className="tabular-nums text-sm font-semibold text-orange">
-                                      -
-                                      {empAdvance.toLocaleString(
+                                  <TableCell>
+                                    <span className="text-sm text-black/60">
+                                      {agr?.title ?? '—'}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <span className="tabular-nums text-sm font-semibold text-purple">
+                                      {item.amount_usdt.toLocaleString(
                                         lang === 'tr' ? 'tr-TR' : 'en-US',
                                         {
                                           minimumFractionDigits: 2,
@@ -831,59 +837,86 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
                                       )}{' '}
                                       USDT
                                     </span>
-                                  ) : (
-                                    <span className="text-xs text-black/30">—</span>
-                                  )}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    {empAdvance > 0 ? (
+                                      <span className="tabular-nums text-sm font-semibold text-orange">
+                                        -
+                                        {empAdvance.toLocaleString(
+                                          lang === 'tr' ? 'tr-TR' : 'en-US',
+                                          {
+                                            minimumFractionDigits: 2,
+                                          },
+                                        )}{' '}
+                                        USDT
+                                      </span>
+                                    ) : (
+                                      <span className="text-xs text-black/30">—</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <span className="tabular-nums text-sm font-bold text-green">
+                                      {net.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US', {
+                                        minimumFractionDigits: 2,
+                                      })}{' '}
+                                      USDT
+                                    </span>
+                                  </TableCell>
+                                </TableRow>
+                              )
+                            })}
+                            {/* Total row */}
+                            {otherBulkItems.length > 1 && (
+                              <TableRow className="bg-black/[0.02]">
+                                <TableCell
+                                  colSpan={canManage ? 5 : 4}
+                                  className="text-right text-xs font-semibold text-black/50"
+                                >
+                                  {lang === 'tr' ? 'Toplam' : 'Total'}
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <span className="tabular-nums text-sm font-bold text-green">
-                                    {net.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US', {
-                                      minimumFractionDigits: 2,
-                                    })}{' '}
+                                    {otherBulkItems
+                                      .reduce((s, i) => {
+                                        const adv = bonusAdvancesByEmp.get(i.employee_id) ?? 0
+                                        return s + Math.max(0, i.amount_usdt - adv)
+                                      }, 0)
+                                      .toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US', {
+                                        minimumFractionDigits: 2,
+                                      })}{' '}
                                     USDT
                                   </span>
                                 </TableCell>
                               </TableRow>
-                            )
-                          })}
-                          {/* Total row */}
-                          {otherBulkItems.length > 1 && (
-                            <TableRow className="bg-black/[0.02]">
-                              <TableCell
-                                colSpan={canManage ? 5 : 4}
-                                className="text-right text-xs font-semibold text-black/50"
-                              >
-                                {lang === 'tr' ? 'Toplam' : 'Total'}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <span className="tabular-nums text-sm font-bold text-green">
-                                  {otherBulkItems
-                                    .reduce((s, i) => {
-                                      const adv = bonusAdvancesByEmp.get(i.employee_id) ?? 0
-                                      return s + Math.max(0, i.amount_usdt - adv)
-                                    }, 0)
-                                    .toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US', {
-                                      minimumFractionDigits: 2,
-                                    })}{' '}
-                                  USDT
-                                </span>
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
-                    </div>
-                    {pendingTotalPages > 1 && (
-                      <div className="flex items-center justify-center gap-2 pt-sm">
-                        <Button variant="ghost" size="icon-sm" onClick={() => setPendingPage((p) => Math.max(1, p - 1))} disabled={pendingPage === 1}>
-                          <CaretLeft size={14} />
-                        </Button>
-                        <span className="text-xs tabular-nums text-black/50">{pendingPage} / {pendingTotalPages}</span>
-                        <Button variant="ghost" size="icon-sm" onClick={() => setPendingPage((p) => Math.min(pendingTotalPages, p + 1))} disabled={pendingPage === pendingTotalPages}>
-                          <CaretRight size={14} />
-                        </Button>
+                            )}
+                          </TableBody>
+                        </Table>
                       </div>
-                    )}
+                      {pendingTotalPages > 1 && (
+                        <div className="flex items-center justify-center gap-2 pt-sm">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => setPendingPage((p) => Math.max(1, p - 1))}
+                            disabled={pendingPage === 1}
+                          >
+                            <CaretLeft size={14} />
+                          </Button>
+                          <span className="text-xs tabular-nums text-black/50">
+                            {pendingPage} / {pendingTotalPages}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() =>
+                              setPendingPage((p) => Math.min(pendingTotalPages, p + 1))
+                            }
+                            disabled={pendingPage === pendingTotalPages}
+                          >
+                            <CaretRight size={14} />
+                          </Button>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
@@ -926,7 +959,10 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
             />
             <BulkPayoutConfirmDialog
               open={bulkPayoutOpen}
-              onClose={() => { setBulkPayoutOpen(false); setSelectedBonusIds(new Set()) }}
+              onClose={() => {
+                setBulkPayoutOpen(false)
+                setSelectedBonusIds(new Set())
+              }}
               items={bonusPayoutItems}
               dept="other"
               periodLabel={otherPeriodLabel}

@@ -256,8 +256,8 @@ export function TransfersTable({
         // Snapshot originals BEFORE applying new rate (guard prevents overwrite on re-save)
         dispatch({ type: 'STORE_ORIGINALS', dateKey, originals: typed })
 
-        const usdTransfers = typed.filter((t) => t.currency === 'USD')
-        const tryTransfers = typed.filter((t) => t.currency !== 'USD')
+        const usdTransfers = typed.filter((t) => t.currency === 'USD' || t.currency === 'USDT')
+        const tryTransfers = typed.filter((t) => t.currency !== 'USD' && t.currency !== 'USDT')
 
         const updates: Promise<unknown>[] = [
           // USD transfers: recalculate TRY equivalent
@@ -305,8 +305,12 @@ export function TransfersTable({
       if (originals && currentOrg) {
         dispatch({ type: 'APPLY_RATE_START' })
         try {
-          const usdOriginals = originals.filter((t) => t.currency === 'USD')
-          const tryOriginals = originals.filter((t) => t.currency !== 'USD')
+          const usdOriginals = originals.filter(
+            (t) => t.currency === 'USD' || t.currency === 'USDT',
+          )
+          const tryOriginals = originals.filter(
+            (t) => t.currency !== 'USD' && t.currency !== 'USDT',
+          )
 
           const updates: Promise<unknown>[] = [
             // USD transfers: restore original exchange_rate + amount_try

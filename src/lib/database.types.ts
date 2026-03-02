@@ -1,436 +1,496 @@
-/**
- * Supabase Database Types
- *
- * Hand-written to match the schema defined in supabase/migrations/.
- * Regenerate with the Supabase CLI if you modify the schema:
- *   npx supabase gen types typescript --linked > src/lib/database.types.ts
- */
-
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
-export type SystemRole = 'god' | 'user'
-export type OrgMemberRole = 'admin' | 'manager' | 'operation'
-export type InvitationStatus = 'pending' | 'accepted' | 'expired'
-export type Currency = 'TL' | 'USD'
-export type HrEmployeeRole =
-  | 'Manager'
-  | 'Marketing'
-  | 'Operation'
-  | 'Retention'
-  | 'Project Management'
-  | 'Social Media'
-  | 'Sales Development'
-  | 'Programmer'
-export type PspScope = 'local' | 'global'
-export type PspProvider = 'unipayment'
-export type HrBonusType = 'fixed' | 'percentage' | 'tiered' | 'custom' | 'variable'
-export type HrAttendanceStatus = 'present' | 'absent' | 'late' | 'half_day'
-export type HrLeaveType = 'paid' | 'unpaid' | 'annual'
-export type HrDocumentType =
-  | 'ikametgah'
-  | 'adli_sicil'
-  | 'diploma'
-  | 'saglik_raporu'
-  | 'kimlik_on'
-  | 'kimlik_arka'
-
-export interface Database {
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: '14.1'
+  }
   public: {
     Tables: {
-      profiles: {
+      accounting_entries: {
         Row: {
-          id: string
-          system_role: SystemRole
-          email: string | null
-          display_name: string | null
-          avatar_url: string | null
-          phone: string | null
-          bio: string | null
-          department: string | null
-          notes: string | null
-          last_seen_at: string | null
+          advance_type: string | null
+          amount: number
+          cost_period: string | null
           created_at: string
+          created_by: string | null
+          currency: string
+          description: string
+          direction: string
+          entry_date: string
+          entry_type: string
+          hr_employee_id: string | null
+          hr_payment_id: string | null
+          hr_payment_type: string | null
+          id: string
+          organization_id: string
+          payment_period: string | null
+          register: string
           updated_at: string
         }
         Insert: {
-          id: string
-          system_role?: SystemRole
-          email?: string | null
-          display_name?: string | null
-          avatar_url?: string | null
-          phone?: string | null
-          bio?: string | null
-          department?: string | null
-          notes?: string | null
-          last_seen_at?: string | null
+          advance_type?: string | null
+          amount: number
+          cost_period?: string | null
           created_at?: string
+          created_by?: string | null
+          currency: string
+          description: string
+          direction: string
+          entry_date?: string
+          entry_type: string
+          hr_employee_id?: string | null
+          hr_payment_id?: string | null
+          hr_payment_type?: string | null
+          id?: string
+          organization_id: string
+          payment_period?: string | null
+          register: string
           updated_at?: string
         }
         Update: {
-          id?: string
-          system_role?: SystemRole
-          email?: string | null
-          display_name?: string | null
-          avatar_url?: string | null
-          phone?: string | null
-          bio?: string | null
-          department?: string | null
-          notes?: string | null
-          last_seen_at?: string | null
+          advance_type?: string | null
+          amount?: number
+          cost_period?: string | null
           created_at?: string
+          created_by?: string | null
+          currency?: string
+          description?: string
+          direction?: string
+          entry_date?: string
+          entry_type?: string
+          hr_employee_id?: string | null
+          hr_payment_id?: string | null
+          hr_payment_type?: string | null
+          id?: string
+          organization_id?: string
+          payment_period?: string | null
+          register?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'profiles_id_fkey'
-            columns: ['id']
-            isOneToOne: true
-            referencedRelation: 'users'
+            foreignKeyName: 'accounting_entries_hr_employee_id_fkey'
+            columns: ['hr_employee_id']
+            isOneToOne: false
+            referencedRelation: 'hr_employees'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'accounting_entries_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
             referencedColumns: ['id']
           },
         ]
       }
-      organizations: {
+      accounting_monthly_config: {
         Row: {
-          id: string
-          name: string
-          slug: string
-          logo_url: string | null
-          is_active: boolean
-          created_by: string | null
+          bekl_tahs: number | null
           created_at: string
+          created_by: string | null
+          devir_nakit_tl: number | null
+          devir_nakit_usd: number | null
+          devir_usdt: number | null
+          id: string
+          kur: number | null
+          month: number
+          organization_id: string
+          teyit_entries: Json
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          bekl_tahs?: number | null
+          created_at?: string
+          created_by?: string | null
+          devir_nakit_tl?: number | null
+          devir_nakit_usd?: number | null
+          devir_usdt?: number | null
+          id?: string
+          kur?: number | null
+          month: number
+          organization_id: string
+          teyit_entries?: Json
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          bekl_tahs?: number | null
+          created_at?: string
+          created_by?: string | null
+          devir_nakit_tl?: number | null
+          devir_nakit_usd?: number | null
+          devir_usdt?: number | null
+          id?: string
+          kur?: number | null
+          month?: number
+          organization_id?: string
+          teyit_entries?: Json
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'accounting_monthly_config_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      blog_posts: {
+        Row: {
+          author: string | null
+          canonical_url: string | null
+          content: string | null
+          cover_image: string | null
+          created_at: string
+          excerpt: string | null
+          focus_keyword: string | null
+          id: string
+          is_published: boolean
+          keywords: string | null
+          meta_description: string | null
+          meta_title: string | null
+          og_image: string | null
+          published_at: string | null
+          slug: string
+          title: string
           updated_at: string
         }
         Insert: {
-          id?: string
-          name: string
-          slug: string
-          logo_url?: string | null
-          is_active?: boolean
-          created_by?: string | null
+          author?: string | null
+          canonical_url?: string | null
+          content?: string | null
+          cover_image?: string | null
           created_at?: string
+          excerpt?: string | null
+          focus_keyword?: string | null
+          id?: string
+          is_published?: boolean
+          keywords?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
+          og_image?: string | null
+          published_at?: string | null
+          slug: string
+          title: string
           updated_at?: string
         }
         Update: {
-          id?: string
-          name?: string
-          slug?: string
-          logo_url?: string | null
-          is_active?: boolean
-          created_by?: string | null
+          author?: string | null
+          canonical_url?: string | null
+          content?: string | null
+          cover_image?: string | null
           created_at?: string
+          excerpt?: string | null
+          focus_keyword?: string | null
+          id?: string
+          is_published?: boolean
+          keywords?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
+          og_image?: string | null
+          published_at?: string | null
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      bloke_resolutions: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          resolution_date: string | null
+          resolution_notes: string | null
+          resolved_by: string | null
+          status: string
+          transfer_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          resolution_date?: string | null
+          resolution_notes?: string | null
+          resolved_by?: string | null
+          status?: string
+          transfer_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          resolution_date?: string | null
+          resolution_notes?: string | null
+          resolved_by?: string | null
+          status?: string
+          transfer_id?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'organizations_created_by_fkey'
-            columns: ['created_by']
+            foreignKeyName: 'bloke_resolutions_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'bloke_resolutions_transfer_id_fkey'
+            columns: ['transfer_id']
+            isOneToOne: true
+            referencedRelation: 'transfers'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      captcha_challenges: {
+        Row: {
+          challenge_id: string
+          created_at: string
+          device_id: string
+          id: string
+          solved: boolean
+          user_id: string | null
+        }
+        Insert: {
+          challenge_id: string
+          created_at?: string
+          device_id: string
+          id?: string
+          solved?: boolean
+          user_id?: string | null
+        }
+        Update: {
+          challenge_id?: string
+          created_at?: string
+          device_id?: string
+          id?: string
+          solved?: boolean
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      exchange_rates: {
+        Row: {
+          created_at: string
+          currency: string
+          id: string
+          organization_id: string
+          rate_date: string
+          rate_to_tl: number
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          id?: string
+          organization_id: string
+          rate_date?: string
+          rate_to_tl: number
+          source?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          id?: string
+          organization_id?: string
+          rate_date?: string
+          rate_to_tl?: number
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'exchange_rates_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      god_audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          god_email: string
+          god_user_id: string | null
+          id: string
+          ip_address: unknown
+          new_values: Json | null
+          old_values: Json | null
+          record_id: string | null
+          table_name: string
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          god_email: string
+          god_user_id?: string | null
+          id?: string
+          ip_address?: unknown
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name: string
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          god_email?: string
+          god_user_id?: string | null
+          id?: string
+          ip_address?: unknown
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'god_audit_log_god_user_id_fkey'
+            columns: ['god_user_id']
             isOneToOne: false
             referencedRelation: 'profiles'
             referencedColumns: ['id']
           },
         ]
       }
-      organization_members: {
+      hr_attendance: {
         Row: {
-          organization_id: string
-          user_id: string
-          role: OrgMemberRole
-          invited_by: string | null
+          absent_hours: number | null
+          check_in: string | null
+          check_out: string | null
           created_at: string
-        }
-        Insert: {
-          organization_id: string
-          user_id: string
-          role?: OrgMemberRole
-          invited_by?: string | null
-          created_at?: string
-        }
-        Update: {
-          organization_id?: string
-          user_id?: string
-          role?: OrgMemberRole
-          invited_by?: string | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'organization_members_organization_id_fkey'
-            columns: ['organization_id']
-            isOneToOne: false
-            referencedRelation: 'organizations'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'organization_members_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
-            referencedRelation: 'users'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'organization_members_invited_by_fkey'
-            columns: ['invited_by']
-            isOneToOne: false
-            referencedRelation: 'users'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      organization_pins: {
-        Row: {
+          date: string
+          deduction_exempt: boolean
+          employee_id: string
           id: string
-          organization_id: string
-          pin_hash: string
-          updated_by: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          organization_id: string
-          pin_hash: string
-          updated_by?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          organization_id?: string
-          pin_hash?: string
-          updated_by?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'org_pins_organization_id_fkey'
-            columns: ['organization_id']
-            isOneToOne: true
-            referencedRelation: 'organizations'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      organization_invitations: {
-        Row: {
-          id: string
-          organization_id: string
-          email: string
-          role: OrgMemberRole
-          invited_by: string | null
-          status: InvitationStatus
-          created_at: string
-          expires_at: string
-        }
-        Insert: {
-          id?: string
-          organization_id: string
-          email: string
-          role?: OrgMemberRole
-          invited_by?: string | null
-          status?: InvitationStatus
-          created_at?: string
-          expires_at?: string
-        }
-        Update: {
-          id?: string
-          organization_id?: string
-          email?: string
-          role?: OrgMemberRole
-          invited_by?: string | null
-          status?: InvitationStatus
-          created_at?: string
-          expires_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'organization_invitations_organization_id_fkey'
-            columns: ['organization_id']
-            isOneToOne: false
-            referencedRelation: 'organizations'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'organization_invitations_invited_by_fkey'
-            columns: ['invited_by']
-            isOneToOne: false
-            referencedRelation: 'users'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      /* ──────────── HR Module ──────────── */
-      hr_employees: {
-        Row: {
-          id: string
-          organization_id: string
-          full_name: string
-          email: string
-          role: HrEmployeeRole
-          salary_tl: number
-          salary_currency: 'TL' | 'USD'
-          is_insured: boolean
-          receives_supplement: boolean
-          is_active: boolean
-          hire_date: string | null
           notes: string | null
-          created_by: string | null
-          created_at: string
-          updated_at: string
+          organization_id: string
+          recorded_by: string | null
+          status: string
         }
         Insert: {
-          id?: string
-          organization_id: string
-          full_name: string
-          email: string
-          role: HrEmployeeRole
-          salary_tl?: number
-          salary_currency?: 'TL' | 'USD'
-          is_insured?: boolean
-          receives_supplement?: boolean
-          is_active?: boolean
-          hire_date?: string | null
-          notes?: string | null
-          created_by?: string | null
+          absent_hours?: number | null
+          check_in?: string | null
+          check_out?: string | null
           created_at?: string
-          updated_at?: string
+          date: string
+          deduction_exempt?: boolean
+          employee_id: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          recorded_by?: string | null
+          status?: string
         }
         Update: {
-          id?: string
-          organization_id?: string
-          full_name?: string
-          email?: string
-          role?: HrEmployeeRole
-          salary_tl?: number
-          salary_currency?: 'TL' | 'USD'
-          is_insured?: boolean
-          receives_supplement?: boolean
-          is_active?: boolean
-          hire_date?: string | null
-          notes?: string | null
-          created_by?: string | null
+          absent_hours?: number | null
+          check_in?: string | null
+          check_out?: string | null
           created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'hr_employees_organization_id_fkey'
-            columns: ['organization_id']
-            isOneToOne: false
-            referencedRelation: 'organizations'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      hr_employee_documents: {
-        Row: {
-          id: string
-          employee_id: string
-          organization_id: string
-          document_type: HrDocumentType
-          file_name: string
-          file_url: string
-          storage_path: string
-          uploaded_by: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          employee_id: string
-          organization_id: string
-          document_type: HrDocumentType
-          file_name: string
-          file_url: string
-          storage_path: string
-          uploaded_by?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
+          date?: string
+          deduction_exempt?: boolean
           employee_id?: string
+          id?: string
+          notes?: string | null
           organization_id?: string
-          document_type?: HrDocumentType
-          file_name?: string
-          file_url?: string
-          storage_path?: string
-          uploaded_by?: string | null
-          created_at?: string
+          recorded_by?: string | null
+          status?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'hr_employee_documents_employee_id_fkey'
+            foreignKeyName: 'hr_attendance_employee_id_fkey'
             columns: ['employee_id']
             isOneToOne: false
             referencedRelation: 'hr_employees'
             referencedColumns: ['id']
           },
           {
-            foreignKeyName: 'hr_employee_documents_organization_id_fkey'
+            foreignKeyName: 'hr_attendance_organization_id_fkey'
             columns: ['organization_id']
             isOneToOne: false
             referencedRelation: 'organizations'
             referencedColumns: ['id']
           },
+          {
+            foreignKeyName: 'hr_attendance_recorded_by_fkey'
+            columns: ['recorded_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
         ]
       }
-      /* ──────────── HR Bonuses ──────────── */
       hr_bonus_agreements: {
         Row: {
-          id: string
-          employee_id: string
-          organization_id: string
-          title: string
-          description: string | null
-          bonus_type: HrBonusType
+          bonus_type: string
+          created_at: string
+          created_by: string | null
           currency: string
-          fixed_amount: number
-          percentage_rate: number
-          percentage_base: string | null
-          tier_rules: Json
-          is_active: boolean
+          description: string | null
           effective_from: string | null
           effective_until: string | null
-          created_by: string | null
-          created_at: string
+          employee_id: string
+          fixed_amount: number | null
+          id: string
+          is_active: boolean
+          organization_id: string
+          percentage_base: string | null
+          percentage_rate: number | null
+          tier_rules: Json | null
+          title: string
           updated_at: string
         }
         Insert: {
-          id?: string
-          employee_id: string
-          organization_id: string
-          title: string
-          description?: string | null
-          bonus_type: HrBonusType
+          bonus_type: string
+          created_at?: string
+          created_by?: string | null
           currency?: string
-          fixed_amount?: number
-          percentage_rate?: number
-          percentage_base?: string | null
-          tier_rules?: Json
-          is_active?: boolean
+          description?: string | null
           effective_from?: string | null
           effective_until?: string | null
-          created_by?: string | null
-          created_at?: string
+          employee_id: string
+          fixed_amount?: number | null
+          id?: string
+          is_active?: boolean
+          organization_id: string
+          percentage_base?: string | null
+          percentage_rate?: number | null
+          tier_rules?: Json | null
+          title: string
           updated_at?: string
         }
         Update: {
-          id?: string
-          employee_id?: string
-          organization_id?: string
-          title?: string
-          description?: string | null
-          bonus_type?: HrBonusType
+          bonus_type?: string
+          created_at?: string
+          created_by?: string | null
           currency?: string
-          fixed_amount?: number
-          percentage_rate?: number
-          percentage_base?: string | null
-          tier_rules?: Json
-          is_active?: boolean
+          description?: string | null
           effective_from?: string | null
           effective_until?: string | null
-          created_by?: string | null
-          created_at?: string
+          employee_id?: string
+          fixed_amount?: number | null
+          id?: string
+          is_active?: boolean
+          organization_id?: string
+          percentage_base?: string | null
+          percentage_rate?: number | null
+          tier_rules?: Json | null
+          title?: string
           updated_at?: string
         }
         Relationships: [
@@ -452,43 +512,46 @@ export interface Database {
       }
       hr_bonus_payments: {
         Row: {
-          id: string
           agreement_id: string | null
-          employee_id: string
-          organization_id: string
-          period: string
           amount_usdt: number
-          notes: string | null
-          paid_at: string | null
-          transfer_id: string | null
-          created_by: string | null
           created_at: string
+          created_by: string | null
+          employee_id: string
+          id: string
+          notes: string | null
+          organization_id: string
+          paid_at: string | null
+          period: string
+          status: string
+          transfer_id: string | null
         }
         Insert: {
-          id?: string
           agreement_id?: string | null
-          employee_id: string
-          organization_id: string
-          period: string
-          amount_usdt: number
-          notes?: string | null
-          paid_at?: string | null
-          transfer_id?: string | null
-          created_by?: string | null
+          amount_usdt?: number
           created_at?: string
+          created_by?: string | null
+          employee_id: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          paid_at?: string | null
+          period: string
+          status?: string
+          transfer_id?: string | null
         }
         Update: {
-          id?: string
           agreement_id?: string | null
-          employee_id?: string
-          organization_id?: string
-          period?: string
           amount_usdt?: number
-          notes?: string | null
-          paid_at?: string | null
-          transfer_id?: string | null
-          created_by?: string | null
           created_at?: string
+          created_by?: string | null
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          paid_at?: string | null
+          period?: string
+          status?: string
+          transfer_id?: string | null
         }
         Relationships: [
           {
@@ -512,150 +575,59 @@ export interface Database {
             referencedRelation: 'organizations'
             referencedColumns: ['id']
           },
-        ]
-      }
-      /* ──────────── HR Salary Payments ──────────── */
-      hr_salary_payments: {
-        Row: {
-          id: string
-          employee_id: string
-          organization_id: string
-          period: string
-          amount_tl: number
-          salary_currency: 'TL' | 'USD'
-          paid_at: string
-          notes: string | null
-          created_by: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          employee_id: string
-          organization_id: string
-          period: string
-          amount_tl: number
-          salary_currency?: 'TL' | 'USD'
-          paid_at: string
-          notes?: string | null
-          created_by?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          employee_id?: string
-          organization_id?: string
-          period?: string
-          amount_tl?: number
-          salary_currency?: 'TL' | 'USD'
-          paid_at?: string
-          notes?: string | null
-          created_by?: string | null
-          created_at?: string
-        }
-        Relationships: []
-      }
-      /* ──────────── HR MT Config ──────────── */
-      hr_mt_config: {
-        Row: {
-          id: string
-          organization_id: string
-          deposit_tiers: Json
-          count_tiers: Json
-          volume_tiers: Json
-          weekly_prize_amount: number
-          weekly_prize_min_sales: number
-          monthly_prize_amount: number
-          monthly_prize_min_sales: number
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          organization_id: string
-          deposit_tiers?: Json
-          count_tiers?: Json
-          volume_tiers?: Json
-          weekly_prize_amount?: number
-          weekly_prize_min_sales?: number
-          monthly_prize_amount?: number
-          monthly_prize_min_sales?: number
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          organization_id?: string
-          deposit_tiers?: Json
-          count_tiers?: Json
-          volume_tiers?: Json
-          weekly_prize_amount?: number
-          weekly_prize_min_sales?: number
-          monthly_prize_amount?: number
-          monthly_prize_min_sales?: number
-          updated_at?: string
-        }
-        Relationships: [
           {
-            foreignKeyName: 'hr_mt_config_organization_id_fkey'
-            columns: ['organization_id']
-            isOneToOne: true
-            referencedRelation: 'organizations'
+            foreignKeyName: 'hr_bonus_payments_transfer_id_fkey'
+            columns: ['transfer_id']
+            isOneToOne: false
+            referencedRelation: 'transfers'
             referencedColumns: ['id']
           },
         ]
       }
-      /* ──────────── HR Attendance ──────────── */
-      hr_attendance: {
+      hr_employee_documents: {
         Row: {
-          id: string
-          employee_id: string
-          organization_id: string
-          date: string
-          status: HrAttendanceStatus
-          check_in: string | null
-          check_out: string | null
-          absent_hours: number | null
-          deduction_exempt: boolean
-          notes: string | null
-          recorded_by: string | null
           created_at: string
+          document_type: string
+          employee_id: string
+          file_name: string
+          file_url: string
+          id: string
+          organization_id: string
+          storage_path: string
+          uploaded_by: string | null
         }
         Insert: {
-          id?: string
-          employee_id: string
-          organization_id: string
-          date: string
-          status?: HrAttendanceStatus
-          check_in?: string | null
-          check_out?: string | null
-          absent_hours?: number | null
-          deduction_exempt?: boolean
-          notes?: string | null
-          recorded_by?: string | null
           created_at?: string
+          document_type: string
+          employee_id: string
+          file_name: string
+          file_url: string
+          id?: string
+          organization_id: string
+          storage_path: string
+          uploaded_by?: string | null
         }
         Update: {
-          id?: string
-          employee_id?: string
-          organization_id?: string
-          date?: string
-          status?: HrAttendanceStatus
-          check_in?: string | null
-          check_out?: string | null
-          absent_hours?: number | null
-          deduction_exempt?: boolean
-          notes?: string | null
-          recorded_by?: string | null
           created_at?: string
+          document_type?: string
+          employee_id?: string
+          file_name?: string
+          file_url?: string
+          id?: string
+          organization_id?: string
+          storage_path?: string
+          uploaded_by?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: 'hr_attendance_employee_id_fkey'
+            foreignKeyName: 'hr_employee_documents_employee_id_fkey'
             columns: ['employee_id']
             isOneToOne: false
             referencedRelation: 'hr_employees'
             referencedColumns: ['id']
           },
           {
-            foreignKeyName: 'hr_attendance_organization_id_fkey'
+            foreignKeyName: 'hr_employee_documents_organization_id_fkey'
             columns: ['organization_id']
             isOneToOne: false
             referencedRelation: 'organizations'
@@ -663,40 +635,101 @@ export interface Database {
           },
         ]
       }
-      /* ──────────── HR Leaves ──────────── */
-      hr_leaves: {
+      hr_employees: {
         Row: {
-          id: string
-          employee_id: string
-          organization_id: string
-          leave_type: HrLeaveType
-          start_date: string
-          end_date: string
-          notes: string | null
-          created_by: string | null
           created_at: string
+          created_by: string | null
+          email: string
+          full_name: string
+          hire_date: string | null
+          id: string
+          is_active: boolean
+          is_insured: boolean
+          notes: string | null
+          organization_id: string
+          receives_supplement: boolean
+          role: string
+          salary_currency: string
+          salary_tl: number
+          updated_at: string
         }
         Insert: {
-          id?: string
-          employee_id: string
-          organization_id: string
-          leave_type: HrLeaveType
-          start_date: string
-          end_date: string
-          notes?: string | null
-          created_by?: string | null
           created_at?: string
+          created_by?: string | null
+          email: string
+          full_name: string
+          hire_date?: string | null
+          id?: string
+          is_active?: boolean
+          is_insured?: boolean
+          notes?: string | null
+          organization_id: string
+          receives_supplement?: boolean
+          role: string
+          salary_currency?: string
+          salary_tl?: number
+          updated_at?: string
         }
         Update: {
-          id?: string
-          employee_id?: string
-          organization_id?: string
-          leave_type?: HrLeaveType
-          start_date?: string
-          end_date?: string
-          notes?: string | null
-          created_by?: string | null
           created_at?: string
+          created_by?: string | null
+          email?: string
+          full_name?: string
+          hire_date?: string | null
+          id?: string
+          is_active?: boolean
+          is_insured?: boolean
+          notes?: string | null
+          organization_id?: string
+          receives_supplement?: boolean
+          role?: string
+          salary_currency?: string
+          salary_tl?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'hr_employees_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      hr_leaves: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          employee_id: string
+          end_date: string
+          id: string
+          leave_type: string
+          notes: string | null
+          organization_id: string
+          start_date: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          employee_id: string
+          end_date: string
+          id?: string
+          leave_type: string
+          notes?: string | null
+          organization_id: string
+          start_date: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          employee_id?: string
+          end_date?: string
+          id?: string
+          leave_type?: string
+          notes?: string | null
+          organization_id?: string
+          start_date?: string
         }
         Relationships: [
           {
@@ -715,49 +748,187 @@ export interface Database {
           },
         ]
       }
-      /* ──────────── HR Settings ──────────── */
+      hr_mt_config: {
+        Row: {
+          count_tiers: Json
+          deposit_tiers: Json
+          id: string
+          monthly_prize_amount: number
+          monthly_prize_min_sales: number
+          organization_id: string
+          updated_at: string
+          volume_tiers: Json
+          weekly_prize_amount: number
+          weekly_prize_min_sales: number
+        }
+        Insert: {
+          count_tiers?: Json
+          deposit_tiers?: Json
+          id?: string
+          monthly_prize_amount?: number
+          monthly_prize_min_sales?: number
+          organization_id: string
+          updated_at?: string
+          volume_tiers?: Json
+          weekly_prize_amount?: number
+          weekly_prize_min_sales?: number
+        }
+        Update: {
+          count_tiers?: Json
+          deposit_tiers?: Json
+          id?: string
+          monthly_prize_amount?: number
+          monthly_prize_min_sales?: number
+          organization_id?: string
+          updated_at?: string
+          volume_tiers?: Json
+          weekly_prize_amount?: number
+          weekly_prize_min_sales?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'hr_mt_config_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: true
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      hr_re_config: {
+        Row: {
+          organization_id: string
+          rate_tiers: Json
+          updated_at: string
+        }
+        Insert: {
+          organization_id: string
+          rate_tiers?: Json
+          updated_at?: string
+        }
+        Update: {
+          organization_id?: string
+          rate_tiers?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'hr_re_config_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: true
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      hr_salary_payments: {
+        Row: {
+          amount_tl: number
+          created_at: string
+          created_by: string | null
+          employee_id: string
+          id: string
+          notes: string | null
+          organization_id: string
+          paid_at: string
+          period: string
+          salary_currency: string
+        }
+        Insert: {
+          amount_tl?: number
+          created_at?: string
+          created_by?: string | null
+          employee_id: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          paid_at: string
+          period: string
+          salary_currency?: string
+        }
+        Update: {
+          amount_tl?: number
+          created_at?: string
+          created_by?: string | null
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          paid_at?: string
+          period?: string
+          salary_currency?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'hr_salary_payments_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'hr_salary_payments_employee_id_fkey'
+            columns: ['employee_id']
+            isOneToOne: false
+            referencedRelation: 'hr_employees'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'hr_salary_payments_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       hr_settings: {
         Row: {
-          id: string
-          organization_id: string
-          roles: string[]
-          supplement_tl: number
           absence_full_day_divisor: number
           absence_half_day_divisor: number
           absence_hourly_divisor: number
           daily_deduction_enabled: boolean
           hourly_deduction_enabled: boolean
+          id: string
+          organization_id: string
+          roles: Json
           standard_check_in: string
           standard_check_out: string
+          supplement_tl: number
           timezone: string
-          weekend_off: boolean
           updated_at: string
+          weekend_off: boolean
         }
         Insert: {
-          organization_id: string
-          roles?: string[]
-          supplement_tl?: number
           absence_full_day_divisor?: number
           absence_half_day_divisor?: number
           absence_hourly_divisor?: number
           daily_deduction_enabled?: boolean
           hourly_deduction_enabled?: boolean
+          id?: string
+          organization_id: string
+          roles?: Json
           standard_check_in?: string
           standard_check_out?: string
+          supplement_tl?: number
           timezone?: string
+          updated_at?: string
           weekend_off?: boolean
         }
         Update: {
-          roles?: string[]
-          supplement_tl?: number
           absence_full_day_divisor?: number
           absence_half_day_divisor?: number
           absence_hourly_divisor?: number
           daily_deduction_enabled?: boolean
           hourly_deduction_enabled?: boolean
+          id?: string
+          organization_id?: string
+          roles?: Json
           standard_check_in?: string
           standard_check_out?: string
+          supplement_tl?: number
           timezone?: string
+          updated_at?: string
           weekend_off?: boolean
         }
         Relationships: [
@@ -770,115 +941,401 @@ export interface Database {
           },
         ]
       }
-      /* ──────────── Global Lookup Tables (TEXT PK, no org_id) ──────────── */
-      transfer_categories: {
+      legal_pages: {
         Row: {
+          content: string | null
           id: string
-          name: string
-          is_deposit: boolean
-          aliases: string[]
-          created_at: string
+          slug: string
+          title: string
+          updated_at: string | null
         }
         Insert: {
-          id: string
-          name: string
-          is_deposit?: boolean
-          aliases?: string[]
-          created_at?: string
+          content?: string | null
+          id?: string
+          slug: string
+          title: string
+          updated_at?: string | null
         }
         Update: {
+          content?: string | null
           id?: string
-          name?: string
-          is_deposit?: boolean
-          aliases?: string[]
-          created_at?: string
+          slug?: string
+          title?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
-      payment_methods: {
+      login_attempts: {
         Row: {
-          id: string
-          name: string
-          aliases: string[]
           created_at: string
+          device_id: string
+          error_message: string | null
+          id: string
+          ip_address: string | null
+          success: boolean
+          user_id: string | null
         }
         Insert: {
-          id: string
-          name: string
-          aliases?: string[]
           created_at?: string
+          device_id: string
+          error_message?: string | null
+          id?: string
+          ip_address?: string | null
+          success?: boolean
+          user_id?: string | null
         }
         Update: {
-          id?: string
-          name?: string
-          aliases?: string[]
           created_at?: string
+          device_id?: string
+          error_message?: string | null
+          id?: string
+          ip_address?: string | null
+          success?: boolean
+          user_id?: string | null
         }
         Relationships: []
       }
-      transfer_types: {
+      organization_invitations: {
         Row: {
-          id: string
-          name: string
-          aliases: string[]
           created_at: string
-        }
-        Insert: {
+          email: string
+          expires_at: string
           id: string
-          name: string
-          aliases?: string[]
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          name?: string
-          aliases?: string[]
-          created_at?: string
-        }
-        Relationships: []
-      }
-      /* ──────────── PSPs (org-specific, UUID PK) ──────────── */
-      psps: {
-        Row: {
-          id: string
+          invited_by: string | null
           organization_id: string
-          name: string
-          commission_rate: number
-          is_active: boolean
-          is_internal: boolean
-          currency: string
-          psp_scope: PspScope
-          provider: PspProvider | null
-          provider_app_id: string | null
+          role: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          organization_id: string
+          role?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          organization_id?: string
+          role?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'organization_invitations_invited_by_profiles_fkey'
+            columns: ['invited_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'organization_invitations_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      organization_members: {
+        Row: {
           created_at: string
+          invited_by: string | null
+          organization_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          invited_by?: string | null
+          organization_id: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          invited_by?: string | null
+          organization_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'organization_members_invited_by_profiles_fkey'
+            columns: ['invited_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'organization_members_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'organization_members_user_id_profiles_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          logo_url: string | null
+          name: string
+          slug: string
           updated_at: string
         }
         Insert: {
-          id?: string
-          organization_id: string
-          name: string
-          commission_rate?: number
-          is_active?: boolean
-          is_internal?: boolean
-          currency?: string
-          psp_scope?: PspScope
-          provider?: PspProvider | null
-          provider_app_id?: string | null
           created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name: string
+          slug: string
           updated_at?: string
         }
         Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'organizations_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      payment_methods: {
+        Row: {
+          aliases: string[]
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          aliases?: string[]
+          created_at?: string
+          id: string
+          name: string
+        }
+        Update: {
+          aliases?: string[]
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          department: string | null
+          display_name: string | null
+          email: string | null
+          id: string
+          last_seen_at: string | null
+          notes: string | null
+          phone: string | null
+          system_role: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          department?: string | null
+          display_name?: string | null
+          email?: string | null
+          id: string
+          last_seen_at?: string | null
+          notes?: string | null
+          phone?: string | null
+          system_role?: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          department?: string | null
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          last_seen_at?: string | null
+          notes?: string | null
+          phone?: string | null
+          system_role?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      psp_commission_rates: {
+        Row: {
+          commission_rate: number
+          created_at: string
+          created_by: string | null
+          effective_from: string
+          id: string
+          organization_id: string
+          psp_id: string
+        }
+        Insert: {
+          commission_rate: number
+          created_at?: string
+          created_by?: string | null
+          effective_from: string
+          id?: string
+          organization_id: string
+          psp_id: string
+        }
+        Update: {
+          commission_rate?: number
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
           id?: string
           organization_id?: string
-          name?: string
+          psp_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'psp_commission_rates_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'psp_commission_rates_psp_id_fkey'
+            columns: ['psp_id']
+            isOneToOne: false
+            referencedRelation: 'psps'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      psp_settlements: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          id: string
+          notes: string | null
+          organization_id: string
+          psp_id: string
+          settlement_date: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          currency: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          psp_id: string
+          settlement_date: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          psp_id?: string
+          settlement_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'psp_settlements_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'psp_settlements_psp_id_fkey'
+            columns: ['psp_id']
+            isOneToOne: false
+            referencedRelation: 'psps'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      psps: {
+        Row: {
+          commission_rate: number
+          created_at: string
+          currency: string
+          id: string
+          is_active: boolean
+          is_internal: boolean
+          name: string
+          organization_id: string
+          provider: string | null
+          provider_app_id: string | null
+          psp_scope: string
+          updated_at: string
+        }
+        Insert: {
           commission_rate?: number
+          created_at?: string
+          currency?: string
+          id?: string
           is_active?: boolean
           is_internal?: boolean
-          currency?: string
-          psp_scope?: PspScope
-          provider?: PspProvider | null
+          name: string
+          organization_id: string
+          provider?: string | null
           provider_app_id?: string | null
+          psp_scope?: string
+          updated_at?: string
+        }
+        Update: {
+          commission_rate?: number
           created_at?: string
+          currency?: string
+          id?: string
+          is_active?: boolean
+          is_internal?: boolean
+          name?: string
+          organization_id?: string
+          provider?: string | null
+          provider_app_id?: string | null
+          psp_scope?: string
           updated_at?: string
         }
         Relationships: [
@@ -891,215 +1348,211 @@ export interface Database {
           },
         ]
       }
-      psp_commission_rates: {
+      transfer_audit_log: {
         Row: {
-          id: string
-          psp_id: string
-          organization_id: string
-          commission_rate: number
-          effective_from: string
-          created_by: string | null
+          action: string
+          changes: Json | null
           created_at: string
+          id: string
+          organization_id: string
+          performed_by: string | null
+          transfer_id: string
         }
         Insert: {
-          id?: string
-          psp_id: string
-          organization_id: string
-          commission_rate: number
-          effective_from: string
-          created_by?: string | null
+          action: string
+          changes?: Json | null
           created_at?: string
+          id?: string
+          organization_id: string
+          performed_by?: string | null
+          transfer_id: string
         }
         Update: {
-          id?: string
-          psp_id?: string
-          organization_id?: string
-          commission_rate?: number
-          effective_from?: string
-          created_by?: string | null
+          action?: string
+          changes?: Json | null
           created_at?: string
+          id?: string
+          organization_id?: string
+          performed_by?: string | null
+          transfer_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'psp_commission_rates_psp_id_fkey'
-            columns: ['psp_id']
-            isOneToOne: false
-            referencedRelation: 'psps'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'psp_commission_rates_organization_id_fkey'
+            foreignKeyName: 'transfer_audit_log_organization_id_fkey'
             columns: ['organization_id']
             isOneToOne: false
             referencedRelation: 'organizations'
             referencedColumns: ['id']
           },
           {
-            foreignKeyName: 'psp_commission_rates_created_by_fkey'
-            columns: ['created_by']
+            foreignKeyName: 'transfer_audit_log_performed_by_profiles_fkey'
+            columns: ['performed_by']
             isOneToOne: false
-            referencedRelation: 'users'
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'transfer_audit_log_transfer_id_fkey'
+            columns: ['transfer_id']
+            isOneToOne: false
+            referencedRelation: 'transfers'
             referencedColumns: ['id']
           },
         ]
       }
-      psp_settlements: {
+      transfer_categories: {
         Row: {
-          id: string
-          psp_id: string
-          organization_id: string
-          settlement_date: string
-          amount: number
-          currency: string
-          notes: string | null
-          created_by: string | null
+          aliases: string[]
           created_at: string
-          updated_at: string
+          id: string
+          is_deposit: boolean
+          name: string
         }
         Insert: {
-          id?: string
-          psp_id: string
-          organization_id: string
-          settlement_date: string
-          amount: number
-          currency: string
-          notes?: string | null
-          created_by?: string | null
+          aliases?: string[]
           created_at?: string
-          updated_at?: string
+          id: string
+          is_deposit?: boolean
+          name: string
         }
         Update: {
-          id?: string
-          psp_id?: string
-          organization_id?: string
-          settlement_date?: string
-          amount?: number
-          currency?: string
-          notes?: string | null
-          created_by?: string | null
+          aliases?: string[]
           created_at?: string
-          updated_at?: string
+          id?: string
+          is_deposit?: boolean
+          name?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: 'psp_settlements_psp_id_fkey'
-            columns: ['psp_id']
-            isOneToOne: false
-            referencedRelation: 'psps'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'psp_settlements_organization_id_fkey'
-            columns: ['organization_id']
-            isOneToOne: false
-            referencedRelation: 'organizations'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'psp_settlements_created_by_fkey'
-            columns: ['created_by']
-            isOneToOne: false
-            referencedRelation: 'users'
-            referencedColumns: ['id']
-          },
-        ]
+        Relationships: []
       }
-      /* ──────────── Transfers ──────────── */
+      transfer_types: {
+        Row: {
+          aliases: string[]
+          created_at: string
+          id: string
+          is_excluded: boolean
+          name: string
+        }
+        Insert: {
+          aliases?: string[]
+          created_at?: string
+          id: string
+          is_excluded?: boolean
+          name: string
+        }
+        Update: {
+          aliases?: string[]
+          created_at?: string
+          id?: string
+          is_excluded?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
       transfers: {
         Row: {
-          id: string
-          organization_id: string
-          full_name: string
-          transfer_date: string
           amount: number
-          commission: number
-          net: number
-          currency: Currency
-          category_id: string
-          payment_method_id: string
-          type_id: string
-          psp_id: string | null
-          crm_id: string | null
-          meta_id: string | null
-          exchange_rate: number
           amount_try: number
           amount_usd: number
+          category_id: string
+          commission: number
           commission_rate_snapshot: number | null
-          employee_id: string | null
-          is_first_deposit: boolean
-          external_transaction_id: string | null
-          created_by: string | null
-          updated_by: string | null
           created_at: string
+          created_by: string | null
+          crm_id: string | null
+          currency: string
+          employee_id: string | null
+          exchange_rate: number
+          external_transaction_id: string | null
+          full_name: string
+          id: string
+          is_first_deposit: boolean
+          meta_id: string | null
+          net: number
+          notes: string | null
+          organization_id: string
+          payment_method_id: string
+          psp_id: string | null
+          transfer_date: string
+          type_id: string
           updated_at: string
+          updated_by: string | null
         }
         Insert: {
-          id?: string
-          organization_id: string
-          full_name: string
-          transfer_date?: string
           amount: number
-          commission?: number
-          net?: number
-          currency?: Currency
-          category_id: string
-          payment_method_id: string
-          type_id: string
-          psp_id?: string | null
-          crm_id?: string | null
-          meta_id?: string | null
-          exchange_rate?: number
           amount_try?: number
           amount_usd?: number
+          category_id: string
+          commission?: number
           commission_rate_snapshot?: number | null
-          employee_id?: string | null
-          is_first_deposit?: boolean
-          external_transaction_id?: string | null
-          created_by?: string | null
-          updated_by?: string | null
           created_at?: string
+          created_by?: string | null
+          crm_id?: string | null
+          currency?: string
+          employee_id?: string | null
+          exchange_rate?: number
+          external_transaction_id?: string | null
+          full_name: string
+          id?: string
+          is_first_deposit?: boolean
+          meta_id?: string | null
+          net?: number
+          notes?: string | null
+          organization_id: string
+          payment_method_id: string
+          psp_id?: string | null
+          transfer_date?: string
+          type_id: string
           updated_at?: string
+          updated_by?: string | null
         }
         Update: {
-          id?: string
-          organization_id?: string
-          full_name?: string
-          transfer_date?: string
           amount?: number
-          commission?: number
-          net?: number
-          currency?: Currency
-          category_id?: string
-          payment_method_id?: string
-          type_id?: string
-          psp_id?: string | null
-          crm_id?: string | null
-          meta_id?: string | null
-          exchange_rate?: number
           amount_try?: number
           amount_usd?: number
+          category_id?: string
+          commission?: number
           commission_rate_snapshot?: number | null
-          employee_id?: string | null
-          is_first_deposit?: boolean
-          external_transaction_id?: string | null
-          created_by?: string | null
-          updated_by?: string | null
           created_at?: string
+          created_by?: string | null
+          crm_id?: string | null
+          currency?: string
+          employee_id?: string | null
+          exchange_rate?: number
+          external_transaction_id?: string | null
+          full_name?: string
+          id?: string
+          is_first_deposit?: boolean
+          meta_id?: string | null
+          net?: number
+          notes?: string | null
+          organization_id?: string
+          payment_method_id?: string
+          psp_id?: string | null
+          transfer_date?: string
+          type_id?: string
           updated_at?: string
+          updated_by?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: 'transfers_organization_id_fkey'
-            columns: ['organization_id']
-            isOneToOne: false
-            referencedRelation: 'organizations'
-            referencedColumns: ['id']
-          },
           {
             foreignKeyName: 'transfers_category_id_fkey'
             columns: ['category_id']
             isOneToOne: false
             referencedRelation: 'transfer_categories'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'transfers_employee_id_fkey'
+            columns: ['employee_id']
+            isOneToOne: false
+            referencedRelation: 'hr_employees'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'transfers_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
             referencedColumns: ['id']
           },
           {
@@ -1110,13 +1563,6 @@ export interface Database {
             referencedColumns: ['id']
           },
           {
-            foreignKeyName: 'transfers_type_id_fkey'
-            columns: ['type_id']
-            isOneToOne: false
-            referencedRelation: 'transfer_types'
-            referencedColumns: ['id']
-          },
-          {
             foreignKeyName: 'transfers_psp_id_fkey'
             columns: ['psp_id']
             isOneToOne: false
@@ -1124,213 +1570,166 @@ export interface Database {
             referencedColumns: ['id']
           },
           {
-            foreignKeyName: 'transfers_created_by_fkey'
-            columns: ['created_by']
+            foreignKeyName: 'transfers_type_id_fkey'
+            columns: ['type_id']
             isOneToOne: false
-            referencedRelation: 'users'
+            referencedRelation: 'transfer_types'
             referencedColumns: ['id']
           },
         ]
       }
-      transfer_audit_log: {
+      trusted_devices: {
         Row: {
-          id: string
-          transfer_id: string
-          organization_id: string
-          action: 'created' | 'updated'
-          performed_by: string | null
-          changes: Record<string, { old: unknown; new: unknown }> | null
           created_at: string
+          device_id: string
+          id: string
+          label: string | null
+          last_used_at: string
+          user_id: string
         }
         Insert: {
-          id?: string
-          transfer_id: string
-          organization_id: string
-          action: 'created' | 'updated'
-          performed_by?: string | null
-          changes?: Record<string, { old: unknown; new: unknown }> | null
           created_at?: string
+          device_id: string
+          id?: string
+          label?: string | null
+          last_used_at?: string
+          user_id: string
         }
         Update: {
-          id?: string
-          transfer_id?: string
-          organization_id?: string
-          action?: 'created' | 'updated'
-          performed_by?: string | null
-          changes?: Record<string, { old: unknown; new: unknown }> | null
           created_at?: string
+          device_id?: string
+          id?: string
+          label?: string | null
+          last_used_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      unipayment_sync_log: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          last_synced_at: string
+          last_txn_id: string | null
+          organization_id: string
+          psp_id: string
+          sync_status: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          last_synced_at?: string
+          last_txn_id?: string | null
+          organization_id: string
+          psp_id: string
+          sync_status?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          last_synced_at?: string
+          last_txn_id?: string | null
+          organization_id?: string
+          psp_id?: string
+          sync_status?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'transfer_audit_log_transfer_id_fkey'
-            columns: ['transfer_id']
-            isOneToOne: false
-            referencedRelation: 'transfers'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'transfer_audit_log_organization_id_fkey'
+            foreignKeyName: 'unipayment_sync_log_organization_id_fkey'
             columns: ['organization_id']
             isOneToOne: false
             referencedRelation: 'organizations'
             referencedColumns: ['id']
           },
           {
-            foreignKeyName: 'transfer_audit_log_performed_by_fkey'
-            columns: ['performed_by']
-            isOneToOne: false
-            referencedRelation: 'users'
+            foreignKeyName: 'unipayment_sync_log_psp_id_fkey'
+            columns: ['psp_id']
+            isOneToOne: true
+            referencedRelation: 'psps'
             referencedColumns: ['id']
           },
         ]
       }
-      /* ──────────── Exchange Rates ──────────── */
-      exchange_rates: {
+      wallet_snapshots: {
         Row: {
+          balances: Json
+          created_at: string
           id: string
           organization_id: string
-          currency: string
-          rate_to_tl: number
-          rate_date: string
-          source: string
-          created_at: string
+          snapshot_date: string
+          total_usd: number
+          wallet_id: string
         }
         Insert: {
+          balances?: Json
+          created_at?: string
           id?: string
           organization_id: string
-          currency?: string
-          rate_to_tl: number
-          rate_date?: string
-          source?: string
-          created_at?: string
+          snapshot_date: string
+          total_usd?: number
+          wallet_id: string
         }
         Update: {
+          balances?: Json
+          created_at?: string
           id?: string
           organization_id?: string
-          currency?: string
-          rate_to_tl?: number
-          rate_date?: string
-          source?: string
-          created_at?: string
+          snapshot_date?: string
+          total_usd?: number
+          wallet_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'exchange_rates_organization_id_fkey'
-            columns: ['organization_id']
-            isOneToOne: false
-            referencedRelation: 'organizations'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      /* ──────────── Accounting ──────────── */
-      accounting_entries: {
-        Row: {
-          id: string
-          organization_id: string
-          description: string
-          entry_type: 'ODEME' | 'TRANSFER'
-          direction: 'in' | 'out'
-          amount: number
-          currency: string
-          cost_period: string | null
-          entry_date: string
-          payment_period: string | null
-          register: string
-          hr_employee_id: string | null
-          advance_type: 'salary' | 'bonus' | null
-          hr_payment_id: string | null
-          hr_payment_type: 'bonus' | 'salary' | null
-          created_by: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          organization_id: string
-          description: string
-          entry_type: 'ODEME' | 'TRANSFER'
-          direction: 'in' | 'out'
-          amount: number
-          currency: string
-          cost_period?: string | null
-          entry_date?: string
-          payment_period?: string | null
-          register: string
-          hr_employee_id?: string | null
-          advance_type?: 'salary' | 'bonus' | null
-          hr_payment_id?: string | null
-          hr_payment_type?: 'bonus' | 'salary' | null
-          created_by?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          organization_id?: string
-          description?: string
-          entry_type?: 'ODEME' | 'TRANSFER'
-          direction?: 'in' | 'out'
-          amount?: number
-          currency?: string
-          cost_period?: string | null
-          entry_date?: string
-          payment_period?: string | null
-          register?: string
-          hr_employee_id?: string | null
-          advance_type?: 'salary' | 'bonus' | null
-          hr_payment_id?: string | null
-          hr_payment_type?: 'bonus' | 'salary' | null
-          created_by?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'accounting_entries_organization_id_fkey'
+            foreignKeyName: 'wallet_snapshots_organization_id_fkey'
             columns: ['organization_id']
             isOneToOne: false
             referencedRelation: 'organizations'
             referencedColumns: ['id']
           },
           {
-            foreignKeyName: 'accounting_entries_created_by_fkey'
-            columns: ['created_by']
+            foreignKeyName: 'wallet_snapshots_wallet_id_fkey'
+            columns: ['wallet_id']
             isOneToOne: false
-            referencedRelation: 'users'
+            referencedRelation: 'wallets'
             referencedColumns: ['id']
           },
         ]
       }
       wallets: {
         Row: {
-          id: string
-          organization_id: string
-          label: string
           address: string
-          chain: 'tron' | 'ethereum' | 'bsc' | 'bitcoin' | 'solana'
-          is_active: boolean
+          chain: string
           created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          label: string
+          organization_id: string
           updated_at: string
         }
         Insert: {
-          id?: string
-          organization_id: string
-          label: string
           address: string
-          chain: 'tron' | 'ethereum' | 'bsc' | 'bitcoin' | 'solana'
-          is_active?: boolean
+          chain: string
           created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          label: string
+          organization_id: string
           updated_at?: string
         }
         Update: {
-          id?: string
-          organization_id?: string
-          label?: string
           address?: string
-          chain?: 'tron' | 'ethereum' | 'bsc' | 'bitcoin' | 'solana'
-          is_active?: boolean
+          chain?: string
           created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          organization_id?: string
           updated_at?: string
         }
         Relationships: [
@@ -1343,348 +1742,309 @@ export interface Database {
           },
         ]
       }
-      wallet_snapshots: {
-        Row: {
-          id: string
-          wallet_id: string
-          organization_id: string
-          snapshot_date: string
-          balances: { token: string; balance: string; tokenAddress?: string }[]
-          total_usd: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          wallet_id: string
-          organization_id: string
-          snapshot_date: string
-          balances: { token: string; balance: string; tokenAddress?: string }[]
-          total_usd?: number
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          wallet_id?: string
-          organization_id?: string
-          snapshot_date?: string
-          balances?: { token: string; balance: string; tokenAddress?: string }[]
-          total_usd?: number
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'wallet_snapshots_wallet_id_fkey'
-            columns: ['wallet_id']
-            isOneToOne: false
-            referencedRelation: 'wallets'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'wallet_snapshots_organization_id_fkey'
-            columns: ['organization_id']
-            isOneToOne: false
-            referencedRelation: 'organizations'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      accounting_monthly_config: {
-        Row: {
-          id: string
-          organization_id: string
-          year: number
-          month: number
-          devir_usdt: number | null
-          devir_nakit_tl: number | null
-          devir_nakit_usd: number | null
-          kur: number | null
-          bekl_tahs: number | null
-          teyit_entries: Json
-          created_by: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          organization_id: string
-          year: number
-          month: number
-          devir_usdt?: number | null
-          devir_nakit_tl?: number | null
-          devir_nakit_usd?: number | null
-          kur?: number | null
-          bekl_tahs?: number | null
-          teyit_entries?: Json
-          created_by?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          organization_id?: string
-          year?: number
-          month?: number
-          devir_usdt?: number | null
-          devir_nakit_tl?: number | null
-          devir_nakit_usd?: number | null
-          kur?: number | null
-          bekl_tahs?: number | null
-          teyit_entries?: Json
-          created_by?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'accounting_monthly_config_organization_id_fkey'
-            columns: ['organization_id']
-            isOneToOne: false
-            referencedRelation: 'organizations'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'accounting_monthly_config_created_by_fkey'
-            columns: ['created_by']
-            isOneToOne: false
-            referencedRelation: 'users'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      /* ──────────── UniPayment Sync ──────────── */
-      unipayment_sync_log: {
-        Row: {
-          id: string
-          psp_id: string
-          organization_id: string
-          last_synced_at: string
-          last_txn_id: string | null
-          sync_status: 'idle' | 'running' | 'error'
-          error_message: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          psp_id: string
-          organization_id: string
-          last_synced_at?: string
-          last_txn_id?: string | null
-          sync_status?: 'idle' | 'running' | 'error'
-          error_message?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          psp_id?: string
-          organization_id?: string
-          last_synced_at?: string
-          last_txn_id?: string | null
-          sync_status?: 'idle' | 'running' | 'error'
-          error_message?: string | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'unipayment_sync_log_psp_id_fkey'
-            columns: ['psp_id']
-            isOneToOne: true
-            referencedRelation: 'psps'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'unipayment_sync_log_organization_id_fkey'
-            columns: ['organization_id']
-            isOneToOne: false
-            referencedRelation: 'organizations'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      /* ──────────── Security Tables ──────────── */
-      trusted_devices: {
-        Row: {
-          id: string
-          user_id: string
-          device_id: string
-          label: string | null
-          last_used_at: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          device_id: string
-          label?: string | null
-          last_used_at?: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          device_id?: string
-          label?: string | null
-          last_used_at?: string
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'trusted_devices_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
-            referencedRelation: 'users'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      login_attempts: {
-        Row: {
-          id: string
-          user_id: string | null
-          device_id: string
-          ip_address: string | null
-          success: boolean
-          error_message: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id?: string | null
-          device_id: string
-          ip_address?: string | null
-          success: boolean
-          error_message?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string | null
-          device_id?: string
-          ip_address?: string | null
-          success?: boolean
-          error_message?: string | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'login_attempts_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
-            referencedRelation: 'users'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      captcha_challenges: {
-        Row: {
-          id: string
-          user_id: string | null
-          device_id: string
-          challenge_id: string
-          solved: boolean
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id?: string | null
-          device_id: string
-          challenge_id: string
-          solved?: boolean
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string | null
-          device_id?: string
-          challenge_id?: string
-          solved?: boolean
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'captcha_challenges_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
-            referencedRelation: 'users'
-            referencedColumns: ['id']
-          },
-        ]
-      }
     }
     Views: {
-      [key: string]: {
-        Row: Record<string, unknown>
-        Relationships: unknown[]
-      }
+      [_ in never]: never
     }
     Functions: {
-      add_organization_member: {
-        Args: {
-          _org_id: string
-          _email: string
-          _password: string
-          _role?: string
-          _display_name?: string | null
-        }
-        Returns: { user_id: string; created: boolean }
+      add_organization_member:
+        | {
+            Args: {
+              _display_name?: string
+              _email: string
+              _org_id: string
+              _password: string
+              _role?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: { _email: string; _org_id: string; _role?: string }
+            Returns: Json
+          }
+      cleanup_old_captcha_challenges: { Args: never; Returns: number }
+      cleanup_old_login_attempts: { Args: never; Returns: number }
+      custom_access_token_hook: { Args: { event: Json }; Returns: Json }
+      device_has_recent_captcha_success: {
+        Args: { p_device_id: string; p_minutes?: number }
+        Returns: boolean
+      }
+      get_captcha_solve_rate: {
+        Args: { p_device_id: string; p_hours?: number }
+        Returns: number
+      }
+      get_failed_login_count: {
+        Args: { p_device_id: string; p_minutes?: number }
+        Returns: number
+      }
+      get_monthly_summary: {
+        Args: { _month: number; _org_id: string; _year: number }
+        Returns: Json
+      }
+      get_psp_bloke_transfers: {
+        Args: { _org_id: string; _psp_id: string }
+        Returns: {
+          amount: number
+          crm_id: string
+          currency: string
+          full_name: string
+          meta_id: string
+          notes: string
+          payment_method: string
+          resolution_date: string
+          resolution_id: string
+          resolution_notes: string
+          resolved_by: string
+          status: string
+          transfer_date: string
+          transfer_id: string
+        }[]
+      }
+      get_psp_ledger: {
+        Args: { _org_id: string; _psp_id: string }
+        Returns: {
+          day: string
+          total_commission: number
+          total_deposits: number
+          total_net: number
+          total_settlement: number
+          total_withdrawals: number
+          transfer_count: number
+        }[]
+      }
+      get_psp_monthly_summary: {
+        Args: { _org_id: string; _psp_id: string }
+        Returns: {
+          avg_daily_volume: number
+          commission_total: number
+          deposit_count: number
+          deposit_total: number
+          month: number
+          month_label: string
+          net_total: number
+          settlement_total: number
+          transfer_count: number
+          withdrawal_count: number
+          withdrawal_total: number
+          year: number
+        }[]
       }
       get_psp_summary: {
         Args: { _org_id: string }
         Returns: {
-          psp_id: string
-          psp_name: string
           commission_rate: number
+          currency: string
           is_active: boolean
           is_internal: boolean
-          currency: string
-          psp_scope: PspScope
-          provider: PspProvider | null
-          total_deposits: number
-          total_withdrawals: number
+          last_settlement_date: string
+          provider: string
+          psp_id: string
+          psp_name: string
+          psp_scope: string
           total_commission: number
+          total_deposits: number
           total_net: number
           total_settlements: number
-          last_settlement_date: string | null
+          total_withdrawals: number
         }[]
       }
-      get_monthly_summary: {
-        Args: { _org_id: string; _year: number; _month: number }
-        Returns: Json
+      get_security_metrics: {
+        Args: never
+        Returns: {
+          metric: string
+          value: string
+        }[]
       }
-      [key: string]: {
-        Args: Record<string, unknown>
-        Returns: unknown
+      get_user_id_by_email: { Args: { _email: string }; Returns: string }
+      is_device_trusted: {
+        Args: { p_device_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      log_captcha_challenge: {
+        Args: {
+          p_challenge_id: string
+          p_device_id: string
+          p_solved: boolean
+          p_user_id: string
+        }
+        Returns: string
+      }
+      log_god_action: {
+        Args: {
+          p_action: string
+          p_new_values?: Json
+          p_old_values?: Json
+          p_record_id?: string
+          p_table_name: string
+        }
+        Returns: undefined
+      }
+      log_login_attempt: {
+        Args: {
+          p_device_id: string
+          p_error_message?: string
+          p_ip_address: string
+          p_success: boolean
+          p_user_id: string
+        }
+        Returns: string
+      }
+      mark_device_used: {
+        Args: { p_device_id: string; p_user_id: string }
+        Returns: undefined
+      }
+      recalculate_commissions_by_name: {
+        Args: { org_name: string }
+        Returns: {
+          total_commission: number
+          updated_count: number
+        }[]
+      }
+      should_rate_limit_device: {
+        Args: {
+          p_device_id: string
+          p_max_attempts?: number
+          p_minutes?: number
+        }
+        Returns: boolean
+      }
+      update_last_seen: { Args: never; Returns: undefined }
+      update_month_exchange_rate: {
+        Args: {
+          _month: number
+          _new_rate: number
+          _org_id: string
+          _year: number
+        }
+        Returns: Json
       }
     }
     Enums: {
-      [key: string]: string
+      [_ in never]: never
     }
     CompositeTypes: {
-      [key: string]: unknown
+      [_ in never]: never
     }
   }
 }
 
-/** Convenience type aliases */
-export type Profile = Database['public']['Tables']['profiles']['Row']
-export type Organization = Database['public']['Tables']['organizations']['Row']
-export type OrganizationMember = Database['public']['Tables']['organization_members']['Row']
-export type OrganizationInvitation = Database['public']['Tables']['organization_invitations']['Row']
-export type Psp = Database['public']['Tables']['psps']['Row']
-export type TransferCategory = Database['public']['Tables']['transfer_categories']['Row']
-export type PaymentMethod = Database['public']['Tables']['payment_methods']['Row']
-export type TransferType = Database['public']['Tables']['transfer_types']['Row']
-export type Transfer = Database['public']['Tables']['transfers']['Row']
-export type TransferAuditLog = Database['public']['Tables']['transfer_audit_log']['Row']
-export type ExchangeRate = Database['public']['Tables']['exchange_rates']['Row']
-export type AccountingEntry = Database['public']['Tables']['accounting_entries']['Row']
-export type HrSalaryPayment = Database['public']['Tables']['hr_salary_payments']['Row']
-export type Wallet = Database['public']['Tables']['wallets']['Row']
-export type WalletSnapshot = Database['public']['Tables']['wallet_snapshots']['Row']
-export type AccountingMonthlyConfig =
-  Database['public']['Tables']['accounting_monthly_config']['Row']
-export type PspCommissionRate = Database['public']['Tables']['psp_commission_rates']['Row']
-export type PspSettlement = Database['public']['Tables']['psp_settlements']['Row']
-export type TrustedDevice = Database['public']['Tables']['trusted_devices']['Row']
-export type LoginAttempt = Database['public']['Tables']['login_attempts']['Row']
-export type CaptchaChallenge = Database['public']['Tables']['captcha_challenges']['Row']
-export type UniPaymentSyncLog = Database['public']['Tables']['unipayment_sync_log']['Row']
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    ? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema['Tables']
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema['Tables']
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema['Enums']
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
+    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema['CompositeTypes']
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
+    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const

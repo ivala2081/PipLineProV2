@@ -82,12 +82,32 @@ function dayCount(startDate: string, endDate: string): number {
 }
 
 const MONTH_NAMES_TR = [
-  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
+  'Ocak',
+  'Şubat',
+  'Mart',
+  'Nisan',
+  'Mayıs',
+  'Haziran',
+  'Temmuz',
+  'Ağustos',
+  'Eylül',
+  'Ekim',
+  'Kasım',
+  'Aralık',
 ]
 const MONTH_NAMES_EN = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ]
 
 /* ------------------------------------------------------------------ */
@@ -162,7 +182,10 @@ export function LeavesTab({ employees, canManage, lang }: LeavesTabProps) {
     [searchedLeaves, page],
   )
 
-  useEffect(() => { setPage(1) }, [search, filterYear, filterMonth])
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- pagination reset on filter change
+  useEffect(() => {
+    setPage(1)
+  }, [search, filterYear, filterMonth])
 
   const handleDelete = async (id: string) => {
     try {
@@ -206,8 +229,16 @@ export function LeavesTab({ employees, canManage, lang }: LeavesTabProps) {
             </Button>
           </div>
           <div className="relative min-w-48">
-            <MagnifyingGlass size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30" />
-            <Input className="pl-9" placeholder={lang === 'tr' ? 'Çalışan ara...' : 'Search employee...'} value={search} onChange={(e) => setSearch(e.target.value)} />
+            <MagnifyingGlass
+              size={15}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30"
+            />
+            <Input
+              className="pl-9"
+              placeholder={lang === 'tr' ? 'Çalışan ara...' : 'Search employee...'}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
         </div>
 
@@ -240,98 +271,110 @@ export function LeavesTab({ employees, canManage, lang }: LeavesTabProps) {
         />
       ) : (
         <>
-        <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{lang === 'tr' ? 'Çalışan' : 'Employee'}</TableHead>
-                <TableHead>{lang === 'tr' ? 'İzin Tipi' : 'Leave Type'}</TableHead>
-                <TableHead>{lang === 'tr' ? 'Başlangıç' : 'Start'}</TableHead>
-                <TableHead>{lang === 'tr' ? 'Bitiş' : 'End'}</TableHead>
-                <TableHead className="text-center">{lang === 'tr' ? 'Gün' : 'Days'}</TableHead>
-                {canManage && <TableHead className="w-28" />}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedLeaves.map((leave) => {
-                const emp = empMap.get(leave.employee_id)
-                const cfg = getLeaveTypeConfig(leave.leave_type, lang)
-                const days = dayCount(leave.start_date, leave.end_date)
-                return (
-                  <TableRow key={leave.id} className="group">
-                    <TableCell>
-                      <span className="text-sm font-medium text-black">
-                        {emp?.full_name ?? '—'}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        {cfg.icon}
-                        <Tag variant={cfg.variant}>{cfg.label}</Tag>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm tabular-nums text-black/70">
-                        {formatDate(leave.start_date, lang)}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm tabular-nums text-black/70">
-                        {formatDate(leave.end_date, lang)}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <span className="text-sm font-semibold tabular-nums text-black">
-                        {days}
-                      </span>
-                    </TableCell>
-                    {canManage && (
+          <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{lang === 'tr' ? 'Çalışan' : 'Employee'}</TableHead>
+                  <TableHead>{lang === 'tr' ? 'İzin Tipi' : 'Leave Type'}</TableHead>
+                  <TableHead>{lang === 'tr' ? 'Başlangıç' : 'Start'}</TableHead>
+                  <TableHead>{lang === 'tr' ? 'Bitiş' : 'End'}</TableHead>
+                  <TableHead className="text-center">{lang === 'tr' ? 'Gün' : 'Days'}</TableHead>
+                  {canManage && <TableHead className="w-28" />}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedLeaves.map((leave) => {
+                  const emp = empMap.get(leave.employee_id)
+                  const cfg = getLeaveTypeConfig(leave.leave_type, lang)
+                  const days = dayCount(leave.start_date, leave.end_date)
+                  return (
+                    <TableRow key={leave.id} className="group">
                       <TableCell>
-                        <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100">
-                          {leave.notes && (
-                            <button
-                              onClick={() => setNoteLeave(leave)}
-                              className="rounded-md p-1.5 text-black/25 transition-colors hover:bg-black/5 hover:text-black/50"
-                              title={lang === 'tr' ? 'Notu Gör' : 'View Note'}
-                            >
-                              <ChatText size={15} />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleEdit(leave)}
-                            className="rounded-md p-1.5 text-black/25 transition-colors hover:bg-black/5 hover:text-black/50"
-                            title={lang === 'tr' ? 'Düzenle' : 'Edit'}
-                          >
-                            <PencilSimple size={15} />
-                          </button>
-                          <button
-                            onClick={() => void handleDelete(leave.id)}
-                            disabled={deleteLeave.isPending}
-                            className="rounded-md p-1.5 text-black/25 transition-colors hover:bg-red/10 hover:text-red"
-                            title={lang === 'tr' ? 'Sil' : 'Delete'}
-                          >
-                            <Trash size={15} />
-                          </button>
+                        <span className="text-sm font-medium text-black">
+                          {emp?.full_name ?? '—'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          {cfg.icon}
+                          <Tag variant={cfg.variant}>{cfg.label}</Tag>
                         </div>
                       </TableCell>
-                    )}
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        </div>
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 pt-sm">
-            <Button variant="ghost" size="icon-sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
-              <CaretLeft size={14} />
-            </Button>
-            <span className="text-xs tabular-nums text-black/50">{page} / {totalPages}</span>
-            <Button variant="ghost" size="icon-sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
-              <CaretRight size={14} />
-            </Button>
+                      <TableCell>
+                        <span className="text-sm tabular-nums text-black/70">
+                          {formatDate(leave.start_date, lang)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm tabular-nums text-black/70">
+                          {formatDate(leave.end_date, lang)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="text-sm font-semibold tabular-nums text-black">
+                          {days}
+                        </span>
+                      </TableCell>
+                      {canManage && (
+                        <TableCell>
+                          <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100">
+                            {leave.notes && (
+                              <button
+                                onClick={() => setNoteLeave(leave)}
+                                className="rounded-md p-1.5 text-black/25 transition-colors hover:bg-black/5 hover:text-black/50"
+                                title={lang === 'tr' ? 'Notu Gör' : 'View Note'}
+                              >
+                                <ChatText size={15} />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleEdit(leave)}
+                              className="rounded-md p-1.5 text-black/25 transition-colors hover:bg-black/5 hover:text-black/50"
+                              title={lang === 'tr' ? 'Düzenle' : 'Edit'}
+                            >
+                              <PencilSimple size={15} />
+                            </button>
+                            <button
+                              onClick={() => void handleDelete(leave.id)}
+                              disabled={deleteLeave.isPending}
+                              className="rounded-md p-1.5 text-black/25 transition-colors hover:bg-red/10 hover:text-red"
+                              title={lang === 'tr' ? 'Sil' : 'Delete'}
+                            >
+                              <Trash size={15} />
+                            </button>
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
           </div>
-        )}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-sm">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+              >
+                <CaretLeft size={14} />
+              </Button>
+              <span className="text-xs tabular-nums text-black/50">
+                {page} / {totalPages}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+              >
+                <CaretRight size={14} />
+              </Button>
+            </div>
+          )}
         </>
       )}
 
@@ -353,9 +396,7 @@ export function LeavesTab({ employees, canManage, lang }: LeavesTabProps) {
           <DialogHeader>
             <DialogTitle>{lang === 'tr' ? 'İzin Notu' : 'Leave Note'}</DialogTitle>
           </DialogHeader>
-          <p className="whitespace-pre-wrap text-sm text-black/70">
-            {noteLeave?.notes}
-          </p>
+          <p className="whitespace-pre-wrap text-sm text-black/70">{noteLeave?.notes}</p>
         </DialogContent>
       </Dialog>
     </div>

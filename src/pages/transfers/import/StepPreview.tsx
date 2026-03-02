@@ -55,7 +55,7 @@ export function StepPreview({ parseResult, onConfirm, onBack }: StepPreviewProps
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })
-    return `${val < 0 ? '-' : ''}${currency === 'USD' ? '$' : '₺'}${formatted}`
+    return `${val < 0 ? '-' : ''}${currency === 'USD' || currency === 'USDT' ? '$' : '₺'}${formatted}`
   }
 
   const sortedRates = useMemo(
