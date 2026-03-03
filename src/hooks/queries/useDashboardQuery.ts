@@ -144,7 +144,7 @@ interface RawTransferRow {
   transfer_types: { name: string } | null
 }
 
-function computeKpis(rows: RawTransferRow[]): DashboardKpis {
+function computeKpis(rows: RawTransferRow[], baseCurrency: string): DashboardKpis {
   // Exclude blocked transfers — mirrors the SQL filter in get_monthly_summary
   const filtered = rows.filter((row) => {
     const typeName = (row.transfer_types?.name ?? '').toLowerCase()
@@ -187,7 +187,7 @@ function computeKpis(rows: RawTransferRow[]): DashboardKpis {
     const commission = Number(row.commission) || 0
     const exchangeRate = Number(row.exchange_rate) || 1
     const isDeposit = row.category_id === 'dep'
-    const isTry = row.currency === 'TL'
+    const isTry = row.currency === baseCurrency
 
     if (isDeposit) {
       // Gross
@@ -251,7 +251,12 @@ function computeKpis(rows: RawTransferRow[]): DashboardKpis {
 const COLUMNS =
   'amount, commission, net, exchange_rate, currency, category_id, amount_try, amount_usd, transfer_types(name)'
 
-async function fetchKpis(orgId: string, from: string, to: string): Promise<DashboardKpis> {
+async function fetchKpis(
+  orgId: string,
+  from: string,
+  to: string,
+  baseCurrency: string,
+): Promise<DashboardKpis> {
   const { data, error } = await supabase
     .from('transfers')
     .select(COLUMNS)
@@ -260,18 +265,19 @@ async function fetchKpis(orgId: string, from: string, to: string): Promise<Dashb
     .lte('transfer_date', to)
 
   if (error) throw error
-  return computeKpis((data ?? []) as RawTransferRow[])
+  return computeKpis((data ?? []) as RawTransferRow[], baseCurrency)
 }
 
 export function useDashboardQuery(period: DashboardPeriod, customFrom?: string, customTo?: string) {
   const { currentOrg } = useOrganization()
+  const baseCurrency = currentOrg?.base_currency ?? 'TRY'
 
   const currentRange = getDateRange(period, customFrom, customTo)
   const prevRange = getPreviousDateRange(period, customFrom, customTo)
 
   const currentQuery = useQuery({
     queryKey: queryKeys.dashboard.current(currentOrg?.id ?? '', period, currentRange.from),
-    queryFn: () => fetchKpis(currentOrg!.id, currentRange.from, currentRange.to),
+    queryFn: () => fetchKpis(currentOrg!.id, currentRange.from, currentRange.to, baseCurrency),
     enabled: !!currentOrg,
     staleTime: 3 * 60_000, // 3 min – dashboard KPIs change moderately
     gcTime: 10 * 60_000,
@@ -279,7 +285,7 @@ export function useDashboardQuery(period: DashboardPeriod, customFrom?: string, 
 
   const prevQuery = useQuery({
     queryKey: queryKeys.dashboard.previous(currentOrg?.id ?? '', period, prevRange.from),
-    queryFn: () => fetchKpis(currentOrg!.id, prevRange.from, prevRange.to),
+    queryFn: () => fetchKpis(currentOrg!.id, prevRange.from, prevRange.to, baseCurrency),
     enabled: !!currentOrg,
     staleTime: 5 * 60_000, // 5 min – previous period is historical
     gcTime: 10 * 60_000,

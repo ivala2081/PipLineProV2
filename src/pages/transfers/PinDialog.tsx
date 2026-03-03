@@ -1,19 +1,20 @@
 import { useRef, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, Button } from '@ds'
+import { useVerifyOrgPin } from '@/hooks/queries/useOrgPinQuery'
 
 interface PinDialogProps {
   open: boolean
   onClose: () => void
   onVerified: () => void
-  securityPin: string
 }
 
-export function PinDialog({ open, onClose, onVerified, securityPin }: PinDialogProps) {
+export function PinDialog({ open, onClose, onVerified }: PinDialogProps) {
   const { t } = useTranslation('pages')
   const [pinInput, setPinInput] = useState('')
   const [pinError, setPinError] = useState('')
   const pinInputRef = useRef<HTMLInputElement>(null)
+  const verifyPin = useVerifyOrgPin()
 
   useEffect(() => {
     if (open && pinInputRef.current) {
@@ -21,13 +22,24 @@ export function PinDialog({ open, onClose, onVerified, securityPin }: PinDialogP
     }
   }, [open])
 
-  const handleVerify = () => {
-    if (pinInput === securityPin) {
-      setPinError('')
-      setPinInput('')
-      onVerified()
-    } else {
-      setPinError(t('transfers.pin.error'))
+  const handleVerify = async () => {
+    if (!pinInput) return
+    try {
+      const ok = await verifyPin.mutateAsync(pinInput)
+      if (ok) {
+        setPinError('')
+        setPinInput('')
+        onVerified()
+      } else {
+        setPinError(t('transfers.pin.error'))
+      }
+    } catch (err) {
+      const msg = (err as Error)?.message ?? ''
+      if (msg === 'RATE_LIMITED') {
+        setPinError(t('transfers.pin.rateLimited', 'Too many attempts. Please wait.'))
+      } else {
+        setPinError(t('transfers.pin.error'))
+      }
     }
   }
 
@@ -71,16 +83,27 @@ export function PinDialog({ open, onClose, onVerified, securityPin }: PinDialogP
               placeholder={t('transfers.pin.placeholder')}
               className="h-10 w-full rounded border border-black/10 bg-white px-3 text-center font-mono text-lg tracking-widest outline-none focus:border-black/25 [-webkit-text-security:disc]"
               maxLength={6}
+              disabled={verifyPin.isPending}
             />
             {pinError && <p className="mt-2 text-xs text-red">{pinError}</p>}
           </div>
 
           <div className="mt-5 flex gap-2">
-            <Button variant="outline" className="flex-1" onClick={handleClose}>
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={handleClose}
+              disabled={verifyPin.isPending}
+            >
               {t('transfers.pin.cancel')}
             </Button>
-            <Button variant="filled" className="flex-1" onClick={handleVerify}>
-              {t('transfers.pin.verify')}
+            <Button
+              variant="filled"
+              className="flex-1"
+              onClick={handleVerify}
+              disabled={verifyPin.isPending}
+            >
+              {verifyPin.isPending ? '...' : t('transfers.pin.verify')}
             </Button>
           </div>
         </div>

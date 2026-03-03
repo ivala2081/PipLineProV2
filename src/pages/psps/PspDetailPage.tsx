@@ -46,11 +46,6 @@ import {
   Input,
   DatePickerField,
   Label,
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
   DatePicker,
   DropdownMenu,
   DropdownMenuTrigger,
@@ -69,6 +64,7 @@ import { useToast } from '@/hooks/useToast'
 import { ManagerPinDialog } from '@ds'
 import { settlementFormSchema, type SettlementFormValues } from '@/schemas/pspSettlementSchema'
 import type { PspSettlement } from '@/lib/database.types'
+import { CurrencySelect } from '@/components/CurrencySelect'
 import { MonthlyTab } from './PspMonthlyTab'
 import { BlokeTab } from './PspBlokeTab'
 import { UniPaymentWalletTab } from './UniPaymentWalletTab'
@@ -123,7 +119,7 @@ function SettlementFormDialog({
     defaultValues: {
       settlement_date: new Date().toISOString().split('T')[0],
       amount: '' as unknown as number,
-      currency: 'TL',
+      currency: 'TRY',
       notes: '',
     },
   })
@@ -134,7 +130,7 @@ function SettlementFormDialog({
       reset({
         settlement_date: initialData?.settlement_date ?? new Date().toISOString().split('T')[0],
         amount: (initialData?.amount || '') as unknown as number,
-        currency: (initialData?.currency ?? 'TL') as 'TL' | 'USD',
+        currency: (initialData?.currency ?? 'TRY') as 'TRY' | 'USD',
         notes: initialData?.notes ?? '',
       })
       setAmountDisplay(initialData?.amount ? numberToDisplay(Number(initialData.amount), lang) : '')
@@ -197,12 +193,12 @@ function SettlementFormDialog({
               <div className="flex gap-1 pt-0.5">
                 <Button
                   type="button"
-                  variant={currencyVal === 'TL' ? 'filled' : 'outline'}
+                  variant={currencyVal === 'TRY' ? 'filled' : 'outline'}
                   size="sm"
                   className="w-14"
-                  onClick={() => setValue('currency', 'TL')}
+                  onClick={() => setValue('currency', 'TRY')}
                 >
-                  TL
+                  TRY
                 </Button>
                 <Button
                   type="button"
@@ -322,7 +318,7 @@ function LedgerTab({
     setQuickFormInitial({
       settlement_date: date,
       amount: net > 0 ? net : 0,
-      currency: (currency === 'USDT' ? 'USD' : currency) as 'TL' | 'USD',
+      currency: (currency === 'USDT' ? 'USD' : currency) as 'TRY' | 'USD',
       notes: '',
     })
     setQuickFormOpen(true)
@@ -737,7 +733,7 @@ function SettlementsTab({ pspId, isAdmin }: { pspId: string; isAdmin: boolean })
             ? {
                 settlement_date: editTarget.settlement_date,
                 amount: Number(editTarget.amount),
-                currency: editTarget.currency as 'TL' | 'USD',
+                currency: editTarget.currency as 'TRY' | 'USD',
                 notes: editTarget.notes ?? '',
               }
             : undefined
@@ -1089,16 +1085,7 @@ function SettingsTab({
             <h3 className="text-sm font-semibold">{t('psps.settings.currency')}</h3>
             <p className="mt-1 text-xs text-black/40">{t('psps.settings.currencyDesc')}</p>
           </div>
-          <Select value={currency} onValueChange={handleCurrencyChange}>
-            <SelectTrigger selectSize="sm" className="w-28">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="TL">TL</SelectItem>
-              <SelectItem value="USD">USD</SelectItem>
-              <SelectItem value="USDT">USDT</SelectItem>
-            </SelectContent>
-          </Select>
+          <CurrencySelect value={currency} onChange={handleCurrencyChange} />
         </div>
       </Card>
 
@@ -1705,7 +1692,7 @@ export function PspDetailPage() {
         <TabsContent value="ledger">
           <LedgerTab
             pspId={pspId!}
-            currency={psp.currency ?? 'TL'}
+            currency={psp.currency ?? 'TRY'}
             dateFrom={ledgerDateFrom}
             dateTo={ledgerDateTo}
             sortBy={ledgerSortBy}
@@ -1722,7 +1709,7 @@ export function PspDetailPage() {
 
         {!isUniPayment && (
           <TabsContent value="monthly">
-            <MonthlyTab pspId={pspId!} pspName={psp.psp_name} currency={psp.currency ?? 'TL'} />
+            <MonthlyTab pspId={pspId!} pspName={psp.psp_name} currency={psp.currency ?? 'TRY'} />
           </TabsContent>
         )}
 
@@ -1745,7 +1732,7 @@ export function PspDetailPage() {
             currentRate={psp.commission_rate}
             isActive={psp.is_active}
             isInternal={psp.is_internal}
-            currency={psp.currency ?? 'TL'}
+            currency={psp.currency ?? 'TRY'}
           />
         </TabsContent>
       </Tabs>

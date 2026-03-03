@@ -11,6 +11,7 @@ import {
   CreditCard,
   CurrencyCircleDollar,
   UserCircle,
+  Warning,
 } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import { formatAmount, parseAmount, numberToDisplay, amountPlaceholder } from '@/lib/formatAmount'
@@ -31,6 +32,9 @@ import {
   Input,
   DatePickerField,
   Label,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
   Select,
   SelectTrigger,
   SelectValue,
@@ -38,6 +42,7 @@ import {
   SelectItem,
 } from '@ds'
 import { cn } from '@ds/utils'
+import { CURRENCIES } from '@/lib/currencies'
 
 /* ── Types & constants ────────────────────────────────────────────── */
 
@@ -239,6 +244,8 @@ export function TransferFormContent({
   const [amountDisplay, setAmountDisplay] = useState('')
   const [rateConfirmed, setRateConfirmed] = useState(false)
   const [pendingSubmit, setPendingSubmit] = useState<{ mode: 'close' | 'new' } | null>(null)
+  const [moreOpen, setMoreOpen] = useState(false)
+  const [currencySearch, setCurrencySearch] = useState('')
 
   type NameSuggestion = { crm_id: string; meta_id: string }
   const [nameSuggestions, setNameSuggestions] = useState<NameSuggestion[]>([])
@@ -259,11 +266,37 @@ export function TransferFormContent({
   }, [lang])
 
   /* ── Exchange rate ────────────────────────────────────────── */
-  const { rate: fetchedRate, isError: rateError } = useExchangeRateQuery()
+  // currency watched early so both hooks below can use it
+  const currency = form.watch('currency')
+
+  // Primary: always fetches secondary → base (e.g. USD → TRY)
+  const {
+    rate: secondaryToBaseRate,
+    isError: rateError,
+    baseCurrency,
+    secondaryCurrency,
+    currencySlots,
+  } = useExchangeRateQuery()
+
+  // Secondary: when a non-slot currency is picked via "more", fetch custom → base
+  const isCustomForHook = !!currency && !!currencySlots.length && !currencySlots.includes(currency)
+  const { rate: customToBaseRate, isError: customRateError } = useExchangeRateQuery(
+    isCustomForHook ? currency : undefined,
+  )
+
+  // Rate applied to the exchange_rate form field:
+  //   custom currency → customToBase; otherwise → secondaryToBase
   const normalizedFetchedRate = useMemo(() => {
-    if (fetchedRate == null || fetchedRate <= 1) return null
-    return Math.round(fetchedRate * 10000) / 10000
-  }, [fetchedRate])
+    const rate = isCustomForHook ? customToBaseRate : secondaryToBaseRate
+    if (rate == null || rate <= 0) return null
+    return Math.round(rate * 10000) / 10000
+  }, [isCustomForHook, customToBaseRate, secondaryToBaseRate])
+
+  // Secondary rate (normalized) used only for non-custom display text
+  const normalizedSecondaryRate = useMemo(() => {
+    if (secondaryToBaseRate == null || secondaryToBaseRate <= 0) return null
+    return Math.round(secondaryToBaseRate * 10000) / 10000
+  }, [secondaryToBaseRate])
 
   const handleEnableManualRate = useCallback(() => setManualRate(true), [])
   const handleResetRate = useCallback(() => {
@@ -325,7 +358,7 @@ export function TransferFormContent({
   }, [normalizedFetchedRate, form, manualRate])
 
   useEffect(() => {
-    if (rateError) {
+    if (rateError || customRateError) {
       toast({
         title: t('transfers.toast.exchangeRateError', 'Exchange rate could not be fetched'),
         description: t(
@@ -335,12 +368,11 @@ export function TransferFormContent({
         variant: 'warning',
       })
     }
-  }, [rateError, toast, t])
+  }, [rateError, customRateError, toast, t])
 
   /* ── Watched fields ───────────────────────────────────────── */
 
   const categoryId = form.watch('category_id')
-  const currency = form.watch('currency')
   const watchedRawAmount = form.watch('raw_amount')
   const watchedExchangeRate = form.watch('exchange_rate')
   const paymentMethodId = form.watch('payment_method_id')
@@ -481,6 +513,20 @@ export function TransferFormContent({
     [lookupData.psps, pspId],
   )
 
+  const pspCurrencyMismatch =
+    !!selectedPsp?.currency && !!currency && currency !== selectedPsp.currency
+
+  const filteredCurrencies = useMemo(() => {
+    if (!currencySearch.trim()) return CURRENCIES
+    const q = currencySearch.trim().toLowerCase()
+    return CURRENCIES.filter(
+      (c) =>
+        c.code.toLowerCase().includes(q) ||
+        c.name.toLowerCase().includes(q) ||
+        c.symbol.toLowerCase().includes(q),
+    )
+  }, [currencySearch])
+
   /* ── Submit ───────────────────────────────────────────────── */
   const handleSubmit = form.handleSubmit(async (data) => {
     if (!selectedCategory) {
@@ -488,7 +534,13 @@ export function TransferFormContent({
       return
     }
     try {
-      const formData = { ...data, transfer_date: new Date(data.transfer_date).toISOString() }
+      const formData = {
+        ...data,
+        transfer_date: new Date(data.transfer_date).toISOString(),
+        // For custom (non-slot) currencies: pass USD→base rate so computeTransfer
+        // can derive a correct amount_usd (amountTry ÷ usdToBase).
+        usd_to_base_rate: isCustomForHook ? (secondaryToBaseRate ?? undefined) : undefined,
+      }
 
       saveRememberedFields(currentOrg?.id, {
         payment_method_id: data.payment_method_id,
@@ -542,7 +594,7 @@ export function TransferFormContent({
     <>
       <form
         onSubmit={async (e) => {
-          if (currency !== 'TL') {
+          if (currency !== baseCurrency) {
             e.preventDefault()
             if (!rateConfirmed) return // locked — rate not confirmed yet
             const isValid = await form.trigger()
@@ -783,34 +835,132 @@ export function TransferFormContent({
                 <Label className="mb-1.5 block text-xs font-medium tracking-wide text-black/60">
                   {t('transfers.form.currency')}
                 </Label>
-                <div className="flex gap-2">
-                  {(['TL', 'USD', 'USDT'] as const).map((cur) => {
-                    const isLocked = !!pspId && selectedPsp?.currency !== cur
-                    const isActive = currency === cur
-                    return (
+                <div className="space-y-1.5">
+                  {/* Row 1 — main 3 slots */}
+                  <div className="flex gap-2">
+                    {currencySlots.map((cur) => {
+                      const isLocked = !!pspId && selectedPsp?.currency !== cur
+                      const isActive = currency === cur
+                      return (
+                        <button
+                          key={cur}
+                          type="button"
+                          disabled={isLocked}
+                          onClick={() => !isLocked && form.setValue('currency', cur)}
+                          className={cn(
+                            'flex-1 rounded-lg px-3 py-2 text-center text-sm font-semibold transition-all',
+                            isActive && 'bg-brand text-white shadow-sm',
+                            !isActive &&
+                              !isLocked &&
+                              'bg-black/[0.04] text-black/35 hover:bg-black/[0.07]',
+                            !isActive &&
+                              isLocked &&
+                              'cursor-not-allowed bg-black/[0.04] text-black/15 opacity-40',
+                          )}
+                        >
+                          {cur}
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  {/* Row 2 — custom currency chip + "more" link */}
+                  <div className="flex items-center gap-2">
+                    {isCustomForHook && (
                       <button
-                        key={cur}
                         type="button"
-                        disabled={isLocked}
-                        onClick={() => !isLocked && form.setValue('currency', cur)}
-                        className={cn(
-                          'flex-1 rounded-lg px-3 py-2 text-center text-sm font-semibold transition-all',
-                          isActive && 'bg-brand text-white shadow-sm',
-                          !isActive &&
-                            !isLocked &&
-                            'bg-black/[0.04] text-black/35 hover:bg-black/[0.07]',
-                          !isActive &&
-                            isLocked &&
-                            'cursor-not-allowed bg-black/[0.04] text-black/15 opacity-40',
-                        )}
+                        onClick={() => setMoreOpen(true)}
+                        className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all"
                       >
-                        {cur}
+                        {currency}
                       </button>
-                    )
-                  })}
+                    )}
+                    <Popover
+                      open={moreOpen}
+                      onOpenChange={(o) => {
+                        setMoreOpen(o)
+                        if (!o) setCurrencySearch('')
+                      }}
+                    >
+                      <PopoverTrigger asChild>
+                        <button
+                          type="button"
+                          className="text-xs text-black/40 underline-offset-2 transition-colors hover:text-black/60 hover:underline"
+                        >
+                          {isCustomForHook
+                            ? lang === 'tr'
+                              ? 'değiştir'
+                              : 'change'
+                            : lang === 'tr'
+                              ? 'daha fazla para birimi'
+                              : 'more currencies'}
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent align="start" className="w-72 p-0" sideOffset={6}>
+                        <div className="border-b border-black/10 px-3 py-2">
+                          <input
+                            value={currencySearch}
+                            onChange={(e) => setCurrencySearch(e.target.value)}
+                            onKeyDown={(e) => e.stopPropagation()}
+                            placeholder={lang === 'tr' ? 'Para birimi ara…' : 'Search currency…'}
+                            autoFocus
+                            className={cn(
+                              basicInputClasses,
+                              focusInputClasses,
+                              'h-8 w-full rounded-lg px-3 py-1.5 text-xs',
+                            )}
+                          />
+                        </div>
+                        <div className="max-h-56 overflow-y-auto p-1">
+                          {filteredCurrencies.length > 0 ? (
+                            filteredCurrencies.map((c) => (
+                              <button
+                                key={c.code}
+                                type="button"
+                                onClick={() => {
+                                  form.setValue('currency', c.code)
+                                  setMoreOpen(false)
+                                  setCurrencySearch('')
+                                }}
+                                className={cn(
+                                  'flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-xs transition-colors hover:bg-black/[0.05]',
+                                  currency === c.code && 'bg-brand/10 text-brand',
+                                )}
+                              >
+                                <span className="w-10 shrink-0 font-mono font-semibold">
+                                  {c.code}
+                                </span>
+                                <span className="min-w-0 flex-1 truncate text-black/70">
+                                  {c.name}
+                                </span>
+                                <span className="shrink-0 text-black/40">{c.symbol}</span>
+                              </button>
+                            ))
+                          ) : (
+                            <p className="px-3 py-4 text-center text-xs text-black/40">
+                              {lang === 'tr' ? 'Sonuç bulunamadı' : 'No results'}
+                            </p>
+                          )}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 </div>
+
                 {form.formState.errors.currency && (
                   <p className="mt-1 text-xs text-red">{form.formState.errors.currency.message}</p>
+                )}
+
+                {/* PSP currency mismatch warning */}
+                {pspCurrencyMismatch && (
+                  <div className="mt-2 flex items-start gap-2 rounded-xl bg-yellow-500/[0.08] px-3 py-2.5">
+                    <Warning size={14} weight="fill" className="mt-0.5 shrink-0 text-yellow-600" />
+                    <p className="text-xs text-yellow-700">
+                      {lang === 'tr'
+                        ? `PSP (${selectedPsp!.name}), ${selectedPsp!.currency} para birimini kullanıyor; ancak transfer ${currency} olarak ayarlandı.`
+                        : `PSP (${selectedPsp!.name}) uses ${selectedPsp!.currency}, but the transfer currency is set to ${currency}.`}
+                    </p>
+                  </div>
                 )}
               </div>
 
@@ -882,9 +1032,9 @@ export function TransferFormContent({
               <div
                 className={cn(
                   'rounded-xl border px-3 py-2.5 transition-colors',
-                  currency !== 'TL' && !rateConfirmed
-                    ? 'border-amber-400/40 bg-amber-500/[0.02]'
-                    : currency !== 'TL' && rateConfirmed
+                  currency !== baseCurrency && !rateConfirmed
+                    ? 'border-brand/30 bg-brand/[0.02]'
+                    : currency !== baseCurrency && rateConfirmed
                       ? 'border-green/25 bg-green/[0.02]'
                       : 'border-black/[0.07] bg-black/[0.02]',
                 )}
@@ -915,9 +1065,15 @@ export function TransferFormContent({
                   ) : (
                     <>
                       <span className="ml-auto text-xs tabular-nums text-black/50">
-                        {normalizedFetchedRate != null
-                          ? `1 USD = ${normalizedFetchedRate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} TL`
-                          : t('transfers.form.fetchingRate')}
+                        {isCustomForHook
+                          ? secondaryToBaseRate != null &&
+                            customToBaseRate != null &&
+                            customToBaseRate > 0
+                            ? `1 ${secondaryCurrency} = ${(secondaryToBaseRate / customToBaseRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} ${currency}`
+                            : t('transfers.form.fetchingRate')
+                          : normalizedSecondaryRate != null
+                            ? `1 ${currency && currency !== baseCurrency ? currency : secondaryCurrency} = ${normalizedSecondaryRate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} ${baseCurrency}`
+                            : t('transfers.form.fetchingRate')}
                       </span>
                       <button
                         type="button"
@@ -940,9 +1096,9 @@ export function TransferFormContent({
                     </span>
                     <span className="text-xs text-black/25">=</span>
                     <span className="text-sm font-semibold tabular-nums text-brand">
-                      {currency === 'TL'
-                        ? `${(rawAmount / exchangeRateValue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`
-                        : `${(rawAmount * exchangeRateValue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL`}
+                      {currency === baseCurrency
+                        ? `${(rawAmount / exchangeRateValue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${secondaryCurrency}`
+                        : `${(rawAmount * exchangeRateValue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${baseCurrency}`}
                     </span>
                     <span className="ml-auto text-[10px] tabular-nums text-black/30">
                       @{' '}
@@ -950,13 +1106,13 @@ export function TransferFormContent({
                         minimumFractionDigits: 4,
                         maximumFractionDigits: 4,
                       })}{' '}
-                      TL
+                      {baseCurrency}
                     </span>
                   </div>
                 )}
 
-                {/* Option A — Rate confirmation (non-TL only) */}
-                {currency !== 'TL' && (
+                {/* Option A — Rate confirmation (non-base only) */}
+                {currency !== baseCurrency && (
                   <div className="mt-2.5 flex items-center justify-between border-t border-black/[0.06] pt-2.5">
                     {rateConfirmed ? (
                       <span className="flex items-center gap-1.5 text-xs font-semibold text-green">
@@ -965,7 +1121,7 @@ export function TransferFormContent({
                       </span>
                     ) : (
                       <>
-                        <span className="text-xs text-amber-700/80">
+                        <span className="text-xs text-brand/70">
                           {lang === 'tr'
                             ? 'Kaydetmek için kuru onaylayın'
                             : 'Confirm the rate to save'}
@@ -973,7 +1129,7 @@ export function TransferFormContent({
                         <button
                           type="button"
                           onClick={() => setRateConfirmed(true)}
-                          className="flex items-center gap-1.5 rounded-lg bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-500/20"
+                          className="flex items-center gap-1.5 rounded-lg bg-brand/10 px-3 py-1 text-xs font-semibold text-brand transition-colors hover:bg-brand/20"
                         >
                           <Check size={11} weight="bold" />
                           {lang === 'tr' ? 'Kuru Onayla' : 'Confirm Rate'}
@@ -984,16 +1140,14 @@ export function TransferFormContent({
                 )}
               </div>
 
-              {(currency === 'USD' || currency === 'USDT') &&
-                exchangeRateValue > 0 &&
-                exchangeRateValue <= 1 && (
-                  <p className="rounded-xl bg-yellow-500/[0.08] px-3 py-2 text-xs text-yellow-700">
-                    {t(
-                      'transfers.form.exchangeRateWarning',
-                      'Exchange rate for USD is usually > 1. Please verify.',
-                    )}
-                  </p>
-                )}
+              {currency !== baseCurrency && exchangeRateValue > 0 && exchangeRateValue <= 1 && (
+                <p className="rounded-xl bg-yellow-500/[0.08] px-3 py-2 text-xs text-yellow-700">
+                  {t(
+                    'transfers.form.exchangeRateWarning',
+                    'Exchange rate for USD is usually > 1. Please verify.',
+                  )}
+                </p>
+              )}
               {form.formState.errors.exchange_rate && (
                 <p className="text-xs text-red">{form.formState.errors.exchange_rate.message}</p>
               )}
@@ -1048,9 +1202,9 @@ export function TransferFormContent({
               <Button
                 type="button"
                 variant="gray"
-                disabled={isSubmitting || (currency !== 'TL' && !rateConfirmed)}
+                disabled={isSubmitting || (currency !== baseCurrency && !rateConfirmed)}
                 onClick={async () => {
-                  if (currency !== 'TL') {
+                  if (currency !== baseCurrency) {
                     const isValid = await form.trigger()
                     if (isValid) setPendingSubmit({ mode: 'new' })
                   } else {
@@ -1065,7 +1219,7 @@ export function TransferFormContent({
             <Button
               type="submit"
               variant="filled"
-              disabled={isSubmitting || (currency !== 'TL' && !rateConfirmed)}
+              disabled={isSubmitting || (currency !== baseCurrency && !rateConfirmed)}
             >
               {isSubmitting ? t('transfers.form.saving') : t('transfers.form.save')}
             </Button>
@@ -1109,22 +1263,22 @@ export function TransferFormContent({
               <div className="flex items-center justify-between px-3 py-2.5">
                 <span className="text-xs text-black/45">{lang === 'tr' ? 'Kur' : 'Rate'}</span>
                 <span className="text-sm font-bold tabular-nums text-black/80">
-                  1 {currency === 'TL' ? 'USD' : currency} ={' '}
+                  1 {currency === baseCurrency ? secondaryCurrency : currency} ={' '}
                   {exchangeRateValue.toLocaleString(undefined, {
                     minimumFractionDigits: 4,
                     maximumFractionDigits: 4,
                   })}{' '}
-                  TL
+                  {baseCurrency}
                 </span>
               </div>
               <div className="flex items-center justify-between px-3 py-2.5">
                 <span className="text-xs text-black/45">
-                  {lang === 'tr' ? 'TL Karşılığı' : 'TL Equivalent'}
+                  {lang === 'tr' ? `${baseCurrency} Karşılığı` : `${baseCurrency} Equivalent`}
                 </span>
                 <span className="text-sm font-bold tabular-nums text-brand">
-                  {currency === 'TL'
-                    ? `${(rawAmount / exchangeRateValue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`
-                    : `${(rawAmount * exchangeRateValue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TL`}
+                  {currency === baseCurrency
+                    ? `${(rawAmount / exchangeRateValue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${secondaryCurrency}`
+                    : `${(rawAmount * exchangeRateValue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${baseCurrency}`}
                 </span>
               </div>
             </div>

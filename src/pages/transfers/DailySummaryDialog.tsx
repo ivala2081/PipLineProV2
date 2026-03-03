@@ -34,7 +34,6 @@ interface DailySummaryDialogProps {
   onClose: () => void
   onSaveRate: (dateKey: string, rate: number) => void
   onResetRate: (dateKey: string) => void
-  securityPin: string
 }
 
 export function DailySummaryDialog({
@@ -46,7 +45,6 @@ export function DailySummaryDialog({
   onClose,
   onSaveRate,
   onResetRate,
-  securityPin,
 }: DailySummaryDialogProps) {
   const { t, i18n } = useTranslation('pages')
   const lang = i18n.language
@@ -207,6 +205,11 @@ export function DailySummaryDialog({
                     −{formatNumber(s.commission, lang)}
                     <span className="ml-0.5 text-[10px] font-medium opacity-30">₺</span>
                   </p>
+                  {s.commissionUsd > 0 && (
+                    <p className="mt-0.5 font-mono text-[11px] tabular-nums text-black/30">
+                      ≈ {formatNumber(effectiveRate > 0 ? s.commissionUsd : 0, lang)} $
+                    </p>
+                  )}
                   <p className="mt-0.5 text-[10px] tabular-nums text-black/25">
                     %{commPct.toFixed(1)}
                   </p>
@@ -429,7 +432,6 @@ export function DailySummaryDialog({
           setShowPinDialog(false)
           setIsEditingRate(true)
         }}
-        securityPin={securityPin}
       />
     </>
   )

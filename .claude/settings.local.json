@@ -121,7 +121,9 @@
       "Bash(test -f /c/Users/ACER/Desktop/PipLineProV2/supabase/migrations/20260302082512_add_weekend_off_to_hr_settings.sql)",
       "Bash(test -f /c/Users/ACER/Desktop/PipLineProV2/supabase/migrations/079_add_weekend_off_to_hr_settings.sql)",
       "Bash(test -f /c/Users/ACER/Desktop/PipLineProV2/.github/workflows/*.yml)",
-      "Bash(test -f /c/Users/ACER/Desktop/PipLineProV2/scripts/check-i18n.js)"
+      "Bash(test -f /c/Users/ACER/Desktop/PipLineProV2/scripts/check-i18n.js)",
+      "mcp__claude_ai_Supabase__apply_migration",
+      "mcp__claude_ai_Supabase__deploy_edge_function"
     ]
   }
 }

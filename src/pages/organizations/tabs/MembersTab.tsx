@@ -155,6 +155,7 @@ export function MembersTab({ orgId, canManage, assignableRoles = [], isGod }: Me
                           <UserAvatar
                             src={member.profile?.avatar_url}
                             name={member.profile?.display_name ?? undefined}
+                            role={member.role}
                             size="sm"
                             showPresence
                             lastSeenAt={member.profile?.last_seen_at}

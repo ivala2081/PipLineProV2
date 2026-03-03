@@ -49,7 +49,7 @@ CREATE OR REPLACE FUNCTION public.verify_org_pin(
 RETURNS BOOLEAN
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
   v_stored_hash TEXT;
@@ -70,8 +70,8 @@ BEGIN
     RETURN FALSE;
   END IF;
 
-  -- bcrypt comparison
-  RETURN v_stored_hash = crypt(p_pin, v_stored_hash);
+  -- bcrypt comparison (extensions.crypt because pgcrypto lives in extensions schema)
+  RETURN v_stored_hash = extensions.crypt(p_pin, v_stored_hash);
 END;
 $$;
 
@@ -84,7 +84,7 @@ CREATE OR REPLACE FUNCTION public.set_org_pin(
 RETURNS VOID
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 BEGIN
   -- Only god or org admin
@@ -97,11 +97,12 @@ BEGIN
     RAISE EXCEPTION 'PIN_INVALID_FORMAT';
   END IF;
 
+  -- extensions.crypt / extensions.gen_salt because pgcrypto lives in extensions schema
   INSERT INTO public.organization_pins (organization_id, pin_hash, updated_by)
-  VALUES (p_organization_id, crypt(p_new_pin, gen_salt('bf')), auth.uid())
+  VALUES (p_organization_id, extensions.crypt(p_new_pin, extensions.gen_salt('bf')), auth.uid())
   ON CONFLICT (organization_id)
   DO UPDATE SET
-    pin_hash   = crypt(p_new_pin, gen_salt('bf')),
+    pin_hash   = extensions.crypt(p_new_pin, extensions.gen_salt('bf')),
     updated_by = auth.uid(),
     updated_at = NOW();
 END;

@@ -37,9 +37,15 @@ export function useUpdateOrganization(orgId: string) {
 
   return useMutation({
     mutationFn: async (data: UpdateOrganizationValues) => {
-      const updateData: { name: string; is_active: boolean; logo_url?: string | null } = {
+      const updateData: {
+        name: string
+        is_active: boolean
+        base_currency: string
+        logo_url?: string | null
+      } = {
         name: data.name,
         is_active: data.is_active,
+        base_currency: data.base_currency,
       }
 
       if (data.logo_url !== undefined) {

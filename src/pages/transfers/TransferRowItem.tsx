@@ -18,6 +18,8 @@ import {
 interface TransferRowItemProps {
   row: TransferRow
   lang: string
+  isSelected?: boolean
+  onToggleSelect?: () => void
   onView: (row: TransferRow) => void
   onEdit: (row: TransferRow) => void
   onDelete: (row: TransferRow) => void
@@ -27,6 +29,8 @@ interface TransferRowItemProps {
 export const TransferRowItem = React.memo(function TransferRowItem({
   row,
   lang,
+  isSelected,
+  onToggleSelect,
   onView,
   onEdit,
   onDelete,
@@ -39,8 +43,22 @@ export const TransferRowItem = React.memo(function TransferRowItem({
     : 0
   const net = row.amount - commission
 
+  const typeName = row.type?.name?.toLowerCase() ?? ''
+  const isBlocked = typeName.includes('bloke') || typeName.includes('blocked')
+
   return (
-    <TableRow className="hover:bg-black/[0.015]">
+    <TableRow className={`hover:bg-black/[0.015] ${isBlocked ? 'opacity-60' : ''}`}>
+      {onToggleSelect && (
+        <TableCell className="w-4 pl-3 pr-1">
+          <input
+            type="checkbox"
+            checked={isSelected ?? false}
+            onChange={onToggleSelect}
+            className="size-3.5 cursor-pointer rounded border-black/20"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </TableCell>
+      )}
       <TableCell className="whitespace-nowrap" data-label={t('transfers.columns.fullName')}>
         <span className="text-sm font-medium text-black/90">{row.full_name}</span>
       </TableCell>
@@ -73,15 +91,35 @@ export const TransferRowItem = React.memo(function TransferRowItem({
         className="whitespace-nowrap text-right"
         data-label={t('transfers.columns.commission')}
       >
-        <span className="font-mono text-sm tabular-nums text-black/50">
-          {formatNumber(commission, lang)}
-        </span>
+        {isDeposit ? (
+          <span className="font-mono text-sm tabular-nums text-black/50">
+            {formatNumber(commission, lang)}
+          </span>
+        ) : (
+          <span
+            className="text-sm text-black/20"
+            title={t(
+              'transfers.table.commissionWithdrawalTooltip',
+              'Withdrawals are not charged commission',
+            )}
+          >
+            —
+          </span>
+        )}
       </TableCell>
       <TableCell className="whitespace-nowrap text-right" data-label={t('transfers.columns.net')}>
         <span
           className={`font-mono text-sm font-medium tabular-nums ${net >= 0 ? 'text-green' : 'text-red'}`}
         >
           {formatNumber(Math.abs(net), lang)}
+        </span>
+      </TableCell>
+      <TableCell
+        className="whitespace-nowrap text-right"
+        data-label={t('transfers.table.netUsd', 'Net USD')}
+      >
+        <span className="font-mono text-xs tabular-nums text-black/30">
+          {row.amount_usd != null ? `${formatNumber(Math.abs(row.amount_usd), lang)} $` : '—'}
         </span>
       </TableCell>
       <TableCell className="whitespace-nowrap" data-label={t('transfers.columns.currency')}>
@@ -103,11 +141,18 @@ export const TransferRowItem = React.memo(function TransferRowItem({
         className="whitespace-nowrap text-sm text-black/60"
         data-label={t('transfers.columns.type')}
       >
-        {row.type?.name
-          ? t(`transfers.typeValues.${row.type.name}`, {
-              defaultValue: row.type.name,
-            })
-          : '—'}
+        <span>
+          {row.type?.name
+            ? t(`transfers.typeValues.${row.type.name}`, {
+                defaultValue: row.type.name,
+              })
+            : '—'}
+        </span>
+        {isBlocked && (
+          <Tag variant="default" className="ml-1.5 text-[9px] opacity-60">
+            {t('transfers.table.blocked', 'BLOCKED')}
+          </Tag>
+        )}
       </TableCell>
       <TableCell className="whitespace-nowrap px-2" isActions>
         <div className="flex items-center justify-end gap-0.5">

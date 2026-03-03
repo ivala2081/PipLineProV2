@@ -3,15 +3,20 @@
  * Avatar component with optional online presence indicator
  */
 
+import { ShieldStar, UserRectangle } from '@phosphor-icons/react'
 import { Avatar, AvatarImage, AvatarFallback } from '@ds'
 import { OnlineIndicator } from './OnlineIndicator'
 import { cn } from '@ds/utils'
 
+type UserRole = 'god' | 'admin' | 'manager' | 'operation'
+
 interface UserAvatarProps {
   /** Avatar image URL */
   src?: string | null
-  /** User's name for fallback initials */
+  /** User's name (unused when no src, kept for alt text) */
   name?: string
+  /** Role determines the fallback icon */
+  role?: UserRole | null
   /** Size variant */
   size?: 'sm' | 'md' | 'lg' | 'xl'
   /** Show online presence indicator */
@@ -29,6 +34,13 @@ const sizeClasses = {
   xl: 'h-16 w-16 text-lg',
 }
 
+const iconSizes = {
+  sm: 20,
+  md: 24,
+  lg: 28,
+  xl: 36,
+}
+
 const indicatorSizeClasses = {
   sm: 'h-2 w-2 border',
   md: 'h-2.5 w-2.5 border-2',
@@ -36,35 +48,28 @@ const indicatorSizeClasses = {
   xl: 'h-4 w-4 border-2',
 }
 
-/**
- * Get initials from name (first letter of first and last name)
- */
-function getInitials(name?: string): string {
-  if (!name) return '?'
-
-  const parts = name.trim().split(/\s+/)
-  if (parts.length === 1) {
-    return parts[0].charAt(0).toUpperCase()
-  }
-
-  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
-}
-
 export function UserAvatar({
   src,
   name,
+  role,
   size = 'md',
   showPresence = false,
   lastSeenAt,
   className,
 }: UserAvatarProps) {
-  const initials = getInitials(name)
+  const iconProps = { size: iconSizes[size], weight: 'fill' as const, className: 'text-black/35' }
 
   return (
     <div className="relative inline-block">
       <Avatar className={cn(sizeClasses[size], className)}>
         {src && <AvatarImage src={src} alt={name} />}
-        <AvatarFallback>{initials}</AvatarFallback>
+        <AvatarFallback>
+          {role === 'god' || role === 'admin' ? (
+            <ShieldStar {...iconProps} />
+          ) : (
+            <UserRectangle {...iconProps} />
+          )}
+        </AvatarFallback>
       </Avatar>
 
       {showPresence && (

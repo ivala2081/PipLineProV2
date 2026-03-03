@@ -302,7 +302,7 @@ export function LedgerTable({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__all__">{t('accounting.filters.allCurrencies')}</SelectItem>
-                    <SelectItem value="TL">TL</SelectItem>
+                    <SelectItem value="TRY">TRY</SelectItem>
                     <SelectItem value="USD">USD</SelectItem>
                     <SelectItem value="USDT">USDT</SelectItem>
                   </SelectContent>

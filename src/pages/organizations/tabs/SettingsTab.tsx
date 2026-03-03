@@ -15,6 +15,7 @@ import { uploadOrganizationLogo, deleteOrganizationLogo } from '@/lib/storageSer
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { ImageCropperDialog } from '@/components/ImageCropperDialog'
 import { OrgPinSettings } from '@/components/OrgPinSettings'
+import { CurrencySelect } from '@/components/CurrencySelect'
 
 interface SettingsTabProps {
   org: Organization
@@ -40,6 +41,7 @@ export function SettingsTab({ org, orgId }: SettingsTabProps) {
       name: org.name,
       is_active: org.is_active,
       logo_url: org.logo_url,
+      base_currency: org.base_currency ?? 'USD',
     },
   })
 
@@ -168,6 +170,7 @@ export function SettingsTab({ org, orgId }: SettingsTabProps) {
   const handleSubmit = form.handleSubmit(async (data) => {
     try {
       await updateOrg.mutateAsync(data)
+      await refreshOrgs()
       toast({ title: t('organizations.toast.updated'), variant: 'success' })
     } catch (err) {
       toast({ title: (err as Error).message, variant: 'error' })
@@ -284,13 +287,35 @@ export function SettingsTab({ org, orgId }: SettingsTabProps) {
             </div>
           </div>
 
+          <Separator />
+
+          {/* Base Currency */}
+          <div className="space-y-sm">
+            <Label>{t('organizations.settings.baseCurrency')}</Label>
+            <CurrencySelect
+              value={form.watch('base_currency')}
+              onChange={(code) => form.setValue('base_currency', code, { shouldDirty: true })}
+            />
+            <p className="text-xs text-black/40">
+              {t('organizations.settings.baseCurrencyDescription')}
+            </p>
+            {form.formState.errors.base_currency && (
+              <p className="text-xs text-red">{form.formState.errors.base_currency.message}</p>
+            )}
+          </div>
+
           {/* Actions */}
           <div className="flex justify-end gap-sm pt-2">
             <Button
               type="button"
               variant="outline"
               onClick={() =>
-                form.reset({ name: org.name, is_active: org.is_active, logo_url: org.logo_url })
+                form.reset({
+                  name: org.name,
+                  is_active: org.is_active,
+                  logo_url: org.logo_url,
+                  base_currency: org.base_currency ?? 'USD',
+                })
               }
             >
               {t('organizations.settings.reset')}

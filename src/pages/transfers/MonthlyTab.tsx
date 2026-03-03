@@ -283,8 +283,6 @@ function KpiSkeleton() {
 
 /* ── Main component ────────────────────────────────── */
 
-const SECURITY_PIN = '4561'
-
 export function MonthlyTab() {
   const { t, i18n } = useTranslation('pages')
   const lang = i18n.language
@@ -451,7 +449,6 @@ export function MonthlyTab() {
           setShowPinDialog(false)
           setIsEditingRate(true)
         }}
-        securityPin={SECURITY_PIN}
       />
 
       {/* Loading state */}

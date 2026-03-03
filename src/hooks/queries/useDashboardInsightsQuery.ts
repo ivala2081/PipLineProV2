@@ -24,7 +24,7 @@ export function useDashboardInsightsQuery() {
 
       const { data, error } = await supabase
         .from('exchange_rates')
-        .select('rate_to_tl, rate_date')
+        .select('rate_to_base, rate_date')
         .eq('organization_id', currentOrg.id)
         .eq('currency', 'USD')
         .order('rate_date', { ascending: true })
@@ -32,10 +32,10 @@ export function useDashboardInsightsQuery() {
 
       if (error) throw error
 
-      return ((data ?? []) as Array<{ rate_to_tl: number; rate_date: string }>).map(
+      return ((data ?? []) as Array<{ rate_to_base: number; rate_date: string }>).map(
         (r): RatePoint => ({
           date: r.rate_date,
-          rate: Number(r.rate_to_tl),
+          rate: Number(r.rate_to_base),
         }),
       )
     },

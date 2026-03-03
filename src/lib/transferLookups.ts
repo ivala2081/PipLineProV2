@@ -10,6 +10,9 @@ export interface TransferType {
   id: string
   name: string
   aliases: string[]
+  organization_id?: string | null
+  is_system?: boolean
+  is_excluded?: boolean
 }
 
 export interface TransferCategory {
@@ -23,6 +26,8 @@ export interface PaymentMethod {
   id: string
   name: string
   aliases: string[]
+  organization_id?: string | null
+  is_system?: boolean
 }
 
 // Transfer Types

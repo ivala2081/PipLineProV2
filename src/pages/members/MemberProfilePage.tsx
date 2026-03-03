@@ -26,16 +26,6 @@ import { EditProfileDialog, type ProfileFormData } from './EditProfileDialog'
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-function getInitials(name: string | null) {
-  if (!name) return '?'
-  return name
-    .split(' ')
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
-}
-
 /* ------------------------------------------------------------------ */
 /*  Page                                                               */
 /* ------------------------------------------------------------------ */
@@ -158,6 +148,11 @@ export function MemberProfilePage() {
   }
 
   const displayName = profileData.display_name ?? userId ?? ''
+  const viewedRole =
+    isGod && isSelf
+      ? ('god' as const)
+      : (profileData.memberships.find((m) => m.organization_id === currentOrg?.id)?.role ??
+        undefined)
   const roles = profileData.memberships.map((m) => ({
     role: m.role,
     orgName: m.organization.name,
@@ -207,7 +202,7 @@ export function MemberProfilePage() {
             <AvatarUpload
               userId={userId!}
               currentAvatarUrl={profileData.avatar_url}
-              fallbackText={getInitials(profileData.display_name)}
+              role={viewedRole}
               onUploadSuccess={handleAvatarUpload}
               onRemoveSuccess={handleAvatarRemove}
               size="xl"

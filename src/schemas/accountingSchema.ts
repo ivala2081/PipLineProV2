@@ -10,7 +10,7 @@ export const entryFormSchema = z.object({
   entry_type: z.enum(['ODEME', 'TRANSFER']),
   direction: z.enum(['in', 'out']),
   amount: z.coerce.number().positive('Amount must be positive'),
-  currency: z.enum(['TL', 'USD', 'USDT']),
+  currency: z.string().min(1),
   cost_period: z.string().optional(),
   entry_date: z.string().min(1, 'Date is required'),
   payment_period: z.string().optional(),

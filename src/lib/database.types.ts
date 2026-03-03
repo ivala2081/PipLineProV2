@@ -287,7 +287,7 @@ export type Database = {
           id: string
           organization_id: string
           rate_date: string
-          rate_to_tl: number
+          rate_to_base: number
           source: string
         }
         Insert: {
@@ -296,7 +296,7 @@ export type Database = {
           id?: string
           organization_id: string
           rate_date?: string
-          rate_to_tl: number
+          rate_to_base: number
           source?: string
         }
         Update: {
@@ -305,7 +305,7 @@ export type Database = {
           id?: string
           organization_id?: string
           rate_date?: string
-          rate_to_tl?: number
+          rate_to_base?: number
           source?: string
         }
         Relationships: [
@@ -1091,32 +1091,38 @@ export type Database = {
       }
       organizations: {
         Row: {
+          base_currency: string
           created_at: string
           created_by: string | null
           id: string
           is_active: boolean
           logo_url: string | null
           name: string
+          security_pin: string | null
           slug: string
           updated_at: string
         }
         Insert: {
+          base_currency?: string
           created_at?: string
           created_by?: string | null
           id?: string
           is_active?: boolean
           logo_url?: string | null
           name: string
+          security_pin?: string | null
           slug: string
           updated_at?: string
         }
         Update: {
+          base_currency?: string
           created_at?: string
           created_by?: string | null
           id?: string
           is_active?: boolean
           logo_url?: string | null
           name?: string
+          security_pin?: string | null
           slug?: string
           updated_at?: string
         }
@@ -1135,19 +1141,25 @@ export type Database = {
           aliases: string[]
           created_at: string
           id: string
+          is_system: boolean
           name: string
+          organization_id: string | null
         }
         Insert: {
           aliases?: string[]
           created_at?: string
           id: string
+          is_system?: boolean
           name: string
+          organization_id?: string | null
         }
         Update: {
           aliases?: string[]
           created_at?: string
           id?: string
+          is_system?: boolean
           name?: string
+          organization_id?: string | null
         }
         Relationships: []
       }
@@ -1430,21 +1442,27 @@ export type Database = {
           created_at: string
           id: string
           is_excluded: boolean
+          is_system: boolean
           name: string
+          organization_id: string | null
         }
         Insert: {
           aliases?: string[]
           created_at?: string
           id: string
           is_excluded?: boolean
+          is_system?: boolean
           name: string
+          organization_id?: string | null
         }
         Update: {
           aliases?: string[]
           created_at?: string
           id?: string
           is_excluded?: boolean
+          is_system?: boolean
           name?: string
+          organization_id?: string | null
         }
         Relationships: []
       }

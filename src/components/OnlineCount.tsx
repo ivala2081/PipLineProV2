@@ -5,7 +5,7 @@
  */
 
 import { useTranslation } from 'react-i18next'
-import { Users } from '@phosphor-icons/react'
+import { Users, ShieldStar, UserRectangle } from '@phosphor-icons/react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
@@ -117,10 +117,8 @@ export function OnlineCount({ className }: OnlineCountProps) {
           ) : (
             <ul className="space-y-0.5">
               {onlineMembers.map((member) => {
-                const initials = (member.display_name ?? member.email ?? '?')
-                  .charAt(0)
-                  .toUpperCase()
                 const name = member.display_name ?? member.email ?? member.userId
+                const RoleIcon = member.role === 'admin' ? ShieldStar : UserRectangle
 
                 return (
                   <li
@@ -131,7 +129,9 @@ export function OnlineCount({ className }: OnlineCountProps) {
                     <div className="relative shrink-0">
                       <Avatar className="h-8 w-8">
                         {member.avatar_url && <AvatarImage src={member.avatar_url} alt={name} />}
-                        <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                        <AvatarFallback>
+                          <RoleIcon size={18} weight="fill" className="text-black/35" />
+                        </AvatarFallback>
                       </Avatar>
                       <span className="absolute -bottom-0.5 -right-0.5 block h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-white dark:border-gray-900 shadow-[0_0_4px_rgba(34,197,94,0.6)]" />
                     </div>

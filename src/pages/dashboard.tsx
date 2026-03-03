@@ -39,6 +39,7 @@ import {
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { supabase } from '@/lib/supabase'
+import { CURRENCIES } from '@/lib/currencies'
 import {
   useDashboardQuery,
   getDateRange,
@@ -48,6 +49,7 @@ import {
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import { queryKeys } from '@/lib/queryKeys'
 import { useMonthlyAnalysisQuery } from '@/hooks/queries/useMonthlyAnalysisQuery'
+import { useExchangeRateQuery } from '@/hooks/queries/useExchangeRateQuery'
 import { useDashboardRecentQuery } from '@/hooks/queries/useDashboardRecentQuery'
 import type { RecentTransfer } from '@/hooks/queries/useDashboardRecentQuery'
 import type { BreakdownItem } from '@/hooks/queries/useMonthlyAnalysisQuery'
@@ -564,12 +566,15 @@ export function DashboardPage() {
 
   useRealtimeSubscription('transfers', [queryKeys.transfers.all, ['dashboard']])
 
+  /* ── Exchange rate (USD → base, for chart conversion) */
+  const { rate: usdToBaseRate } = useExchangeRateQuery('USD')
+
   /* ── Data hooks ──────────────────────────────────── */
   const [period, setPeriod] = useState<DashboardPeriod>('month')
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
   const [pmView, setPmView] = useState<'volume' | 'count'>('volume')
-  const [primaryCurrency, setPrimaryCurrency] = useState<'USD' | 'TRY'>('USD')
+  const [showUsd, setShowUsd] = useState(true)
   const [viewMode, setViewMode] = useState<'gross' | 'net'>('gross')
   const { kpis, prevKpis, isLoading } = useDashboardQuery(
     period,
@@ -722,13 +727,13 @@ export function DashboardPage() {
   /* ── Derived values ──────────────────────────────── */
   const displayName = profile?.display_name || t('dashboard.defaultUser')
 
-  const paymentMethods = useMemo(
-    () =>
-      (monthlyData?.payment_method_breakdown ?? [])
-        .filter((pm) => (pmView === 'volume' ? pm.volume > 0 : pm.count > 0))
-        .sort((a, b) => (pmView === 'volume' ? b.volume - a.volume : b.count - a.count)),
-    [monthlyData?.payment_method_breakdown, pmView],
-  )
+  const paymentMethods = useMemo(() => {
+    const factor = showUsd && usdToBaseRate ? 1 / usdToBaseRate : 1
+    return (monthlyData?.payment_method_breakdown ?? [])
+      .filter((pm) => (pmView === 'volume' ? pm.volume > 0 : pm.count > 0))
+      .sort((a, b) => (pmView === 'volume' ? b.volume - a.volume : b.count - a.count))
+      .map((pm) => ({ ...pm, volume: pm.volume * factor }))
+  }, [monthlyData?.payment_method_breakdown, pmView, showUsd, usdToBaseRate])
 
   const pmTotal = useMemo(
     () => paymentMethods.reduce((s, pm) => s + (pmView === 'volume' ? pm.volume : pm.count), 0),
@@ -736,8 +741,44 @@ export function DashboardPage() {
   )
 
   /* ── Currency-aware KPI values ───────────────────── */
-  const isUSD = primaryCurrency === 'USD'
+  const isUSD = showUsd
   const isNet = viewMode === 'net'
+
+  const baseCurrency = currentOrg?.base_currency ?? 'TRY'
+  const baseCurrencySymbol = CURRENCIES.find((c) => c.code === baseCurrency)?.symbol ?? baseCurrency
+
+  // Base → USD multiplier for chart conversion (null = rate not yet loaded)
+  const chartUsdFactor = isUSD && usdToBaseRate ? 1 / usdToBaseRate : null
+
+  const chartDailyVolume = useMemo(() => {
+    const src = monthlyData?.daily_volume ?? []
+    if (!chartUsdFactor) return src
+    return src.map((p) => ({
+      day: p.day,
+      deposits: p.deposits * chartUsdFactor,
+      withdrawals: p.withdrawals * chartUsdFactor,
+    }))
+  }, [monthlyData?.daily_volume, chartUsdFactor])
+
+  const chartDailyNet = useMemo(() => {
+    const src = monthlyData?.daily_net ?? []
+    if (!chartUsdFactor) return src
+    return src.map((p) => ({ day: p.day, net: p.net * chartUsdFactor }))
+  }, [monthlyData?.daily_net, chartUsdFactor])
+
+  const prevChartDailyVolume = useMemo(() => {
+    const src = prevMonthlyData?.daily_volume ?? []
+    if (!chartUsdFactor) return src
+    return src.map((p) => ({
+      day: p.day,
+      deposits: p.deposits * chartUsdFactor,
+      withdrawals: p.withdrawals * chartUsdFactor,
+    }))
+  }, [prevMonthlyData?.daily_volume, chartUsdFactor])
+
+  // Tooltip formatter: switches symbol with toggle
+  const chartMoneyFmt = (value: number) =>
+    isUSD ? fmtMoney(value, lang, '$') : fmtMoney(value, lang)
 
   // Gross totals
   const depUsdGross = kpis?.totalDepositsUsd ?? 0
@@ -778,7 +819,7 @@ export function DashboardPage() {
     ? { current: depUsdActive, previous: prevDepUsdActive }
     : { current: depTryActive, previous: prevDepTryActive }
   const depositSecondary = isUSD
-    ? { label: 'TRY', value: fmtCompact(depTryActive) + ' ₺' }
+    ? { label: baseCurrency, value: fmtCompact(depTryActive) + ' ' + baseCurrencySymbol }
     : { label: 'USD', value: fmtCompact(depUsdActive) + ' $' }
 
   // Withdrawals card (gross = net, no commission on withdrawals)
@@ -787,7 +828,7 @@ export function DashboardPage() {
     ? { current: wdUsdActive, previous: prevWdUsdActive }
     : { current: wdTryActive, previous: prevWdTryActive }
   const withdrawalSecondary = isUSD
-    ? { label: 'TRY', value: fmtCompact(wdTryActive) + ' ₺' }
+    ? { label: baseCurrency, value: fmtCompact(wdTryActive) + ' ' + baseCurrencySymbol }
     : { label: 'USD', value: fmtCompact(wdUsdActive) + ' $' }
 
   // Net Cash card (toggleable)
@@ -796,7 +837,7 @@ export function DashboardPage() {
     ? { current: netUsdActive, previous: prevNetUsdActive }
     : { current: netTryActive, previous: prevNetTryActive }
   const netSecondary = isUSD
-    ? { label: 'TRY', value: fmtCompact(netTryActive) + ' ₺' }
+    ? { label: baseCurrency, value: fmtCompact(netTryActive) + ' ' + baseCurrencySymbol }
     : { label: 'USD', value: fmtCompact(netUsdActive) + ' $' }
 
   /* ── Card filter helpers ─────────────────────────── */
@@ -855,7 +896,7 @@ export function DashboardPage() {
           {/* Currency toggle */}
           <div className="flex items-center overflow-hidden rounded-lg border border-black/[0.08]">
             <button
-              onClick={() => setPrimaryCurrency('USD')}
+              onClick={() => setShowUsd(true)}
               className={cn(
                 'px-3 py-1.5 text-[11px] font-bold tracking-wide transition-all',
                 isUSD
@@ -867,7 +908,7 @@ export function DashboardPage() {
             </button>
             <div className="h-4 w-px bg-black/[0.08]" />
             <button
-              onClick={() => setPrimaryCurrency('TRY')}
+              onClick={() => setShowUsd(false)}
               className={cn(
                 'px-3 py-1.5 text-[11px] font-bold tracking-wide transition-all',
                 !isUSD
@@ -875,7 +916,7 @@ export function DashboardPage() {
                   : 'text-black/35 hover:bg-black/[0.03] hover:text-black/60',
               )}
             >
-              ₺ TRY
+              {baseCurrencySymbol} {baseCurrency}
             </button>
           </div>
           {/* Period toggle */}
@@ -996,7 +1037,7 @@ export function DashboardPage() {
             <>
               <div className="min-h-[250px] md:min-h-[350px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={monthlyData.daily_volume}>
+                  <AreaChart data={chartDailyVolume}>
                     <defs>
                       <linearGradient id="gradDep" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor={GREEN} stopOpacity={0.2} />
@@ -1024,7 +1065,7 @@ export function DashboardPage() {
                     />
                     <Tooltip
                       formatter={(value: number, name: string) => [
-                        fmtMoney(value, lang),
+                        chartMoneyFmt(value),
                         name === 'deposits'
                           ? t('dashboard.charts.deposits')
                           : t('dashboard.charts.withdrawals'),
@@ -1143,7 +1184,9 @@ export function DashboardPage() {
                       <p className="mt-0.5 font-mono text-lg font-black tabular-nums text-black/70">
                         {pmView === 'volume' ? fmtCompact(pmTotal) : pmTotal}
                         {pmView === 'volume' && (
-                          <span className="ml-0.5 text-sm font-medium">₺</span>
+                          <span className="ml-0.5 text-sm font-medium">
+                            {isUSD ? '$' : baseCurrencySymbol}
+                          </span>
                         )}
                       </p>
                     </div>
@@ -1304,7 +1347,7 @@ export function DashboardPage() {
           ) : (
             <div className="min-h-[250px] md:min-h-[350px]">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={monthlyData.daily_net}>
+                <AreaChart data={chartDailyNet}>
                   <defs>
                     <linearGradient id="gradNet" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor={ct.lineColor} stopOpacity={0.12} />
@@ -1328,10 +1371,7 @@ export function DashboardPage() {
                   />
                   <ReferenceLine y={0} stroke={ct.zeroLineStroke} strokeDasharray="4 4" />
                   <Tooltip
-                    formatter={(value: number) => [
-                      fmtMoney(value, lang),
-                      t('dashboard.charts.net'),
-                    ]}
+                    formatter={(value: number) => [chartMoneyFmt(value), t('dashboard.charts.net')]}
                     labelFormatter={fmtDay}
                     contentStyle={ct.tooltipStyle}
                     cursor={{ strokeDasharray: '4 4', stroke: ct.cursorStroke }}
@@ -1654,7 +1694,7 @@ export function DashboardPage() {
                     >
                       <div className="min-h-[250px] md:min-h-[350px]">
                         <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={prevMonthlyData.daily_volume}>
+                          <AreaChart data={prevChartDailyVolume}>
                             <defs>
                               <linearGradient id="gradDepPrev" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="0%" stopColor={GREEN} stopOpacity={0.15} />
@@ -1686,7 +1726,7 @@ export function DashboardPage() {
                             />
                             <Tooltip
                               formatter={(value: number, name: string) => [
-                                fmtMoney(value, lang),
+                                chartMoneyFmt(value),
                                 name === 'deposits'
                                   ? t('dashboard.charts.deposits')
                                   : t('dashboard.charts.withdrawals'),

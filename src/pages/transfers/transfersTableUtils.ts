@@ -14,6 +14,7 @@ export interface DaySummary {
   withdrawals: number
   net: number
   commission: number
+  commissionUsd: number
   count: number
   depositCount: number
   withdrawalCount: number
@@ -162,6 +163,7 @@ export function computeDaySummary(transfers: TransferRow[]): DaySummary {
     withdrawals,
     net: deposits - withdrawals,
     commission: totalCommission,
+    commissionUsd: totalCommissionUsd,
     count: active.length,
     depositCount,
     withdrawalCount,

@@ -2,10 +2,13 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Plus, UploadSimple } from '@phosphor-icons/react'
+import { useQuery } from '@tanstack/react-query'
 import { useLookupQueries } from '@/hooks/queries/useLookupQueries'
 import { useTransfersQuery } from '@/hooks/queries/useTransfersQuery'
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import { queryKeys } from '@/lib/queryKeys'
+import { supabase } from '@/lib/supabase'
+import { useOrganization } from '@/app/providers/OrganizationProvider'
 import type { TransferRow } from '@/hooks/useTransfers'
 import { Button, Tabs, TabsList, TabsTrigger, TabsContent, PageHeader } from '@ds'
 import { TransfersTable } from './TransfersTable'
@@ -17,8 +20,24 @@ import { CsvImportDialog } from './CsvImportDialog'
 export function TransfersPage() {
   const { t } = useTranslation('pages')
   const navigate = useNavigate()
+  const { currentOrg } = useOrganization()
   const lookupData = useLookupQueries()
   const transfers = useTransfersQuery()
+
+  const { data: employeesData } = useQuery({
+    queryKey: queryKeys.hr.employees(currentOrg?.id ?? ''),
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('hr_employees')
+        .select('id, full_name')
+        .eq('organization_id', currentOrg!.id)
+        .eq('is_active', true)
+        .order('full_name')
+      return data ?? []
+    },
+    enabled: !!currentOrg,
+    staleTime: 5 * 60_000,
+  })
 
   useRealtimeSubscription('transfers', [queryKeys.transfers.all, ['dashboard']])
 
@@ -41,7 +60,7 @@ export function TransfersPage() {
 
   const tableContent = (
     <TransfersTable
-      transfers={transfers.transfers}
+      transfers={transfers.displayTransfers}
       isLoading={transfers.isLoading}
       page={transfers.page}
       pageSize={transfers.pageSize}
@@ -53,9 +72,15 @@ export function TransfersPage() {
       hasActiveFilters={transfers.hasActiveFilters}
       fetchTransfersByDate={transfers.fetchTransfersByDate}
       onPageChange={transfers.setPage}
+      onPageSizeChange={transfers.setPageSize}
       onEdit={handleEdit}
       onDelete={handleDelete}
       lookupData={lookupData}
+      employees={employeesData ?? []}
+      loadMore={transfers.loadMore}
+      hasMore={transfers.hasMore}
+      isLoadMoreMode={transfers.isLoadMoreMode}
+      setIsLoadMoreMode={transfers.setIsLoadMoreMode}
     />
   )
 

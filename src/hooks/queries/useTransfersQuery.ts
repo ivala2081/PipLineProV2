@@ -45,7 +45,7 @@ function calcAutoBonus(
   return 0
 }
 
-const PAGE_SIZE = 25
+const DEFAULT_PAGE_SIZE = 25
 
 const SELECT_QUERY =
   '*, category:transfer_categories!category_id(name, is_deposit), payment_method:payment_methods!payment_method_id(name), psp:psps!psp_id(name, commission_rate), type:transfer_types!type_id(name)'
@@ -56,6 +56,8 @@ export interface TransferFilters {
   currency: string | null
   paymentMethodId: string | null
   typeId: string | null
+  pspId: string | null
+  employeeId: string | null
   dateFrom: string | null
   dateTo: string | null
   amountMin: string | null
@@ -68,6 +70,8 @@ const EMPTY_FILTERS: TransferFilters = {
   currency: null,
   paymentMethodId: null,
   typeId: null,
+  pspId: null,
+  employeeId: null,
   dateFrom: null,
   dateTo: null,
   amountMin: null,
@@ -76,6 +80,7 @@ const EMPTY_FILTERS: TransferFilters = {
 
 interface UseTransfersQueryReturn {
   transfers: TransferRow[]
+  displayTransfers: TransferRow[]
   isLoading: boolean
   error: string | null
   page: number
@@ -84,6 +89,7 @@ interface UseTransfersQueryReturn {
   filters: TransferFilters
   dateCounts: Record<string, number>
   setPage: (page: number) => void
+  setPageSize: (size: number) => void
   setFilter: <K extends keyof TransferFilters>(key: K, value: TransferFilters[K]) => void
   clearFilters: () => void
   hasActiveFilters: boolean
@@ -96,6 +102,10 @@ interface UseTransfersQueryReturn {
   isUpdating: boolean
   isDeleting: boolean
   isBulkDeleting: boolean
+  loadMore: () => void
+  hasMore: boolean
+  isLoadMoreMode: boolean
+  setIsLoadMoreMode: (v: boolean) => void
 }
 
 export function useTransfersQuery(): UseTransfersQueryReturn {
@@ -104,6 +114,12 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
+
+  // Load-more mode state
+  const [isLoadMoreMode, setIsLoadMoreMode] = useState(false)
+  const [accumulated, setAccumulated] = useState<TransferRow[]>([])
+  const prevPageRef = useRef(0)
 
   // Read initial filters from URL search params
   const initialFilters = useMemo<TransferFilters>(() => {
@@ -114,6 +130,8 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
       currency: get('currency'),
       paymentMethodId: get('paymentMethodId'),
       typeId: get('typeId'),
+      pspId: get('pspId'),
+      employeeId: get('employeeId'),
       dateFrom: get('dateFrom'),
       dateTo: get('dateTo'),
       amountMin: get('amountMin'),
@@ -134,6 +152,13 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
       prevOrgId.current = currentOrg?.id
     }
   }, [currentOrg?.id])
+
+  // Reset load-more accumulated when filters or org change
+  useEffect(() => {
+    setAccumulated([])
+    setIsLoadMoreMode(false)
+    prevPageRef.current = 0
+  }, [filters, currentOrg?.id])
 
   // Sync filter state → URL params after render (avoids setState-during-render warning)
   useEffect(() => {
@@ -161,12 +186,12 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
 
   // Query for transfers list
   const { data, isLoading, error } = useQuery({
-    queryKey: [...queryKeys.transfers.list(currentOrg?.id ?? '', page), filters],
+    queryKey: [...queryKeys.transfers.list(currentOrg?.id ?? '', page), pageSize, filters],
     queryFn: async () => {
       if (!currentOrg) throw new Error('No organization selected')
 
-      const from = (page - 1) * PAGE_SIZE
-      const to = from + PAGE_SIZE - 1
+      const from = (page - 1) * pageSize
+      const to = from + pageSize - 1
 
       let query = supabase
         .from('transfers')
@@ -182,6 +207,8 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
       if (filters.currency) query = query.eq('currency', filters.currency)
       if (filters.paymentMethodId) query = query.eq('payment_method_id', filters.paymentMethodId)
       if (filters.typeId) query = query.eq('type_id', filters.typeId)
+      if (filters.pspId) query = query.eq('psp_id', filters.pspId)
+      if (filters.employeeId) query = query.eq('employee_id', filters.employeeId)
       if (filters.dateFrom) {
         query = query.gte('transfer_date', localDayStart(filters.dateFrom))
       }
@@ -224,6 +251,24 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
     gcTime: 5 * 60_000,
   })
 
+  // Append new page data to accumulated when in load-more mode
+  useEffect(() => {
+    if (isLoadMoreMode && data?.transfers && page !== prevPageRef.current) {
+      setAccumulated((prev) => [...prev, ...data.transfers])
+      prevPageRef.current = page
+    }
+  }, [data?.transfers, isLoadMoreMode, page])
+
+  const loadMore = useCallback(() => {
+    if (!isLoadMoreMode) {
+      // First load-more click: accumulate current page data then advance
+      setAccumulated(data?.transfers ?? [])
+      prevPageRef.current = page
+    }
+    setIsLoadMoreMode(true)
+    setPage((p) => p + 1)
+  }, [isLoadMoreMode, data?.transfers, page])
+
   // Query for date counts (not paginated)
   const { data: dateCountsData } = useQuery({
     queryKey: [...queryKeys.transfers.dateCounts(currentOrg?.id ?? ''), filters],
@@ -248,6 +293,8 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
       if (filters.currency) query = query.eq('currency', filters.currency)
       if (filters.paymentMethodId) query = query.eq('payment_method_id', filters.paymentMethodId)
       if (filters.typeId) query = query.eq('type_id', filters.typeId)
+      if (filters.pspId) query = query.eq('psp_id', filters.pspId)
+      if (filters.employeeId) query = query.eq('employee_id', filters.employeeId)
       if (filters.dateFrom) query = query.gte('transfer_date', localDayStart(filters.dateFrom))
       if (filters.dateTo) query = query.lte('transfer_date', localDayEnd(filters.dateTo))
       if (filters.amountMin) query = query.gte('amount', parseFloat(filters.amountMin))
@@ -309,6 +356,8 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
         data.currency,
         commissionRate,
         data.type_id,
+        currentOrg?.base_currency ?? 'TRY',
+        data.usd_to_base_rate,
       )
 
       const { data: newTransfer, error } = await supabase
@@ -413,6 +462,8 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
         data.currency,
         commissionRate,
         data.type_id,
+        currentOrg?.base_currency ?? 'TRY',
+        data.usd_to_base_rate,
       )
 
       const { error } = await supabase
@@ -505,12 +556,12 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
       // Optimistically remove the item from all cached transfer lists
       queryClient.setQueriesData(
         { queryKey: queryKeys.transfers.lists() },
-        (old: { data: TransferRow[]; count: number } | undefined) => {
-          if (!old) return old
+        (old: { transfers: TransferRow[]; total: number } | undefined) => {
+          if (!old?.transfers) return old
           return {
             ...old,
-            data: old.data.filter((t: TransferRow) => t.id !== id),
-            count: Math.max(0, old.count - 1),
+            transfers: old.transfers.filter((t: TransferRow) => t.id !== id),
+            total: Math.max(0, old.total - 1),
           }
         },
       )
@@ -585,17 +636,24 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
     }))
   }
 
+  const currentTransfers = data?.transfers ?? []
+  const total = data?.total ?? 0
+  const hasMore = page < Math.ceil(total / pageSize)
+  const displayTransfers = isLoadMoreMode ? accumulated : currentTransfers
+
   return {
-    transfers: data?.transfers ?? [],
-    total: data?.total ?? 0,
+    transfers: currentTransfers,
+    displayTransfers,
+    total,
     page,
-    pageSize: PAGE_SIZE,
+    pageSize,
     filters,
     setFilter,
     clearFilters,
     hasActiveFilters,
     dateCounts: dateCountsData ?? {},
     setPage,
+    setPageSize,
     fetchTransfersByDate,
     isLoading,
     error: error?.message ?? null,
@@ -608,5 +666,9 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
     isBulkDeleting: bulkDeleteMutation.isPending,
+    loadMore,
+    hasMore,
+    isLoadMoreMode,
+    setIsLoadMoreMode,
   }
 }

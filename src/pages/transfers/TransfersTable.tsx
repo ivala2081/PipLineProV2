@@ -9,6 +9,7 @@ import {
   MagnifyingGlass,
   X,
   Funnel,
+  CheckSquare,
 } from '@phosphor-icons/react'
 import type { TransferFilters } from '@/hooks/queries/useTransfersQuery'
 import type { LookupQueries } from '@/hooks/queries/useLookupQueries'
@@ -36,8 +37,6 @@ import {
   Input,
   Select,
   SelectTrigger,
-  SelectContent,
-  SelectItem,
   SelectValue,
   Pagination,
   PaginationContent,
@@ -47,9 +46,19 @@ import {
   EmptyState,
   DatePicker,
   VirtualTableBody,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from '@ds'
 
 /* ── Props ──────────────────────────────────────────── */
+
+interface Employee {
+  id: string
+  full_name: string
+}
 
 interface TransfersTableProps {
   transfers: TransferRow[]
@@ -64,9 +73,15 @@ interface TransfersTableProps {
   hasActiveFilters: boolean
   fetchTransfersByDate: (dateKey: string) => Promise<TransferRow[]>
   onPageChange: (page: number) => void
+  onPageSizeChange: (size: number) => void
   onEdit: (transfer: TransferRow) => void
   onDelete: (transfer: TransferRow) => void
   lookupData: LookupQueries
+  employees: Employee[]
+  loadMore: () => void
+  hasMore: boolean
+  isLoadMoreMode: boolean
+  setIsLoadMoreMode: (v: boolean) => void
 }
 
 /* ── State ──────────────────────────────────────────── */
@@ -165,12 +180,16 @@ function reducer(state: TableState, action: TableAction): TableState {
   }
 }
 
-const SECURITY_PIN = '4561'
-
 /** Groups with more rows than this threshold use virtual scrolling */
 const VIRTUAL_THRESHOLD = 50
 const ROW_HEIGHT_PX = 48
 const VIRTUAL_MAX_HEIGHT = 600
+
+function fmtCompact(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`
+  return n.toFixed(0)
+}
 
 /* ── Component ──────────────────────────────────────── */
 
@@ -187,17 +206,29 @@ export function TransfersTable({
   hasActiveFilters,
   fetchTransfersByDate,
   onPageChange,
+  onPageSizeChange,
   onEdit,
   onDelete,
   lookupData,
+  employees,
+  loadMore,
+  hasMore,
+  isLoadMoreMode,
+  setIsLoadMoreMode,
 }: TransfersTableProps) {
   const { t, i18n } = useTranslation('pages')
   const lang = i18n.language
   const amtLocale = (lang === 'tr' ? 'tr' : 'en') as 'tr' | 'en'
   const { currentOrg } = useOrganization()
+  const baseCurrency = currentOrg?.base_currency ?? 'TRY'
   const queryClient = useQueryClient()
   const [state, dispatch] = useReducer(reducer, initialState)
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [showBulkEdit, setShowBulkEdit] = useState(false)
+  const [bulkPspId, setBulkPspId] = useState<string | null>(null)
+  const [bulkTypeId, setBulkTypeId] = useState<string | null>(null)
 
   // Amount filter display states
   const [amountMinDisplay, setAmountMinDisplay] = useState('')
@@ -360,6 +391,75 @@ export function TransfersTable({
     ],
   )
 
+  /* ── Bulk ops ────────────────────────────────── */
+
+  const allSelected = transfers.length > 0 && selectedIds.size === transfers.length
+  const toggleAll = () => {
+    if (allSelected) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(transfers.map((t) => t.id)))
+    }
+  }
+
+  const handleExportCsv = () => {
+    const rows = transfers.filter((t) => selectedIds.has(t.id))
+    const header = [
+      'Date',
+      'Name',
+      'Category',
+      'Amount',
+      'Currency',
+      'Commission',
+      'Net',
+      'PSP',
+      'Type',
+      'CRM ID',
+      'META ID',
+    ]
+    const csvRows = rows.map((t) => [
+      t.transfer_date,
+      t.full_name,
+      t.category?.is_deposit ? 'Deposit' : 'Withdrawal',
+      String(Math.abs(t.amount)),
+      t.currency,
+      t.category?.is_deposit
+        ? String(Math.round(Math.abs(t.amount) * (t.psp?.commission_rate ?? 0) * 100) / 100)
+        : '0',
+      String(t.amount),
+      t.psp?.name ?? '',
+      t.type?.name ?? '',
+      t.crm_id ?? '',
+      t.meta_id ?? '',
+    ])
+    const csv = [header, ...csvRows]
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `transfers-${Date.now()}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleBulkEditSave = async () => {
+    const updates: Record<string, unknown> = {}
+    if (bulkPspId) updates.psp_id = bulkPspId
+    if (bulkTypeId) updates.type_id = bulkTypeId
+    if (Object.keys(updates).length === 0) return
+    await supabase
+      .from('transfers')
+      .update(updates as never)
+      .in('id', [...selectedIds])
+    queryClient.invalidateQueries({ queryKey: queryKeys.transfers.lists() })
+    setShowBulkEdit(false)
+    setSelectedIds(new Set())
+    setBulkPspId(null)
+    setBulkTypeId(null)
+  }
+
   /* ── Filter bar ──────────────────────────────── */
 
   const filterBar = (
@@ -412,6 +512,18 @@ export function TransfersTable({
               {Object.values(filters).filter((v) => v != null && v !== '').length}
             </span>
           )}
+        </Button>
+        <Button
+          variant={selectionMode ? 'filled' : 'outline'}
+          size="sm"
+          className="h-8 gap-1.5 px-2.5 text-xs"
+          onClick={() => {
+            setSelectionMode((v) => !v)
+            setSelectedIds(new Set())
+          }}
+        >
+          <CheckSquare size={14} weight={selectionMode ? 'fill' : 'regular'} />
+          {t('transfers.bulk.select', 'Select')}
         </Button>
         {hasActiveFilters && (
           <Button
@@ -474,7 +586,7 @@ export function TransfersTable({
                   <SelectItem value="__all__">
                     {t('transfers.filters.allCurrencies', 'All Currencies')}
                   </SelectItem>
-                  <SelectItem value="TL">TL</SelectItem>
+                  <SelectItem value="TRY">TRY</SelectItem>
                   <SelectItem value="USD">USD</SelectItem>
                   <SelectItem value="USDT">USDT</SelectItem>
                 </SelectContent>
@@ -533,10 +645,61 @@ export function TransfersTable({
               </Select>
             </div>
 
+            {/* PSP */}
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
+                {t('transfers.filters.psp', 'PSP')}
+              </label>
+              <Select
+                value={filters.pspId ?? '__all__'}
+                onValueChange={(v) => onFilterChange('pspId', v === '__all__' ? null : v)}
+              >
+                <SelectTrigger selectSize="sm" className="h-9 w-full text-xs">
+                  <SelectValue placeholder={t('transfers.filters.allPsps', 'All PSPs')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">
+                    {t('transfers.filters.allPsps', 'All PSPs')}
+                  </SelectItem>
+                  {lookupData.psps.map((psp) => (
+                    <SelectItem key={psp.id} value={psp.id}>
+                      {psp.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Employee */}
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
+                {t('transfers.filters.employee', 'Employee')}
+              </label>
+              <Select
+                value={filters.employeeId ?? '__all__'}
+                onValueChange={(v) => onFilterChange('employeeId', v === '__all__' ? null : v)}
+              >
+                <SelectTrigger selectSize="sm" className="h-9 w-full text-xs">
+                  <SelectValue placeholder={t('transfers.filters.allEmployees', 'All Employees')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">
+                    {t('transfers.filters.allEmployees', 'All Employees')}
+                  </SelectItem>
+                  {employees.map((emp) => (
+                    <SelectItem key={emp.id} value={emp.id}>
+                      {emp.full_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Amount Min */}
             <div className="space-y-1.5">
               <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
-                {t('transfers.filters.minAmount', 'Min Amount')}
+                {t('transfers.filters.minAmount', 'Min Amount')}{' '}
+                <span className="normal-case text-black/25">{baseCurrency}</span>
               </label>
               <Input
                 type="text"
@@ -557,7 +720,8 @@ export function TransfersTable({
             {/* Amount Max */}
             <div className="space-y-1.5">
               <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">
-                {t('transfers.filters.maxAmount', 'Max Amount')}
+                {t('transfers.filters.maxAmount', 'Max Amount')}{' '}
+                <span className="normal-case text-black/25">{baseCurrency}</span>
               </label>
               <Input
                 type="text"
@@ -641,108 +805,238 @@ export function TransfersTable({
           />
         ) : (
           <>
+            {/* Bulk toolbar */}
+            {selectedIds.size > 0 && (
+              <div className="flex items-center gap-2 rounded-lg border border-black/10 bg-black/[0.03] px-3 py-2">
+                <span className="text-xs font-medium text-black/50">
+                  {t('transfers.bulk.selected', '{{count}} selected', { count: selectedIds.size })}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 gap-1 px-2.5 text-xs"
+                  onClick={handleExportCsv}
+                >
+                  {t('transfers.bulk.exportCsv', 'Export CSV')}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 gap-1 px-2.5 text-xs"
+                  onClick={() => setShowBulkEdit(true)}
+                >
+                  {t('transfers.bulk.edit', 'Edit')}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 gap-1 px-2 text-xs text-black/40 hover:text-black/70"
+                  onClick={() => setSelectedIds(new Set())}
+                >
+                  {t('transfers.bulk.clear', 'Clear')}
+                </Button>
+              </div>
+            )}
+
             {/* Date-grouped cards */}
-            {groups.map((group) => (
-              <div
-                key={group.dateKey}
-                className="overflow-hidden rounded-xl border border-black/10"
-              >
-                {/* Date header */}
-                <div className="flex items-center justify-between bg-black/[0.02] px-4 py-2.5">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-sm font-semibold text-black/70">{group.label}</span>
-                    <Tag variant="default" className="h-5 text-xs">
-                      {dateCounts[group.dateKey] ?? group.transfers.length}{' '}
-                      {t('transfers.summary.transfersLabel')}
-                    </Tag>
+            {groups.map((group) => {
+              const groupNet = group.transfers.reduce((sum, t) => {
+                const typN = t.type?.name?.toLowerCase() ?? ''
+                if (typN.includes('blok') || typN.includes('blocked')) return sum
+                return sum + (t.amount_try ?? t.amount ?? 0)
+              }, 0)
+
+              return (
+                <div
+                  key={group.dateKey}
+                  className="overflow-hidden rounded-xl border border-black/10"
+                >
+                  {/* Date header */}
+                  <div className="flex items-center justify-between bg-black/[0.02] px-4 py-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-sm font-semibold text-black/70">{group.label}</span>
+                      <Tag variant="default" className="h-5 text-xs">
+                        {dateCounts[group.dateKey] ?? group.transfers.length}{' '}
+                        {t('transfers.summary.transfersLabel')}
+                      </Tag>
+                      <span
+                        className={`font-mono text-xs font-medium tabular-nums ${groupNet >= 0 ? 'text-green' : 'text-red'}`}
+                      >
+                        {groupNet >= 0 ? '+' : '−'}
+                        {fmtCompact(Math.abs(groupNet))}
+                      </span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 gap-1.5 px-2.5 text-xs font-medium text-black/40 hover:text-black/70"
+                      onClick={() => handleOpenSummary(group)}
+                    >
+                      <ChartBar size={14} />
+                      {t('transfers.summary.label')}
+                    </Button>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 gap-1.5 px-2.5 text-xs font-medium text-black/40 hover:text-black/70"
-                    onClick={() => handleOpenSummary(group)}
-                  >
-                    <ChartBar size={14} />
-                    {t('transfers.summary.label')}
-                  </Button>
-                </div>
 
-                {/* Table for this date group */}
-                {/* Table header always renders normally */}
-                <Table cardOnMobile>
-                  <TableHeader>
-                    <TableRow className="bg-black/[0.015] hover:bg-black/[0.015]">
-                      <TableHead className={TH_CLASS}>{t('transfers.columns.fullName')}</TableHead>
-                      <TableHead className={TH_CLASS}>
-                        {t('transfers.columns.paymentMethod')}
-                      </TableHead>
-                      <TableHead className={TH_CLASS}>{t('transfers.columns.category')}</TableHead>
-                      <TableHead className={`${TH_CLASS} text-right`}>
-                        {t('transfers.columns.amount')}
-                      </TableHead>
-                      <TableHead className={`${TH_CLASS} text-right`}>
-                        {t('transfers.columns.commission')}
-                      </TableHead>
-                      <TableHead className={`${TH_CLASS} text-right`}>
-                        {t('transfers.columns.net')}
-                      </TableHead>
-                      <TableHead className={TH_CLASS}>{t('transfers.columns.currency')}</TableHead>
-                      <TableHead className={TH_CLASS}>{t('transfers.columns.psp')}</TableHead>
-                      <TableHead className={TH_CLASS}>{t('transfers.columns.type')}</TableHead>
-                      <TableHead className="w-20 px-2" />
-                    </TableRow>
-                  </TableHeader>
+                  {/* Table for this date group */}
+                  {/* Table header always renders normally */}
+                  <Table cardOnMobile>
+                    <TableHeader>
+                      <TableRow className="bg-black/[0.015] hover:bg-black/[0.015]">
+                        {selectionMode && (
+                          <TableHead className="w-4 pl-3 pr-1">
+                            <input
+                              type="checkbox"
+                              checked={allSelected}
+                              onChange={toggleAll}
+                              className="size-3.5 cursor-pointer rounded border-black/20"
+                            />
+                          </TableHead>
+                        )}
+                        <TableHead className={TH_CLASS}>
+                          {t('transfers.columns.fullName')}
+                        </TableHead>
+                        <TableHead className={TH_CLASS}>
+                          {t('transfers.columns.paymentMethod')}
+                        </TableHead>
+                        <TableHead className={TH_CLASS}>
+                          {t('transfers.columns.category')}
+                        </TableHead>
+                        <TableHead className={`${TH_CLASS} text-right`}>
+                          {t('transfers.columns.amount')}
+                        </TableHead>
+                        <TableHead className={`${TH_CLASS} text-right`}>
+                          {t('transfers.columns.commission')}
+                        </TableHead>
+                        <TableHead className={`${TH_CLASS} text-right`}>
+                          {t('transfers.columns.net')}
+                        </TableHead>
+                        <TableHead className={`${TH_CLASS} text-right`}>
+                          {t('transfers.table.netUsd', 'Net USD')}
+                        </TableHead>
+                        <TableHead className={TH_CLASS}>
+                          {t('transfers.columns.currency')}
+                        </TableHead>
+                        <TableHead className={TH_CLASS}>{t('transfers.columns.psp')}</TableHead>
+                        <TableHead className={TH_CLASS}>{t('transfers.columns.type')}</TableHead>
+                        <TableHead className="w-20 px-2" />
+                      </TableRow>
+                    </TableHeader>
 
-                  {/* Use virtual scrolling for large groups, standard body otherwise */}
-                  {group.transfers.length > VIRTUAL_THRESHOLD ? null : (
-                    <TableBody className="divide-y divide-black/[0.04]">
-                      {group.transfers.map((row) => (
+                    {/* Use virtual scrolling for large groups, standard body otherwise */}
+                    {group.transfers.length > VIRTUAL_THRESHOLD ? null : (
+                      <TableBody className="divide-y divide-black/[0.04]">
+                        {group.transfers.map((row) => (
+                          <TransferRowItem
+                            key={row.id}
+                            row={row}
+                            lang={lang}
+                            isSelected={selectionMode ? selectedIds.has(row.id) : undefined}
+                            onToggleSelect={
+                              selectionMode
+                                ? () =>
+                                    setSelectedIds((prev) => {
+                                      const next = new Set(prev)
+                                      if (next.has(row.id)) next.delete(row.id)
+                                      else next.add(row.id)
+                                      return next
+                                    })
+                                : undefined
+                            }
+                            onView={handleView}
+                            onEdit={onEdit}
+                            onDelete={onDelete}
+                            onAudit={handleAudit}
+                          />
+                        ))}
+                      </TableBody>
+                    )}
+                  </Table>
+
+                  {/* Virtual body renders outside the <table> above with its own scroll container */}
+                  {group.transfers.length > VIRTUAL_THRESHOLD && (
+                    <VirtualTableBody<TransferRow>
+                      items={group.transfers}
+                      rowHeight={ROW_HEIGHT_PX}
+                      maxHeight={VIRTUAL_MAX_HEIGHT}
+                      overscan={5}
+                      tbodyClassName="divide-y divide-black/[0.04]"
+                      renderRow={(row) => (
                         <TransferRowItem
                           key={row.id}
                           row={row}
                           lang={lang}
+                          isSelected={selectionMode ? selectedIds.has(row.id) : undefined}
+                          onToggleSelect={
+                            selectionMode
+                              ? () =>
+                                  setSelectedIds((prev) => {
+                                    const next = new Set(prev)
+                                    if (next.has(row.id)) next.delete(row.id)
+                                    else next.add(row.id)
+                                    return next
+                                  })
+                              : undefined
+                          }
                           onView={handleView}
                           onEdit={onEdit}
                           onDelete={onDelete}
                           onAudit={handleAudit}
                         />
-                      ))}
-                    </TableBody>
+                      )}
+                    />
                   )}
-                </Table>
-
-                {/* Virtual body renders outside the <table> above with its own scroll container */}
-                {group.transfers.length > VIRTUAL_THRESHOLD && (
-                  <VirtualTableBody<TransferRow>
-                    items={group.transfers}
-                    rowHeight={ROW_HEIGHT_PX}
-                    maxHeight={VIRTUAL_MAX_HEIGHT}
-                    overscan={5}
-                    tbodyClassName="divide-y divide-black/[0.04]"
-                    renderRow={(row) => (
-                      <TransferRowItem
-                        key={row.id}
-                        row={row}
-                        lang={lang}
-                        onView={handleView}
-                        onEdit={onEdit}
-                        onDelete={onDelete}
-                        onAudit={handleAudit}
-                      />
-                    )}
-                  />
-                )}
-              </div>
-            ))}
+                </div>
+              )
+            })}
 
             {/* Pagination footer */}
             {(totalPages > 1 || total > 0) && (
-              <div className="flex items-center justify-between rounded-lg border border-black/10 bg-black/[0.015] px-4 py-2">
-                <span className="text-xs tabular-nums text-black/40">
-                  {from}–{to} / {total}
-                </span>
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-black/10 bg-black/[0.015] px-4 py-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs tabular-nums text-black/40">
+                    {isLoadMoreMode ? `${transfers.length} / ${total}` : `${from}–${to} / ${total}`}
+                  </span>
+                  {/* Page size selector */}
+                  <Select
+                    value={String(pageSize)}
+                    onValueChange={(v) => {
+                      onPageSizeChange(Number(v))
+                      onPageChange(1)
+                      setIsLoadMoreMode(false)
+                    }}
+                  >
+                    <SelectTrigger selectSize="sm" className="h-7 w-16 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="25">25</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {/* Load More toggle */}
+                  <Button
+                    variant={isLoadMoreMode ? 'filled' : 'outline'}
+                    size="sm"
+                    className="h-7 px-2.5 text-xs"
+                    onClick={() => {
+                      if (isLoadMoreMode) {
+                        setIsLoadMoreMode(false)
+                        onPageChange(1)
+                      } else {
+                        loadMore()
+                      }
+                    }}
+                  >
+                    {isLoadMoreMode
+                      ? hasMore
+                        ? t('transfers.pagination.loadMore', 'Load More')
+                        : t('transfers.pagination.allLoaded', 'All Loaded')
+                      : t('transfers.pagination.loadMoreMode', 'Load More')}
+                  </Button>
+                </div>
 
-                {totalPages > 1 && (
+                {!isLoadMoreMode && totalPages > 1 && (
                   <Pagination className="mx-0 w-auto">
                     <PaginationContent>
                       <PaginationItem>
@@ -781,6 +1075,17 @@ export function TransfersTable({
                     </PaginationContent>
                   </Pagination>
                 )}
+
+                {isLoadMoreMode && hasMore && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-3 text-xs"
+                    onClick={loadMore}
+                  >
+                    {t('transfers.pagination.loadMore', 'Load More')}
+                  </Button>
+                )}
               </div>
             )}
           </>
@@ -797,7 +1102,6 @@ export function TransfersTable({
         onClose={() => dispatch({ type: 'CLOSE_SUMMARY' })}
         onSaveRate={handleSaveRate}
         onResetRate={handleResetRate}
-        securityPin={SECURITY_PIN}
       />
 
       {/* Detail Sheet */}
@@ -813,6 +1117,76 @@ export function TransfersTable({
         open={state.auditRow !== null}
         onClose={() => dispatch({ type: 'CLOSE_AUDIT' })}
       />
+
+      {/* Bulk Edit Dialog */}
+      <Dialog open={showBulkEdit} onOpenChange={(open) => !open && setShowBulkEdit(false)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t('transfers.bulk.editTitle', 'Edit Selected Transfers')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-black/50">
+              {t('transfers.bulk.editDescription', '{{count}} transfers will be updated', {
+                count: selectedIds.size,
+              })}
+            </p>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">
+                {t('transfers.bulk.editPsp', 'Change PSP')}
+              </label>
+              <Select
+                value={bulkPspId ?? '__none__'}
+                onValueChange={(v) => setBulkPspId(v === '__none__' ? null : v)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={t('transfers.bulk.keepExisting', 'Keep existing')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">
+                    {t('transfers.bulk.keepExisting', 'Keep existing')}
+                  </SelectItem>
+                  {lookupData.psps.map((psp) => (
+                    <SelectItem key={psp.id} value={psp.id}>
+                      {psp.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">
+                {t('transfers.bulk.editType', 'Change Type')}
+              </label>
+              <Select
+                value={bulkTypeId ?? '__none__'}
+                onValueChange={(v) => setBulkTypeId(v === '__none__' ? null : v)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={t('transfers.bulk.keepExisting', 'Keep existing')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">
+                    {t('transfers.bulk.keepExisting', 'Keep existing')}
+                  </SelectItem>
+                  {lookupData.transferTypes.map((type: TransferType) => (
+                    <SelectItem key={type.id} value={type.id}>
+                      {type.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBulkEdit(false)}>
+              {t('transfers.bulk.cancel', 'Cancel')}
+            </Button>
+            <Button variant="filled" onClick={handleBulkEditSave}>
+              {t('transfers.bulk.saveChanges', 'Save Changes')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

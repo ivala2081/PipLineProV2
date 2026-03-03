@@ -7,6 +7,7 @@ import { entryFormSchema, type EntryFormValues } from '@/schemas/accountingSchem
 import type { AccountingEntry } from '@/lib/database.types'
 import { formatAmount, parseAmount, numberToDisplay, amountPlaceholder } from '@/lib/formatAmount'
 import { useHrEmployeesQuery } from '@/hooks/queries/useHrQuery'
+import { useOrganization } from '@/app/providers/OrganizationProvider'
 import {
   Dialog,
   DialogContent,
@@ -37,6 +38,13 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
   const lang = (i18n.language === 'tr' ? 'tr' : 'en') as 'tr' | 'en'
   const isEditing = !!entry
   const [amountDisplay, setAmountDisplay] = useState('')
+
+  const { currentOrg } = useOrganization()
+  const baseCurrency = currentOrg?.base_currency ?? 'USD'
+  const secondaryCurrency = baseCurrency === 'USD' ? 'EUR' : 'USD'
+  const currencySlots = [baseCurrency, secondaryCurrency, 'USDT'].filter(
+    (c, i, arr) => arr.indexOf(c) === i,
+  )
 
   // For employee selector in advance entries
   const { data: employees = [] } = useHrEmployeesQuery()
@@ -278,9 +286,11 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="USDT">USDT</SelectItem>
-                  <SelectItem value="TL">TL</SelectItem>
-                  <SelectItem value="USD">USD</SelectItem>
+                  {currencySlots.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

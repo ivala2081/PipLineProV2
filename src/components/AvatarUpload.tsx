@@ -1,14 +1,23 @@
 import { useRef, useState, useEffect } from 'react'
-import { Camera, Upload, Trash } from '@phosphor-icons/react'
+import { Camera, Upload, Trash, ShieldStar, UserRectangle } from '@phosphor-icons/react'
 import { Avatar, AvatarImage, AvatarFallback } from '@ds'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/useToast'
 import { ImageCropperDialog } from './ImageCropperDialog'
 
+type UserRole = 'god' | 'admin' | 'manager' | 'operation'
+
+const uploadIconSizes = { sm: 28, md: 40, lg: 52, xl: 64 }
+
+function getRoleIcon(role?: UserRole | null) {
+  return role === 'god' || role === 'admin' ? ShieldStar : UserRectangle
+}
+
 interface AvatarUploadProps {
   userId: string
   currentAvatarUrl: string | null
-  fallbackText: string
+  fallbackText?: string
+  role?: UserRole | null
   onUploadSuccess: (url: string) => void
   onRemoveSuccess: () => void
   size?: 'sm' | 'md' | 'lg' | 'xl'
@@ -22,22 +31,16 @@ const sizeClasses = {
   xl: 'size-40',
 }
 
-const sizeTextClasses = {
-  sm: 'text-xl',
-  md: 'text-3xl',
-  lg: 'text-4xl',
-  xl: 'text-5xl',
-}
-
 export function AvatarUpload({
   userId,
   currentAvatarUrl,
-  fallbackText,
+  role,
   onUploadSuccess,
   onRemoveSuccess,
   size = 'lg',
   editable = true,
 }: AvatarUploadProps) {
+  const Icon = getRoleIcon(role)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [isRemoving, setIsRemoving] = useState(false)
@@ -238,10 +241,8 @@ export function AvatarUpload({
         className={`${sizeClasses[size]} rounded-3xl border-[6px] border-bg1 bg-white shadow-xl`}
       >
         {currentAvatarUrl && <AvatarImage src={currentAvatarUrl} className="rounded-3xl" />}
-        <AvatarFallback
-          className={`rounded-3xl bg-gradient-to-br from-black/5 to-black/10 ${sizeTextClasses[size]} font-bold text-black/60`}
-        >
-          {fallbackText}
+        <AvatarFallback className="rounded-3xl bg-gradient-to-br from-black/5 to-black/10">
+          <Icon size={uploadIconSizes[size]} weight="fill" className="text-black/35" />
         </AvatarFallback>
       </Avatar>
 

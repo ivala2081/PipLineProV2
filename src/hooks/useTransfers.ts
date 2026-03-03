@@ -47,6 +47,8 @@ export interface TransferFormData {
   category_id: string
   raw_amount: number
   exchange_rate: number
+  /** For custom (non-slot) currencies: the USD→base rate used to compute amount_usd. */
+  usd_to_base_rate?: number
   currency: Currency
   type_id: string
   crm_id?: string
@@ -92,20 +94,32 @@ export function computeTransfer(
   rawAmount: number,
   category: CategoryForTransfer,
   exchangeRate: number,
-  currency: Currency,
+  currency: Currency | string,
   commissionRate = 0,
   typeId?: string,
+  baseCurrency = 'TRY',
+  usdToBaseRate?: number,
 ) {
   const amount = category.is_deposit ? rawAmount : -rawAmount
 
   let amountTry: number
   let amountUsd: number
-  if (currency === 'TL') {
+  if (currency === baseCurrency) {
+    // Base currency (e.g. TRY): exchange_rate = USD→base
     amountTry = amount
     amountUsd = exchangeRate > 0 ? Math.round((amount / exchangeRate) * 100) / 100 : 0
-  } else {
+  } else if (currency === 'USD' || currency === 'USDT') {
+    // Standard USD-equivalent: exchange_rate = USD→base
     amountUsd = amount
     amountTry = exchangeRate > 0 ? Math.round(amount * exchangeRate * 100) / 100 : 0
+  } else {
+    // Custom currency (e.g. EUR): exchange_rate = custom→base
+    amountTry = exchangeRate > 0 ? Math.round(amount * exchangeRate * 100) / 100 : 0
+    // Derive USD amount from TRY ÷ USD→base (usdToBaseRate), else fall back to raw
+    amountUsd =
+      usdToBaseRate && usdToBaseRate > 0
+        ? Math.round((amountTry / usdToBaseRate) * 100) / 100
+        : Math.round(amount * 100) / 100
   }
 
   // Blocked transfers always carry zero commission regardless of PSP rate
@@ -192,6 +206,7 @@ export function useTransfers(): UseTransfersReturn {
         data.currency,
         psp.commission_rate,
         data.type_id,
+        currentOrg.base_currency ?? 'TRY',
       )
 
       const { error: insertError } = await supabase.from('transfers').insert({
@@ -236,6 +251,7 @@ export function useTransfers(): UseTransfersReturn {
         data.currency,
         psp.commission_rate,
         data.type_id,
+        currentOrg.base_currency ?? 'TRY',
       )
 
       const { error: updateError } = await supabase
