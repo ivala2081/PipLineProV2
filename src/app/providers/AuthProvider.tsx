@@ -33,6 +33,8 @@ interface AuthContextValue extends AuthState {
   updatePassword: (password: string) => Promise<{ error: AuthError | null }>
   /** Re-fetch the profile from the database (e.g. after role change) */
   refreshProfile: () => Promise<void>
+  /** Force a Supabase session token refresh (e.g. after org switch) */
+  refreshToken: () => Promise<void>
 }
 
 /* ------------------------------------------------------------------ */
@@ -55,6 +57,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Counter to cancel stale profile fetches when user changes
   const profileFetchId = useRef(0)
+
+  // Track the last known system_role to detect role changes
+  const previousRoleRef = useRef<string | null>(null)
+
+  // Guard against infinite loops: profile fetch → role change → token refresh → auth state change → profile fetch
+  const isRefreshingTokenRef = useRef(false)
 
   /* ---- 1. Listen for auth state changes (user/session only) ------- */
   useEffect(() => {
@@ -118,7 +126,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         if (data && profileFetchId.current === currentFetchId) {
-          setState((prev) => ({ ...prev, profile: data as Profile }))
+          const profile = data as Profile
+          // Seed the previous role ref so refreshProfile() can detect changes
+          previousRoleRef.current = profile.system_role
+          setState((prev) => ({ ...prev, profile }))
           return
         }
 
@@ -238,12 +249,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data } = await supabase.from('profiles').select('*').eq('id', state.user.id).single()
       if (data) {
-        setState((prev) => ({ ...prev, profile: data as Profile }))
+        const newProfile = data as Profile
+        const oldRole = previousRoleRef.current
+        const newRole = newProfile.system_role
+
+        setState((prev) => ({ ...prev, profile: newProfile }))
+        previousRoleRef.current = newRole
+
+        // If the system_role changed since last fetch, rotate the session token
+        // so the JWT's custom claim (`user_role`) reflects the new role immediately.
+        if (oldRole !== null && oldRole !== newRole && !isRefreshingTokenRef.current) {
+          if (import.meta.env.DEV) {
+            console.debug(
+              '[AuthProvider] Role changed from',
+              oldRole,
+              'to',
+              newRole,
+              '— refreshing session token',
+            )
+          }
+          isRefreshingTokenRef.current = true
+          try {
+            await supabase.auth.refreshSession()
+          } catch (refreshErr) {
+            console.error('[AuthProvider] Token refresh after role change failed:', refreshErr)
+          } finally {
+            isRefreshingTokenRef.current = false
+          }
+        }
       }
     } catch (err) {
       console.error('[AuthProvider] refreshProfile failed:', err)
     }
   }, [state.user])
+
+  /** Force a Supabase session token refresh (e.g. after org switch). */
+  const refreshToken = useCallback(async () => {
+    if (isRefreshingTokenRef.current) return
+    isRefreshingTokenRef.current = true
+    try {
+      if (import.meta.env.DEV) {
+        console.debug('[AuthProvider] Forcing session token refresh')
+      }
+      await supabase.auth.refreshSession()
+    } catch (err) {
+      console.error('[AuthProvider] refreshToken failed:', err)
+    } finally {
+      isRefreshingTokenRef.current = false
+    }
+  }, [])
 
   /* ---- Render ---------------------------------------------------- */
 
@@ -255,6 +309,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     resetPassword,
     updatePassword,
     refreshProfile,
+    refreshToken,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

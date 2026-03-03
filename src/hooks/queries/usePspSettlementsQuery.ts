@@ -39,6 +39,8 @@ export function usePspSettlementsQuery(pspId: string | undefined): UsePspSettlem
       return (data as PspSettlement[]) ?? []
     },
     enabled: !!currentOrg && !!pspId,
+    staleTime: 10 * 60_000, // 10 min – settlements are admin-entered, change rarely
+    gcTime: 20 * 60_000,
   })
 
   const invalidate = () => {

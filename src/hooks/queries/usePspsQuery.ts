@@ -35,7 +35,8 @@ export function usePspsQuery() {
       return data as Psp[]
     },
     enabled: !!currentOrg,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 10 * 60_000, // 10 min – PSP list is admin-configured, rarely changes
+    gcTime: 20 * 60_000,
   })
 
   return {

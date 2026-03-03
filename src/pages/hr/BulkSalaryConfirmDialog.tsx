@@ -18,15 +18,7 @@ import {
 } from '@ds'
 import { useToast } from '@/hooks/useToast'
 import { useBulkSalaryPayoutMutation, type BulkSalaryPayoutItem } from '@/hooks/queries/useHrQuery'
-
-/* ------------------------------------------------------------------ */
-
-function fmtNum(n: number) {
-  return n.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
-}
-function fmtAmount(n: number, currency: 'TL' | 'USD' = 'TL') {
-  return fmtNum(n) + (currency === 'USD' ? ' $' : ' TL')
-}
+import { fmtNum, fmtAmount } from './utils/salaryCalculations'
 
 interface BulkSalaryConfirmDialogProps {
   open: boolean
@@ -112,7 +104,7 @@ export function BulkSalaryConfirmDialog({
             <>
               {/* Payment list */}
               <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
-                <Table>
+                <Table cardOnMobile>
                   <TableHeader>
                     <TableRow>
                       <TableHead>{lang === 'tr' ? 'Çalışan' : 'Employee'}</TableHead>
@@ -134,22 +126,30 @@ export function BulkSalaryConfirmDialog({
                   <TableBody>
                     {eligibleItems.map((item) => (
                       <TableRow key={item.employee_id}>
-                        <TableCell>
+                        <TableCell data-label={lang === 'tr' ? 'Çalışan' : 'Employee'}>
                           <div className="flex items-center gap-sm">
                             <span className="text-sm font-medium text-black">
                               {item.employee_name}
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell data-label={lang === 'tr' ? 'Açıklama' : 'Description'}>
                           <span className="text-sm text-black/60">{item.description}</span>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell
+                          data-label={lang === 'tr' ? 'Maaş' : 'Salary'}
+                          className="text-right"
+                        >
                           <span className="tabular-nums text-sm font-semibold text-green">
                             {fmtAmount(item.amount_tl, item.salary_currency ?? 'TL')}
                           </span>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell
+                          data-label={
+                            lang === 'tr' ? 'Sigorta Elden Ödeme' : 'Insurance Supplement'
+                          }
+                          className="text-right"
+                        >
                           {(item.supplement_tl ?? 0) > 0 ? (
                             <span className="tabular-nums text-sm font-semibold text-orange">
                               +{fmtAmount(item.supplement_tl, 'TL')}
@@ -158,7 +158,10 @@ export function BulkSalaryConfirmDialog({
                             <span className="text-xs text-black/25">—</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell
+                          data-label={lang === 'tr' ? 'Devam Kesintisi' : 'Absence Ded.'}
+                          className="text-right"
+                        >
                           {(item.attendance_deduction_tl ?? 0) > 0 ? (
                             <span className="tabular-nums text-sm font-semibold text-red">
                               -
@@ -171,7 +174,10 @@ export function BulkSalaryConfirmDialog({
                             <span className="text-xs text-black/25">—</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell
+                          data-label={lang === 'tr' ? 'İzin Kesintisi' : 'Leave Ded.'}
+                          className="text-right"
+                        >
                           {(item.unpaid_leave_deduction_tl ?? 0) > 0 ? (
                             <span className="tabular-nums text-sm font-semibold text-red">
                               -

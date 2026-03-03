@@ -49,7 +49,7 @@ const OrganizationActionsContext = createContext<OrganizationActionsContextValue
 /* ------------------------------------------------------------------ */
 
 export function OrganizationProvider({ children }: { children: ReactNode }) {
-  const { user, isGod, isLoading: authLoading } = useAuth()
+  const { user, isGod, isLoading: authLoading, refreshToken } = useAuth()
 
   const [state, setState] = useState<OrganizationState>({
     currentOrg: null,
@@ -187,16 +187,21 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
               currentOrg: org,
               membership: data as OrganizationMember | null,
             }))
+            // Rotate session token so JWT reflects the new org context
+            refreshToken()
           })
           .catch((err) => {
             console.error('[OrganizationProvider] Failed to fetch membership:', err)
             setState((prev) => ({ ...prev, currentOrg: org, membership: null }))
+            refreshToken()
           })
       } else {
         setState((prev) => ({ ...prev, currentOrg: org, membership: null }))
+        // Rotate session token so JWT reflects the new org context
+        refreshToken()
       }
     },
-    [], // Stable — reads from orgsRef
+    [refreshToken], // refreshToken is stable (no deps)
   )
 
   const refreshOrgs = useCallback(async () => {

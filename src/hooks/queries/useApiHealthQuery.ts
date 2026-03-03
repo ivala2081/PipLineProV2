@@ -9,7 +9,8 @@ export function useApiHealthQuery(enabled: boolean) {
     queryKey: queryKeys.apiHealth.status(),
     queryFn: checkApiHealth,
     enabled,
-    staleTime: 60_000,
+    staleTime: 10 * 60_000, // 10 min – health check results are stable
+    gcTime: 20 * 60_000,
     refetchOnWindowFocus: false,
     retry: 1,
   })
@@ -21,6 +22,7 @@ export function useUpdateSecretsMutation() {
   const { t } = useTranslation('pages')
 
   return useMutation({
+    meta: { suppressGlobalError: true },
     mutationFn: (secrets: { name: string; value: string }[]) => updateApiSecrets(secrets),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.apiHealth.all })

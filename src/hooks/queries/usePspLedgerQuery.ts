@@ -81,6 +81,8 @@ export function usePspLedgerQuery(pspId: string | undefined): UsePspLedgerReturn
       })
     },
     enabled: !!currentOrg && !!pspId,
+    staleTime: 3 * 60_000, // 3 min – PSP ledger changes moderately
+    gcTime: 10 * 60_000,
   })
 
   return {

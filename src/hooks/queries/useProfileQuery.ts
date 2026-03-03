@@ -37,5 +37,7 @@ export function useProfileQuery(userId: string) {
       }
     },
     enabled: !!userId,
+    staleTime: 10 * 60_000, // 10 min – user profile rarely changes
+    gcTime: 20 * 60_000,
   })
 }

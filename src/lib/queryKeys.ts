@@ -4,7 +4,9 @@ export const queryKeys = {
     lists: () => [...queryKeys.transfers.all, 'list'] as const,
     list: (orgId: string, page: number, filterDate?: string) =>
       [...queryKeys.transfers.lists(), { orgId, page, filterDate }] as const,
-    detail: (id: string) => [...queryKeys.transfers.all, 'detail', id] as const,
+    dateCounts: (orgId: string) => [...queryKeys.transfers.lists(), 'dateCounts', orgId] as const,
+    detail: (orgId: string, id: string) =>
+      [...queryKeys.transfers.all, 'detail', orgId, id] as const,
     audit: (transferId: string, page: number) =>
       [...queryKeys.transfers.all, 'audit', transferId, page] as const,
     monthlySummary: (orgId: string, year: number, month: number) =>
@@ -12,6 +14,8 @@ export const queryKeys = {
   },
   lookups: {
     all: ['lookups'] as const,
+    byTable: (table: string, orgId: string) => [...queryKeys.lookups.all, table, orgId] as const,
+    byTablePrefix: (table: string) => [...queryKeys.lookups.all, table] as const,
     psps: (orgId: string) => [...queryKeys.lookups.all, 'psps', orgId] as const,
     categories: (orgId: string) => [...queryKeys.lookups.all, 'categories', orgId] as const,
     paymentMethods: (orgId: string) => [...queryKeys.lookups.all, 'paymentMethods', orgId] as const,
@@ -32,6 +36,8 @@ export const queryKeys = {
     summary: (orgId: string) => [...queryKeys.accounting.all, 'summary', orgId] as const,
     reconciliation: (orgId: string, year: number, month: number) =>
       [...queryKeys.accounting.all, 'reconciliation', orgId, year, month] as const,
+    reconciliationPrev: (orgId: string, year: number, month: number) =>
+      [...queryKeys.accounting.all, 'reconciliation', orgId, year, month, 'prev'] as const,
     config: (orgId: string, year: number, month: number) =>
       [...queryKeys.accounting.all, 'config', orgId, year, month] as const,
   },
@@ -76,6 +82,8 @@ export const queryKeys = {
     all: ['uniPayment'] as const,
     balances: (pspId: string) => [...queryKeys.uniPayment.all, 'balances', pspId] as const,
     accounts: (pspId: string) => [...queryKeys.uniPayment.all, 'accounts', pspId] as const,
+    depositAddress: (pspId: string, accountId: string) =>
+      [...queryKeys.uniPayment.all, 'accounts', pspId, 'deposit', accountId] as const,
     transactions: (pspId: string, accountId: string, page: number) =>
       [...queryKeys.uniPayment.all, 'transactions', pspId, accountId, page] as const,
     invoices: (pspId: string, page: number) =>
@@ -91,5 +99,71 @@ export const queryKeys = {
   search: {
     all: ['search'] as const,
     query: (q: string) => ['search', q] as const,
+  },
+  dashboard: {
+    all: ['dashboard'] as const,
+    current: (orgId: string, period: string, from: string) =>
+      [...queryKeys.dashboard.all, 'current', orgId, period, from] as const,
+    previous: (orgId: string, period: string, from: string) =>
+      [...queryKeys.dashboard.all, 'previous', orgId, period, from] as const,
+    rateHistory: (orgId: string) => [...queryKeys.dashboard.all, 'rateHistory', orgId] as const,
+    recentTransfers: (orgId: string) =>
+      [...queryKeys.dashboard.all, 'recentTransfers', orgId] as const,
+    recentActivity: (orgId: string) =>
+      [...queryKeys.dashboard.all, 'recentActivity', orgId] as const,
+    pspMeta: (orgId: string) => [...queryKeys.dashboard.all, 'pspMeta', orgId] as const,
+    pspCommission: (orgId: string, from: string) =>
+      [...queryKeys.dashboard.all, 'pspCommission', orgId, from] as const,
+    prevPspCommission: (orgId: string, from: string) =>
+      [...queryKeys.dashboard.all, 'prevPspCommission', orgId, from] as const,
+  },
+  exchangeRate: {
+    all: ['exchangeRate'] as const,
+    byCurrency: (currency: string) => [...queryKeys.exchangeRate.all, currency] as const,
+  },
+  orgPin: {
+    all: ['orgPin'] as const,
+    has: (orgId: string) => [...queryKeys.orgPin.all, 'has', orgId] as const,
+  },
+  sessions: {
+    all: ['sessions'] as const,
+    loginHistory: (userId: string, limit: number, offset: number) =>
+      [...queryKeys.sessions.all, 'loginHistory', userId, limit, offset] as const,
+  },
+  security: {
+    all: ['security'] as const,
+    metrics: () => [...queryKeys.security.all, 'metrics'] as const,
+    failedLogins: () => [...queryKeys.security.all, 'failed-logins'] as const,
+    godAudit: () => [...queryKeys.security.all, 'god-audit'] as const,
+  },
+  hr: {
+    root: ['hr'] as const,
+    all: (orgId: string) => ['hr', orgId] as const,
+    employees: (orgId: string) => ['hr', orgId, 'employees'] as const,
+    employee: (orgId: string, id: string) => ['hr', orgId, 'employee', id] as const,
+    documents: (orgId: string, employeeId: string) =>
+      ['hr', orgId, 'documents', employeeId] as const,
+    bonusAgreements: (orgId: string) => ['hr', orgId, 'bonus-agreements'] as const,
+    bonusPayments: (orgId: string) => ['hr', orgId, 'bonus-payments'] as const,
+    variablePending: (orgId: string) => ['hr', orgId, 'variable-pending'] as const,
+    salaryPaymentsPrefix: (orgId: string) => ['hr', orgId, 'salary-payments'] as const,
+    salaryPayments: (orgId: string, year: number, month: number) =>
+      ['hr', orgId, 'salary-payments', year, month] as const,
+    allSalaryPayments: (orgId: string) => ['hr', orgId, 'all-salary-payments'] as const,
+    attendance: (orgId: string, date: string) => ['hr', orgId, 'attendance', date] as const,
+    attendanceAll: (orgId: string) => ['hr', orgId, 'attendance'] as const,
+    attendanceMonth: (orgId: string, year: number, month: number) =>
+      ['hr', orgId, 'attendance-month', year, month] as const,
+    autoBonusTransfers: (orgId: string, year: number, month: number) =>
+      ['hr', orgId, 'auto-bonus-transfers', year, month] as const,
+    mtConfig: (orgId: string) => ['hr', orgId, 'mt-config'] as const,
+    reConfig: (orgId: string) => ['hr', orgId, 're-config'] as const,
+    hrSettings: (orgId: string) => ['hr', orgId, 'settings'] as const,
+    leaves: (orgId: string) => ['hr', orgId, 'leaves'] as const,
+    leavesMonth: (orgId: string, year: number, month: number) =>
+      ['hr', orgId, 'leaves-month', year, month] as const,
+    leavesMonthAll: (orgId: string) => ['hr', orgId, 'leaves-month'] as const,
+    advances: (orgId: string, year: number, month: number) =>
+      ['hr', orgId, 'advances', year, month] as const,
   },
 } as const

@@ -31,7 +31,7 @@ export const PaginationLink: FC<PaginationLinkProps> = ({ className, isActive, .
     aria-current={isActive ? 'page' : undefined}
     variant={isActive ? 'filled' : 'borderless'}
     size="sm"
-    className={cn('h-8 w-8 p-0', className)}
+    className={cn('size-10 md:size-8 p-0', className)}
     {...props}
   />
 )
@@ -75,7 +75,7 @@ export const PaginationEllipsis: FC<PaginationEllipsisProps> = ({ className, ...
   return (
     <span
       aria-hidden
-      className={cn('flex h-9 w-9 items-center justify-center', className)}
+      className={cn('flex size-10 md:size-9 items-center justify-center', className)}
       {...props}
     >
       <DotsThree size={16} />

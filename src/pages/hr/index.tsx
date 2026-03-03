@@ -65,27 +65,23 @@ import { AttendanceTab } from './AttendanceTab'
 import { SalariesTab } from './SalariesTab'
 import { LeavesTab } from './LeavesTab'
 import { SettingsTab } from './SettingsTab'
+import { getRoleVariant } from './utils/hrConstants'
 import type { HrEmployeeRole } from '@/lib/database.types'
 
 /* ------------------------------------------------------------------ */
 /*  Role color mapping                                                  */
 /* ------------------------------------------------------------------ */
 
+const ROLE_LABEL_MAP: Partial<Record<HrEmployeeRole, string>> = {
+  'Project Management': 'Project Mgmt',
+  'Sales Development': 'Sales Dev',
+}
+
 function getRoleTag(role: HrEmployeeRole) {
-  const map: Record<
-    HrEmployeeRole,
-    { variant: 'blue' | 'purple' | 'green' | 'orange' | 'red' | 'cyan'; label: string }
-  > = {
-    Manager: { variant: 'blue', label: 'Manager' },
-    Marketing: { variant: 'purple', label: 'Marketing' },
-    Operation: { variant: 'green', label: 'Operation' },
-    'Retention': { variant: 'orange', label: 'Retention' },
-    'Project Management': { variant: 'cyan', label: 'Project Mgmt' },
-    'Social Media': { variant: 'purple', label: 'Social Media' },
-    'Sales Development': { variant: 'red', label: 'Sales Dev' },
-    Programmer: { variant: 'blue', label: 'Programmer' },
+  return {
+    variant: getRoleVariant(role),
+    label: ROLE_LABEL_MAP[role] ?? role,
   }
-  return map[role] ?? { variant: 'blue', label: role }
 }
 
 function EmployeeRow({
@@ -127,7 +123,7 @@ function EmployeeRow({
   return (
     <TableRow className="group border-b border-black/[0.06] last:border-0">
       {/* Name + Email */}
-      <TableCell className="py-3">
+      <TableCell className="py-3" data-label={lang === 'tr' ? 'Çalışan' : 'Employee'}>
         <p className="text-sm font-semibold text-black">{emp.full_name}</p>
         <div className="mt-0.5 flex items-center gap-1 text-xs text-black/50">
           <Envelope size={11} className="shrink-0 text-black/30" />
@@ -136,15 +132,20 @@ function EmployeeRow({
       </TableCell>
 
       {/* Role */}
-      <TableCell className="py-3">
+      <TableCell className="py-3" data-label={lang === 'tr' ? 'Rol' : 'Role'}>
         <Tag variant={roleInfo.variant}>{roleInfo.label}</Tag>
       </TableCell>
 
       {/* Salary */}
-      <TableCell className="py-3 tabular-nums text-sm text-black/70">{formattedSalary}</TableCell>
+      <TableCell
+        className="py-3 tabular-nums text-sm text-black/70"
+        data-label={lang === 'tr' ? 'Maaş' : 'Salary'}
+      >
+        {formattedSalary}
+      </TableCell>
 
       {/* Insurance */}
-      <TableCell className="py-3">
+      <TableCell className="py-3" data-label={lang === 'tr' ? 'Sigorta' : 'Insurance'}>
         {emp.is_insured ? (
           <div className="flex items-center gap-1">
             <Shield size={13} weight="fill" className="text-blue" />
@@ -161,7 +162,7 @@ function EmployeeRow({
       </TableCell>
 
       {/* Status */}
-      <TableCell className="py-3">
+      <TableCell className="py-3" data-label={lang === 'tr' ? 'Durum' : 'Status'}>
         {emp.is_active ? (
           <div className="flex items-center gap-1">
             <CheckCircle size={13} weight="fill" className="text-green" />
@@ -176,14 +177,23 @@ function EmployeeRow({
       </TableCell>
 
       {/* Hire Date */}
-      <TableCell className="py-3 tabular-nums text-xs text-black/60">{formattedDate}</TableCell>
+      <TableCell
+        className="py-3 tabular-nums text-xs text-black/60"
+        data-label={lang === 'tr' ? 'İşe Giriş' : 'Hire Date'}
+      >
+        {formattedDate}
+      </TableCell>
 
       {/* Actions */}
       {canManage && (
-        <TableCell className="py-3 text-right">
+        <TableCell className="py-3 text-right" isActions>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm" className="opacity-0 group-hover:opacity-100">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="md:opacity-0 md:group-hover:opacity-100"
+              >
                 <DotsThree size={18} weight="bold" />
               </Button>
             </DropdownMenuTrigger>
@@ -348,9 +358,7 @@ export function HrPage() {
           <TabsTrigger value="attendance">
             {lang === 'tr' ? 'Devam Takibi' : 'Attendance'}
           </TabsTrigger>
-          <TabsTrigger value="leaves">
-            {lang === 'tr' ? 'İzinler' : 'Leaves'}
-          </TabsTrigger>
+          <TabsTrigger value="leaves">{lang === 'tr' ? 'İzinler' : 'Leaves'}</TabsTrigger>
           {canManage && (
             <TabsTrigger value="settings">
               <GearSix size={14} className="mr-1" />
@@ -399,7 +407,7 @@ export function HrPage() {
                 </Grid>
 
                 {/* Payment schedule strip */}
-                <div className="flex flex-wrap items-center gap-x-6 gap-y-1 rounded-xl border border-black/[0.07] bg-bg1 px-4 py-2.5">
+                <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-6 gap-y-1 rounded-xl border border-black/[0.07] bg-bg1 px-4 py-2.5">
                   <div className="flex items-center gap-2">
                     <Money size={14} className="shrink-0 text-green" />
                     <span className="text-xs text-black/50">
@@ -434,8 +442,8 @@ export function HrPage() {
             )}
 
             {/* Filters */}
-            <div className="flex flex-wrap items-center gap-sm">
-              <div className="relative min-w-48 flex-1">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-sm">
+              <div className="relative w-full sm:min-w-48 flex-1">
                 <MagnifyingGlass
                   size={15}
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30"
@@ -447,11 +455,8 @@ export function HrPage() {
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
-              <div className="w-48">
-                <Select
-                  value={roleFilter}
-                  onValueChange={setRoleFilter}
-                >
+              <div className="w-full sm:w-48">
+                <Select value={roleFilter} onValueChange={setRoleFilter}>
                   <SelectTrigger>
                     <SelectValue
                       placeholder={lang === 'tr' ? 'Role göre filtrele' : 'Filter by role'}
@@ -550,7 +555,7 @@ export function HrPage() {
               />
             ) : (
               <div className="rounded-xl border border-black/[0.07] bg-bg1">
-                <Table>
+                <Table cardOnMobile>
                   <TableHeader>
                     <TableRow className="border-b border-black/[0.07]">
                       <TableHead className="text-xs font-medium text-black/40">

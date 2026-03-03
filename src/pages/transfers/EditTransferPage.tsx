@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { ArrowLeft } from '@phosphor-icons/react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { queryKeys } from '@/lib/queryKeys'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import type { TransferRow } from '@/hooks/useTransfers'
 import { useLookupQueries } from '@/hooks/queries/useLookupQueries'
@@ -26,7 +27,7 @@ export function EditTransferPage() {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ['transfer', id, currentOrg?.id],
+    queryKey: queryKeys.transfers.detail(currentOrg?.id ?? '', id ?? ''),
     queryFn: async () => {
       if (!id) throw new Error('No transfer ID')
       const { data, error } = await supabase

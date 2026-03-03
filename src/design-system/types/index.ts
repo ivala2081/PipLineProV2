@@ -43,7 +43,7 @@ export type Direction = 'horizontal' | 'vertical'
 /*  Navigation                                                        */
 /* ------------------------------------------------------------------ */
 
-export type BreadcrumbItem = {
+export type BreadcrumbItemData = {
   label: string
   id: string
   active?: boolean

@@ -2,13 +2,17 @@ import type { ComponentProps, FC, FormEvent } from 'react'
 import { cn } from '@ds/utils'
 import { Label } from '../Label'
 
-export type FormProps = ComponentProps<'form'>
+export type FormProps = Omit<ComponentProps<'form'>, 'onSubmit'> & {
+  onSubmit?: (e: FormEvent<HTMLFormElement>) => void
+}
 export const Form: FC<FormProps> = ({ className, onSubmit, ...props }) => {
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     onSubmit?.(e)
   }
-  return <form className={cn('space-y-6', className)} onSubmit={handleSubmit} {...props} />
+  return (
+    <form className={cn('space-y-4 md:space-y-6', className)} onSubmit={handleSubmit} {...props} />
+  )
 }
 Form.displayName = 'Form'
 

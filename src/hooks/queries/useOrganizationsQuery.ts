@@ -38,5 +38,7 @@ export function useOrganizationsQuery() {
       return orgsWithCounts
     },
     enabled: !!user,
+    staleTime: 10 * 60_000, // 10 min – org list rarely changes
+    gcTime: 20 * 60_000,
   })
 }

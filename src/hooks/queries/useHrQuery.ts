@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { localDayStart, localDayEnd } from '@/lib/date'
+import { queryKeys } from '@/lib/queryKeys'
 import type {
   HrEmployeeRole,
   HrDocumentType,
@@ -194,8 +195,14 @@ export type HrSettings = {
 
 export const DEFAULT_HR_SETTINGS: HrSettings = {
   roles: [
-    'Manager', 'Marketing', 'Operation', 'Retention',
-    'Project Management', 'Social Media', 'Sales Development', 'Programmer',
+    'Manager',
+    'Marketing',
+    'Operation',
+    'Retention',
+    'Project Management',
+    'Social Media',
+    'Sales Development',
+    'Programmer',
   ],
   supplement_tl: 4000,
   absence_full_day_divisor: 30,
@@ -249,28 +256,8 @@ export const DEFAULT_MT_CONFIG: MtConfig = {
   monthly_prize_min_sales: 20,
 }
 
-export const hrKeys = {
-  all: (orgId: string) => ['hr', orgId] as const,
-  employees: (orgId: string) => ['hr', orgId, 'employees'] as const,
-  employee: (orgId: string, id: string) => ['hr', orgId, 'employee', id] as const,
-  documents: (orgId: string, employeeId: string) => ['hr', orgId, 'documents', employeeId] as const,
-  bonusAgreements: (orgId: string) => ['hr', orgId, 'bonus-agreements'] as const,
-  bonusPayments: (orgId: string) => ['hr', orgId, 'bonus-payments'] as const,
-  variablePending: (orgId: string) => ['hr', orgId, 'variable-pending'] as const,
-  salaryPayments: (orgId: string, year: number, month: number) =>
-    ['hr', orgId, 'salary-payments', year, month] as const,
-  attendance: (orgId: string, date: string) => ['hr', orgId, 'attendance', date] as const,
-  attendanceMonth: (orgId: string, year: number, month: number) =>
-    ['hr', orgId, 'attendance-month', year, month] as const,
-  autoBonusTransfers: (orgId: string, year: number, month: number) =>
-    ['hr', orgId, 'auto-bonus-transfers', year, month] as const,
-  mtConfig: (orgId: string) => ['hr', orgId, 'mt-config'] as const,
-  reConfig: (orgId: string) => ['hr', orgId, 're-config'] as const,
-  hrSettings: (orgId: string) => ['hr', orgId, 'settings'] as const,
-  leaves: (orgId: string) => ['hr', orgId, 'leaves'] as const,
-  leavesMonth: (orgId: string, year: number, month: number) =>
-    ['hr', orgId, 'leaves-month', year, month] as const,
-}
+/** @deprecated Use `queryKeys.hr` from '@/lib/queryKeys' instead */
+export const hrKeys = queryKeys.hr
 
 /* ------------------------------------------------------------------ */
 /*  Hooks                                                               */
@@ -281,7 +268,7 @@ export function useHrEmployeesQuery() {
   const orgId = currentOrg?.id ?? ''
 
   return useQuery({
-    queryKey: hrKeys.employees(orgId),
+    queryKey: queryKeys.hr.employees(orgId),
     queryFn: async () => {
       const { data, error } = await supabase
         .from('hr_employees')
@@ -293,6 +280,8 @@ export function useHrEmployeesQuery() {
       return (data ?? []) as HrEmployee[]
     },
     enabled: !!orgId,
+    staleTime: 10 * 60_000, // 10 min – employee list rarely changes
+    gcTime: 20 * 60_000,
   })
 }
 
@@ -301,7 +290,7 @@ export function useHrEmployeeDocumentsQuery(employeeId: string) {
   const orgId = currentOrg?.id ?? ''
 
   return useQuery({
-    queryKey: hrKeys.documents(orgId, employeeId),
+    queryKey: queryKeys.hr.documents(orgId, employeeId),
     queryFn: async () => {
       const { data, error } = await supabase
         .from('hr_employee_documents')
@@ -313,6 +302,8 @@ export function useHrEmployeeDocumentsQuery(employeeId: string) {
       return (data ?? []) as HrDocument[]
     },
     enabled: !!orgId && !!employeeId,
+    staleTime: 10 * 60_000, // 10 min – documents rarely change
+    gcTime: 20 * 60_000,
   })
 }
 
@@ -337,7 +328,7 @@ export function useHrMutations() {
       return data as HrEmployee
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: hrKeys.employees(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.employees(orgId) })
     },
   })
 
@@ -354,7 +345,7 @@ export function useHrMutations() {
       return data as HrEmployee
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: hrKeys.employees(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.employees(orgId) })
     },
   })
 
@@ -368,7 +359,7 @@ export function useHrMutations() {
       if (error) throw error
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: hrKeys.employees(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.employees(orgId) })
     },
   })
 
@@ -417,7 +408,7 @@ export function useHrDocumentMutations(employeeId: string) {
       return data as HrDocument
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: hrKeys.documents(orgId, employeeId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.documents(orgId, employeeId) })
     },
   })
 
@@ -436,7 +427,7 @@ export function useHrDocumentMutations(employeeId: string) {
       if (error) throw error
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: hrKeys.documents(orgId, employeeId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.documents(orgId, employeeId) })
     },
   })
 
@@ -452,7 +443,7 @@ export function useBonusAgreementsQuery() {
   const orgId = currentOrg?.id ?? ''
 
   return useQuery({
-    queryKey: hrKeys.bonusAgreements(orgId),
+    queryKey: queryKeys.hr.bonusAgreements(orgId),
     queryFn: async () => {
       const { data, error } = await supabase
         .from('hr_bonus_agreements')
@@ -464,6 +455,8 @@ export function useBonusAgreementsQuery() {
       return (data ?? []) as HrBonusAgreement[]
     },
     enabled: !!orgId,
+    staleTime: 10 * 60_000, // 10 min – agreements change rarely
+    gcTime: 20 * 60_000,
   })
 }
 
@@ -472,7 +465,7 @@ export function useBonusPaymentsQuery() {
   const orgId = currentOrg?.id ?? ''
 
   return useQuery({
-    queryKey: hrKeys.bonusPayments(orgId),
+    queryKey: queryKeys.hr.bonusPayments(orgId),
     queryFn: async () => {
       const { data, error } = await supabase
         .from('hr_bonus_payments')
@@ -484,6 +477,8 @@ export function useBonusPaymentsQuery() {
       return (data ?? []) as HrBonusPayment[]
     },
     enabled: !!orgId,
+    staleTime: 5 * 60_000, // 5 min – payments change moderately
+    gcTime: 10 * 60_000,
   })
 }
 
@@ -493,7 +488,7 @@ export function useVariablePendingQuery() {
   const orgId = currentOrg?.id ?? ''
 
   return useQuery({
-    queryKey: hrKeys.variablePending(orgId),
+    queryKey: queryKeys.hr.variablePending(orgId),
     queryFn: async () => {
       const { data, error } = await supabase
         .from('hr_bonus_payments')
@@ -510,6 +505,8 @@ export function useVariablePendingQuery() {
       return (data ?? []) as HrBonusPayment[]
     },
     enabled: !!orgId,
+    staleTime: 5 * 60_000, // 5 min – pending payments change moderately
+    gcTime: 10 * 60_000,
   })
 }
 
@@ -539,7 +536,7 @@ export function useBonusMutations() {
       return data as HrBonusAgreement
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: hrKeys.bonusAgreements(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusAgreements(orgId) })
     },
   })
 
@@ -556,7 +553,7 @@ export function useBonusMutations() {
       return data as HrBonusAgreement
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: hrKeys.bonusAgreements(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusAgreements(orgId) })
     },
   })
 
@@ -570,8 +567,8 @@ export function useBonusMutations() {
       if (error) throw error
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: hrKeys.bonusAgreements(orgId) })
-      void queryClient.invalidateQueries({ queryKey: hrKeys.bonusPayments(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusAgreements(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusPayments(orgId) })
     },
   })
 
@@ -625,8 +622,8 @@ export function useBonusMutations() {
       return payment as HrBonusPayment
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: hrKeys.bonusPayments(orgId) })
-      void queryClient.invalidateQueries({ queryKey: ['accounting'] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusPayments(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.accounting.all })
     },
   })
 
@@ -665,8 +662,8 @@ export function useBonusMutations() {
       return data as HrBonusPayment
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: hrKeys.variablePending(orgId) })
-      void queryClient.invalidateQueries({ queryKey: hrKeys.bonusPayments(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.variablePending(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusPayments(orgId) })
     },
   })
 
@@ -706,8 +703,8 @@ export function useBonusMutations() {
       if (entryError) throw entryError
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: hrKeys.bonusPayments(orgId) })
-      void queryClient.invalidateQueries({ queryKey: ['accounting'] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusPayments(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.accounting.all })
     },
   })
 
@@ -721,12 +718,20 @@ export function useBonusMutations() {
       if (error) throw error
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: hrKeys.bonusPayments(orgId) })
-      void queryClient.invalidateQueries({ queryKey: hrKeys.variablePending(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusPayments(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.variablePending(orgId) })
     },
   })
 
-  return { createAgreement, updateAgreement, deleteAgreement, createPayment, updatePayment, createVariablePending, deletePayment }
+  return {
+    createAgreement,
+    updateAgreement,
+    deleteAgreement,
+    createPayment,
+    updatePayment,
+    createVariablePending,
+    deletePayment,
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -738,7 +743,7 @@ export function useMtConfigQuery() {
   const orgId = currentOrg?.id ?? ''
 
   return useQuery({
-    queryKey: hrKeys.mtConfig(orgId),
+    queryKey: queryKeys.hr.mtConfig(orgId),
     queryFn: async () => {
       const { data } = await supabase
         .from('hr_mt_config')
@@ -758,6 +763,8 @@ export function useMtConfigQuery() {
       } as MtConfig
     },
     enabled: !!orgId,
+    staleTime: 10 * 60_000, // 10 min – config rarely changes
+    gcTime: 20 * 60_000,
   })
 }
 
@@ -785,7 +792,7 @@ export function useUpdateMtConfigMutation() {
       if (error) throw error
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: hrKeys.mtConfig(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.mtConfig(orgId) })
     },
   })
 }
@@ -799,7 +806,7 @@ export function useReConfigQuery() {
   const orgId = currentOrg?.id ?? ''
 
   return useQuery({
-    queryKey: hrKeys.reConfig(orgId),
+    queryKey: queryKeys.hr.reConfig(orgId),
     queryFn: async () => {
       const { data } = await supabase
         .from('hr_re_config')
@@ -813,6 +820,8 @@ export function useReConfigQuery() {
       } as ReConfig
     },
     enabled: !!orgId,
+    staleTime: 10 * 60_000, // 10 min – config rarely changes
+    gcTime: 20 * 60_000,
   })
 }
 
@@ -834,7 +843,7 @@ export function useUpdateReConfigMutation() {
       if (error) throw error
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: hrKeys.reConfig(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.reConfig(orgId) })
     },
   })
 }
@@ -862,7 +871,7 @@ export function useAutoBonusTransfersQuery(year: number, month: number) {
   const dateTo = localDayEnd(`${monthStr}-${String(lastDay).padStart(2, '0')}`)
 
   return useQuery({
-    queryKey: hrKeys.autoBonusTransfers(orgId, year, month),
+    queryKey: queryKeys.hr.autoBonusTransfers(orgId, year, month),
     queryFn: async () => {
       const { data, error } = await supabase
         .from('transfers')
@@ -877,6 +886,8 @@ export function useAutoBonusTransfersQuery(year: number, month: number) {
       return (data ?? []) as AutoBonusTransfer[]
     },
     enabled: !!orgId,
+    staleTime: 5 * 60_000, // 5 min – changes when transfers are created
+    gcTime: 10 * 60_000,
   })
 }
 
@@ -889,7 +900,7 @@ export function useHrAttendanceQuery(date: string) {
   const orgId = currentOrg?.id ?? ''
 
   return useQuery({
-    queryKey: hrKeys.attendance(orgId, date),
+    queryKey: queryKeys.hr.attendance(orgId, date),
     queryFn: async () => {
       const { data, error } = await supabase
         .from('hr_attendance')
@@ -900,6 +911,8 @@ export function useHrAttendanceQuery(date: string) {
       return (data ?? []) as HrAttendance[]
     },
     enabled: !!orgId && !!date,
+    staleTime: 60_000, // 1 min – attendance is tracked in real-time
+    gcTime: 5 * 60_000,
   })
 }
 
@@ -911,7 +924,7 @@ export function useHrMonthlyAttendanceQuery(year: number, month: number) {
   const endDate = new Date(year, month, 0).toISOString().split('T')[0]
 
   return useQuery({
-    queryKey: hrKeys.attendanceMonth(orgId, year, month),
+    queryKey: queryKeys.hr.attendanceMonth(orgId, year, month),
     queryFn: async () => {
       const { data, error } = await supabase
         .from('hr_attendance')
@@ -924,6 +937,8 @@ export function useHrMonthlyAttendanceQuery(year: number, month: number) {
       return (data ?? []) as HrAttendance[]
     },
     enabled: !!orgId,
+    staleTime: 60_000, // 1 min – attendance is tracked in real-time
+    gcTime: 5 * 60_000,
   })
 }
 
@@ -960,10 +975,10 @@ export function useHrAttendanceMutations() {
       return data as HrAttendance
     },
     onSuccess: (data) => {
-      void queryClient.invalidateQueries({ queryKey: hrKeys.attendance(orgId, data.date) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.attendance(orgId, data.date) })
       const d = new Date(data.date)
       void queryClient.invalidateQueries({
-        queryKey: hrKeys.attendanceMonth(orgId, d.getFullYear(), d.getMonth() + 1),
+        queryKey: queryKeys.hr.attendanceMonth(orgId, d.getFullYear(), d.getMonth() + 1),
       })
     },
   })
@@ -978,7 +993,7 @@ export function useHrAttendanceMutations() {
       if (error) throw error
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['hr', orgId, 'attendance'] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.attendanceAll(orgId) })
     },
   })
 
@@ -994,7 +1009,7 @@ export function useHrLeavesQuery() {
   const orgId = currentOrg?.id ?? ''
 
   return useQuery<HrLeave[]>({
-    queryKey: hrKeys.leaves(orgId),
+    queryKey: queryKeys.hr.leaves(orgId),
     enabled: !!orgId,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -1017,7 +1032,7 @@ export function useHrMonthlyLeavesQuery(year: number, month: number) {
   const dateTo = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
 
   return useQuery<HrLeave[]>({
-    queryKey: hrKeys.leavesMonth(orgId, year, month),
+    queryKey: queryKeys.hr.leavesMonth(orgId, year, month),
     enabled: !!orgId,
     queryFn: async () => {
       // Fetch leaves that overlap with the month range
@@ -1060,13 +1075,16 @@ export function useHrLeaveMutations() {
       return data as HrLeave
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: hrKeys.leaves(orgId) })
-      void queryClient.invalidateQueries({ queryKey: ['hr', orgId, 'leaves-month'] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.leaves(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.leavesMonthAll(orgId) })
     },
   })
 
   const updateLeave = useMutation({
-    mutationFn: async ({ id, payload }: {
+    mutationFn: async ({
+      id,
+      payload,
+    }: {
       id: string
       payload: {
         employee_id: string
@@ -1087,8 +1105,8 @@ export function useHrLeaveMutations() {
       return data as HrLeave
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: hrKeys.leaves(orgId) })
-      void queryClient.invalidateQueries({ queryKey: ['hr', orgId, 'leaves-month'] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.leaves(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.leavesMonthAll(orgId) })
     },
   })
 
@@ -1102,8 +1120,8 @@ export function useHrLeaveMutations() {
       if (error) throw error
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: hrKeys.leaves(orgId) })
-      void queryClient.invalidateQueries({ queryKey: ['hr', orgId, 'leaves-month'] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.leaves(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.leavesMonthAll(orgId) })
     },
   })
 
@@ -1111,11 +1129,7 @@ export function useHrLeaveMutations() {
 }
 
 /** Count how many calendar days a leave overlaps with a given month. */
-export function countLeaveDaysInMonth(
-  leave: HrLeave,
-  year: number,
-  month: number,
-): number {
+export function countLeaveDaysInMonth(leave: HrLeave, year: number, month: number): number {
   const monthStart = new Date(year, month - 1, 1)
   const monthEnd = new Date(year, month, 0) // last day of month
   const leaveStart = new Date(leave.start_date)
@@ -1154,7 +1168,7 @@ export function useAdvancesQuery(year: number, month: number) {
   const dateTo = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
 
   return useQuery({
-    queryKey: ['hr', orgId, 'advances', year, month] as const,
+    queryKey: queryKeys.hr.advances(orgId, year, month),
     queryFn: async () => {
       const { data, error } = await supabase
         .from('accounting_entries')
@@ -1169,6 +1183,8 @@ export function useAdvancesQuery(year: number, month: number) {
       return (data ?? []) as EmployeeAdvance[]
     },
     enabled: !!orgId,
+    staleTime: 5 * 60_000, // 5 min – advances change moderately
+    gcTime: 10 * 60_000,
   })
 }
 
@@ -1246,7 +1262,9 @@ export function useBulkBonusPayoutMutation() {
           created_by: user.id,
         }))
 
-        const { error: entryError } = await supabase.from('accounting_entries').insert(entriesPayload)
+        const { error: entryError } = await supabase
+          .from('accounting_entries')
+          .insert(entriesPayload)
         if (entryError) throw entryError
       }
 
@@ -1282,9 +1300,9 @@ export function useBulkBonusPayoutMutation() {
       }
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: hrKeys.bonusPayments(orgId) })
-      void queryClient.invalidateQueries({ queryKey: hrKeys.variablePending(orgId) })
-      void queryClient.invalidateQueries({ queryKey: ['accounting'] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusPayments(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.variablePending(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.accounting.all })
     },
   })
 }
@@ -1327,7 +1345,7 @@ export function useHrSalaryPaymentsQuery(year: number, month: number) {
   const dateTo = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
 
   return useQuery({
-    queryKey: hrKeys.salaryPayments(orgId, year, month),
+    queryKey: queryKeys.hr.salaryPayments(orgId, year, month),
     queryFn: async () => {
       const { data, error } = await supabase
         .from('hr_salary_payments')
@@ -1340,6 +1358,8 @@ export function useHrSalaryPaymentsQuery(year: number, month: number) {
       return (data ?? []) as HrSalaryPaymentLocal[]
     },
     enabled: !!orgId,
+    staleTime: 5 * 60_000, // 5 min – salary payments change moderately
+    gcTime: 10 * 60_000,
   })
 }
 
@@ -1358,7 +1378,10 @@ export function useBulkSalaryPayoutMutation() {
         organization_id: orgId,
         employee_id: item.employee_id,
         period: item.period,
-        amount_tl: Math.max(0, item.amount_tl - item.attendance_deduction_tl - item.unpaid_leave_deduction_tl),
+        amount_tl: Math.max(
+          0,
+          item.amount_tl - item.attendance_deduction_tl - item.unpaid_leave_deduction_tl,
+        ),
         salary_currency: item.salary_currency,
         paid_at: paidAt,
         notes: null as string | null,
@@ -1385,7 +1408,10 @@ export function useBulkSalaryPayoutMutation() {
         description: item.description,
         entry_type: 'ODEME' as const,
         direction: 'out' as const,
-        amount: Math.max(0, item.amount_tl - item.attendance_deduction_tl - item.unpaid_leave_deduction_tl),
+        amount: Math.max(
+          0,
+          item.amount_tl - item.attendance_deduction_tl - item.unpaid_leave_deduction_tl,
+        ),
         currency: item.salary_currency === 'USD' ? 'USD' : 'TL',
         entry_date: paidAt,
         payment_period: item.period,
@@ -1423,9 +1449,9 @@ export function useBulkSalaryPayoutMutation() {
     },
     onSuccess: () => {
       // Invalidate all salary payment queries
-      void queryClient.invalidateQueries({ queryKey: ['hr', orgId, 'salary-payments'] })
-      void queryClient.invalidateQueries({ queryKey: ['hr', orgId, 'all-salary-payments'] })
-      void queryClient.invalidateQueries({ queryKey: ['accounting'] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.salaryPaymentsPrefix(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.allSalaryPayments(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.accounting.all })
     },
   })
 }
@@ -1436,7 +1462,7 @@ export function useAllSalaryPaymentsQuery() {
   const orgId = currentOrg?.id ?? ''
 
   return useQuery({
-    queryKey: ['hr', orgId, 'all-salary-payments'] as const,
+    queryKey: queryKeys.hr.allSalaryPayments(orgId),
     queryFn: async () => {
       const { data, error } = await supabase
         .from('hr_salary_payments')
@@ -1447,6 +1473,8 @@ export function useAllSalaryPaymentsQuery() {
       return (data ?? []) as HrSalaryPaymentLocal[]
     },
     enabled: !!orgId,
+    staleTime: 5 * 60_000, // 5 min – salary payments change moderately
+    gcTime: 10 * 60_000,
   })
 }
 
@@ -1501,9 +1529,9 @@ export function useUpdateSalaryPaymentMutation() {
         .neq('amount', payload.old_amount_tl)
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['hr', orgId, 'salary-payments'] })
-      void queryClient.invalidateQueries({ queryKey: ['hr', orgId, 'all-salary-payments'] })
-      void queryClient.invalidateQueries({ queryKey: ['accounting'] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.salaryPaymentsPrefix(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.allSalaryPayments(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.accounting.all })
     },
   })
 }
@@ -1517,7 +1545,7 @@ export function useHrSettingsQuery() {
   const orgId = currentOrg?.id ?? ''
 
   return useQuery({
-    queryKey: hrKeys.hrSettings(orgId),
+    queryKey: queryKeys.hr.hrSettings(orgId),
     queryFn: async () => {
       const { data, error } = await supabase
         .from('hr_settings')
@@ -1531,11 +1559,16 @@ export function useHrSettingsQuery() {
       return {
         roles: (data.roles ?? DEFAULT_HR_SETTINGS.roles) as string[],
         supplement_tl: Number(data.supplement_tl) || DEFAULT_HR_SETTINGS.supplement_tl,
-        absence_full_day_divisor: Number(data.absence_full_day_divisor) || DEFAULT_HR_SETTINGS.absence_full_day_divisor,
-        absence_half_day_divisor: Number(data.absence_half_day_divisor) || DEFAULT_HR_SETTINGS.absence_half_day_divisor,
-        absence_hourly_divisor: Number(data.absence_hourly_divisor) || DEFAULT_HR_SETTINGS.absence_hourly_divisor,
-        daily_deduction_enabled: data.daily_deduction_enabled ?? DEFAULT_HR_SETTINGS.daily_deduction_enabled,
-        hourly_deduction_enabled: data.hourly_deduction_enabled ?? DEFAULT_HR_SETTINGS.hourly_deduction_enabled,
+        absence_full_day_divisor:
+          Number(data.absence_full_day_divisor) || DEFAULT_HR_SETTINGS.absence_full_day_divisor,
+        absence_half_day_divisor:
+          Number(data.absence_half_day_divisor) || DEFAULT_HR_SETTINGS.absence_half_day_divisor,
+        absence_hourly_divisor:
+          Number(data.absence_hourly_divisor) || DEFAULT_HR_SETTINGS.absence_hourly_divisor,
+        daily_deduction_enabled:
+          data.daily_deduction_enabled ?? DEFAULT_HR_SETTINGS.daily_deduction_enabled,
+        hourly_deduction_enabled:
+          data.hourly_deduction_enabled ?? DEFAULT_HR_SETTINGS.hourly_deduction_enabled,
         standard_check_in: data.standard_check_in ?? DEFAULT_HR_SETTINGS.standard_check_in,
         standard_check_out: data.standard_check_out ?? DEFAULT_HR_SETTINGS.standard_check_out,
         timezone: data.timezone ?? DEFAULT_HR_SETTINGS.timezone,
@@ -1543,6 +1576,8 @@ export function useHrSettingsQuery() {
       } as HrSettings
     },
     enabled: !!orgId,
+    staleTime: 10 * 60_000, // 10 min – HR settings rarely change
+    gcTime: 20 * 60_000,
   })
 }
 
@@ -1574,7 +1609,7 @@ export function useUpdateHrSettingsMutation() {
       if (error) throw error
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: hrKeys.hrSettings(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.hrSettings(orgId) })
     },
   })
 }

@@ -79,7 +79,7 @@ function PspCard({
         <div className="flex flex-1 flex-col gap-sm p-md">
           {/* Top row: name + tags + arrow */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-1 md:gap-2">
               <p className="text-sm font-semibold">{psp.psp_name}</p>
               <Tag variant={psp.is_active ? 'green' : 'red'} className="text-[10px]">
                 {psp.is_active ? t('psps.card.active') : t('psps.card.inactive')}

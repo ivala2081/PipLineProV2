@@ -1,23 +1,11 @@
 import { useState, useMemo } from 'react'
-import {
-  GearSix,
-  Plus,
-  Trash,
-  FloppyDisk,
-  Warning,
-  ShieldWarning,
-} from '@phosphor-icons/react'
+import { GearSix, Plus, Trash, FloppyDisk } from '@phosphor-icons/react'
 import {
   Button,
   Input,
   Label,
   Tag,
   Skeleton,
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
   Select,
   SelectTrigger,
   SelectValue,
@@ -33,50 +21,8 @@ import {
   type HrSettings,
   DEFAULT_HR_SETTINGS,
 } from '@/hooks/queries/useHrQuery'
-
-/* ------------------------------------------------------------------ */
-
-const PROTECTED_ROLES = ['Marketing', 'Retention']
-
-const COMMON_TIMEZONES = [
-  { value: 'Europe/Istanbul', label: 'Türkiye (UTC+3)' },
-  { value: 'Europe/London', label: 'UK (UTC+0/+1)' },
-  { value: 'Europe/Berlin', label: 'Almanya (UTC+1/+2)' },
-  { value: 'Europe/Paris', label: 'Fransa (UTC+1/+2)' },
-  { value: 'Europe/Moscow', label: 'Rusya - Moskova (UTC+3)' },
-  { value: 'Europe/Kiev', label: 'Ukrayna (UTC+2/+3)' },
-  { value: 'Europe/Athens', label: 'Yunanistan (UTC+2/+3)' },
-  { value: 'Europe/Bucharest', label: 'Romanya (UTC+2/+3)' },
-  { value: 'Asia/Dubai', label: 'BAE (UTC+4)' },
-  { value: 'Asia/Riyadh', label: 'Suudi Arabistan (UTC+3)' },
-  { value: 'Asia/Tehran', label: 'İran (UTC+3:30)' },
-  { value: 'Asia/Baku', label: 'Azerbaycan (UTC+4)' },
-  { value: 'Asia/Tbilisi', label: 'Gürcistan (UTC+4)' },
-  { value: 'Asia/Kolkata', label: 'Hindistan (UTC+5:30)' },
-  { value: 'Asia/Shanghai', label: 'Çin (UTC+8)' },
-  { value: 'Asia/Tokyo', label: 'Japonya (UTC+9)' },
-  { value: 'America/New_York', label: 'ABD Doğu (UTC-5/-4)' },
-  { value: 'America/Chicago', label: 'ABD Merkez (UTC-6/-5)' },
-  { value: 'America/Los_Angeles', label: 'ABD Batı (UTC-8/-7)' },
-  { value: 'America/Sao_Paulo', label: 'Brezilya (UTC-3)' },
-  { value: 'Australia/Sydney', label: 'Avustralya Doğu (UTC+10/+11)' },
-]
-
-function getRoleVariant(
-  role: string,
-): 'blue' | 'purple' | 'green' | 'orange' | 'red' | 'cyan' {
-  const map: Record<string, 'blue' | 'purple' | 'green' | 'orange' | 'red' | 'cyan'> = {
-    Manager: 'blue',
-    Marketing: 'purple',
-    Operation: 'green',
-    'Retention': 'orange',
-    'Project Management': 'cyan',
-    'Social Media': 'purple',
-    'Sales Development': 'red',
-    Programmer: 'blue',
-  }
-  return map[role] ?? 'blue'
-}
+import { PROTECTED_ROLES, COMMON_TIMEZONES, getRoleVariant } from './utils/hrConstants'
+import { RoleDeleteDialog } from './components/RoleDeleteDialog'
 
 /* ------------------------------------------------------------------ */
 
@@ -335,7 +281,7 @@ export function SettingsTab({ employees, canManage, lang }: SettingsTabProps) {
           {lang === 'tr' ? 'Çalışma Saatleri' : 'Work Hours'}
         </h3>
         <div className="rounded-xl border border-black/[0.07] bg-bg1 p-4 space-y-md">
-          <div className="grid grid-cols-1 gap-md sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-sm sm:gap-md sm:grid-cols-3">
             {/* Standard check-in */}
             <div className="space-y-xs">
               <Label className="text-xs text-black/50">
@@ -345,15 +291,11 @@ export function SettingsTab({ employees, canManage, lang }: SettingsTabProps) {
                 <input
                   type="time"
                   value={current.standard_check_in}
-                  onChange={(e) =>
-                    setDraft({ ...current, standard_check_in: e.target.value })
-                  }
+                  onChange={(e) => setDraft({ ...current, standard_check_in: e.target.value })}
                   className="h-9 w-full rounded-md border border-black/[0.12] bg-bg2/75 px-3 text-sm text-black focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/20"
                 />
               ) : (
-                <p className="text-sm font-medium text-black/70">
-                  {current.standard_check_in}
-                </p>
+                <p className="text-sm font-medium text-black/70">{current.standard_check_in}</p>
               )}
             </div>
 
@@ -366,15 +308,11 @@ export function SettingsTab({ employees, canManage, lang }: SettingsTabProps) {
                 <input
                   type="time"
                   value={current.standard_check_out}
-                  onChange={(e) =>
-                    setDraft({ ...current, standard_check_out: e.target.value })
-                  }
+                  onChange={(e) => setDraft({ ...current, standard_check_out: e.target.value })}
                   className="h-9 w-full rounded-md border border-black/[0.12] bg-bg2/75 px-3 text-sm text-black focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/20"
                 />
               ) : (
-                <p className="text-sm font-medium text-black/70">
-                  {current.standard_check_out}
-                </p>
+                <p className="text-sm font-medium text-black/70">{current.standard_check_out}</p>
               )}
             </div>
 
@@ -386,9 +324,7 @@ export function SettingsTab({ employees, canManage, lang }: SettingsTabProps) {
               {isEditing ? (
                 <Select
                   value={current.timezone}
-                  onValueChange={(v) =>
-                    setDraft({ ...current, timezone: v })
-                  }
+                  onValueChange={(v) => setDraft({ ...current, timezone: v })}
                 >
                   <SelectTrigger className="h-9 text-sm">
                     <SelectValue />
@@ -424,7 +360,7 @@ export function SettingsTab({ employees, canManage, lang }: SettingsTabProps) {
           {lang === 'tr' ? 'Hafta Sonu Tatili' : 'Weekend Off'}
         </h3>
         <div className="rounded-xl border border-black/[0.07] bg-bg1 p-4 space-y-md">
-          <div className="flex items-center justify-between">
+          <div className="min-h-[44px] flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-black/70">
                 {lang === 'tr' ? 'Hafta Sonu Devam Takibi' : 'Weekend Attendance Tracking'}
@@ -459,8 +395,12 @@ export function SettingsTab({ employees, canManage, lang }: SettingsTabProps) {
             ) : (
               <Tag variant={current.weekend_off ? 'green' : 'red'}>
                 {current.weekend_off
-                  ? lang === 'tr' ? 'Aktif' : 'Active'
-                  : lang === 'tr' ? 'Kapalı' : 'Disabled'}
+                  ? lang === 'tr'
+                    ? 'Aktif'
+                    : 'Active'
+                  : lang === 'tr'
+                    ? 'Kapalı'
+                    : 'Disabled'}
               </Tag>
             )}
           </div>
@@ -475,7 +415,7 @@ export function SettingsTab({ employees, canManage, lang }: SettingsTabProps) {
         <div className="rounded-xl border border-black/[0.07] bg-bg1 p-4 space-y-lg">
           {/* ── Daily Deduction (Tam gün + Yarım gün) ── */}
           <div className="space-y-md">
-            <div className="flex items-center justify-between">
+            <div className="min-h-[44px] flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-black/70">
                   {lang === 'tr' ? 'Günlük Kesinti' : 'Daily Deduction'}
@@ -510,8 +450,12 @@ export function SettingsTab({ employees, canManage, lang }: SettingsTabProps) {
               ) : (
                 <Tag variant={current.daily_deduction_enabled ? 'green' : 'red'}>
                   {current.daily_deduction_enabled
-                    ? lang === 'tr' ? 'Aktif' : 'Active'
-                    : lang === 'tr' ? 'Kapalı' : 'Disabled'}
+                    ? lang === 'tr'
+                      ? 'Aktif'
+                      : 'Active'
+                    : lang === 'tr'
+                      ? 'Kapalı'
+                      : 'Disabled'}
                 </Tag>
               )}
             </div>
@@ -596,7 +540,7 @@ export function SettingsTab({ employees, canManage, lang }: SettingsTabProps) {
 
           {/* ── Hourly Deduction (Saatlik) ── */}
           <div className="space-y-md">
-            <div className="flex items-center justify-between">
+            <div className="min-h-[44px] flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-black/70">
                   {lang === 'tr' ? 'Saatlik Kesinti' : 'Hourly Deduction'}
@@ -631,8 +575,12 @@ export function SettingsTab({ employees, canManage, lang }: SettingsTabProps) {
               ) : (
                 <Tag variant={current.hourly_deduction_enabled ? 'green' : 'red'}>
                   {current.hourly_deduction_enabled
-                    ? lang === 'tr' ? 'Aktif' : 'Active'
-                    : lang === 'tr' ? 'Kapalı' : 'Disabled'}
+                    ? lang === 'tr'
+                      ? 'Aktif'
+                      : 'Active'
+                    : lang === 'tr'
+                      ? 'Kapalı'
+                      : 'Disabled'}
                 </Tag>
               )}
             </div>
@@ -717,47 +665,14 @@ export function SettingsTab({ employees, canManage, lang }: SettingsTabProps) {
       </div>
 
       {/* ── Role delete confirm dialog ── */}
-      <Dialog open={!!deleteRole} onOpenChange={(v) => !v && setDeleteRole(null)}>
-        <DialogContent size="md" onInteractOutside={(e) => e.preventDefault()}>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ShieldWarning size={20} weight="duotone" className="text-orange" />
-              {lang === 'tr' ? 'Rol Silme Onayı' : 'Confirm Role Deletion'}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-md py-2">
-            <div className="flex items-start gap-3 rounded-xl border border-orange/30 bg-orange/5 px-4 py-3">
-              <Warning size={18} className="mt-0.5 shrink-0 text-orange" />
-              <p className="text-sm text-black/70">
-                {lang === 'tr'
-                  ? `"${deleteRole}" rolünde ${deleteRoleEmpCount} aktif çalışan var. Bu çalışanlar "Diğer" rolüne atanacak.`
-                  : `There are ${deleteRoleEmpCount} active employees in the "${deleteRole}" role. They will be reassigned to "Other".`}
-              </p>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteRole(null)}>
-              {lang === 'tr' ? 'İptal' : 'Cancel'}
-            </Button>
-            <Button
-              variant="filled"
-              className="bg-orange hover:bg-orange/90"
-              disabled={updateEmployee.isPending}
-              onClick={() => void confirmDeleteRole()}
-            >
-              {updateEmployee.isPending
-                ? lang === 'tr'
-                  ? 'İşleniyor...'
-                  : 'Processing...'
-                : lang === 'tr'
-                  ? 'Onayla ve Sil'
-                  : 'Confirm & Delete'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <RoleDeleteDialog
+        deleteRole={deleteRole}
+        deleteRoleEmpCount={deleteRoleEmpCount}
+        isPending={updateEmployee.isPending}
+        lang={lang}
+        onClose={() => setDeleteRole(null)}
+        onConfirm={() => void confirmDeleteRole()}
+      />
     </div>
   )
 }

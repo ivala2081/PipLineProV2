@@ -50,6 +50,8 @@ export function usePspRates(pspId: string | null) {
       return data as PspCommissionRate[]
     },
     enabled: !!pspId && !!orgId,
+    staleTime: 10 * 60_000, // 10 min – rates change infrequently (admin-configured)
+    gcTime: 20 * 60_000,
   })
 
   return { rates, isLoading, error: error?.message ?? null }
@@ -78,6 +80,8 @@ export function useOrgPspRates() {
       return data as PspCommissionRate[]
     },
     enabled: !!orgId,
+    staleTime: 10 * 60_000, // 10 min – rates change infrequently (admin-configured)
+    gcTime: 20 * 60_000,
   })
 
   // Group by psp_id for quick lookup

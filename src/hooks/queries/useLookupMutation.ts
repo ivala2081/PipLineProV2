@@ -41,7 +41,7 @@ export function useLookupMutation(table: LookupTable): UseLookupMutationReturn {
     isLoading,
     error,
   } = useQuery({
-    queryKey: [...queryKeys.lookups.all, table, orgId ?? ''],
+    queryKey: queryKeys.lookups.byTable(table, orgId ?? ''),
     queryFn: async () => {
       if (!orgId) throw new Error('No organization selected')
 
@@ -55,12 +55,14 @@ export function useLookupMutation(table: LookupTable): UseLookupMutationReturn {
       return (data as LookupItem[]) ?? []
     },
     enabled: !!orgId,
+    staleTime: 10 * 60_000, // 10 min – lookup tables are admin-configured
+    gcTime: 20 * 60_000,
   })
 
   // Helper to invalidate both the management query and the active-only query
   const invalidateQueries = () => {
     queryClient.invalidateQueries({
-      queryKey: [...queryKeys.lookups.all, table],
+      queryKey: queryKeys.lookups.byTablePrefix(table),
     })
     // Also invalidate the specific lookup query used by useLookupQueries
     if (table === 'psps') {
@@ -137,7 +139,7 @@ export function useLookupMutation(table: LookupTable): UseLookupMutationReturn {
       if (error) throw error
     },
     onMutate: async (id: string) => {
-      const qk = [...queryKeys.lookups.all, table, orgId ?? '']
+      const qk = queryKeys.lookups.byTable(table, orgId ?? '')
       await queryClient.cancelQueries({ queryKey: qk })
       const snapshot = queryClient.getQueryData<LookupItem[]>(qk)
       queryClient.setQueryData<LookupItem[]>(qk, (old) =>

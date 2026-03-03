@@ -37,6 +37,8 @@ export function useWalletSnapshotsQuery(
       return (data as WalletSnapshot[]) ?? []
     },
     enabled: !!walletId,
+    staleTime: 5 * 60_000, // 5 min – snapshots change moderately
+    gcTime: 10 * 60_000,
   })
 
   const snapshotMutation = useMutation({

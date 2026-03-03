@@ -96,7 +96,32 @@
       "Bash(cmd /c \"taskkill /F /PID 39540 & taskkill /F /PID 23792\")",
       "Bash(cmd /c \"taskkill /F /PID 39540\")",
       "Bash(cmd /c \"taskkill /F /PID 23792\")",
-      "Bash(npm run build:check)"
+      "Bash(npm run build:check)",
+      "Bash(npm outdated)",
+      "Bash(git -C \"c:/Users/ACER/Desktop/PipLineProV2\" log --oneline --diff-filter=A -- \"supabase/migrations/20260302082512_add_weekend_off_to_hr_settings.sql\")",
+      "Bash(git -C \"c:/Users/ACER/Desktop/PipLineProV2\" log --oneline --diff-filter=A -- \"supabase/migrations/079_migrate_tether_to_usdt.sql\")",
+      "Bash(git -C \"c:/Users/ACER/Desktop/PipLineProV2\" log --oneline --all -- \"supabase/migrations/\")",
+      "Bash(git -C \"c:/Users/ACER/Desktop/PipLineProV2\" show --name-only --diff-filter=A 54befc9 -- \"supabase/migrations/\")",
+      "Bash(git -C \"c:/Users/ACER/Desktop/PipLineProV2\" show --name-only --diff-filter=A 8d6d4ce -- \"supabase/migrations/\")",
+      "Bash(npx sharp-cli -i public/logo/logo-square.png -o public/pwa-512x512.png resize 512 512)",
+      "Bash(npx sharp-cli -i public/logo/logo-square.png -o public/pwa-192x192.png resize 192 192)",
+      "Bash(npx sharp-cli -i public/logo/logo-square.png -o public/apple-touch-icon-180x180.png resize 180 180)",
+      "Bash(npx sharp-cli -i public/logo/logo-square.png -o public/favicon-64x64.png resize 64 64)",
+      "Bash(test -f /c/Users/ACER/Desktop/PipLineProV2/src/lib/tatumService.ts)",
+      "Bash(test -f /c/Users/ACER/Desktop/PipLineProV2/src/pages/hr/utils/hrConstants.ts)",
+      "Bash(test -f /c/Users/ACER/Desktop/PipLineProV2/src/pages/hr/utils/attendanceHelpers.tsx)",
+      "Bash(test -f /c/Users/ACER/Desktop/PipLineProV2/src/pages/hr/utils/salaryCalculations.ts)",
+      "Bash(test -f /c/Users/ACER/Desktop/PipLineProV2/src/lib/toastEmitter.ts)",
+      "Bash(test -f /c/Users/ACER/Desktop/PipLineProV2/src/hooks/useMutationErrorHandler.ts)",
+      "Bash(test -f /c/Users/ACER/Desktop/PipLineProV2/supabase/functions/_shared/validation.ts)",
+      "Bash(test -f /c/Users/ACER/Desktop/PipLineProV2/supabase/functions/_shared/rateLimit.ts)",
+      "Bash(test -f /c/Users/ACER/Desktop/PipLineProV2/supabase/tests/rls_audit.sql)",
+      "Bash(test -f /c/Users/ACER/Desktop/PipLineProV2/src/design-system/components/Table/VirtualTableBody.tsx)",
+      "Bash(test -f /c/Users/ACER/Desktop/PipLineProV2/src/hooks/useVirtualTable.ts)",
+      "Bash(test -f /c/Users/ACER/Desktop/PipLineProV2/supabase/migrations/20260302082512_add_weekend_off_to_hr_settings.sql)",
+      "Bash(test -f /c/Users/ACER/Desktop/PipLineProV2/supabase/migrations/079_add_weekend_off_to_hr_settings.sql)",
+      "Bash(test -f /c/Users/ACER/Desktop/PipLineProV2/.github/workflows/*.yml)",
+      "Bash(test -f /c/Users/ACER/Desktop/PipLineProV2/scripts/check-i18n.js)"
     ]
   }
 }

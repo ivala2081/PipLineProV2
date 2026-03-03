@@ -16,7 +16,8 @@
     "organizations": "Organizations",
     "security": "Security",
     "hr": "HR",
-    "settings": "Settings"
+    "settings": "Settings",
+    "more": "More"
   },
   "layout": {
     "noOrganization": "No Organization",
@@ -824,7 +825,9 @@
       "transfers": "Transfers",
       "month": "Month",
       "change": "MoM",
-      "export": "Export CSV"
+      "export": "Export",
+      "exportCsv": "Export CSV",
+      "exportXlsx": "Export Excel"
     },
     "bloke": {
       "title": "Blocked Transfers",

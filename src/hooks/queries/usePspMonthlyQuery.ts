@@ -51,5 +51,7 @@ export function usePspMonthlyQuery(pspId: string | undefined) {
       )
     },
     enabled: !!currentOrg && !!pspId,
+    staleTime: 5 * 60_000, // 5 min – monthly summary is historical-ish
+    gcTime: 10 * 60_000,
   })
 }

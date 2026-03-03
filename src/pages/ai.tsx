@@ -58,6 +58,10 @@ function formatToolName(name: string, t: (key: string, fallback: string) => stri
     get_transfers: t('future.tool.transfers', 'Querying transfers...'),
     get_top_customers: t('future.tool.customers', 'Loading customer data...'),
     get_psp_list: t('future.tool.psps', 'Fetching PSP list...'),
+    get_hr_summary: t('future.tool.hr', 'Loading HR summary...'),
+    get_wallet_balances: t('future.tool.wallets', 'Fetching wallet balances...'),
+    get_accounting_summary: t('future.tool.accounting', 'Loading accounting summary...'),
+    get_recent_activity: t('future.tool.activity', 'Fetching recent activity...'),
   }
   return map[name] ?? `${name}...`
 }
@@ -93,7 +97,7 @@ function renderMarkdown(text: string): string {
       .replace(
         /(<tr>.*<\/tr>\n?)+/g,
         (m) =>
-          `<div class="overflow-x-auto my-2"><table class="w-full border-collapse text-xs">${m}</table></div>`,
+          `<div class="overflow-x-auto scroll-touch my-2"><table class="w-full border-collapse text-xs">${m}</table></div>`,
       )
       // Bullet list items
       .replace(/^- (.+)$/gm, '<li class="ml-3 list-disc">$1</li>')
@@ -128,7 +132,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
   if (msg.isError) {
     return (
       <div className="flex justify-start">
-        <div className="flex max-w-[85%] items-start gap-2">
+        <div className="flex max-w-[95%] md:max-w-[85%] items-start gap-2">
           <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-red-50">
             <Warning size={14} className="text-red-500" weight="fill" />
           </div>
@@ -142,7 +146,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
 
   return (
     <div className="flex justify-start">
-      <div className="flex max-w-[85%] items-start gap-2">
+      <div className="flex max-w-[95%] md:max-w-[85%] items-start gap-2">
         <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-brand/10">
           <Robot size={14} className="text-brand" weight="fill" />
         </div>
@@ -177,7 +181,7 @@ function TypingIndicator({ toolLabel }: { toolLabel: string | null }) {
 
   return (
     <div className="flex justify-start">
-      <div className="flex max-w-[85%] items-start gap-2">
+      <div className="flex max-w-[95%] md:max-w-[85%] items-start gap-2">
         <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-brand/10">
           <Robot size={14} className="text-brand" weight="fill" />
         </div>
@@ -212,7 +216,7 @@ function TypingIndicator({ toolLabel }: { toolLabel: string | null }) {
 function StreamingBubble({ content, toolCalls }: { content: string; toolCalls: string[] }) {
   return (
     <div className="flex justify-start">
-      <div className="flex max-w-[85%] items-start gap-2">
+      <div className="flex max-w-[95%] md:max-w-[85%] items-start gap-2">
         <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-brand/10">
           <Robot size={14} className="text-brand" weight="fill" />
         </div>
@@ -270,7 +274,7 @@ function WelcomeScreen({
       </p>
 
       {/* Suggested prompts */}
-      <div className="mt-8 grid w-full max-w-lg grid-cols-2 gap-2">
+      <div className="mt-8 grid w-full max-w-lg grid-cols-1 gap-2 sm:grid-cols-2">
         {prompts.map(({ icon: Icon, label }, i) => (
           <button
             key={i}
@@ -567,8 +571,8 @@ export function AiPage() {
       </div>
 
       {/* ── Input area ─────────────────────────────────────────────── */}
-      <div className="shrink-0 border-t border-black/[0.06] px-4 py-3 md:px-6">
-        <div className="flex items-end gap-2 rounded-2xl border border-black/[0.1] bg-white px-4 py-2.5 shadow-sm focus-within:border-brand/40 focus-within:ring-2 focus-within:ring-brand/10">
+      <div className="shrink-0 border-t border-black/[0.06] px-3 pb-16 pt-3 md:px-6 md:pb-3">
+        <div className="flex items-end gap-2 rounded-2xl border border-black/[0.1] bg-white px-3 py-2 shadow-sm focus-within:border-brand/40 focus-within:ring-2 focus-within:ring-brand/10 md:px-4 md:py-2.5">
           <textarea
             ref={inputRef}
             rows={1}
@@ -583,7 +587,7 @@ export function AiPage() {
           <button
             onClick={() => handleSend()}
             disabled={!input.trim() || isLoading || !currentOrg}
-            className="mb-0.5 flex size-8 shrink-0 items-center justify-center rounded-xl bg-brand text-white transition-opacity hover:opacity-90 disabled:opacity-30"
+            className="mb-0.5 flex size-10 md:size-8 shrink-0 items-center justify-center rounded-xl bg-brand text-white transition-opacity hover:opacity-90 disabled:opacity-30"
           >
             {isLoading ? (
               <Spinner size={14} className="animate-spin" />

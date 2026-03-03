@@ -60,6 +60,7 @@ import {
 import { useToast } from '@/hooks/useToast'
 import { BulkPayoutConfirmDialog } from './BulkPayoutConfirmDialog'
 import { formatAmount, parseAmount, numberToDisplay, amountPlaceholder } from '@/lib/formatAmount'
+import { MONTH_NAMES_TR, MONTH_NAMES_EN } from '../utils/hrConstants'
 
 /* ------------------------------------------------------------------ */
 /*  Pure calculation helpers (accept tiers as params)                  */
@@ -162,7 +163,7 @@ function RecentPaymentsSection({
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        className="text-red/50 opacity-0 hover:text-red group-hover:opacity-100"
+                        className="text-red/50 md:opacity-0 hover:text-red md:group-hover:opacity-100"
                         onClick={() => onDeletePayment(p.id)}
                       >
                         <Trash size={14} />
@@ -344,35 +345,6 @@ function fmt(n: number, digits = 2) {
     maximumFractionDigits: digits,
   })
 }
-
-const MONTH_NAMES_TR = [
-  'Ocak',
-  'Şubat',
-  'Mart',
-  'Nisan',
-  'Mayıs',
-  'Haziran',
-  'Temmuz',
-  'Ağustos',
-  'Eylül',
-  'Ekim',
-  'Kasım',
-  'Aralık',
-]
-const MONTH_NAMES_EN = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-]
 
 function BonusCell({ value }: { value: number }) {
   if (value === 0) return <span className="text-xs text-black/30">—</span>
@@ -611,8 +583,8 @@ function MarketingBonusTable({
     [sortedStats, page],
   )
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- pagination reset on search change
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- pagination reset on search change
     setPage(1)
   }, [search])
 
@@ -901,8 +873,8 @@ function ReattentionBonusTable({
     [sortedReStats, page],
   )
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- pagination reset on search change
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- pagination reset on search change
     setPage(1)
   }, [search])
 
@@ -1303,8 +1275,8 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
   const hasAutoSelection = selectedAutoIds.size > 0
 
   // Reset selection when period or search changes
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- selection reset on filter change
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- selection reset on filter change
     setSelectedAutoIds(new Set())
   }, [year, month, search])
 

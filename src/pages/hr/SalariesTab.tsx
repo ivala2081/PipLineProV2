@@ -40,70 +40,9 @@ import {
 } from '@/hooks/queries/useHrQuery'
 import { BulkSalaryConfirmDialog } from './BulkSalaryConfirmDialog'
 import { SalaryPaymentsTab } from './SalaryPaymentsTab'
-import type { HrEmployeeRole } from '@/lib/database.types'
-
-/* ------------------------------------------------------------------ */
-
-/** Check if a YYYY-MM-DD date string falls on Saturday (6) or Sunday (0). */
-function isWeekendDate(dateStr: string): boolean {
-  const d = new Date(dateStr + 'T00:00:00')
-  const day = d.getDay()
-  return day === 0 || day === 6
-}
-
-function fmtAmount(n: number, currency: 'TL' | 'USD' = 'TL') {
-  return (
-    n.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) +
-    (currency === 'USD' ? ' $' : ' TL')
-  )
-}
-
-const MONTH_NAMES_TR = [
-  'Ocak',
-  'Şubat',
-  'Mart',
-  'Nisan',
-  'Mayıs',
-  'Haziran',
-  'Temmuz',
-  'Ağustos',
-  'Eylül',
-  'Ekim',
-  'Kasım',
-  'Aralık',
-]
-const MONTH_NAMES_EN = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-]
-
-function getRoleVariant(
-  role: HrEmployeeRole,
-): 'blue' | 'purple' | 'green' | 'orange' | 'red' | 'cyan' {
-  const map: Partial<
-    Record<HrEmployeeRole, 'blue' | 'purple' | 'green' | 'orange' | 'red' | 'cyan'>
-  > = {
-    Manager: 'blue',
-    Marketing: 'purple',
-    Operation: 'green',
-    Retention: 'orange',
-    'Project Management': 'cyan',
-    'Social Media': 'purple',
-    'Sales Development': 'red',
-    Programmer: 'blue',
-  }
-  return map[role] ?? 'blue'
-}
+import { MONTH_NAMES_TR, MONTH_NAMES_EN, getRoleVariant } from './utils/hrConstants'
+import { isWeekendDate } from './utils/attendanceHelpers'
+import { fmtAmount } from './utils/salaryCalculations'
 
 /* ------------------------------------------------------------------ */
 
@@ -171,9 +110,10 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
   )
 
   // Reset page and selection when search or period changes
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- pagination reset on filter change
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- pagination reset on filter change
     setPage(1)
+
     setSelectedIds(new Set())
   }, [search, periodLabel])
 
@@ -342,13 +282,13 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
         <TabsContent value="pending" className="pt-lg">
           <div className="space-y-lg">
             {/* Controls row */}
-            <div className="flex flex-wrap items-center gap-sm">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-sm">
               {/* Period navigator */}
               <div className="flex items-center gap-1 rounded-lg border border-black/[0.07] bg-bg1 px-1 py-1">
                 <Button variant="ghost" size="icon-sm" onClick={prevMonth}>
                   <ArrowLeft size={14} />
                 </Button>
-                <span className="min-w-32 text-center text-sm font-semibold text-black">
+                <span className="min-w-24 sm:min-w-32 text-center text-sm font-semibold text-black">
                   {periodLabel}
                 </span>
                 <Button variant="ghost" size="icon-sm" onClick={nextMonth}>
@@ -357,7 +297,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
               </div>
 
               {/* Search */}
-              <div className="relative min-w-48">
+              <div className="relative w-full sm:min-w-48">
                 <MagnifyingGlass
                   size={15}
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30"
@@ -372,7 +312,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
 
               {/* Stats */}
               {!isLoading && activeEmployees.length > 0 && (
-                <div className="flex items-center gap-sm">
+                <div className="flex flex-wrap items-center gap-2">
                   <div className="flex items-center gap-2 rounded-lg border border-black/[0.07] bg-bg1 px-3 py-2">
                     <CheckCircle size={14} weight="fill" className="text-green" />
                     <span className="text-xs text-black/50">
@@ -396,7 +336,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
               {canManage && unpaidCount > 0 && (
                 <Button
                   variant="filled"
-                  className="ml-auto"
+                  className="ml-auto w-full sm:w-auto"
                   onClick={() => setBulkPayoutOpen(true)}
                 >
                   <CheckFat size={15} weight="fill" />
@@ -446,7 +386,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
             ) : (
               <>
                 <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
-                  <Table>
+                  <Table cardOnMobile>
                     <TableHeader>
                       <TableRow>
                         {canManage && (
@@ -514,7 +454,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                               </TableCell>
                             )}
                             {/* Employee */}
-                            <TableCell>
+                            <TableCell data-label="Employee">
                               <div className="flex items-center gap-sm">
                                 <span className="text-sm font-medium text-black">
                                   {emp.full_name}
@@ -523,19 +463,19 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                             </TableCell>
 
                             {/* Role */}
-                            <TableCell>
+                            <TableCell data-label="Role">
                               <Tag variant={getRoleVariant(emp.role)}>{emp.role}</Tag>
                             </TableCell>
 
                             {/* Gross salary */}
-                            <TableCell className="text-right">
+                            <TableCell data-label="Gross Salary" className="text-right">
                               <span className="tabular-nums text-sm font-medium text-black/70">
                                 {fmtAmount(emp.salary_tl, cur)}
                               </span>
                             </TableCell>
 
                             {/* Supplement */}
-                            <TableCell className="text-right">
+                            <TableCell data-label="Supplement" className="text-right">
                               {supplement > 0 ? (
                                 <span className="tabular-nums text-sm font-medium text-orange">
                                   +{fmtAmount(supplement, 'TL')}
@@ -546,7 +486,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                             </TableCell>
 
                             {/* Advance */}
-                            <TableCell className="text-right">
+                            <TableCell data-label="Advance" className="text-right">
                               {advance > 0 ? (
                                 <span className="tabular-nums text-sm font-medium text-orange">
                                   -{fmtAmount(advance, cur)}
@@ -557,7 +497,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                             </TableCell>
 
                             {/* Attendance deduction */}
-                            <TableCell className="text-right">
+                            <TableCell data-label="Absence Ded." className="text-right">
                               {deduction > 0 ? (
                                 <span className="tabular-nums text-sm font-medium text-red">
                                   -{fmtAmount(deduction, cur)}
@@ -568,7 +508,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                             </TableCell>
 
                             {/* Unpaid leave deduction */}
-                            <TableCell className="text-right">
+                            <TableCell data-label="Leave Ded." className="text-right">
                               {leaveDeduction > 0 ? (
                                 <span className="tabular-nums text-sm font-medium text-red">
                                   -{fmtAmount(leaveDeduction, cur)}
@@ -579,7 +519,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                             </TableCell>
 
                             {/* Net */}
-                            <TableCell className="text-right">
+                            <TableCell data-label="Net Payment" className="text-right">
                               <div className="flex flex-col items-end">
                                 <span className="tabular-nums text-sm font-semibold text-black">
                                   {fmtAmount(netTl > 0 ? netTl : 0, cur === 'TL' ? 'TL' : 'USD')}

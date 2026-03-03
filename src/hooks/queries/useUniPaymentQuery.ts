@@ -32,7 +32,8 @@ export function useUniPaymentBalances(pspId: string | undefined) {
       return res.data ?? []
     },
     enabled: !!currentOrg && !!pspId,
-    staleTime: 30_000, // 30s - balances change frequently
+    staleTime: 60_000, // 1 min – balances change frequently
+    gcTime: 5 * 60_000,
   })
 }
 
@@ -51,7 +52,8 @@ export function useUniPaymentAccounts(pspId: string | undefined) {
       return res.data ?? []
     },
     enabled: !!currentOrg && !!pspId,
-    staleTime: 60_000,
+    staleTime: 5 * 60_000, // 5 min – accounts rarely change
+    gcTime: 10 * 60_000,
   })
 }
 
@@ -74,7 +76,8 @@ export function useUniPaymentTransactions(
       return res.data ?? { models: [], page_no: 1, page_size: 20, total: 0, page_count: 0 }
     },
     enabled: !!currentOrg && !!pspId && !!accountId,
-    staleTime: 30_000,
+    staleTime: 60_000, // 1 min – transactions change frequently
+    gcTime: 5 * 60_000,
   })
 }
 
@@ -87,7 +90,7 @@ export function useUniPaymentDepositAddress(
   const { currentOrg } = useOrganization()
 
   return useQuery({
-    queryKey: [...queryKeys.uniPayment.accounts(pspId ?? ''), 'deposit', accountId ?? ''],
+    queryKey: queryKeys.uniPayment.depositAddress(pspId ?? '', accountId ?? ''),
     queryFn: async () => {
       const res = await callUniPaymentApi<UniPaymentApiResponse<UniPaymentDepositAddress>>(
         'getDepositAddress',
@@ -96,7 +99,8 @@ export function useUniPaymentDepositAddress(
       return res.data ?? null
     },
     enabled: !!currentOrg && !!pspId && !!accountId,
-    staleTime: 5 * 60_000, // deposit addresses are stable
+    staleTime: 30 * 60_000, // 30 min – deposit addresses are very stable
+    gcTime: 60 * 60_000,
   })
 }
 
@@ -115,7 +119,8 @@ export function useUniPaymentInvoices(pspId: string | undefined, page = 1) {
       return res.data ?? { models: [], page_no: 1, page_size: 20, total: 0, page_count: 0 }
     },
     enabled: !!currentOrg && !!pspId,
-    staleTime: 30_000,
+    staleTime: 60_000, // 1 min – invoices change frequently
+    gcTime: 5 * 60_000,
   })
 }
 
@@ -152,7 +157,8 @@ export function useUniPaymentPayments(pspId: string | undefined, page = 1) {
       return res.data ?? { models: [], page_no: 1, page_size: 20, total: 0, page_count: 0 }
     },
     enabled: !!currentOrg && !!pspId,
-    staleTime: 30_000,
+    staleTime: 60_000, // 1 min – payments change frequently
+    gcTime: 5 * 60_000,
   })
 }
 
@@ -237,6 +243,7 @@ export function useUniPaymentSyncStatus(pspId: string | undefined) {
       return data
     },
     enabled: !!currentOrg && !!pspId,
-    staleTime: 10_000,
+    staleTime: 30_000, // 30s – sync status needs to be relatively fresh
+    gcTime: 5 * 60_000,
   })
 }

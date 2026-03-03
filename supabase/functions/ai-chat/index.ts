@@ -2,6 +2,24 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders, handleCors } from '../_shared/cors.ts'
 import { createAdminClient } from '../_shared/supabase-admin.ts'
+import { z, parseBody } from '../_shared/validation.ts'
+import { checkRateLimit } from '../_shared/rateLimit.ts'
+
+/* ── Input schema ──────────────────────────────────────────────── */
+
+const AiChatBodySchema = z.object({
+  messages: z
+    .array(
+      z.object({
+        role: z.string().min(1),
+        content: z.string().min(1),
+      }),
+    )
+    .min(1, 'At least one message is required'),
+  orgId: z.string().uuid('orgId must be a valid UUID'),
+  orgName: z.string().min(1, 'orgName is required'),
+  userRole: z.string().min(1, 'userRole is required'),
+})
 
 /* ── Config ─────────────────────────────────────────────────────── */
 
@@ -67,6 +85,52 @@ const TOOLS = [
     description:
       'Get the list of PSPs (payment service providers) for the organization with their active status.',
     input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_hr_summary',
+    description:
+      'Get HR summary including employee count, status breakdown (active/inactive), total monthly payroll, and salary payments for the current month. Use this for HR overviews or payroll questions.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        year: { type: 'number', description: 'Year for salary payment lookup (e.g. 2026)' },
+        month: { type: 'number', description: 'Month number (1-12) for salary payment lookup' },
+      },
+      required: ['year', 'month'],
+    },
+  },
+  {
+    name: 'get_wallet_balances',
+    description:
+      'Get all crypto wallet balances for the organization. Returns each wallet with its chain, address, label, active status, and the most recent snapshot balance.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'get_accounting_summary',
+    description:
+      'Get accounting ledger summary for a specific month. Groups entries by type (ODEME/TRANSFER), direction (in/out), and register (USDT, NAKIT_TL, NAKIT_USD, TRX). Returns totals per combination.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        year: { type: 'number', description: 'Year (e.g. 2026)' },
+        month: { type: 'number', description: 'Month number (1-12)' },
+      },
+      required: ['year', 'month'],
+    },
+  },
+  {
+    name: 'get_recent_activity',
+    description:
+      'Get the most recent actions across transfers, accounting entries, and HR salary payments. Useful for "what happened today/recently?" questions. Returns up to 20 items ordered by creation time.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        limit: {
+          type: 'number',
+          description: 'Max items to return (default 20, max 50)',
+        },
+      },
+    },
   },
 ]
 
@@ -155,6 +219,263 @@ async function executeTool(
 
         if (error) return { error: error.message }
         return { psps: data }
+      }
+
+      case 'get_hr_summary': {
+        // 1. Employee count and status breakdown
+        const { data: employees, error: empError } = await admin
+          .from('hr_employees')
+          .select('id, full_name, role, salary_tl, salary_currency, is_active')
+          .eq('organization_id', orgId)
+
+        if (empError) return { error: empError.message }
+
+        const allEmps = employees ?? []
+        const activeEmps = allEmps.filter((e) => e.is_active)
+        const inactiveEmps = allEmps.filter((e) => !e.is_active)
+
+        // Total monthly payroll (active employees only)
+        const totalPayrollTL = activeEmps.reduce((sum, e) => sum + (Number(e.salary_tl) || 0), 0)
+
+        // Group active employees by role
+        const byRole: Record<string, number> = {}
+        for (const e of activeEmps) {
+          const role = e.role || 'unassigned'
+          byRole[role] = (byRole[role] || 0) + 1
+        }
+
+        // 2. Salary payments for the requested month
+        const year = Number(input.year)
+        const month = Number(input.month)
+        const periodPrefix = `${year}-${String(month).padStart(2, '0')}`
+
+        const { data: payments, error: payError } = await admin
+          .from('hr_salary_payments')
+          .select('id, employee_id, amount_tl, salary_currency, paid_at, period')
+          .eq('organization_id', orgId)
+          .like('period', `${periodPrefix}%`)
+
+        if (payError) return { error: payError.message }
+
+        const allPayments = payments ?? []
+        const totalPaidTL = allPayments.reduce((sum, p) => sum + (Number(p.amount_tl) || 0), 0)
+        const paidEmployeeIds = new Set(allPayments.map((p) => p.employee_id))
+        const unpaidActive = activeEmps.filter((e) => !paidEmployeeIds.has(e.id))
+
+        return {
+          total_employees: allEmps.length,
+          active_employees: activeEmps.length,
+          inactive_employees: inactiveEmps.length,
+          employees_by_role: byRole,
+          monthly_payroll_tl: totalPayrollTL,
+          period: periodPrefix,
+          payments_made: allPayments.length,
+          total_paid_tl: totalPaidTL,
+          unpaid_active_employees: unpaidActive.map((e) => ({
+            name: e.full_name,
+            salary_tl: e.salary_tl,
+          })),
+        }
+      }
+
+      case 'get_wallet_balances': {
+        // Get all wallets for the org
+        const { data: wallets, error: walletError } = await admin
+          .from('wallets')
+          .select('id, chain, address, label, is_active')
+          .eq('organization_id', orgId)
+          .order('chain')
+
+        if (walletError) return { error: walletError.message }
+
+        const allWallets = wallets ?? []
+        const result = []
+
+        for (const w of allWallets) {
+          // Get the most recent snapshot for this wallet
+          const { data: snapshots, error: snapError } = await admin
+            .from('wallet_snapshots')
+            .select('balances, total_usd, snapshot_date')
+            .eq('wallet_id', w.id)
+            .eq('organization_id', orgId)
+            .order('snapshot_date', { ascending: false })
+            .limit(1)
+
+          const latestSnapshot = snapshots?.[0] ?? null
+
+          result.push({
+            label: w.label,
+            chain: w.chain,
+            address: w.address,
+            is_active: w.is_active,
+            latest_balance_usd: latestSnapshot?.total_usd ?? null,
+            latest_balances: latestSnapshot?.balances ?? null,
+            snapshot_date: latestSnapshot?.snapshot_date ?? null,
+          })
+
+          if (snapError) {
+            console.error(`Snapshot fetch error for wallet ${w.id}:`, snapError.message)
+          }
+        }
+
+        return {
+          wallet_count: allWallets.length,
+          active_wallets: allWallets.filter((w) => w.is_active).length,
+          wallets: result,
+        }
+      }
+
+      case 'get_accounting_summary': {
+        const year = Number(input.year)
+        const month = Number(input.month)
+        const startDate = `${year}-${String(month).padStart(2, '0')}-01`
+        // End date: first day of next month
+        const nextMonth = month === 12 ? 1 : month + 1
+        const nextYear = month === 12 ? year + 1 : year
+        const endDate = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`
+
+        const { data: entries, error: entryError } = await admin
+          .from('accounting_entries')
+          .select('entry_type, direction, register, amount, currency, description')
+          .eq('organization_id', orgId)
+          .gte('entry_date', startDate)
+          .lt('entry_date', endDate)
+
+        if (entryError) return { error: entryError.message }
+
+        const allEntries = entries ?? []
+
+        // Group by entry_type → direction → register
+        const grouped: Record<string, { count: number; total: number }> = {}
+        let grandTotal = 0
+
+        for (const e of allEntries) {
+          const key = `${e.entry_type}|${e.direction}|${e.register}`
+          if (!grouped[key]) grouped[key] = { count: 0, total: 0 }
+          grouped[key].count++
+          grouped[key].total += Number(e.amount) || 0
+          grandTotal += Number(e.amount) || 0
+        }
+
+        // Format into readable breakdown
+        const breakdown = Object.entries(grouped)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([key, val]) => {
+            const [entryType, direction, register] = key.split('|')
+            return {
+              entry_type: entryType,
+              direction,
+              register,
+              count: val.count,
+              total_amount: val.total,
+            }
+          })
+
+        return {
+          period: `${year}-${String(month).padStart(2, '0')}`,
+          total_entries: allEntries.length,
+          grand_total: grandTotal,
+          breakdown,
+        }
+      }
+
+      case 'get_recent_activity': {
+        const limit = Math.min(Number(input.limit) || 20, 50)
+
+        // Fetch recent items from each table in parallel
+        const [transfersRes, accountingRes, hrPaymentsRes] = await Promise.all([
+          admin
+            .from('transfers')
+            .select('id, created_at, full_name, amount_try, currency, category_id, transfer_date')
+            .eq('organization_id', orgId)
+            .order('created_at', { ascending: false })
+            .limit(limit),
+          admin
+            .from('accounting_entries')
+            .select('id, created_at, entry_type, direction, register, amount, description')
+            .eq('organization_id', orgId)
+            .order('created_at', { ascending: false })
+            .limit(limit),
+          admin
+            .from('hr_salary_payments')
+            .select('id, created_at, employee_id, amount_tl, period, paid_at')
+            .eq('organization_id', orgId)
+            .order('created_at', { ascending: false })
+            .limit(limit),
+        ])
+
+        // Collect all items with a unified shape
+        type ActivityItem = {
+          source: string
+          created_at: string
+          summary: string
+        }
+
+        const items: ActivityItem[] = []
+
+        if (!transfersRes.error) {
+          for (const t of transfersRes.data ?? []) {
+            const row = t as {
+              created_at: string
+              full_name: string
+              amount_try: number
+              currency: string
+              category_id: string
+              transfer_date: string
+            }
+            const cat = row.category_id === 'dep' ? 'Deposit' : 'Withdrawal'
+            items.push({
+              source: 'transfer',
+              created_at: row.created_at,
+              summary: `${cat}: ${row.full_name} — ₺${Number(row.amount_try).toLocaleString('en', { minimumFractionDigits: 2 })} (${row.currency}) on ${row.transfer_date}`,
+            })
+          }
+        }
+
+        if (!accountingRes.error) {
+          for (const a of accountingRes.data ?? []) {
+            const row = a as {
+              created_at: string
+              entry_type: string
+              direction: string
+              register: string
+              amount: number
+              description: string
+            }
+            items.push({
+              source: 'accounting',
+              created_at: row.created_at,
+              summary: `${row.entry_type} ${row.direction}: ${Number(row.amount).toLocaleString('en', { minimumFractionDigits: 2 })} ${row.register} — ${row.description}`,
+            })
+          }
+        }
+
+        if (!hrPaymentsRes.error) {
+          for (const p of hrPaymentsRes.data ?? []) {
+            const row = p as {
+              created_at: string
+              employee_id: string
+              amount_tl: number
+              period: string
+              paid_at: string
+            }
+            items.push({
+              source: 'hr_payment',
+              created_at: row.created_at,
+              summary: `Salary payment: ₺${Number(row.amount_tl).toLocaleString('en', { minimumFractionDigits: 2 })} for period ${row.period}, paid ${row.paid_at}`,
+            })
+          }
+        }
+
+        // Sort all by created_at descending and take top N
+        items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        const topItems = items.slice(0, limit)
+
+        return {
+          total_fetched: items.length,
+          showing: topItems.length,
+          activity: topItems,
+        }
       }
 
       default:
@@ -383,17 +704,23 @@ serve(async (req: Request) => {
 
     if (authError || !user) return jsonErr(401, 'UNAUTHORIZED')
 
-    // ── 2. Parse request body ───────────────────────────────────────
-    const body = (await req.json()) as {
-      messages: Array<{ role: string; content: string }>
-      orgId: string
-      orgName: string
-      userRole: string
-    }
+    // ── 1b. Rate limit: 20 requests per minute per user ─────────────
+    const rateLimited = checkRateLimit(`ai-chat:${user.id}`, {
+      maxRequests: 20,
+      windowMs: 60_000,
+      corsHeaders: corsHeaders(origin),
+    })
+    if (rateLimited) return rateLimited
+
+    // ── 2. Parse & validate request body ────────────────────────────
+    const { data: body, error: validationError } = await parseBody(
+      req,
+      AiChatBodySchema,
+      corsHeaders(origin),
+    )
+    if (validationError) return validationError
 
     const { messages, orgId, orgName, userRole } = body
-
-    if (!orgId || !messages?.length) return jsonErr(400, 'Missing required fields')
 
     // ── 3. Authorize: verify org membership ────────────────────────
     const admin = createAdminClient()
@@ -427,7 +754,7 @@ Current context:
 - User role: ${userRole}
 - Today's date: ${today}
 
-You have read-only access to this organization's live data through the provided tools. Always fetch real data before making any claims about specific numbers.
+You have read-only access to this organization's live data through the provided tools. You can query transfers, PSPs, HR/payroll data, crypto wallet balances, and accounting ledger entries. Always fetch real data before making any claims about specific numbers.
 
 Formatting rules:
 - TRY amounts: use ₺ prefix with 2 decimal places (e.g. ₺1,234.56)

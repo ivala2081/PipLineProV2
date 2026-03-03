@@ -134,6 +134,8 @@ export function useAccountingQuery(): UseAccountingQueryReturn {
       return { entries: (data as AccountingEntry[]) ?? [], total: count ?? 0 }
     },
     enabled: !!currentOrg,
+    staleTime: 3 * 60_000, // 3 min – accounting entries change moderately
+    gcTime: 10 * 60_000,
   })
 
   // Summary query
@@ -177,6 +179,8 @@ export function useAccountingQuery(): UseAccountingQueryReturn {
       return Array.from(map.values())
     },
     enabled: !!currentOrg,
+    staleTime: 3 * 60_000, // 3 min – summary changes moderately
+    gcTime: 10 * 60_000,
   })
 
   // Create
@@ -297,7 +301,7 @@ export function useAccountingQuery(): UseAccountingQueryReturn {
         queryKey: queryKeys.accounting.summary(currentOrg?.id ?? ''),
       })
       // Also invalidate HR payment queries so UI reflects deletion
-      queryClient.invalidateQueries({ queryKey: ['hr'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.hr.root })
     },
   })
 

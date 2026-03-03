@@ -172,8 +172,8 @@ export function LedgerTable({
   const filterBar = (
     <div className="space-y-sm mb-md">
       {/* Search + toggle row */}
-      <div className="flex items-center gap-sm">
-        <div className="relative flex-1 min-w-[280px] sm:min-w-[320px]">
+      <div className="flex flex-col gap-sm sm:flex-row sm:items-center">
+        <div className="relative min-w-0 flex-1 sm:min-w-[320px]">
           <MagnifyingGlass
             size={15}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-black/35"
@@ -196,39 +196,41 @@ export function LedgerTable({
             </button>
           )}
         </div>
-        <DatePicker
-          dateFrom={filters.dateFrom}
-          dateTo={filters.dateTo}
-          onChange={(from, to) => {
-            onFilterChange('dateFrom', from)
-            onFilterChange('dateTo', to)
-          }}
-        />
-        <Button
-          variant={hasActiveFilters ? 'filled' : 'outline'}
-          size="sm"
-          className="h-8 gap-1.5 px-2.5 text-xs"
-          onClick={() => setFiltersOpen(!filtersOpen)}
-        >
-          <Funnel size={14} weight={hasActiveFilters ? 'fill' : 'regular'} />
-          {t('accounting.filters.label')}
-          {hasActiveFilters && (
-            <span className="ml-0.5 flex size-4 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold">
-              {Object.values(filters).filter((v) => v != null && v !== '').length}
-            </span>
-          )}
-        </Button>
-        {hasActiveFilters && (
+        <div className="flex flex-wrap items-center gap-sm">
+          <DatePicker
+            dateFrom={filters.dateFrom}
+            dateTo={filters.dateTo}
+            onChange={(from, to) => {
+              onFilterChange('dateFrom', from)
+              onFilterChange('dateTo', to)
+            }}
+          />
           <Button
-            variant="ghost"
+            variant={hasActiveFilters ? 'filled' : 'outline'}
             size="sm"
-            className="h-8 gap-1 px-2 text-xs text-black/40 hover:text-black/70"
-            onClick={onClearFilters}
+            className="h-8 gap-1.5 px-2.5 text-xs"
+            onClick={() => setFiltersOpen(!filtersOpen)}
           >
-            <X size={13} />
-            {t('accounting.filters.clear')}
+            <Funnel size={14} weight={hasActiveFilters ? 'fill' : 'regular'} />
+            {t('accounting.filters.label')}
+            {hasActiveFilters && (
+              <span className="ml-0.5 flex size-4 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold">
+                {Object.values(filters).filter((v) => v != null && v !== '').length}
+              </span>
+            )}
           </Button>
-        )}
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1 px-2 text-xs text-black/40 hover:text-black/70"
+              onClick={onClearFilters}
+            >
+              <X size={13} />
+              {t('accounting.filters.clear')}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Expanded filter dropdowns */}

@@ -16,8 +16,8 @@ export const SelectGroup = SelectPrimitive.Group
 export const SelectValue = SelectPrimitive.Value
 
 const selectSizeClasses: Record<InputSize, string> = {
-  sm: 'h-9 rounded-xl px-3 py-1.5 text-sm',
-  md: 'h-10 rounded-xl px-4 py-2 text-sm',
+  sm: 'h-9 rounded-xl px-3 py-1.5 text-base md:text-sm',
+  md: 'h-10 rounded-xl px-4 py-2 text-base md:text-sm',
   lg: 'rounded-2xl px-5 py-4 text-lg',
 }
 
@@ -90,7 +90,7 @@ export type SelectItemProps = ComponentProps<typeof SelectPrimitive.Item>
 export const SelectItem: FC<SelectItemProps> = ({ className, children, ...props }) => (
   <SelectPrimitive.Item
     className={cn(
-      'relative flex w-full cursor-pointer select-none items-center rounded-xl py-2 pl-9 pr-3 text-sm outline-none transition-colors duration-150',
+      'relative flex w-full cursor-pointer select-none items-center rounded-xl py-2.5 md:py-2 pl-9 pr-3 text-sm outline-none transition-colors duration-150',
       'focus:bg-brand/10 focus:text-brand data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       'hover:bg-black/5 data-[highlighted]:bg-brand/10 data-[highlighted]:text-brand',
       className,

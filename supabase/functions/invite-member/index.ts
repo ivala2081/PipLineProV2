@@ -2,6 +2,23 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders, handleCors } from '../_shared/cors.ts'
 import { createAdminClient } from '../_shared/supabase-admin.ts'
+import { z, parseBody } from '../_shared/validation.ts'
+import { checkRateLimit } from '../_shared/rateLimit.ts'
+
+/* ------------------------------------------------------------------ */
+/*  Input schema                                                       */
+/* ------------------------------------------------------------------ */
+
+const InviteMemberBodySchema = z.object({
+  orgId: z.string().uuid('orgId must be a valid UUID'),
+  email: z.string().email('Invalid email address'),
+  role: z.enum(['admin', 'manager', 'operation'], {
+    errorMap: () => ({ message: 'role must be one of: admin, manager, operation' }),
+  }),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  displayName: z.string().optional(),
+  skipEmail: z.boolean().optional().default(false),
+})
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -161,33 +178,24 @@ serve(async (req: Request) => {
       return errorResponse(401, 'UNAUTHORIZED', 'Invalid token', origin)
     }
 
-    // ── 2. Parse & validate body ────────────────────────────────────
-    const body = await req.json()
-    const { orgId, email, role, password, displayName, skipEmail } = body as {
-      orgId?: string
-      email?: string
-      role?: string
-      password?: string
-      displayName?: string
-      skipEmail?: boolean
-    }
+    // ── 1b. Rate limit: 10 requests per minute per user ─────────────
+    const rateLimited = checkRateLimit(`invite-member:${caller.id}`, {
+      maxRequests: 10,
+      windowMs: 60_000,
+      corsHeaders: corsHeaders(origin),
+    })
+    if (rateLimited) return rateLimited
 
-    if (!orgId || !email || !role || !password) {
-      return errorResponse(400, 'VALIDATION_ERROR', 'Missing required fields', origin)
-    }
-    if (!['admin', 'manager', 'operation'].includes(role)) {
-      return errorResponse(400, 'VALIDATION_ERROR', 'Invalid role', origin)
-    }
-    if (password.length < 8) {
-      return errorResponse(
-        400,
-        'VALIDATION_ERROR',
-        'Password must be at least 8 characters',
-        origin,
-      )
-    }
+    // ── 2. Parse & validate body (Zod) ─────────────────────────────
+    const { data: body, error: validationError } = await parseBody(
+      req,
+      InviteMemberBodySchema,
+      corsHeaders(origin),
+    )
+    if (validationError) return validationError
 
-    const normalizedEmail = email.toLowerCase().trim()
+    const { orgId, role, password, displayName, skipEmail } = body
+    const normalizedEmail = body.email.toLowerCase().trim()
 
     // ── 3. Create admin client ──────────────────────────────────────
     const adminClient = createAdminClient()

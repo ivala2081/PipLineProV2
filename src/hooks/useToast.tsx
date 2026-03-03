@@ -1,4 +1,5 @@
-import { createContext, useCallback, useContext, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import { onToast } from '@/lib/toastEmitter'
 import {
   ToastProvider as RadixToastProvider,
   Toast,
@@ -59,6 +60,9 @@ export function AppToastProvider({ children }: { children: ReactNode }) {
     },
     [],
   )
+
+  // Bridge imperative toasts (from MutationCache / queryClient) into the React toast UI
+  useEffect(() => onToast((event) => toast(event)), [toast])
 
   const handleOpenChange = useCallback((open: boolean, id: string) => {
     if (!open) {

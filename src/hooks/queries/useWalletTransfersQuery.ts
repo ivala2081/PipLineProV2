@@ -37,7 +37,8 @@ export function useWalletTransfersQuery(
     queryKey: queryKeys.wallets.transfers(walletId, String(page)),
     queryFn: () => getTransferHistory(chain, address, 50, page === 0 ? undefined : nextCursor),
     enabled: enabled && !!address && !!chain,
-    staleTime: 2 * 60_000,
+    staleTime: 60_000, // 1 min – wallet transfers change frequently
+    gcTime: 5 * 60_000,
     refetchOnWindowFocus: false,
   })
 

@@ -38,6 +38,7 @@ import {
 } from '@/hooks/queries/useHrQuery'
 import type { HrLeaveType } from '@/lib/database.types'
 import { LeaveDialog } from './LeaveDialog'
+import { MONTH_NAMES_TR, MONTH_NAMES_EN } from './utils/hrConstants'
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                             */
@@ -80,35 +81,6 @@ function dayCount(startDate: string, endDate: string): number {
   const end = new Date(endDate)
   return Math.floor((end.getTime() - start.getTime()) / 86_400_000) + 1
 }
-
-const MONTH_NAMES_TR = [
-  'Ocak',
-  'Şubat',
-  'Mart',
-  'Nisan',
-  'Mayıs',
-  'Haziran',
-  'Temmuz',
-  'Ağustos',
-  'Eylül',
-  'Ekim',
-  'Kasım',
-  'Aralık',
-]
-const MONTH_NAMES_EN = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-]
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                           */
@@ -182,8 +154,8 @@ export function LeavesTab({ employees, canManage, lang }: LeavesTabProps) {
     [searchedLeaves, page],
   )
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- pagination reset on filter change
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- pagination reset on filter change
     setPage(1)
   }, [search, filterYear, filterMonth])
 
@@ -215,8 +187,8 @@ export function LeavesTab({ employees, canManage, lang }: LeavesTabProps) {
   return (
     <div className="space-y-lg">
       {/* Header row */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-sm">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-sm">
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon-sm" onClick={prevMonth}>
               <CaretLeft size={14} />
@@ -228,7 +200,7 @@ export function LeavesTab({ employees, canManage, lang }: LeavesTabProps) {
               <CaretRight size={14} />
             </Button>
           </div>
-          <div className="relative min-w-48">
+          <div className="relative w-full sm:min-w-48">
             <MagnifyingGlass
               size={15}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30"
@@ -272,7 +244,7 @@ export function LeavesTab({ employees, canManage, lang }: LeavesTabProps) {
       ) : (
         <>
           <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
-            <Table>
+            <Table cardOnMobile>
               <TableHeader>
                 <TableRow>
                   <TableHead>{lang === 'tr' ? 'Çalışan' : 'Employee'}</TableHead>
@@ -290,35 +262,35 @@ export function LeavesTab({ employees, canManage, lang }: LeavesTabProps) {
                   const days = dayCount(leave.start_date, leave.end_date)
                   return (
                     <TableRow key={leave.id} className="group">
-                      <TableCell>
+                      <TableCell data-label="Employee">
                         <span className="text-sm font-medium text-black">
                           {emp?.full_name ?? '—'}
                         </span>
                       </TableCell>
-                      <TableCell>
+                      <TableCell data-label="Leave Type">
                         <div className="flex items-center gap-1.5">
                           {cfg.icon}
                           <Tag variant={cfg.variant}>{cfg.label}</Tag>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell data-label="Start">
                         <span className="text-sm tabular-nums text-black/70">
                           {formatDate(leave.start_date, lang)}
                         </span>
                       </TableCell>
-                      <TableCell>
+                      <TableCell data-label="End">
                         <span className="text-sm tabular-nums text-black/70">
                           {formatDate(leave.end_date, lang)}
                         </span>
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell data-label="Days" className="text-center">
                         <span className="text-sm font-semibold tabular-nums text-black">
                           {days}
                         </span>
                       </TableCell>
                       {canManage && (
-                        <TableCell>
-                          <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100">
+                        <TableCell isActions>
+                          <div className="flex items-center justify-end gap-0.5 md:opacity-0 md:group-hover:opacity-100">
                             {leave.notes && (
                               <button
                                 onClick={() => setNoteLeave(leave)}

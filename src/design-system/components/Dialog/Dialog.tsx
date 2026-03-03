@@ -63,7 +63,7 @@ export const DialogContent: FC<DialogContentProps> = ({
         </div>
 
         {/* Content: scrollable on mobile, passthrough grid on desktop */}
-        <div className="flex-1 overflow-y-auto p-card grid gap-md content-start md:contents">
+        <div className="flex-1 overflow-y-auto p-3 md:p-card grid gap-md content-start md:contents">
           {children}
         </div>
 

@@ -226,7 +226,7 @@ export const SidebarTrigger: FC<SidebarTriggerProps> = ({ className, onClick, ..
     <Button
       variant="borderless"
       size="sm"
-      className={cn('h-7 w-7', className)}
+      className={cn('h-auto w-auto md:h-7 md:w-7', className)}
       onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
         onClick?.(event)
         toggleSidebar()

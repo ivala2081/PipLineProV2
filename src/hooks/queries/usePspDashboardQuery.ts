@@ -67,6 +67,8 @@ export function usePspDashboardQuery(): PspDashboardData {
       )
     },
     enabled: !!currentOrg,
+    staleTime: 3 * 60_000, // 3 min – PSP dashboard KPIs change moderately
+    gcTime: 10 * 60_000,
   })
 
   const psps: PspSummary[] = (data ?? []).map((row) => ({

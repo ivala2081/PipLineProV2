@@ -44,6 +44,23 @@
     "whoIsOnline": "Who's Online",
     "noOneOnline": "No one is online right now"
   },
+  "notifications": {
+    "label": "Notifications",
+    "title": "Notifications",
+    "unread": "unread",
+    "markAllRead": "Mark all as read",
+    "clearAll": "Clear all",
+    "empty": "No notifications yet",
+    "emptyHint": "You'll see updates here when they happen",
+    "justNow": "Just now",
+    "ago": "ago",
+    "types": {
+      "transfer_created": "New transfer created",
+      "transfer_approved": "Transfer approved",
+      "invitation_received": "You have a new invitation",
+      "daily_closing_reminder": "Daily closing is pending"
+    }
+  },
   "passwordStrength": {
     "label": "Password strength",
     "veryWeak": "Very Weak",

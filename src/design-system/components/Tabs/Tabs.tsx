@@ -11,7 +11,7 @@ export const TabsList: FC<TabsListProps> = ({ className, ...props }) => (
   <div className="w-full overflow-x-auto tabs-list-scroll">
     <TabsPrimitive.List
       className={cn(
-        'inline-flex h-10 w-max items-center justify-start gap-xs rounded-xl bg-black/5 p-xs text-black/40',
+        'inline-flex h-auto min-h-10 md:h-10 w-max items-center justify-start gap-xs rounded-xl bg-black/5 p-xs text-black/40',
         className,
       )}
       {...props}
@@ -24,7 +24,7 @@ export type TabsTriggerProps = ComponentProps<typeof TabsPrimitive.Trigger>
 export const TabsTrigger: FC<TabsTriggerProps> = ({ className, ...props }) => (
   <TabsPrimitive.Trigger
     className={cn(
-      'inline-flex items-center justify-center whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium',
+      'inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2 md:px-3 md:py-1.5 text-sm font-medium',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/5 focus-visible:ring-offset-2',
       'disabled:pointer-events-none disabled:opacity-50',
       'data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:shadow-sm',

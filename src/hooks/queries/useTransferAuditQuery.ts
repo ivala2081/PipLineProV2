@@ -42,6 +42,8 @@ export function useTransferAuditQuery(transferId: string | null, page: number) {
       }
     },
     enabled: !!transferId,
+    staleTime: 0, // always refetch – audit logs must be fresh
+    gcTime: 60_000,
   })
 
   return {

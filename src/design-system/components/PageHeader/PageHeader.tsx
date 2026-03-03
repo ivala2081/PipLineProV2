@@ -21,7 +21,9 @@ export const PageHeader: FC<PageHeaderProps> = ({ title, subtitle, actions, clas
     className={cn('flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between', className)}
   >
     <div className="min-w-0">
-      <h1 className="text-lg font-semibold tracking-tight text-black md:text-xl">{title}</h1>
+      <h1 className="text-base font-semibold tracking-tight text-black sm:text-lg md:text-xl">
+        {title}
+      </h1>
       {subtitle && <p className="mt-0.5 text-sm text-black/60">{subtitle}</p>}
     </div>
     {actions && <div className="flex shrink-0 flex-wrap items-center gap-sm">{actions}</div>}

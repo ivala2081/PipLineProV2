@@ -7,6 +7,9 @@ import {
   Percent,
   TrendUp,
   Export,
+  CaretDown,
+  FileXls,
+  FileCsv,
 } from '@phosphor-icons/react'
 import {
   ResponsiveContainer,
@@ -33,10 +36,15 @@ import {
   TableCell,
   Tag,
   Button,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
 } from '@ds'
 import { useTheme } from '@ds'
 import { usePspMonthlyQuery } from '@/hooks/queries/usePspMonthlyQuery'
 import { exportPspMonthlyCsv } from '@/lib/csvExport/exportPspMonthlyCsv'
+import { exportPspMonthlyXlsx } from '@/lib/csvExport/exportPspMonthlyXlsx'
 
 /* ------------------------------------------------------------------ */
 /*  Chart theme (matches dashboard pattern)                            */
@@ -202,27 +210,29 @@ export function MonthlyTab({ pspId, pspName, currency }: MonthlyTabProps) {
           <h3 className="mb-3 text-sm font-semibold">
             {t('psps.monthly.volumeTrend', 'Volume Trend')}
           </h3>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={chronological} barGap={2}>
-              <CartesianGrid strokeDasharray="3 3" stroke={ct.gridStroke} vertical={false} />
-              <XAxis dataKey="monthLabel" tick={ct.axisTick} axisLine={ct.axisLine} />
-              <YAxis tick={ct.axisTick} axisLine={ct.axisLine} width={60} />
-              <Tooltip contentStyle={ct.tooltipStyle} cursor={{ fill: ct.cursorStroke }} />
-              <Legend />
-              <Bar
-                dataKey="depositTotal"
-                name={t('psps.monthly.deposits', 'Deposits')}
-                fill="#22c55e"
-                radius={[4, 4, 0, 0]}
-              />
-              <Bar
-                dataKey="withdrawalTotal"
-                name={t('psps.monthly.withdrawals', 'Withdrawals')}
-                fill="#ef4444"
-                radius={[4, 4, 0, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="min-h-[250px] md:min-h-[350px]">
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={chronological} barGap={2}>
+                <CartesianGrid strokeDasharray="3 3" stroke={ct.gridStroke} vertical={false} />
+                <XAxis dataKey="monthLabel" tick={ct.axisTick} axisLine={ct.axisLine} />
+                <YAxis tick={ct.axisTick} axisLine={ct.axisLine} width={60} />
+                <Tooltip contentStyle={ct.tooltipStyle} cursor={{ fill: ct.cursorStroke }} />
+                <Legend />
+                <Bar
+                  dataKey="depositTotal"
+                  name={t('psps.monthly.deposits', 'Deposits')}
+                  fill="#22c55e"
+                  radius={[4, 4, 0, 0]}
+                />
+                <Bar
+                  dataKey="withdrawalTotal"
+                  name={t('psps.monthly.withdrawals', 'Withdrawals')}
+                  fill="#ef4444"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </Card>
 
         {/* Net & Settlement Line Chart */}
@@ -230,34 +240,36 @@ export function MonthlyTab({ pspId, pspName, currency }: MonthlyTabProps) {
           <h3 className="mb-3 text-sm font-semibold">
             {t('psps.monthly.netTrend', 'Net & Settlement Trend')}
           </h3>
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={chronological}>
-              <CartesianGrid strokeDasharray="3 3" stroke={ct.gridStroke} vertical={false} />
-              <XAxis dataKey="monthLabel" tick={ct.axisTick} axisLine={ct.axisLine} />
-              <YAxis tick={ct.axisTick} axisLine={ct.axisLine} width={60} />
-              <Tooltip
-                contentStyle={ct.tooltipStyle}
-                cursor={{ strokeDasharray: '4 4', stroke: ct.cursorStroke }}
-              />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="netTotal"
-                name={t('psps.monthly.net', 'Net')}
-                stroke="#3b82f6"
-                strokeWidth={2}
-                dot={{ r: 4 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="settlementTotal"
-                name={t('psps.monthly.settlement', 'Settlement')}
-                stroke="#f59e0b"
-                strokeWidth={2}
-                dot={{ r: 4 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="min-h-[250px] md:min-h-[350px]">
+            <ResponsiveContainer width="100%" height={260}>
+              <LineChart data={chronological}>
+                <CartesianGrid strokeDasharray="3 3" stroke={ct.gridStroke} vertical={false} />
+                <XAxis dataKey="monthLabel" tick={ct.axisTick} axisLine={ct.axisLine} />
+                <YAxis tick={ct.axisTick} axisLine={ct.axisLine} width={60} />
+                <Tooltip
+                  contentStyle={ct.tooltipStyle}
+                  cursor={{ strokeDasharray: '4 4', stroke: ct.cursorStroke }}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="netTotal"
+                  name={t('psps.monthly.net', 'Net')}
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="settlementTotal"
+                  name={t('psps.monthly.settlement', 'Settlement')}
+                  stroke="#f59e0b"
+                  strokeWidth={2}
+                  dot={{ r: 4 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </Card>
       </div>
 
@@ -266,20 +278,22 @@ export function MonthlyTab({ pspId, pspName, currency }: MonthlyTabProps) {
         <h3 className="mb-3 text-sm font-semibold">
           {t('psps.monthly.commissionAnalysis', 'Commission Analysis')}
         </h3>
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={chronological} barGap={2}>
-            <CartesianGrid strokeDasharray="3 3" stroke={ct.gridStroke} vertical={false} />
-            <XAxis dataKey="monthLabel" tick={ct.axisTick} axisLine={ct.axisLine} />
-            <YAxis tick={ct.axisTick} axisLine={ct.axisLine} width={60} />
-            <Tooltip contentStyle={ct.tooltipStyle} cursor={{ fill: ct.cursorStroke }} />
-            <Bar
-              dataKey="commissionTotal"
-              name={t('psps.monthly.commission', 'Commission')}
-              fill="#a855f7"
-              radius={[4, 4, 0, 0]}
-            />
-          </BarChart>
-        </ResponsiveContainer>
+        <div className="min-h-[250px] md:min-h-[350px]">
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={chronological} barGap={2}>
+              <CartesianGrid strokeDasharray="3 3" stroke={ct.gridStroke} vertical={false} />
+              <XAxis dataKey="monthLabel" tick={ct.axisTick} axisLine={ct.axisLine} />
+              <YAxis tick={ct.axisTick} axisLine={ct.axisLine} width={60} />
+              <Tooltip contentStyle={ct.tooltipStyle} cursor={{ fill: ct.cursorStroke }} />
+              <Bar
+                dataKey="commissionTotal"
+                name={t('psps.monthly.commission', 'Commission')}
+                fill="#a855f7"
+                radius={[4, 4, 0, 0]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </Card>
 
       {/* ── Monthly Breakdown Table ── */}
@@ -288,14 +302,25 @@ export function MonthlyTab({ pspId, pspName, currency }: MonthlyTabProps) {
           <h3 className="text-sm font-semibold">
             {t('psps.monthly.monthlyBreakdown', 'Monthly Breakdown')}
           </h3>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => exportPspMonthlyCsv(rows, pspName, currency)}
-          >
-            <Export size={14} className="mr-1.5" />
-            {t('psps.monthly.export', 'Export CSV')}
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Export size={14} className="mr-1.5" />
+                {t('psps.monthly.export', 'Export')}
+                <CaretDown size={12} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => exportPspMonthlyCsv(rows, pspName, currency)}>
+                <FileCsv size={16} className="mr-2" />
+                {t('psps.monthly.exportCsv', 'Export CSV')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportPspMonthlyXlsx(rows, pspName, currency)}>
+                <FileXls size={16} className="mr-2" />
+                {t('psps.monthly.exportXlsx', 'Export Excel')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <div className="overflow-x-auto">

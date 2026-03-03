@@ -17,5 +17,7 @@ export function useOrgInvitationsQuery(orgId: string, enabled = true) {
       return (data as OrganizationInvitation[]) ?? []
     },
     enabled: !!orgId && enabled,
+    staleTime: 10 * 60_000, // 10 min – invitations change infrequently
+    gcTime: 20 * 60_000,
   })
 }

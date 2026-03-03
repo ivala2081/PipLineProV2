@@ -252,7 +252,7 @@ export function CommandPalette() {
       onOpenChange={setOpen}
       shouldFilter={false}
       label={t('search.title', 'Search')}
-      className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh]"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] md:pt-[20vh]"
     >
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black/50" onClick={() => setOpen(false)} />

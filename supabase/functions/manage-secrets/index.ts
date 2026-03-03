@@ -2,6 +2,8 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders, handleCors } from '../_shared/cors.ts'
 import { createAdminClient } from '../_shared/supabase-admin.ts'
+import { z, parseBody } from '../_shared/validation.ts'
+import { checkRateLimit } from '../_shared/rateLimit.ts'
 
 /* ────────────────────────────────────────────────────────────────────
  * Manage Secrets Edge Function
@@ -22,6 +24,22 @@ const ALLOWED_SECRETS = new Set([
   'UNIPAYMENT_CLIENT_ID',
   'UNIPAYMENT_CLIENT_SECRET',
 ])
+
+/* ── Input schema ──────────────────────────────────────────────────── */
+
+const ManageSecretsBodySchema = z.object({
+  action: z.literal('update', {
+    errorMap: () => ({ message: "action must be 'update'" }),
+  }),
+  secrets: z
+    .array(
+      z.object({
+        name: z.string().min(1, 'Secret name is required'),
+        value: z.string().min(1, 'Secret value cannot be empty'),
+      }),
+    )
+    .min(1, 'At least one secret is required'),
+})
 
 /* ── Response helpers ──────────────────────────────────────────────── */
 
@@ -53,13 +71,14 @@ async function validateGodUser(authHeader: string | null): Promise<GodUser> {
   if (!authHeader) throw new Error('Missing authorization header')
 
   const token = authHeader.replace('Bearer ', '')
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
-    { global: { headers: { Authorization: authHeader } } },
-  )
+  const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
+    global: { headers: { Authorization: authHeader } },
+  })
 
-  const { data: { user }, error } = await supabase.auth.getUser(token)
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser(token)
   if (error || !user) throw new Error('Unauthorized: invalid token')
 
   const admin = createAdminClient()
@@ -78,24 +97,21 @@ async function validateGodUser(authHeader: string | null): Promise<GodUser> {
 
 /* ── Supabase Management API ───────────────────────────────────────── */
 
-async function updateSupabaseSecrets(
-  secrets: { name: string; value: string }[],
-): Promise<void> {
+async function updateSupabaseSecrets(secrets: { name: string; value: string }[]): Promise<void> {
   if (!SB_MANAGEMENT_TOKEN) {
-    throw new Error('SB_MANAGEMENT_TOKEN not configured. Generate a Personal Access Token at https://supabase.com/dashboard/account/tokens')
+    throw new Error(
+      'SB_MANAGEMENT_TOKEN not configured. Generate a Personal Access Token at https://supabase.com/dashboard/account/tokens',
+    )
   }
 
-  const res = await fetch(
-    `https://api.supabase.com/v1/projects/${PROJECT_REF}/secrets`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${SB_MANAGEMENT_TOKEN}`,
-      },
-      body: JSON.stringify(secrets),
+  const res = await fetch(`https://api.supabase.com/v1/projects/${PROJECT_REF}/secrets`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${SB_MANAGEMENT_TOKEN}`,
     },
-  )
+    body: JSON.stringify(secrets),
+  })
 
   if (!res.ok) {
     const text = await res.text().catch(() => 'Unknown error')
@@ -135,18 +151,23 @@ serve(async (req: Request) => {
   try {
     const godUser = await validateGodUser(req.headers.get('authorization'))
 
-    const { action, secrets } = (await req.json()) as {
-      action: string
-      secrets?: { name: string; value: string }[]
-    }
+    // Rate limit: 5 requests per minute per god user
+    const rateLimited = checkRateLimit(`manage-secrets:${godUser.userId}`, {
+      maxRequests: 5,
+      windowMs: 60_000,
+      corsHeaders: corsHeaders(origin),
+    })
+    if (rateLimited) return rateLimited
 
-    if (action !== 'update') {
-      return errorResponse(400, `Unknown action: ${action}`, origin)
-    }
+    // Parse & validate body (Zod)
+    const { data: body, error: validationError } = await parseBody(
+      req,
+      ManageSecretsBodySchema,
+      corsHeaders(origin),
+    )
+    if (validationError) return validationError
 
-    if (!secrets || !Array.isArray(secrets) || secrets.length === 0) {
-      return errorResponse(400, 'No secrets provided', origin)
-    }
+    const { secrets } = body
 
     // Validate all secret names against whitelist
     const invalidNames = secrets.filter((s) => !ALLOWED_SECRETS.has(s.name))
@@ -154,16 +175,6 @@ serve(async (req: Request) => {
       return errorResponse(
         400,
         `Not allowed to update: ${invalidNames.map((s) => s.name).join(', ')}`,
-        origin,
-      )
-    }
-
-    // Validate values are non-empty
-    const emptyValues = secrets.filter((s) => !s.value || s.value.trim().length === 0)
-    if (emptyValues.length > 0) {
-      return errorResponse(
-        400,
-        `Empty values for: ${emptyValues.map((s) => s.name).join(', ')}`,
         origin,
       )
     }

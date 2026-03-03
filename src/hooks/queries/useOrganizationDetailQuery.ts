@@ -17,5 +17,7 @@ export function useOrganizationDetailQuery(orgId: string) {
       return data as Organization
     },
     enabled: !!orgId,
+    staleTime: 10 * 60_000, // 10 min – org details rarely change
+    gcTime: 20 * 60_000,
   })
 }

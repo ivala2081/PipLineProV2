@@ -64,6 +64,7 @@ import { MtConfigTab } from './MtConfigTab'
 import { ReConfigTab } from './ReConfigTab'
 import { PaymentsTab } from '../PaymentsTab'
 import type { HrBonusType } from '@/lib/database.types'
+import { MONTH_NAMES_TR, MONTH_NAMES_EN } from '../utils/hrConstants'
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                             */
@@ -107,35 +108,6 @@ interface BonusesTabProps {
 const AUTO_BONUS_ROLES = ['Marketing', 'Retention'] as const
 
 type DeptTab = 'marketing' | 'reattention' | 'other' | 'history' | 'config' | 're-config'
-
-const MONTH_NAMES_TR = [
-  'Ocak',
-  'Şubat',
-  'Mart',
-  'Nisan',
-  'Mayıs',
-  'Haziran',
-  'Temmuz',
-  'Ağustos',
-  'Eylül',
-  'Ekim',
-  'Kasım',
-  'Aralık',
-]
-const MONTH_NAMES_EN = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-]
 
 export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabProps) {
   const { toast } = useToast()
@@ -637,7 +609,7 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
                                           <Button
                                             variant="ghost"
                                             size="icon-sm"
-                                            className="opacity-0 group-hover:opacity-100 h-7 w-7"
+                                            className="md:opacity-0 md:group-hover:opacity-100 h-7 w-7"
                                           >
                                             <DotsThree size={16} weight="bold" />
                                           </Button>

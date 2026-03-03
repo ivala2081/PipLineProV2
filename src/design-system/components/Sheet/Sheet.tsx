@@ -67,7 +67,7 @@ SheetHeader.displayName = 'SheetHeader'
 export type SheetFooterProps = ComponentProps<'div'>
 export const SheetFooter: FC<SheetFooterProps> = ({ className, ...props }) => (
   <div
-    className={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:gap-2', className)}
+    className={cn('flex flex-col-reverse gap-2 sm:flex-row sm:justify-end', className)}
     {...props}
   />
 )

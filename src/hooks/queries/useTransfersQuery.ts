@@ -6,7 +6,7 @@ import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { queryKeys } from '@/lib/queryKeys'
 import { localYMD, localDayStart, localDayEnd } from '@/lib/date'
-import { hrKeys, DEFAULT_MT_CONFIG, type MtTier } from '@/hooks/queries/useHrQuery'
+import { DEFAULT_MT_CONFIG, type MtTier } from '@/hooks/queries/useHrQuery'
 import { computeTransfer } from '@/hooks/useTransfers'
 import type { TransferRow, TransferFormData } from '@/hooks/useTransfers'
 import type { TransferCategory } from '@/lib/database.types'
@@ -220,11 +220,13 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
       }
     },
     enabled: !!currentOrg,
+    staleTime: 30_000, // 30s – transfers are core operational data, change frequently
+    gcTime: 5 * 60_000,
   })
 
   // Query for date counts (not paginated)
   const { data: dateCountsData } = useQuery({
-    queryKey: [...queryKeys.transfers.lists(), 'dateCounts', currentOrg?.id ?? '', filters],
+    queryKey: [...queryKeys.transfers.dateCounts(currentOrg?.id ?? ''), filters],
     queryFn: async () => {
       if (!currentOrg) throw new Error('No organization selected')
 
@@ -275,6 +277,8 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
       return counts
     },
     enabled: !!currentOrg,
+    staleTime: 30_000, // 30s – date counts follow transfer changes
+    gcTime: 5 * 60_000,
   })
 
   // Create mutation
@@ -375,7 +379,7 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
     onSuccess: () => {
       // Invalidate both transfers list and date counts
       queryClient.invalidateQueries({ queryKey: queryKeys.transfers.lists() })
-      queryClient.invalidateQueries({ queryKey: hrKeys.bonusPayments(currentOrg?.id ?? '') })
+      queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusPayments(currentOrg?.id ?? '') })
     },
   })
 
@@ -480,7 +484,7 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.transfers.lists() })
-      queryClient.invalidateQueries({ queryKey: hrKeys.bonusPayments(currentOrg?.id ?? '') })
+      queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusPayments(currentOrg?.id ?? '') })
     },
   })
 
@@ -522,7 +526,7 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.transfers.lists() })
-      queryClient.invalidateQueries({ queryKey: hrKeys.bonusPayments(currentOrg?.id ?? '') })
+      queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusPayments(currentOrg?.id ?? '') })
     },
   })
 
@@ -549,7 +553,7 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.transfers.lists() })
-      queryClient.invalidateQueries({ queryKey: hrKeys.bonusPayments(currentOrg?.id ?? '') })
+      queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusPayments(currentOrg?.id ?? '') })
     },
   })
 

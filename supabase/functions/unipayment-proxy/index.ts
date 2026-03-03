@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders, handleCors } from '../_shared/cors.ts'
 import { createAdminClient } from '../_shared/supabase-admin.ts'
+import { z, parseBody } from '../_shared/validation.ts'
 
 /* ────────────────────────────────────────────────────────────────────
  * UniPayment Proxy Edge Function
@@ -15,7 +16,36 @@ import { createAdminClient } from '../_shared/supabase-admin.ts'
 const UNIPAYMENT_CLIENT_ID = Deno.env.get('UNIPAYMENT_CLIENT_ID')
 const UNIPAYMENT_CLIENT_SECRET = Deno.env.get('UNIPAYMENT_CLIENT_SECRET')
 const UNIPAYMENT_BASE_URL = Deno.env.get('UNIPAYMENT_BASE_URL') || 'https://api.unipayment.io'
-const UNIPAYMENT_APP_ID = Deno.env.get('UNIPAYMENT_APP_ID') || '46f44926-9968-4713-bcc7-f9a2b7586f15'
+const UNIPAYMENT_APP_ID =
+  Deno.env.get('UNIPAYMENT_APP_ID') || '46f44926-9968-4713-bcc7-f9a2b7586f15'
+
+/* ── Input schema ──────────────────────────────────────────────────── */
+
+const UniPaymentBodySchema = z.object({
+  action: z.enum(
+    [
+      'getBalances',
+      'getAccounts',
+      'getTransactions',
+      'getDepositAddress',
+      'createInvoice',
+      'queryInvoices',
+      'getInvoice',
+      'createPayment',
+      'queryPayments',
+      'getPayment',
+      'cancelPayment',
+      'getPaymentFee',
+      'syncTransactions',
+    ],
+    {
+      errorMap: () => ({ message: 'Unknown action' }),
+    },
+  ),
+  params: z.record(z.unknown()).refine((p) => typeof p.org_id === 'string' && p.org_id.length > 0, {
+    message: 'params.org_id is required',
+  }),
+})
 
 /* ── Response helpers ──────────────────────────────────────────────── */
 
@@ -62,7 +92,7 @@ async function getAccessToken(): Promise<string> {
   const data = await res.json()
   cachedToken = {
     access_token: data.access_token,
-    expires_at: Date.now() + (data.expires_in * 1000),
+    expires_at: Date.now() + data.expires_in * 1000,
   }
   return cachedToken.access_token
 }
@@ -105,19 +135,17 @@ interface CallerInfo {
   role: string
 }
 
-async function validateCaller(
-  authHeader: string | null,
-  orgId: string,
-): Promise<CallerInfo> {
+async function validateCaller(authHeader: string | null, orgId: string): Promise<CallerInfo> {
   if (!authHeader) throw new Error('Missing authorization header')
 
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
-    { global: { headers: { Authorization: authHeader } } },
-  )
+  const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
+    global: { headers: { Authorization: authHeader } },
+  })
 
-  const { data: { user }, error } = await supabase.auth.getUser()
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser()
   if (error || !user) throw new Error('Unauthorized: invalid token')
 
   // Use the user's own client (with their JWT) to check membership
@@ -275,10 +303,10 @@ async function handleSyncTransactions(
 
   try {
     // 2. Get all accounts to iterate
-    const accountsRes = await uniPaymentFetch<{ code: string; data: { id: string; asset_type: string }[] }>(
-      'GET',
-      '/v1.0/wallet/accounts',
-    )
+    const accountsRes = await uniPaymentFetch<{
+      code: string
+      data: { id: string; asset_type: string }[]
+    }>('GET', '/v1.0/wallet/accounts')
 
     const accounts = accountsRes.data || []
     let totalSynced = 0
@@ -329,9 +357,7 @@ async function handleSyncTransactions(
             totalSynced++
 
             const isDeposit =
-              txn.txn_type === 'deposit' ||
-              txn.txn_type === 'invoice_payment' ||
-              txn.amount > 0
+              txn.txn_type === 'deposit' || txn.txn_type === 'invoice_payment' || txn.amount > 0
 
             const categoryId = isDeposit ? 'dep' : 'wd'
             const absAmount = Math.abs(txn.amount)
@@ -416,20 +442,16 @@ serve(async (req: Request) => {
   const origin = req.headers.get('origin') || undefined
 
   try {
-    const { action, params = {} } = (await req.json()) as {
-      action: string
-      params: Record<string, unknown>
-    }
+    // Parse & validate request body (Zod)
+    const { data: body, error: validationError } = await parseBody(
+      req,
+      UniPaymentBodySchema,
+      corsHeaders(origin),
+    )
+    if (validationError) return validationError
 
-    if (!action) {
-      return errorResponse(400, 'Missing action', origin)
-    }
-
-    // Validate org_id is present for auth
+    const { action, params } = body
     const orgId = params.org_id as string
-    if (!orgId) {
-      return errorResponse(400, 'Missing org_id in params', origin)
-    }
 
     // Validate JWT and org membership
     const authHeader = req.headers.get('Authorization')
@@ -511,11 +533,12 @@ serve(async (req: Request) => {
   } catch (error) {
     console.error('[UniPayment Proxy] Error:', error)
     const message = error instanceof Error ? error.message : 'Unknown error'
-    const status = message.includes('Unauthorized') || message.includes('Insufficient')
-      ? 403
-      : message.includes('required')
-        ? 400
-        : 500
+    const status =
+      message.includes('Unauthorized') || message.includes('Insufficient')
+        ? 403
+        : message.includes('required')
+          ? 400
+          : 500
     return errorResponse(status, message, origin)
   }
 })

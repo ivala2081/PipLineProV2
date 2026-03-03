@@ -302,13 +302,19 @@ function ChartCard({
 /* ── Chart: Skeleton ─────────────────────────────────── */
 
 function ChartSkeleton() {
-  return <Skeleton className="h-[260px] w-full rounded-xl" />
+  return <Skeleton className="min-h-[250px] md:min-h-[350px] w-full rounded-xl" />
 }
 
 /* ── Chart: No Data ──────────────────────────────────── */
 
 function ChartEmpty({ message }: { message: string }) {
-  return <EmptyState icon={ChartLine} title={message} className="h-[260px] border-dashed py-0" />
+  return (
+    <EmptyState
+      icon={ChartLine}
+      title={message}
+      className="min-h-[250px] md:min-h-[350px] border-dashed py-0"
+    />
+  )
 }
 
 /* ── Recent Transfers List ───────────────────────────── */
@@ -608,7 +614,7 @@ export function DashboardPage() {
 
   /* ── PSP metadata (name / rate / is_internal) ────── */
   const { data: pspMeta } = useQuery({
-    queryKey: ['dashboard', 'pspMeta', currentOrg?.id],
+    queryKey: queryKeys.dashboard.pspMeta(currentOrg?.id ?? ''),
     queryFn: async () => {
       if (!currentOrg) throw new Error('No org')
       const { data, error } = await supabase
@@ -632,7 +638,7 @@ export function DashboardPage() {
   })
 
   const { data: pspCommissionData, isLoading: isCommissionLoading } = useQuery({
-    queryKey: ['dashboard', 'pspCommission', currentOrg?.id, currentRange.from],
+    queryKey: queryKeys.dashboard.pspCommission(currentOrg?.id ?? '', currentRange.from),
     queryFn: async () => {
       if (!currentOrg) throw new Error('No org')
       const { data, error } = await supabase
@@ -683,7 +689,7 @@ export function DashboardPage() {
   })
 
   const { data: prevPspCommissionMap } = useQuery({
-    queryKey: ['dashboard', 'prevPspCommission', currentOrg?.id, prevRange.from],
+    queryKey: queryKeys.dashboard.prevPspCommission(currentOrg?.id ?? '', prevRange.from),
     queryFn: async () => {
       if (!currentOrg) throw new Error('No org')
       const { data, error } = await supabase
@@ -873,7 +879,7 @@ export function DashboardPage() {
             </button>
           </div>
           {/* Period toggle */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Tabs value={period} onValueChange={(v) => setPeriod(v as DashboardPeriod)}>
               <TabsList>
                 <TabsTrigger value="today">{t('dashboard.period.today')}</TabsTrigger>
@@ -888,14 +894,14 @@ export function DashboardPage() {
                   type="date"
                   value={customFrom}
                   onChange={(e) => setCustomFrom(e.target.value)}
-                  className="h-8 rounded-md border border-black/10 bg-bg1 px-2 text-xs text-black"
+                  className="h-8 w-[130px] min-w-0 rounded-md border border-black/10 bg-bg1 px-2 text-xs text-black"
                 />
                 <span className="text-xs text-black/30">–</span>
                 <input
                   type="date"
                   value={customTo}
                   onChange={(e) => setCustomTo(e.target.value)}
-                  className="h-8 rounded-md border border-black/10 bg-bg1 px-2 text-xs text-black"
+                  className="h-8 w-[130px] min-w-0 rounded-md border border-black/10 bg-bg1 px-2 text-xs text-black"
                 />
               </div>
             )}
@@ -988,62 +994,64 @@ export function DashboardPage() {
             <ChartEmpty message={t('dashboard.charts.noData')} />
           ) : (
             <>
-              <ResponsiveContainer width="100%" height={260}>
-                <AreaChart data={monthlyData.daily_volume}>
-                  <defs>
-                    <linearGradient id="gradDep" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={GREEN} stopOpacity={0.2} />
-                      <stop offset="100%" stopColor={GREEN} stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="gradWd" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={RED} stopOpacity={0.15} />
-                      <stop offset="100%" stopColor={RED} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke={ct.gridStroke} vertical={false} />
-                  <XAxis
-                    dataKey="day"
-                    tickFormatter={fmtDay}
-                    tick={ct.axisTick}
-                    axisLine={ct.axisLine}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    tickFormatter={fmtCompact}
-                    tick={ct.axisTick}
-                    axisLine={false}
-                    tickLine={false}
-                    width={50}
-                  />
-                  <Tooltip
-                    formatter={(value: number, name: string) => [
-                      fmtMoney(value, lang),
-                      name === 'deposits'
-                        ? t('dashboard.charts.deposits')
-                        : t('dashboard.charts.withdrawals'),
-                    ]}
-                    labelFormatter={fmtDay}
-                    contentStyle={ct.tooltipStyle}
-                    cursor={{ strokeDasharray: '4 4', stroke: ct.cursorStroke }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="deposits"
-                    stroke={GREEN}
-                    strokeWidth={2}
-                    fill="url(#gradDep)"
-                    opacity={activeFilter === 'withdrawals' ? 0.12 : 1}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="withdrawals"
-                    stroke={RED}
-                    strokeWidth={2}
-                    fill="url(#gradWd)"
-                    opacity={activeFilter === 'deposits' ? 0.12 : 1}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              <div className="min-h-[250px] md:min-h-[350px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={monthlyData.daily_volume}>
+                    <defs>
+                      <linearGradient id="gradDep" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={GREEN} stopOpacity={0.2} />
+                        <stop offset="100%" stopColor={GREEN} stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gradWd" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={RED} stopOpacity={0.15} />
+                        <stop offset="100%" stopColor={RED} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke={ct.gridStroke} vertical={false} />
+                    <XAxis
+                      dataKey="day"
+                      tickFormatter={fmtDay}
+                      tick={ct.axisTick}
+                      axisLine={ct.axisLine}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tickFormatter={fmtCompact}
+                      tick={ct.axisTick}
+                      axisLine={false}
+                      tickLine={false}
+                      width={50}
+                    />
+                    <Tooltip
+                      formatter={(value: number, name: string) => [
+                        fmtMoney(value, lang),
+                        name === 'deposits'
+                          ? t('dashboard.charts.deposits')
+                          : t('dashboard.charts.withdrawals'),
+                      ]}
+                      labelFormatter={fmtDay}
+                      contentStyle={ct.tooltipStyle}
+                      cursor={{ strokeDasharray: '4 4', stroke: ct.cursorStroke }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="deposits"
+                      stroke={GREEN}
+                      strokeWidth={2}
+                      fill="url(#gradDep)"
+                      opacity={activeFilter === 'withdrawals' ? 0.12 : 1}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="withdrawals"
+                      stroke={RED}
+                      strokeWidth={2}
+                      fill="url(#gradWd)"
+                      opacity={activeFilter === 'deposits' ? 0.12 : 1}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
               {/* Legend */}
               <div className="mt-3 flex items-center justify-center gap-6">
                 <div className="flex items-center gap-1.5">
@@ -1294,47 +1302,52 @@ export function DashboardPage() {
           ) : !monthlyData?.daily_net?.length ? (
             <ChartEmpty message={t('dashboard.charts.noData')} />
           ) : (
-            <ResponsiveContainer width="100%" height={260}>
-              <AreaChart data={monthlyData.daily_net}>
-                <defs>
-                  <linearGradient id="gradNet" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={ct.lineColor} stopOpacity={0.12} />
-                    <stop offset="100%" stopColor={ct.lineColor} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke={ct.gridStroke} vertical={false} />
-                <XAxis
-                  dataKey="day"
-                  tickFormatter={fmtDay}
-                  tick={ct.axisTick}
-                  axisLine={ct.axisLine}
-                  tickLine={false}
-                />
-                <YAxis
-                  tickFormatter={fmtCompact}
-                  tick={ct.axisTick}
-                  axisLine={false}
-                  tickLine={false}
-                  width={50}
-                />
-                <ReferenceLine y={0} stroke={ct.zeroLineStroke} strokeDasharray="4 4" />
-                <Tooltip
-                  formatter={(value: number) => [fmtMoney(value, lang), t('dashboard.charts.net')]}
-                  labelFormatter={fmtDay}
-                  contentStyle={ct.tooltipStyle}
-                  cursor={{ strokeDasharray: '4 4', stroke: ct.cursorStroke }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="net"
-                  stroke={ct.lineColor}
-                  strokeWidth={2}
-                  fill="url(#gradNet)"
-                  dot={{ r: 2, fill: ct.lineColor, strokeWidth: 0 }}
-                  activeDot={{ r: 4, strokeWidth: 0 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <div className="min-h-[250px] md:min-h-[350px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={monthlyData.daily_net}>
+                  <defs>
+                    <linearGradient id="gradNet" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={ct.lineColor} stopOpacity={0.12} />
+                      <stop offset="100%" stopColor={ct.lineColor} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={ct.gridStroke} vertical={false} />
+                  <XAxis
+                    dataKey="day"
+                    tickFormatter={fmtDay}
+                    tick={ct.axisTick}
+                    axisLine={ct.axisLine}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tickFormatter={fmtCompact}
+                    tick={ct.axisTick}
+                    axisLine={false}
+                    tickLine={false}
+                    width={50}
+                  />
+                  <ReferenceLine y={0} stroke={ct.zeroLineStroke} strokeDasharray="4 4" />
+                  <Tooltip
+                    formatter={(value: number) => [
+                      fmtMoney(value, lang),
+                      t('dashboard.charts.net'),
+                    ]}
+                    labelFormatter={fmtDay}
+                    contentStyle={ct.tooltipStyle}
+                    cursor={{ strokeDasharray: '4 4', stroke: ct.cursorStroke }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="net"
+                    stroke={ct.lineColor}
+                    strokeWidth={2}
+                    fill="url(#gradNet)"
+                    dot={{ r: 2, fill: ct.lineColor, strokeWidth: 0 }}
+                    activeDot={{ r: 4, strokeWidth: 0 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           )}
         </ChartCard>
       </div>
@@ -1639,66 +1652,68 @@ export function DashboardPage() {
                       icon={ChartLine}
                       iconColor="text-indigo/60"
                     >
-                      <ResponsiveContainer width="100%" height={180}>
-                        <AreaChart data={prevMonthlyData.daily_volume}>
-                          <defs>
-                            <linearGradient id="gradDepPrev" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor={GREEN} stopOpacity={0.15} />
-                              <stop offset="100%" stopColor={GREEN} stopOpacity={0} />
-                            </linearGradient>
-                            <linearGradient id="gradWdPrev" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor={RED} stopOpacity={0.1} />
-                              <stop offset="100%" stopColor={RED} stopOpacity={0} />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid
-                            strokeDasharray="3 3"
-                            stroke={ct.gridStroke}
-                            vertical={false}
-                          />
-                          <XAxis
-                            dataKey="day"
-                            tickFormatter={fmtDay}
-                            tick={ct.axisTick}
-                            axisLine={ct.axisLine}
-                            tickLine={false}
-                          />
-                          <YAxis
-                            tickFormatter={fmtCompact}
-                            tick={ct.axisTick}
-                            axisLine={false}
-                            tickLine={false}
-                            width={50}
-                          />
-                          <Tooltip
-                            formatter={(value: number, name: string) => [
-                              fmtMoney(value, lang),
-                              name === 'deposits'
-                                ? t('dashboard.charts.deposits')
-                                : t('dashboard.charts.withdrawals'),
-                            ]}
-                            labelFormatter={fmtDay}
-                            contentStyle={ct.tooltipStyle}
-                            cursor={{ strokeDasharray: '4 4', stroke: ct.cursorStroke }}
-                          />
-                          <Area
-                            type="monotone"
-                            dataKey="deposits"
-                            stroke={GREEN}
-                            strokeWidth={1.5}
-                            fill="url(#gradDepPrev)"
-                            strokeOpacity={0.7}
-                          />
-                          <Area
-                            type="monotone"
-                            dataKey="withdrawals"
-                            stroke={RED}
-                            strokeWidth={1.5}
-                            fill="url(#gradWdPrev)"
-                            strokeOpacity={0.7}
-                          />
-                        </AreaChart>
-                      </ResponsiveContainer>
+                      <div className="min-h-[250px] md:min-h-[350px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={prevMonthlyData.daily_volume}>
+                            <defs>
+                              <linearGradient id="gradDepPrev" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor={GREEN} stopOpacity={0.15} />
+                                <stop offset="100%" stopColor={GREEN} stopOpacity={0} />
+                              </linearGradient>
+                              <linearGradient id="gradWdPrev" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor={RED} stopOpacity={0.1} />
+                                <stop offset="100%" stopColor={RED} stopOpacity={0} />
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid
+                              strokeDasharray="3 3"
+                              stroke={ct.gridStroke}
+                              vertical={false}
+                            />
+                            <XAxis
+                              dataKey="day"
+                              tickFormatter={fmtDay}
+                              tick={ct.axisTick}
+                              axisLine={ct.axisLine}
+                              tickLine={false}
+                            />
+                            <YAxis
+                              tickFormatter={fmtCompact}
+                              tick={ct.axisTick}
+                              axisLine={false}
+                              tickLine={false}
+                              width={50}
+                            />
+                            <Tooltip
+                              formatter={(value: number, name: string) => [
+                                fmtMoney(value, lang),
+                                name === 'deposits'
+                                  ? t('dashboard.charts.deposits')
+                                  : t('dashboard.charts.withdrawals'),
+                              ]}
+                              labelFormatter={fmtDay}
+                              contentStyle={ct.tooltipStyle}
+                              cursor={{ strokeDasharray: '4 4', stroke: ct.cursorStroke }}
+                            />
+                            <Area
+                              type="monotone"
+                              dataKey="deposits"
+                              stroke={GREEN}
+                              strokeWidth={1.5}
+                              fill="url(#gradDepPrev)"
+                              strokeOpacity={0.7}
+                            />
+                            <Area
+                              type="monotone"
+                              dataKey="withdrawals"
+                              stroke={RED}
+                              strokeWidth={1.5}
+                              fill="url(#gradWdPrev)"
+                              strokeOpacity={0.7}
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
                       {/* Legend */}
                       <div className="mt-3 flex items-center justify-center gap-6">
                         <div className="flex items-center gap-1.5">

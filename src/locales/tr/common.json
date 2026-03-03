@@ -16,5 +16,9 @@
   "yes": "Evet",
   "no": "Hayır",
   "maintenanceTitle": "Bu sayfa şu anda bakımdadır",
-  "maintenanceDescription": "Bu modül geçici olarak bakım nedeniyle kullanıma kapatılmıştır. Lütfen daha sonra tekrar deneyiniz."
+  "maintenanceDescription": "Bu modül geçici olarak bakım nedeniyle kullanıma kapatılmıştır. Lütfen daha sonra tekrar deneyiniz.",
+  "pwa": {
+    "updateAvailable": "Yeni bir sürüm mevcut",
+    "update": "Güncelle"
+  }
 }

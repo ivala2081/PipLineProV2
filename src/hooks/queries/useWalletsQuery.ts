@@ -36,6 +36,8 @@ export function useWalletsQuery(): UseWalletsQueryReturn {
       return (data as Wallet[]) ?? []
     },
     enabled: !!currentOrg,
+    staleTime: 5 * 60_000, // 5 min – wallet list changes moderately
+    gcTime: 10 * 60_000,
   })
 
   const createMutation = useMutation({

@@ -1,5 +1,7 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { z, parseBody } from '../_shared/validation.ts'
+import { checkRateLimit } from '../_shared/rateLimit.ts'
 
 /* ------------------------------------------------------------------ */
 /*  Inlined shared utilities                                           */
@@ -31,6 +33,15 @@ function createAdminClient() {
     auth: { autoRefreshToken: false, persistSession: false },
   })
 }
+
+/* ------------------------------------------------------------------ */
+/*  Input schema                                                       */
+/* ------------------------------------------------------------------ */
+
+const SendCredentialsBodySchema = z.object({
+  userId: z.string().uuid('userId must be a valid UUID'),
+  orgId: z.string().uuid('orgId must be a valid UUID'),
+})
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -148,18 +159,23 @@ serve(async (req: Request) => {
       return errorResponse(401, 'UNAUTHORIZED', 'Invalid token', origin)
     }
 
-    // ── 2. Parse & validate body ────────────────────────────────────
-    const body = await req.json()
-    const { userId, orgId } = body as { userId?: string; orgId?: string }
+    // ── 1b. Rate limit: 5 requests per minute per user ──────────────
+    const rateLimited = checkRateLimit(`send-credentials:${caller.id}`, {
+      maxRequests: 5,
+      windowMs: 60_000,
+      corsHeaders: corsHeaders(origin),
+    })
+    if (rateLimited) return rateLimited
 
-    if (!userId || !orgId) {
-      return errorResponse(
-        400,
-        'VALIDATION_ERROR',
-        'Missing required fields: userId, orgId',
-        origin,
-      )
-    }
+    // ── 2. Parse & validate body (Zod) ─────────────────────────────
+    const { data: body, error: validationError } = await parseBody(
+      req,
+      SendCredentialsBodySchema,
+      corsHeaders(origin),
+    )
+    if (validationError) return validationError
+
+    const { userId, orgId } = body
 
     // ── 3. Create admin client ──────────────────────────────────────
     const adminClient = createAdminClient()

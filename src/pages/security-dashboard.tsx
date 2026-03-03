@@ -12,6 +12,7 @@ import {
   Database,
 } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
+import { queryKeys } from '@/lib/queryKeys'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { canManageOrg } from '@/lib/roles'
@@ -147,7 +148,7 @@ function AuditDetailButton({ log }: { log: GodAuditLog }) {
                 <p className="mb-1 text-xs font-semibold text-black/40">
                   {t('security.dialog.oldValues')}
                 </p>
-                <pre className="max-h-60 overflow-auto rounded-xl bg-black/[0.03] p-3 text-xs text-black/60">
+                <pre className="max-h-60 overflow-x-auto whitespace-pre-wrap break-all rounded-xl bg-black/[0.03] p-3 text-[10px] md:text-xs text-black/60">
                   {JSON.stringify(log.old_values, null, 2)}
                 </pre>
               </div>
@@ -158,7 +159,7 @@ function AuditDetailButton({ log }: { log: GodAuditLog }) {
                 <p className="mb-1 text-xs font-semibold text-black/40">
                   {t('security.dialog.newValues')}
                 </p>
-                <pre className="max-h-60 overflow-auto rounded-xl bg-black/[0.03] p-3 text-xs text-black/60">
+                <pre className="max-h-60 overflow-x-auto whitespace-pre-wrap break-all rounded-xl bg-black/[0.03] p-3 text-[10px] md:text-xs text-black/60">
                   {JSON.stringify(log.new_values, null, 2)}
                 </pre>
               </div>
@@ -187,7 +188,7 @@ export function SecurityDashboard() {
     isError: metricsError,
     error: metricsErrorObj,
   } = useQuery({
-    queryKey: ['security', 'metrics'],
+    queryKey: queryKeys.security.metrics(),
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_security_metrics')
       if (error) throw new Error(error.message)
@@ -199,7 +200,7 @@ export function SecurityDashboard() {
   })
 
   const { data: failedLogins, isLoading: failedLoading } = useQuery({
-    queryKey: ['security', 'failed-logins'],
+    queryKey: queryKeys.security.failedLogins(),
     queryFn: async () => {
       const { data, error } = await supabase
         .from('login_attempts')
@@ -241,7 +242,7 @@ export function SecurityDashboard() {
   })
 
   const { data: godAudit, isLoading: auditLoading } = useQuery({
-    queryKey: ['security', 'god-audit'],
+    queryKey: queryKeys.security.godAudit(),
     queryFn: async () => {
       const { data, error } = await supabase
         .from('god_audit_log')
@@ -348,7 +349,7 @@ export function SecurityDashboard() {
             </div>
           ) : failedCount > 0 ? (
             <div className="overflow-hidden rounded-xl border border-black/10">
-              <Table>
+              <Table cardOnMobile>
                 <TableHeader>
                   <TableRow className="bg-black/[0.015] hover:bg-black/[0.015]">
                     <TableHead className={TH}>{t('security.columns.ipAddress')}</TableHead>
@@ -363,15 +364,24 @@ export function SecurityDashboard() {
                 <TableBody className="divide-y divide-black/[0.04]">
                   {failedLogins!.map((item) => (
                     <TableRow key={item.ip_address}>
-                      <TableCell className="px-4 py-3 font-mono text-sm">
+                      <TableCell
+                        className="px-4 py-3 font-mono text-sm"
+                        data-label={t('security.columns.ipAddress')}
+                      >
                         {item.ip_address}
                       </TableCell>
-                      <TableCell className="px-4 py-3 text-right">
+                      <TableCell
+                        className="px-4 py-3 text-right"
+                        data-label={t('security.columns.failedAttempts')}
+                      >
                         <Tag variant={getSeverityVariant(item.failed_attempts)}>
                           {item.failed_attempts}
                         </Tag>
                       </TableCell>
-                      <TableCell className="px-4 py-3 text-right text-sm text-black/50">
+                      <TableCell
+                        className="px-4 py-3 text-right text-sm text-black/50"
+                        data-label={t('security.columns.lastAttempt')}
+                      >
                         {new Date(item.last_attempt).toLocaleString(locale)}
                       </TableCell>
                     </TableRow>

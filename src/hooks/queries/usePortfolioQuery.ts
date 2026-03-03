@@ -32,7 +32,8 @@ export function usePortfolioQuery(wallets: Wallet[]): UsePortfolioReturn {
       queryKey: queryKeys.wallets.balances(w.id),
       queryFn: () => getWalletPortfolioWithUsd(w.chain, w.address),
       enabled: !!w.address && !!w.chain,
-      staleTime: 60_000,
+      staleTime: 3 * 60_000, // 3 min – portfolio balances change moderately
+      gcTime: 10 * 60_000,
       refetchOnWindowFocus: false,
     })),
   })

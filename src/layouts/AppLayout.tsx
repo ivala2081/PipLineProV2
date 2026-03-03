@@ -61,7 +61,10 @@ import { cn } from '@ds/utils'
 import { navGroups } from '@/layouts/nav-config'
 import { AvatarUpload } from '@/components/AvatarUpload'
 import { OnlineCount } from '@/components/OnlineCount'
+import { NotificationBell } from '@/components/NotificationBell'
 import { CommandPalette } from '@/components/CommandPalette/CommandPalette'
+import { BottomNav } from '@/components/BottomNav'
+import { PwaUpdatePrompt } from '@/components/PwaUpdatePrompt'
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar Brand (logo + org name)                                    */
@@ -477,16 +480,25 @@ function HeaderBar() {
   }
 
   return (
-    <header className="relative z-20 flex h-14 shrink-0 items-center gap-2 border-b border-black/15 bg-bg1 px-4">
+    <header className="relative z-20 flex h-12 shrink-0 items-center gap-2 border-b border-black/15 bg-bg1 px-3 md:h-14 md:px-4">
       <SidebarTrigger className="-ml-1" />
-      <Separator orientation="vertical" className="mr-2 h-4" />
+      <button
+        onClick={() =>
+          window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))
+        }
+        className="flex size-9 items-center justify-center rounded-md text-black/50 hover:bg-black/8 hover:text-black md:hidden"
+        aria-label="Search"
+      >
+        <MagnifyingGlass size={18} />
+      </button>
+      <Separator orientation="vertical" className="mr-2 hidden h-4 md:block" />
 
-      {/* Breadcrumb: Group > Page */}
+      {/* Breadcrumb: Page name only on mobile, Group > Page on desktop */}
       <nav className="flex items-center gap-1.5 text-sm">
         {currentGroup && currentItem && currentItem.href !== '/' && (
           <>
-            <span className="text-black/60">{tNav(currentGroup.titleKey)}</span>
-            <span className="text-black/30">/</span>
+            <span className="hidden text-black/60 md:inline">{tNav(currentGroup.titleKey)}</span>
+            <span className="hidden text-black/30 md:inline">/</span>
           </>
         )}
         {currentItem && (
@@ -496,12 +508,12 @@ function HeaderBar() {
 
       {/* Right side controls */}
       <div className="ml-auto flex items-center gap-1">
-        {/* Cmd+K search trigger */}
+        {/* Cmd+K search trigger — hidden on mobile */}
         <button
           onClick={() =>
             window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))
           }
-          className="flex h-8 items-center gap-2 rounded-md border border-black/10 bg-black/[0.02] px-2.5 text-xs text-black/50 hover:bg-black/8 hover:text-black/70"
+          className="hidden h-8 items-center gap-2 rounded-md border border-black/10 bg-black/[0.02] px-2.5 text-xs text-black/50 hover:bg-black/8 hover:text-black/70 md:flex"
         >
           <MagnifyingGlass size={14} />
           <span className="hidden sm:inline">{t('search.placeholder', 'Search...')}</span>
@@ -509,11 +521,15 @@ function HeaderBar() {
             Ctrl+K
           </kbd>
         </button>
-        <Separator orientation="vertical" className="mx-1 h-4" />
-        <OnlineCount />
-        <Separator orientation="vertical" className="mx-1 h-4" />
+        <Separator orientation="vertical" className="mx-1 hidden h-4 md:block" />
+        <span className="hidden md:inline-flex">
+          <OnlineCount />
+        </span>
+        <Separator orientation="vertical" className="mx-1 hidden h-4 md:block" />
+        <NotificationBell />
+        <Separator orientation="vertical" className="mx-1 hidden h-4 md:block" />
         <HeaderOrgSwitcher />
-        <Separator orientation="vertical" className="mx-1 h-4" />
+        <Separator orientation="vertical" className="mx-1 hidden h-4 md:block" />
         <button
           onClick={() => changeLocale(nextLocale)}
           className="flex h-8 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-black/70 hover:bg-black/8 hover:text-black"
@@ -561,10 +577,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </SidebarFooter>
         <SidebarRail />
       </Sidebar>
-      <SidebarInset className="max-h-svh min-w-0 w-full overflow-hidden">
+      <SidebarInset className="max-h-dvh min-w-0 w-full overflow-hidden">
         <HeaderBar />
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 md:p-6">{children}</div>
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-3 pb-20 md:p-6 md:pb-6">
+          {children}
+        </div>
       </SidebarInset>
+      <BottomNav />
+      <PwaUpdatePrompt />
       <CommandPalette />
     </SidebarProvider>
   )

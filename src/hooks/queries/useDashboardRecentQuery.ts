@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
+import { queryKeys } from '@/lib/queryKeys'
 import { TRANSFER_CATEGORIES, PAYMENT_METHODS } from '@/lib/transferLookups'
 
 /* ── Recent Transfer (lightweight) ─────────────────── */
@@ -46,7 +47,7 @@ export function useDashboardRecentQuery() {
 
   // Recent transfers (last 10)
   const transfersQuery = useQuery({
-    queryKey: ['dashboard', 'recentTransfers', orgId],
+    queryKey: queryKeys.dashboard.recentTransfers(orgId),
     queryFn: async () => {
       if (!currentOrg) throw new Error('No org')
 
@@ -84,12 +85,13 @@ export function useDashboardRecentQuery() {
       })
     },
     enabled: !!currentOrg,
-    staleTime: 30_000,
+    staleTime: 30_000, // 30s – recent transfers change frequently
+    gcTime: 5 * 60_000,
   })
 
   // Recent activity (last 8 audit entries)
   const activityQuery = useQuery({
-    queryKey: ['dashboard', 'recentActivity', orgId],
+    queryKey: queryKeys.dashboard.recentActivity(orgId),
     queryFn: async () => {
       if (!currentOrg) throw new Error('No org')
 
@@ -131,7 +133,8 @@ export function useDashboardRecentQuery() {
       })
     },
     enabled: !!currentOrg,
-    staleTime: 30_000,
+    staleTime: 30_000, // 30s – activity feed changes frequently
+    gcTime: 5 * 60_000,
   })
 
   return {

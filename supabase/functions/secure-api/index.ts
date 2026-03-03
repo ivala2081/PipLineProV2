@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { corsHeaders, handleCors } from '../_shared/cors.ts'
+import { z, parseBody } from '../_shared/validation.ts'
 
 /* ────────────────────────────────────────────────────────────────────
  * Secure API Proxy
@@ -17,6 +18,16 @@ const TATUM_BASE_V3 = 'https://api.tatum.io/v3'
 const TRONGRID_BASE = 'https://api.trongrid.io/v1'
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta'
 const EXCHANGE_RATE_BASE = 'https://api.freecurrencyapi.com/v1'
+
+/* ── Input schema ──────────────────────────────────────────────────── */
+
+const SecureApiBodySchema = z.object({
+  service: z.enum(['tatum', 'trongrid', 'gemini', 'exchangeRate'], {
+    errorMap: () => ({ message: 'service must be one of: tatum, trongrid, gemini, exchangeRate' }),
+  }),
+  action: z.string().min(1, 'action is required'),
+  params: z.record(z.unknown()).optional().default({}),
+})
 
 /* ── Response helpers ──────────────────────────────────────────────── */
 
@@ -355,33 +366,29 @@ serve(async (req: Request) => {
   const origin = req.headers.get('origin') || undefined
 
   try {
-    // Parse request body
-    const { service, action, params } = (await req.json()) as {
-      service: string
-      action: string
-      params: Record<string, unknown>
-    }
+    // Parse & validate request body
+    const { data: body, error: validationError } = await parseBody(
+      req,
+      SecureApiBodySchema,
+      corsHeaders(origin),
+    )
+    if (validationError) return validationError
 
-    if (!service || !action) {
-      return errorResponse(400, 'Missing service or action', origin)
-    }
+    const { service, action, params } = body
 
     // Route to appropriate handler
     switch (service) {
       case 'tatum':
-        return handleTatumRequest(action, params || {}, origin)
+        return handleTatumRequest(action, params, origin)
 
       case 'trongrid':
-        return handleTronGridRequest(action, params || {}, origin)
+        return handleTronGridRequest(action, params, origin)
 
       case 'gemini':
-        return handleGeminiRequest(action, params || {}, origin)
+        return handleGeminiRequest(action, params, origin)
 
       case 'exchangeRate':
-        return handleExchangeRateRequest(action, params || {}, origin)
-
-      default:
-        return errorResponse(400, `Unknown service: ${service}`, origin)
+        return handleExchangeRateRequest(action, params, origin)
     }
   } catch (error) {
     console.error('[SecureAPI] Unhandled error:', error)

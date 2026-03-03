@@ -44,6 +44,23 @@
     "whoIsOnline": "Kim Çevrimiçi",
     "noOneOnline": "Şu an kimse çevrimiçi değil"
   },
+  "notifications": {
+    "label": "Bildirimler",
+    "title": "Bildirimler",
+    "unread": "okunmamış",
+    "markAllRead": "Tümünü okundu işaretle",
+    "clearAll": "Tümünü temizle",
+    "empty": "Henüz bildirim yok",
+    "emptyHint": "Güncellemeler burada görünecek",
+    "justNow": "Az önce",
+    "ago": "önce",
+    "types": {
+      "transfer_created": "Yeni transfer oluşturuldu",
+      "transfer_approved": "Transfer onaylandı",
+      "invitation_received": "Yeni bir davetiniz var",
+      "daily_closing_reminder": "Günlük kapanış bekliyor"
+    }
+  },
   "passwordStrength": {
     "label": "Şifre gücü",
     "veryWeak": "Çok Zayıf",

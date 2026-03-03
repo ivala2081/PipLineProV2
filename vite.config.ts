@@ -1,10 +1,86 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    VitePWA({
+      registerType: 'prompt',
+      includeAssets: [
+        'favicon-64x64.png',
+        'apple-touch-icon-180x180.png',
+        'logo/logo-icon-dark.png',
+        'logo/logo-icon-white.png',
+      ],
+      manifest: {
+        name: 'PipLinePro',
+        short_name: 'PipLinePro',
+        description: 'Business Operations Platform',
+        theme_color: '#ffffff',
+        background_color: '#ffffff',
+        display: 'standalone',
+        orientation: 'portrait-primary',
+        start_url: '/',
+        scope: '/',
+        icons: [
+          {
+            src: 'pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+        ],
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        navigateFallback: '/offline.html',
+        navigateFallbackDenylist: [/^\/api/, /^\/functions/],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'google-fonts-cache',
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'gstatic-fonts-cache',
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'supabase-api-cache',
+              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 5 },
+              networkTimeoutSeconds: 10,
+            },
+          },
+        ],
+      },
+    }),
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -16,29 +92,58 @@ export default defineConfig(({ mode }) => ({
     port: 5173,
     strictPort: false,
     allowedHosts: ['localhost', '127.0.0.1', 'erp.orderinvests.net', 'erp.orderinvest.net'],
-    proxy: {
-      '/tatum-api': {
-        target: 'https://api.tatum.io',
-        changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/tatum-api/, ''),
-        // Add security headers
-        configure: (proxy) => {
-          proxy.on('proxyReq', (proxyReq) => {
-            proxyReq.setHeader('X-Forwarded-Host', 'localhost')
-          })
-        },
-      },
-      '/trongrid-api': {
-        target: 'https://api.trongrid.io',
-        changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/trongrid-api/, ''),
-      },
-    },
   },
   // Security: prevent source map exposure in production
   build: {
     sourcemap: false,
     minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          if (!id.includes('node_modules')) return undefined
+
+          // React core (react, react-dom, scheduler)
+          if (id.includes('/react-dom/') || id.includes('/react/') || id.includes('/scheduler/')) {
+            return 'vendor-react'
+          }
+
+          // React Router (v7 is large, separate chunk)
+          if (id.includes('/react-router-dom/') || id.includes('/react-router/')) {
+            return 'vendor-router'
+          }
+
+          // Supabase
+          if (id.includes('/@supabase/')) {
+            return 'vendor-supabase'
+          }
+
+          // TanStack Query
+          if (id.includes('/@tanstack/')) {
+            return 'vendor-query'
+          }
+
+          // Radix UI
+          if (id.includes('/@radix-ui/')) {
+            return 'vendor-ui'
+          }
+
+          // Sentry
+          if (id.includes('/@sentry/')) {
+            return 'vendor-sentry'
+          }
+
+          // i18n
+          if (id.includes('/i18next') || id.includes('/react-i18next/')) {
+            return 'vendor-i18n'
+          }
+
+          // Charts (recharts + d3 dependencies)
+          if (id.includes('/recharts/') || id.includes('/d3-')) {
+            return 'vendor-charts'
+          }
+        },
+      },
+    },
   },
   esbuild: {
     drop: mode === 'production' ? ['console', 'debugger'] : [],

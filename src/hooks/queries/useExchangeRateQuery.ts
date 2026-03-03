@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { fetchExchangeRate } from '@/lib/exchangeRateService'
+import { queryKeys } from '@/lib/queryKeys'
 
 /**
  * Always fetches the current USD/TRY rate.
@@ -7,10 +8,10 @@ import { fetchExchangeRate } from '@/lib/exchangeRateService'
  */
 export function useExchangeRateQuery() {
   const query = useQuery({
-    queryKey: ['exchangeRate', 'USD'],
+    queryKey: queryKeys.exchangeRate.byCurrency('USD'),
     queryFn: () => fetchExchangeRate('USD'),
-    staleTime: 1000 * 60 * 15, // 15 min
-    gcTime: 1000 * 60 * 60, // 1 hour
+    staleTime: 15 * 60_000, // 15 min – exchange rates change at most every few hours
+    gcTime: 60 * 60_000, // 1 hour
     retry: 2,
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10_000),
   })

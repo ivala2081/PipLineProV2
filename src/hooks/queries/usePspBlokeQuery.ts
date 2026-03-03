@@ -58,6 +58,8 @@ export function usePspBlokeQuery(pspId: string | undefined) {
       )
     },
     enabled: !!currentOrg && !!pspId,
+    staleTime: 3 * 60_000, // 3 min – blocked transfers change moderately
+    gcTime: 10 * 60_000,
   })
 }
 

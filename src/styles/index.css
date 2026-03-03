@@ -482,5 +482,93 @@
     table[data-card-mobile] tbody td[data-actions]::before {
       display: none;
     }
+    table[data-card-mobile] tbody tr:active {
+      background-color: color-mix(in srgb, var(--color-black) 3%, transparent);
+    }
+  }
+}
+
+/* ==========================================================================
+   Mobile & PWA Enhancements
+   ========================================================================== */
+
+/* Safe area insets for notched phones (iPhone X+, etc.) */
+@supports (padding: env(safe-area-inset-bottom)) {
+  :root {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+/* Touch-friendly targets on touch devices */
+@media (pointer: coarse) {
+  button,
+  a,
+  [role='button'],
+  [role='tab'],
+  [role='menuitem'],
+  input[type='checkbox'],
+  input[type='radio'] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Exceptions: inline text links & icon-only buttons that handle their own sizing */
+  .inline-link,
+  [data-compact-touch] {
+    min-height: unset;
+    min-width: unset;
+  }
+}
+
+/* Prevent rubber-banding on scroll containers */
+.overscroll-contain {
+  overscroll-behavior: contain;
+}
+
+/* Standalone PWA — add top safe area to header */
+@media all and (display-mode: standalone) {
+  header {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
+
+/* ==========================================================================
+   Touch & Mobile Polish
+   ========================================================================== */
+
+/* Prevent iOS Safari auto-zoom on input focus (font-size < 16px triggers zoom) */
+@supports (-webkit-touch-callout: none) {
+  input,
+  textarea,
+  select {
+    font-size: max(16px, 1em);
+  }
+}
+
+/* Momentum scrolling for touch containers */
+.scroll-touch {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+/* Tab scroll snap on touch devices */
+@media (pointer: coarse) {
+  .tabs-list-scroll {
+    scroll-snap-type: x proximity;
+    scroll-padding: 0.25rem;
+  }
+  .tabs-list-scroll > [role='tablist'] > [role='tab'] {
+    scroll-snap-align: start;
+  }
+}
+
+/* Press feedback for interactive elements on touch devices */
+@media (pointer: coarse) {
+  .press-scale {
+    transition: transform 100ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  .press-scale:active {
+    transform: scale(0.97);
   }
 }

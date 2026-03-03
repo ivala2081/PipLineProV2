@@ -19,7 +19,7 @@ export const EmptyState: FC<EmptyStateProps> = ({
 }) => (
   <div
     className={cn(
-      'flex flex-col items-center justify-center gap-3 rounded-xl border border-black/10 bg-bg1 py-20',
+      'flex flex-col items-center justify-center gap-3 rounded-xl border border-black/10 bg-bg1 py-10 md:py-20',
       className,
     )}
   >

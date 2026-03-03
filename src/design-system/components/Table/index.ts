@@ -16,3 +16,5 @@ export {
   type TableCellProps,
   type TableCaptionProps,
 } from './Table'
+
+export { VirtualTableBody, type VirtualTableBodyProps } from './VirtualTableBody'

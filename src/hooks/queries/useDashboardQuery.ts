@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { localYMD, localDayStart, localDayEnd } from '@/lib/date'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
+import { queryKeys } from '@/lib/queryKeys'
 
 /* ── Types ─────────────────────────────────────────── */
 
@@ -269,17 +270,19 @@ export function useDashboardQuery(period: DashboardPeriod, customFrom?: string, 
   const prevRange = getPreviousDateRange(period, customFrom, customTo)
 
   const currentQuery = useQuery({
-    queryKey: ['dashboard', 'current', currentOrg?.id, period, currentRange.from],
+    queryKey: queryKeys.dashboard.current(currentOrg?.id ?? '', period, currentRange.from),
     queryFn: () => fetchKpis(currentOrg!.id, currentRange.from, currentRange.to),
     enabled: !!currentOrg,
-    staleTime: 60_000,
+    staleTime: 3 * 60_000, // 3 min – dashboard KPIs change moderately
+    gcTime: 10 * 60_000,
   })
 
   const prevQuery = useQuery({
-    queryKey: ['dashboard', 'previous', currentOrg?.id, period, prevRange.from],
+    queryKey: queryKeys.dashboard.previous(currentOrg?.id ?? '', period, prevRange.from),
     queryFn: () => fetchKpis(currentOrg!.id, prevRange.from, prevRange.to),
     enabled: !!currentOrg,
-    staleTime: 5 * 60_000,
+    staleTime: 5 * 60_000, // 5 min – previous period is historical
+    gcTime: 10 * 60_000,
   })
 
   return {

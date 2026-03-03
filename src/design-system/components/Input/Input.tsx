@@ -18,8 +18,8 @@ export const focusInputClasses =
 export type InputSize = 'sm' | 'md' | 'lg'
 
 const inputSizeClasses: Record<InputSize, string> = {
-  sm: 'h-9 rounded-xl px-3 py-1.5 text-sm',
-  md: 'h-10 rounded-xl px-4 py-2 text-sm',
+  sm: 'h-9 rounded-xl px-3 py-1.5 text-base md:text-sm',
+  md: 'h-10 rounded-xl px-4 py-2 text-base md:text-sm',
   lg: 'rounded-2xl px-5 py-4 text-lg',
 }
 

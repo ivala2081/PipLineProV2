@@ -1,11 +1,5 @@
 import { useState, useMemo } from 'react'
-import {
-  Money,
-  ArrowLeft,
-  ArrowRight,
-  PencilSimple,
-  MagnifyingGlass,
-} from '@phosphor-icons/react'
+import { Money, ArrowLeft, ArrowRight, PencilSimple, MagnifyingGlass } from '@phosphor-icons/react'
 import {
   Button,
   Table,
@@ -30,21 +24,8 @@ import {
   type HrSalaryPaymentLocal,
 } from '@/hooks/queries/useHrQuery'
 import { SalaryEditDialog } from './SalaryEditDialog'
-
-/* ------------------------------------------------------------------ */
-
-const MONTH_NAMES_TR = [
-  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
-]
-const MONTH_NAMES_EN = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-]
-
-function fmtAmount(n: number, currency: 'TL' | 'USD' = 'TL') {
-  return n.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + (currency === 'USD' ? ' $' : ' TL')
-}
+import { MONTH_NAMES_TR, MONTH_NAMES_EN } from './utils/hrConstants'
+import { fmtAmount } from './utils/salaryCalculations'
 
 interface SalaryPaymentsTabProps {
   employees: HrEmployee[]
@@ -68,12 +49,16 @@ export function SalaryPaymentsTab({ employees, canManage, lang }: SalaryPayments
   const monthName = lang === 'tr' ? MONTH_NAMES_TR[month - 1] : MONTH_NAMES_EN[month - 1]
 
   const prevMonth = () => {
-    if (month === 1) { setMonth(12); setYear((y) => y - 1) }
-    else setMonth((m) => m - 1)
+    if (month === 1) {
+      setMonth(12)
+      setYear((y) => y - 1)
+    } else setMonth((m) => m - 1)
   }
   const nextMonth = () => {
-    if (month === 12) { setMonth(1); setYear((y) => y + 1) }
-    else setMonth((m) => m + 1)
+    if (month === 12) {
+      setMonth(1)
+      setYear((y) => y + 1)
+    } else setMonth((m) => m + 1)
   }
 
   const employeeMap = useMemo(() => {
@@ -93,24 +78,31 @@ export function SalaryPaymentsTab({ employees, canManage, lang }: SalaryPayments
       // Dept filter
       if (deptFilter !== 'all' && emp?.role !== deptFilter) return false
       // Text search (name + email)
-      if (q && !emp?.full_name.toLowerCase().includes(q) && !emp?.email.toLowerCase().includes(q)) return false
+      if (q && !emp?.full_name.toLowerCase().includes(q) && !emp?.email.toLowerCase().includes(q))
+        return false
       return true
     })
   }, [allPayments, year, month, search, deptFilter, employees])
 
   const totalTl = useMemo(
-    () => filtered.filter((p) => (p.salary_currency ?? 'TL') === 'TL').reduce((s, p) => s + p.amount_tl, 0),
+    () =>
+      filtered
+        .filter((p) => (p.salary_currency ?? 'TL') === 'TL')
+        .reduce((s, p) => s + p.amount_tl, 0),
     [filtered],
   )
   const totalUsd = useMemo(
-    () => filtered.filter((p) => (p.salary_currency ?? 'TL') === 'USD').reduce((s, p) => s + p.amount_tl, 0),
+    () =>
+      filtered
+        .filter((p) => (p.salary_currency ?? 'TL') === 'USD')
+        .reduce((s, p) => s + p.amount_tl, 0),
     [filtered],
   )
 
   return (
     <div className="space-y-md">
       {/* Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-sm">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-sm">
         {/* Month navigation */}
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon-sm" onClick={prevMonth}>
@@ -126,16 +118,21 @@ export function SalaryPaymentsTab({ employees, canManage, lang }: SalaryPayments
 
         {/* Search + Dept filters */}
         <div className="flex items-center gap-2">
-          <div className="relative w-52">
-            <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30" />
+          <div className="relative w-full sm:w-52">
+            <MagnifyingGlass
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30"
+            />
             <Input
               className="pl-8 text-sm"
-              placeholder={lang === 'tr' ? 'İsim veya e-posta ara...' : 'Search by name or email...'}
+              placeholder={
+                lang === 'tr' ? 'İsim veya e-posta ara...' : 'Search by name or email...'
+              }
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <div className="w-48">
+          <div className="w-full sm:w-48">
             <Select value={deptFilter} onValueChange={setDeptFilter}>
               <SelectTrigger>
                 <SelectValue placeholder={lang === 'tr' ? 'Departman' : 'Department'} />
@@ -202,11 +199,21 @@ export function SalaryPaymentsTab({ employees, canManage, lang }: SalaryPayments
             <TableBody>
               {Array.from({ length: 4 }).map((_, i) => (
                 <TableRow key={i} className="border-b border-black/[0.06] last:border-0">
-                  <TableCell className="py-3"><Skeleton className="h-4 w-32 rounded" /></TableCell>
-                  <TableCell className="py-3"><Skeleton className="h-4 w-24 rounded" /></TableCell>
-                  <TableCell className="py-3"><Skeleton className="h-4 w-20 rounded ml-auto" /></TableCell>
-                  <TableCell className="py-3"><Skeleton className="h-4 w-24 rounded" /></TableCell>
-                  <TableCell className="py-3"><Skeleton className="h-4 w-28 rounded" /></TableCell>
+                  <TableCell className="py-3">
+                    <Skeleton className="h-4 w-32 rounded" />
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <Skeleton className="h-4 w-24 rounded" />
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <Skeleton className="h-4 w-20 rounded ml-auto" />
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <Skeleton className="h-4 w-24 rounded" />
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <Skeleton className="h-4 w-28 rounded" />
+                  </TableCell>
                   {canManage && <TableCell className="py-3" />}
                 </TableRow>
               ))}
@@ -216,7 +223,9 @@ export function SalaryPaymentsTab({ employees, canManage, lang }: SalaryPayments
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={Money}
-          title={lang === 'tr' ? 'Bu dönemde maaş ödemesi yok' : 'No salary payments in this period'}
+          title={
+            lang === 'tr' ? 'Bu dönemde maaş ödemesi yok' : 'No salary payments in this period'
+          }
           description={
             lang === 'tr'
               ? 'Maaş ödemesi yapıldığında burada görünecek.'
@@ -225,7 +234,7 @@ export function SalaryPaymentsTab({ employees, canManage, lang }: SalaryPayments
         />
       ) : (
         <div className="rounded-xl border border-black/[0.07] bg-bg1">
-          <Table>
+          <Table cardOnMobile>
             <TableHeader>
               <TableRow className="border-b border-black/[0.07]">
                 <TableHead className="text-xs font-medium text-black/40">
@@ -260,32 +269,42 @@ export function SalaryPaymentsTab({ employees, canManage, lang }: SalaryPayments
                     className="group border-b border-black/[0.06] last:border-0"
                   >
                     {/* Employee */}
-                    <TableCell className="py-3">
+                    <TableCell data-label={lang === 'tr' ? 'Çalışan' : 'Employee'} className="py-3">
                       <p className="text-sm font-medium text-black">
                         {emp?.full_name ?? payment.employee_id.slice(0, 8)}
                       </p>
-                      {emp && (
-                        <p className="mt-0.5 text-xs text-black/40">{emp.role}</p>
-                      )}
+                      {emp && <p className="mt-0.5 text-xs text-black/40">{emp.role}</p>}
                     </TableCell>
 
                     {/* Period */}
-                    <TableCell className="py-3 text-sm text-black/60">
+                    <TableCell
+                      data-label={lang === 'tr' ? 'Dönem' : 'Period'}
+                      className="py-3 text-sm text-black/60"
+                    >
                       {payment.period || '—'}
                     </TableCell>
 
                     {/* Amount */}
-                    <TableCell className="py-3 text-right tabular-nums text-sm font-semibold text-black/80">
+                    <TableCell
+                      data-label={lang === 'tr' ? 'Tutar' : 'Amount'}
+                      className="py-3 text-right tabular-nums text-sm font-semibold text-black/80"
+                    >
                       {fmtAmount(payment.amount_tl, payment.salary_currency ?? 'TL')}
                     </TableCell>
 
                     {/* Paid Date */}
-                    <TableCell className="py-3 text-xs text-black/50 tabular-nums">
+                    <TableCell
+                      data-label={lang === 'tr' ? 'Ödeme Tarihi' : 'Paid Date'}
+                      className="py-3 text-xs text-black/50 tabular-nums"
+                    >
                       {paidDate}
                     </TableCell>
 
                     {/* Notes */}
-                    <TableCell className="py-3 text-xs text-black/40 max-w-48 truncate">
+                    <TableCell
+                      data-label={lang === 'tr' ? 'Notlar' : 'Notes'}
+                      className="py-3 text-xs text-black/40 max-w-48 truncate"
+                    >
                       {payment.notes ?? '—'}
                     </TableCell>
 
@@ -295,7 +314,7 @@ export function SalaryPaymentsTab({ employees, canManage, lang }: SalaryPayments
                         <Button
                           variant="ghost"
                           size="icon-sm"
-                          className="opacity-0 group-hover:opacity-100"
+                          className="md:opacity-0 md:group-hover:opacity-100"
                           onClick={() => {
                             setEditingPayment(payment)
                             setEditingEmployee(emp ?? null)

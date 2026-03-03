@@ -26,5 +26,7 @@ export function useOrgMembersQuery(orgId: string) {
       return (data as unknown as MemberWithProfile[]) ?? []
     },
     enabled: !!orgId,
+    staleTime: 10 * 60_000, // 10 min – member list rarely changes
+    gcTime: 20 * 60_000,
   })
 }

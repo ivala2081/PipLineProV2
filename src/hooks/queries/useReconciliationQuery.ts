@@ -127,6 +127,8 @@ export function useReconciliationQuery(year: number, month: number) {
       return (data as AccountingEntry[]) ?? []
     },
     enabled: !!currentOrg,
+    staleTime: 3 * 60_000, // 3 min – reconciliation entries change moderately
+    gcTime: 10 * 60_000,
   })
 
   // Fetch current month config
@@ -145,14 +147,13 @@ export function useReconciliationQuery(year: number, month: number) {
       return (data as AccountingMonthlyConfig | null) ?? null
     },
     enabled: !!currentOrg,
+    staleTime: 5 * 60_000, // 5 min – config changes rarely
+    gcTime: 10 * 60_000,
   })
 
   // Fetch previous month data (entries + config) for auto DEVİR
   const prevQuery = useQuery({
-    queryKey: [
-      ...queryKeys.accounting.reconciliation(orgId, prev.year, prev.month),
-      'prev',
-    ] as const,
+    queryKey: queryKeys.accounting.reconciliationPrev(orgId, prev.year, prev.month),
     queryFn: async () => {
       const [entriesRes, configRes] = await Promise.all([
         supabase
@@ -177,7 +178,8 @@ export function useReconciliationQuery(year: number, month: number) {
       }
     },
     enabled: !!currentOrg,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 5 * 60_000, // 5 min – previous month data is historical
+    gcTime: 10 * 60_000,
   })
 
   // Compute reconciliation data

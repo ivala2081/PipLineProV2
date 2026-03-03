@@ -121,7 +121,8 @@ export function useMonthlyAnalysisQuery(year: number, month: number) {
       return data as unknown as MonthlySummaryData
     },
     enabled: !!currentOrg,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 5 * 60_000, // 5 min – monthly analysis is historical-ish
+    gcTime: 10 * 60_000,
   })
 
   return {

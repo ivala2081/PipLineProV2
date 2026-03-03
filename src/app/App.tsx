@@ -8,7 +8,6 @@ import { AuthProvider, useAuth } from '@/app/providers/AuthProvider'
 import { OrganizationProvider } from '@/app/providers/OrganizationProvider'
 import { AppToastProvider } from '@/hooks/useToast'
 import { usePresence } from '@/hooks/usePresence'
-import { useMutationErrorHandler } from '@/hooks/useMutationErrorHandler'
 import { AppLayout } from '@/layouts/AppLayout'
 import { PageErrorBoundary } from '@/components/ErrorBoundary'
 import { RoleRoute } from '@/app/components/RoleRoute'
@@ -88,8 +87,6 @@ function PrivateRoute({ children }: { children: ReactNode }) {
 
   // Enable presence tracking for authenticated users
   usePresence()
-  // Global mutation error toasts
-  useMutationErrorHandler()
 
   if (isLoading) return <LoadingScreen />
   if (!user) return <Navigate to="/login" replace />

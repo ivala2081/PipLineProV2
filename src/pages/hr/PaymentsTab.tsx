@@ -34,17 +34,7 @@ import {
   type HrBonusPayment,
 } from '@/hooks/queries/useHrQuery'
 import { BonusPaymentDialog } from './bonuses/BonusPaymentDialog'
-
-/* ------------------------------------------------------------------ */
-
-const MONTH_NAMES_TR = [
-  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
-]
-const MONTH_NAMES_EN = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-]
+import { MONTH_NAMES_TR, MONTH_NAMES_EN } from './utils/hrConstants'
 
 interface PaymentsTabProps {
   employees: HrEmployee[]
@@ -71,19 +61,20 @@ export function PaymentsTab({ employees, canManage, lang }: PaymentsTabProps) {
   const monthName = lang === 'tr' ? MONTH_NAMES_TR[month - 1] : MONTH_NAMES_EN[month - 1]
 
   const prevMonth = () => {
-    if (month === 1) { setMonth(12); setYear((y) => y - 1) }
-    else setMonth((m) => m - 1)
+    if (month === 1) {
+      setMonth(12)
+      setYear((y) => y - 1)
+    } else setMonth((m) => m - 1)
   }
   const nextMonth = () => {
-    if (month === 12) { setMonth(1); setYear((y) => y + 1) }
-    else setMonth((m) => m + 1)
+    if (month === 12) {
+      setMonth(1)
+      setYear((y) => y + 1)
+    } else setMonth((m) => m + 1)
   }
 
   // Build agreement lookup map
-  const agreementMap = useMemo(
-    () => new Map(agreements.map((a) => [a.id, a])),
-    [agreements],
-  )
+  const agreementMap = useMemo(() => new Map(agreements.map((a) => [a.id, a])), [agreements])
 
   // Filter: paid status only, within the selected month by paid_at
   const filtered = useMemo(() => {
@@ -100,15 +91,13 @@ export function PaymentsTab({ employees, canManage, lang }: PaymentsTabProps) {
       // Dept filter
       if (deptFilter !== 'all' && emp?.role !== deptFilter) return false
       // Text search (name + email)
-      if (q && !emp?.full_name.toLowerCase().includes(q) && !emp?.email.toLowerCase().includes(q)) return false
+      if (q && !emp?.full_name.toLowerCase().includes(q) && !emp?.email.toLowerCase().includes(q))
+        return false
       return true
     })
   }, [allPayments, year, month, search, deptFilter, employees])
 
-  const totalUsdt = useMemo(
-    () => filtered.reduce((s, p) => s + p.amount_usdt, 0),
-    [filtered],
-  )
+  const totalUsdt = useMemo(() => filtered.reduce((s, p) => s + p.amount_usdt, 0), [filtered])
 
   const handleDelete = async (id: string) => {
     setDeletingId(id)
@@ -125,7 +114,7 @@ export function PaymentsTab({ employees, canManage, lang }: PaymentsTabProps) {
   return (
     <div className="space-y-md">
       {/* Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-sm">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-sm">
         {/* Month navigation */}
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon-sm" onClick={prevMonth}>
@@ -140,17 +129,22 @@ export function PaymentsTab({ employees, canManage, lang }: PaymentsTabProps) {
         </div>
 
         {/* Search + Dept filters */}
-        <div className="flex items-center gap-2">
-          <div className="relative w-52">
-            <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30" />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative w-full sm:w-52">
+            <MagnifyingGlass
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30"
+            />
             <Input
               className="pl-8 text-sm"
-              placeholder={lang === 'tr' ? 'İsim veya e-posta ara...' : 'Search by name or email...'}
+              placeholder={
+                lang === 'tr' ? 'İsim veya e-posta ara...' : 'Search by name or email...'
+              }
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <div className="w-48">
+          <div className="w-full sm:w-48">
             <Select value={deptFilter} onValueChange={setDeptFilter}>
               <SelectTrigger>
                 <SelectValue placeholder={lang === 'tr' ? 'Departman' : 'Department'} />
@@ -193,7 +187,7 @@ export function PaymentsTab({ employees, canManage, lang }: PaymentsTabProps) {
       {/* Table */}
       {isLoading ? (
         <div className="rounded-xl border border-black/[0.07] bg-bg1">
-          <Table>
+          <Table cardOnMobile>
             <TableHeader>
               <TableRow className="border-b border-black/[0.07]">
                 <TableHead className="text-xs font-medium text-black/40">
@@ -217,11 +211,21 @@ export function PaymentsTab({ employees, canManage, lang }: PaymentsTabProps) {
             <TableBody>
               {Array.from({ length: 4 }).map((_, i) => (
                 <TableRow key={i} className="border-b border-black/[0.06] last:border-0">
-                  <TableCell className="py-3"><Skeleton className="h-4 w-32 rounded" /></TableCell>
-                  <TableCell className="py-3"><Skeleton className="h-4 w-40 rounded" /></TableCell>
-                  <TableCell className="py-3"><Skeleton className="h-4 w-24 rounded" /></TableCell>
-                  <TableCell className="py-3"><Skeleton className="h-4 w-20 rounded ml-auto" /></TableCell>
-                  <TableCell className="py-3"><Skeleton className="h-4 w-24 rounded" /></TableCell>
+                  <TableCell className="py-3">
+                    <Skeleton className="h-4 w-32 rounded" />
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <Skeleton className="h-4 w-40 rounded" />
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <Skeleton className="h-4 w-24 rounded" />
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <Skeleton className="h-4 w-20 rounded ml-auto" />
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <Skeleton className="h-4 w-24 rounded" />
+                  </TableCell>
                   {canManage && <TableCell className="py-3" />}
                 </TableRow>
               ))}
@@ -240,7 +244,7 @@ export function PaymentsTab({ employees, canManage, lang }: PaymentsTabProps) {
         />
       ) : (
         <div className="rounded-xl border border-black/[0.07] bg-bg1">
-          <Table>
+          <Table cardOnMobile>
             <TableHeader>
               <TableRow className="border-b border-black/[0.07]">
                 <TableHead className="text-xs font-medium text-black/40">
@@ -264,7 +268,9 @@ export function PaymentsTab({ employees, canManage, lang }: PaymentsTabProps) {
             <TableBody>
               {filtered.map((payment) => {
                 const emp = employees.find((e) => e.id === payment.employee_id)
-                const agreement = payment.agreement_id ? agreementMap.get(payment.agreement_id) : null
+                const agreement = payment.agreement_id
+                  ? agreementMap.get(payment.agreement_id)
+                  : null
                 const paidDate = payment.paid_at
                   ? new Date(payment.paid_at).toLocaleDateString(
                       lang === 'tr' ? 'tr-TR' : 'en-US',
@@ -278,27 +284,28 @@ export function PaymentsTab({ employees, canManage, lang }: PaymentsTabProps) {
                     className="group border-b border-black/[0.06] last:border-0"
                   >
                     {/* Employee */}
-                    <TableCell className="py-3">
+                    <TableCell data-label="Employee" className="py-3">
                       <p className="text-sm font-medium text-black">
                         {emp?.full_name ?? payment.employee_id.slice(0, 8)}
                       </p>
-                      {emp && (
-                        <p className="mt-0.5 text-xs text-black/40">{emp.role}</p>
-                      )}
+                      {emp && <p className="mt-0.5 text-xs text-black/40">{emp.role}</p>}
                     </TableCell>
 
                     {/* Agreement */}
-                    <TableCell className="py-3 text-sm text-black/60">
+                    <TableCell data-label="Agreement" className="py-3 text-sm text-black/60">
                       {agreement?.title ?? '—'}
                     </TableCell>
 
                     {/* Period */}
-                    <TableCell className="py-3 text-sm text-black/60">
+                    <TableCell data-label="Period" className="py-3 text-sm text-black/60">
                       {payment.period || '—'}
                     </TableCell>
 
                     {/* Amount */}
-                    <TableCell className="py-3 text-right tabular-nums text-sm font-semibold text-black/80">
+                    <TableCell
+                      data-label="Amount"
+                      className="py-3 text-right tabular-nums text-sm font-semibold text-black/80"
+                    >
                       {payment.amount_usdt.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US', {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
@@ -307,18 +314,21 @@ export function PaymentsTab({ employees, canManage, lang }: PaymentsTabProps) {
                     </TableCell>
 
                     {/* Paid Date */}
-                    <TableCell className="py-3 text-xs text-black/50 tabular-nums">
+                    <TableCell
+                      data-label="Paid Date"
+                      className="py-3 text-xs text-black/50 tabular-nums"
+                    >
                       {paidDate}
                     </TableCell>
 
                     {/* Actions */}
                     {canManage && (
-                      <TableCell className="py-3 text-right">
+                      <TableCell isActions className="py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Button
                             variant="ghost"
                             size="icon-sm"
-                            className="opacity-0 group-hover:opacity-100"
+                            className="md:opacity-0 md:group-hover:opacity-100"
                             onClick={() => setEditingPayment(payment)}
                             title={lang === 'tr' ? 'Düzenle' : 'Edit'}
                           >
@@ -327,7 +337,7 @@ export function PaymentsTab({ employees, canManage, lang }: PaymentsTabProps) {
                           <Button
                             variant="ghost"
                             size="icon-sm"
-                            className="text-red opacity-0 hover:bg-red/10 group-hover:opacity-100"
+                            className="text-red md:opacity-0 hover:bg-red/10 md:group-hover:opacity-100"
                             disabled={deletingId === payment.id}
                             onClick={() => void handleDelete(payment.id)}
                             title={lang === 'tr' ? 'Sil' : 'Delete'}

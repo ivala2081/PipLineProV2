@@ -46,6 +46,7 @@ import {
   PaginationEllipsis,
   EmptyState,
   DatePicker,
+  VirtualTableBody,
 } from '@ds'
 
 /* ── Props ──────────────────────────────────────────── */
@@ -165,6 +166,11 @@ function reducer(state: TableState, action: TableAction): TableState {
 }
 
 const SECURITY_PIN = '4561'
+
+/** Groups with more rows than this threshold use virtual scrolling */
+const VIRTUAL_THRESHOLD = 50
+const ROW_HEIGHT_PX = 48
+const VIRTUAL_MAX_HEIGHT = 600
 
 /* ── Component ──────────────────────────────────────── */
 
@@ -360,7 +366,7 @@ export function TransfersTable({
     <div className="space-y-sm mb-md">
       {/* Search + toggle row */}
       <div className="flex items-center gap-sm">
-        <div className="relative flex-1 min-w-[280px] sm:min-w-[320px]">
+        <div className="relative flex-1 min-w-0 sm:min-w-[280px]">
           <MagnifyingGlass
             size={15}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-black/35"
@@ -422,7 +428,7 @@ export function TransfersTable({
 
       {/* Expanded filter dropdowns */}
       {filtersOpen && (
-        <div className="rounded-lg border border-black/[0.08] bg-gradient-to-b from-black/[0.02] to-black/[0.015] p-4">
+        <div className="rounded-lg border border-black/[0.08] bg-gradient-to-b from-black/[0.02] to-black/[0.015] p-3 md:p-4">
           <div className="grid gap-md md:grid-cols-2 lg:grid-cols-4">
             {/* Transaction Type */}
             <div className="space-y-1.5">
@@ -662,6 +668,7 @@ export function TransfersTable({
                 </div>
 
                 {/* Table for this date group */}
+                {/* Table header always renders normally */}
                 <Table cardOnMobile>
                   <TableHeader>
                     <TableRow className="bg-black/[0.015] hover:bg-black/[0.015]">
@@ -685,8 +692,34 @@ export function TransfersTable({
                       <TableHead className="w-20 px-2" />
                     </TableRow>
                   </TableHeader>
-                  <TableBody className="divide-y divide-black/[0.04]">
-                    {group.transfers.map((row) => (
+
+                  {/* Use virtual scrolling for large groups, standard body otherwise */}
+                  {group.transfers.length > VIRTUAL_THRESHOLD ? null : (
+                    <TableBody className="divide-y divide-black/[0.04]">
+                      {group.transfers.map((row) => (
+                        <TransferRowItem
+                          key={row.id}
+                          row={row}
+                          lang={lang}
+                          onView={handleView}
+                          onEdit={onEdit}
+                          onDelete={onDelete}
+                          onAudit={handleAudit}
+                        />
+                      ))}
+                    </TableBody>
+                  )}
+                </Table>
+
+                {/* Virtual body renders outside the <table> above with its own scroll container */}
+                {group.transfers.length > VIRTUAL_THRESHOLD && (
+                  <VirtualTableBody<TransferRow>
+                    items={group.transfers}
+                    rowHeight={ROW_HEIGHT_PX}
+                    maxHeight={VIRTUAL_MAX_HEIGHT}
+                    overscan={5}
+                    tbodyClassName="divide-y divide-black/[0.04]"
+                    renderRow={(row) => (
                       <TransferRowItem
                         key={row.id}
                         row={row}
@@ -696,9 +729,9 @@ export function TransfersTable({
                         onDelete={onDelete}
                         onAudit={handleAudit}
                       />
-                    ))}
-                  </TableBody>
-                </Table>
+                    )}
+                  />
+                )}
               </div>
             ))}
 

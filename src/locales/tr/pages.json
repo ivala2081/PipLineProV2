@@ -16,7 +16,8 @@
     "organizations": "Organizasyonlar",
     "security": "Güvenlik",
     "hr": "İK",
-    "settings": "Ayarlar"
+    "settings": "Ayarlar",
+    "more": "Daha Fazla"
   },
   "layout": {
     "noOrganization": "Organizasyon Yok",
@@ -824,7 +825,9 @@
       "transfers": "İşlemler",
       "month": "Ay",
       "change": "Değişim",
-      "export": "CSV İndir"
+      "export": "Dışa Aktar",
+      "exportCsv": "CSV İndir",
+      "exportXlsx": "Excel İndir"
     },
     "bloke": {
       "title": "Bloke Transferler",

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/app/providers/AuthProvider'
+import { queryKeys } from '@/lib/queryKeys'
 
 interface LoginAttempt {
   id: string
@@ -15,7 +16,7 @@ export function useLoginHistory(limit = 50, offset = 0) {
   const { user } = useAuth()
 
   return useQuery({
-    queryKey: ['sessions', 'loginHistory', user?.id, limit, offset],
+    queryKey: queryKeys.sessions.loginHistory(user?.id ?? '', limit, offset),
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_login_history', {
         p_user_id: user!.id,
@@ -26,6 +27,7 @@ export function useLoginHistory(limit = 50, offset = 0) {
       return (data as LoginAttempt[]) ?? []
     },
     enabled: !!user?.id,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 10 * 60_000, // 10 min – login history rarely refreshed
+    gcTime: 20 * 60_000,
   })
 }

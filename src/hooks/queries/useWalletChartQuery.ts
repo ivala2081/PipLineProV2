@@ -29,6 +29,8 @@ export function useWalletChartQuery(walletId: string): UseWalletChartReturn {
       }))
     },
     enabled: !!walletId,
+    staleTime: 5 * 60_000, // 5 min – chart data from snapshots, changes moderately
+    gcTime: 10 * 60_000,
   })
 
   return {

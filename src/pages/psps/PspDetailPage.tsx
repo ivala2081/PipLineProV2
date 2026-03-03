@@ -536,7 +536,7 @@ function LedgerTab({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="size-7 p-0 opacity-0 transition-opacity group-hover:opacity-100"
+                        className="size-7 p-0 md:opacity-0 transition-opacity md:group-hover:opacity-100"
                         onClick={() => handleQuickAdd(row.date, row.net)}
                       >
                         <Receipt size={13} />
@@ -1175,7 +1175,7 @@ function SettingsTab({
             {historyOpen && (
               <>
                 {/* Add rate form */}
-                <div className="flex items-end gap-2 border-t border-black/5 pt-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end border-t border-black/5 pt-4">
                   <div className="flex-1">
                     <Label className="mb-1 text-xs font-medium">
                       {t('transfers.settings.effectiveFrom')}
@@ -1185,7 +1185,7 @@ function SettingsTab({
                       onChange={(e) => setEffectiveFrom(e.target.value)}
                     />
                   </div>
-                  <div className="w-28">
+                  <div className="w-full sm:w-28">
                     <Label className="mb-1 text-xs font-medium">
                       {t('transfers.settings.commissionRate')}
                     </Label>
@@ -1593,7 +1593,7 @@ export function PspDetailPage() {
 
       {/* Tabs: Ledger + Settlements */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
           <TabsList>
             {isUniPayment && (
               <>
@@ -1641,7 +1641,7 @@ export function PspDetailPage() {
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
-                      className="flex h-8 min-w-[10rem] items-center gap-2 rounded-lg border border-black/10 bg-bg1 px-3 text-left text-xs font-medium transition-colors hover:border-black/20 hover:bg-black/[0.02]"
+                      className="flex h-8 min-w-0 sm:min-w-[10rem] items-center gap-2 rounded-lg border border-black/10 bg-bg1 px-3 text-left text-xs font-medium transition-colors hover:border-black/20 hover:bg-black/[0.02]"
                     >
                       <SortIcon size={14} className="text-black/40" />
                       <span className="flex-1 truncate">

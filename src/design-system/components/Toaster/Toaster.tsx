@@ -10,7 +10,7 @@ export type ToastViewportProps = ComponentProps<typeof ToastPrimitive.Viewport>
 export const ToastViewport: FC<ToastViewportProps> = ({ className, ...props }) => (
   <ToastPrimitive.Viewport
     className={cn(
-      'fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]',
+      'fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 md:bottom-0 md:right-0 md:top-auto md:flex-col md:max-w-[420px]',
       className,
     )}
     {...props}
@@ -58,7 +58,7 @@ export type ToastCloseProps = ComponentProps<typeof ToastPrimitive.Close>
 export const ToastClose: FC<ToastCloseProps> = ({ className, ...props }) => (
   <ToastPrimitive.Close
     className={cn(
-      'absolute right-2 top-2 rounded-md p-1 text-black/40 opacity-0 hover:text-black focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100',
+      'absolute right-2 top-2 rounded-md p-1 text-black/40 md:opacity-0 hover:text-black focus:opacity-100 focus:outline-none focus:ring-2 md:group-hover:opacity-100',
       className,
     )}
     toast-close=""

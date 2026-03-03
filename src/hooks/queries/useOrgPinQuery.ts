@@ -1,9 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
+import { queryKeys } from '@/lib/queryKeys'
 import { getDeviceId } from '@/lib/deviceFingerprinting'
-
-const ORG_PIN_KEY = 'orgPin'
 
 /** Check whether the current org has a PIN configured */
 export function useHasOrgPin() {
@@ -11,7 +10,7 @@ export function useHasOrgPin() {
   const orgId = currentOrg?.id
 
   return useQuery({
-    queryKey: [ORG_PIN_KEY, 'has', orgId],
+    queryKey: queryKeys.orgPin.has(orgId ?? ''),
     queryFn: async () => {
       if (!orgId) return false
       const { data, error } = await supabase.rpc('has_org_pin', {
@@ -21,7 +20,8 @@ export function useHasOrgPin() {
       return data as boolean
     },
     enabled: !!orgId,
-    staleTime: 1000 * 60 * 30, // 30 min
+    staleTime: 30 * 60_000, // 30 min – PIN config rarely changes
+    gcTime: 60 * 60_000,
   })
 }
 
@@ -68,7 +68,7 @@ export function useSetOrgPin() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [ORG_PIN_KEY, 'has', currentOrg?.id] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.orgPin.has(currentOrg?.id ?? '') })
     },
   })
 }

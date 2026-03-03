@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
+import { queryKeys } from '@/lib/queryKeys'
 
 /* ── Exchange Rate Point ───────────────────────────── */
 
@@ -17,7 +18,7 @@ export function useDashboardInsightsQuery() {
 
   // Exchange rate history (last 14 days from exchange_rates table)
   const rateHistoryQuery = useQuery({
-    queryKey: ['dashboard', 'rateHistory', orgId],
+    queryKey: queryKeys.dashboard.rateHistory(orgId),
     queryFn: async () => {
       if (!currentOrg) throw new Error('No org')
 
@@ -39,7 +40,8 @@ export function useDashboardInsightsQuery() {
       )
     },
     enabled: !!currentOrg,
-    staleTime: 5 * 60_000,
+    staleTime: 5 * 60_000, // 5 min – rate history changes slowly
+    gcTime: 10 * 60_000,
   })
 
   return {

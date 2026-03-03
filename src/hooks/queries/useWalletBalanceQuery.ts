@@ -20,7 +20,8 @@ export function useWalletBalanceQuery(
     queryKey: queryKeys.wallets.balances(walletId),
     queryFn: () => getWalletPortfolioWithUsd(chain, address),
     enabled: enabled && !!address && !!chain,
-    staleTime: 60_000,
+    staleTime: 3 * 60_000, // 3 min – wallet balances change moderately
+    gcTime: 10 * 60_000,
     refetchOnWindowFocus: false,
   })
 
