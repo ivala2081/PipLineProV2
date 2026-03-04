@@ -103,8 +103,6 @@ const REGISTER_LABELS: Record<string, string> = {
   NAKIT_USD: 'Cash USD',
 }
 
-const TH_CLASS = 'whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-black/40'
-
 /* ── Component ───────────────────────────────────────── */
 
 export function LedgerTable({
@@ -467,21 +465,13 @@ export function LedgerTable({
                 <Table cardOnMobile>
                   <TableHeader>
                     <TableRow className="bg-black/[0.015] hover:bg-black/[0.015]">
-                      <TableHead className={TH_CLASS}>
-                        {t('accounting.columns.description')}
-                      </TableHead>
-                      <TableHead className={TH_CLASS}>{t('accounting.columns.type')}</TableHead>
-                      <TableHead className={TH_CLASS}>
-                        {t('accounting.columns.direction')}
-                      </TableHead>
-                      <TableHead className={`${TH_CLASS} text-right`}>
-                        {t('accounting.columns.amount')}
-                      </TableHead>
-                      <TableHead className={TH_CLASS}>{t('accounting.columns.currency')}</TableHead>
-                      <TableHead className={TH_CLASS}>{t('accounting.columns.register')}</TableHead>
-                      <TableHead className={TH_CLASS}>
-                        {t('accounting.columns.costPeriod')}
-                      </TableHead>
+                      <TableHead>{t('accounting.columns.description')}</TableHead>
+                      <TableHead>{t('accounting.columns.type')}</TableHead>
+                      <TableHead>{t('accounting.columns.direction')}</TableHead>
+                      <TableHead className="text-right">{t('accounting.columns.amount')}</TableHead>
+                      <TableHead>{t('accounting.columns.currency')}</TableHead>
+                      <TableHead>{t('accounting.columns.register')}</TableHead>
+                      <TableHead>{t('accounting.columns.costPeriod')}</TableHead>
                       <TableHead className="w-16 px-2" />
                     </TableRow>
                   </TableHeader>
@@ -551,6 +541,7 @@ export function LedgerTable({
                               <Button
                                 variant="ghost"
                                 className="size-7 p-0 text-black/40 hover:text-black/70"
+                                aria-label="Row actions"
                               >
                                 <DotsThree size={16} weight="bold" />
                               </Button>

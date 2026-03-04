@@ -7,7 +7,7 @@ import { Typography } from '../Text'
 const defaultTag = 'button'
 
 const buttonVariants = cva(
-  'group transition-colors hover:cursor-pointer disabled:cursor-not-allowed text-black disabled:text-black/10 inline-flex justify-center items-center focus:outline-hidden focus:ring-4 focus:ring-black/10 active:scale-[0.97] transition-transform duration-100',
+  'group transition-colors hover:cursor-pointer disabled:cursor-not-allowed text-black disabled:text-black/10 inline-flex justify-center items-center focus:outline-hidden focus:ring-4 focus:ring-brand/20 active:scale-[0.97] transition-transform duration-100',
   {
     variants: {
       variant: {

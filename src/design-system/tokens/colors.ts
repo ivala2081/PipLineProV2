@@ -56,6 +56,7 @@ export const staticColors = {
 export const blackOpacity = {
   100: 'rgba(0, 0, 0, 1)',
   80: 'rgba(0, 0, 0, 0.8)',
+  60: 'rgba(0, 0, 0, 0.6)',
   40: 'rgba(0, 0, 0, 0.4)',
   20: 'rgba(0, 0, 0, 0.2)',
   10: 'rgba(0, 0, 0, 0.1)',
@@ -81,6 +82,9 @@ export const semanticColors = {
   error: staticColors.red,
   warning: staticColors.yellow,
   info: staticColors.blue,
+  blocked: staticColors.red,
+  pending: staticColors.yellow,
+  neutral: staticColors.cyan,
 } as const
 
 export type ThemeMode = keyof typeof themeColors

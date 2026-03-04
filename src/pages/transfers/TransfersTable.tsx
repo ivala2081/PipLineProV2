@@ -24,7 +24,7 @@ import { TransferAuditDialog } from './TransferAuditDialog'
 import { TransferRowItem } from './TransferRowItem'
 import { TransferDetailSheet } from './TransferDetailSheet'
 import { DailySummaryDialog } from './DailySummaryDialog'
-import { groupByDate, TH_CLASS, type DateGroup } from './transfersTableUtils'
+import { groupByDate, type DateGroup } from './transfersTableUtils'
 import {
   Table,
   TableHeader,
@@ -894,32 +894,22 @@ export function TransfersTable({
                             />
                           </TableHead>
                         )}
-                        <TableHead className={TH_CLASS}>
-                          {t('transfers.columns.fullName')}
-                        </TableHead>
-                        <TableHead className={TH_CLASS}>
-                          {t('transfers.columns.paymentMethod')}
-                        </TableHead>
-                        <TableHead className={TH_CLASS}>
-                          {t('transfers.columns.category')}
-                        </TableHead>
-                        <TableHead className={`${TH_CLASS} text-right`}>
+                        <TableHead>{t('transfers.columns.fullName')}</TableHead>
+                        <TableHead>{t('transfers.columns.paymentMethod')}</TableHead>
+                        <TableHead>{t('transfers.columns.category')}</TableHead>
+                        <TableHead className="text-right">
                           {t('transfers.columns.amount')}
                         </TableHead>
-                        <TableHead className={`${TH_CLASS} text-right`}>
+                        <TableHead className="text-right">
                           {t('transfers.columns.commission')}
                         </TableHead>
-                        <TableHead className={`${TH_CLASS} text-right`}>
-                          {t('transfers.columns.net')}
-                        </TableHead>
-                        <TableHead className={`${TH_CLASS} text-right`}>
+                        <TableHead className="text-right">{t('transfers.columns.net')}</TableHead>
+                        <TableHead className="text-right">
                           {t('transfers.table.netUsd', 'Net USD')}
                         </TableHead>
-                        <TableHead className={TH_CLASS}>
-                          {t('transfers.columns.currency')}
-                        </TableHead>
-                        <TableHead className={TH_CLASS}>{t('transfers.columns.psp')}</TableHead>
-                        <TableHead className={TH_CLASS}>{t('transfers.columns.type')}</TableHead>
+                        <TableHead>{t('transfers.columns.currency')}</TableHead>
+                        <TableHead>{t('transfers.columns.psp')}</TableHead>
+                        <TableHead>{t('transfers.columns.type')}</TableHead>
                         <TableHead className="w-20 px-2" />
                       </TableRow>
                     </TableHeader>

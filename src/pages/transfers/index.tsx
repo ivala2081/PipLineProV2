@@ -9,7 +9,6 @@ import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import { queryKeys } from '@/lib/queryKeys'
 import { supabase } from '@/lib/supabase'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
-import { useAuth } from '@/app/providers/AuthProvider'
 import type { TransferRow } from '@/hooks/useTransfers'
 import { Button, Tabs, TabsList, TabsTrigger, TabsContent, PageHeader } from '@ds'
 import { TransfersTable } from './TransfersTable'
@@ -17,15 +16,12 @@ import { DeleteConfirmDialog } from './DeleteConfirmDialog'
 import { LookupSettings } from './LookupSettings'
 import { MonthlyTab } from './MonthlyTab'
 import { CsvImportDialog } from './CsvImportDialog'
-import { TrashTab } from './TrashTab'
 
 export function TransfersPage() {
   const { t } = useTranslation('pages')
   const navigate = useNavigate()
   const { currentOrg } = useOrganization()
-  const { isGod } = useAuth()
-  const { membership } = useOrganization()
-  const isAdmin = isGod || membership?.role === 'admin'
+
   const lookupData = useLookupQueries()
   const transfers = useTransfersQuery()
 
@@ -113,7 +109,6 @@ export function TransfersPage() {
           <TabsTrigger value="transfers">{t('transfers.tabs.transfers')}</TabsTrigger>
           <TabsTrigger value="monthly">{t('transfers.tabs.monthly')}</TabsTrigger>
           <TabsTrigger value="settings">{t('transfers.tabs.settings')}</TabsTrigger>
-          {isAdmin && <TabsTrigger value="trash">{t('transfers.tabs.trash', 'Trash')}</TabsTrigger>}
         </TabsList>
         <TabsContent value="transfers">{tableContent}</TabsContent>
         <TabsContent value="monthly">
@@ -122,11 +117,6 @@ export function TransfersPage() {
         <TabsContent value="settings">
           <LookupSettings lookupData={lookupData} />
         </TabsContent>
-        {isAdmin && (
-          <TabsContent value="trash">
-            <TrashTab />
-          </TabsContent>
-        )}
       </Tabs>
 
       <CsvImportDialog

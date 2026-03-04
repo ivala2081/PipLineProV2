@@ -26,11 +26,6 @@ export interface DaySummary {
   dayRate: number
 }
 
-/* ── Constants ──────────────────────────────────────── */
-
-export const TH_CLASS =
-  'whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-black/40'
-
 /* ── Locale helpers ─────────────────────────────────── */
 
 function toLocale(lang: string) {

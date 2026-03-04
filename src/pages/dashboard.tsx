@@ -165,7 +165,7 @@ function TrendBadge({ current, previous }: { current: number; previous: number |
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums',
+        'inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums',
         isUp ? 'bg-green/10 text-green' : 'bg-red/10 text-red',
       )}
     >
@@ -219,7 +219,7 @@ function HeroKpiCard({
           <div className={cn('flex size-9 items-center justify-center rounded-xl', iconBg)}>
             <Icon size={16} className={iconColor} weight="duotone" />
           </div>
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-black/35">
+          <span className="text-xs font-semibold uppercase tracking-wider text-black/40">
             {label}
           </span>
         </div>
@@ -243,7 +243,7 @@ function HeroKpiCard({
               <span className="text-[9px] font-bold tracking-wide text-black/20">
                 {splitLeft.label}
               </span>
-              <span className="font-mono text-[11px] font-semibold tabular-nums text-black/40">
+              <span className="font-mono text-xs font-semibold tabular-nums text-black/40">
                 {splitLeft.value}
               </span>
             </div>
@@ -253,7 +253,7 @@ function HeroKpiCard({
               <span className="text-[9px] font-bold tracking-wide text-black/20">
                 {splitRight.label}
               </span>
-              <span className="font-mono text-[11px] font-semibold tabular-nums text-black/40">
+              <span className="font-mono text-xs font-semibold tabular-nums text-black/40">
                 {splitRight.value}
               </span>
             </div>
@@ -292,7 +292,7 @@ function ChartCard({
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Icon size={16} className={iconColor} weight="duotone" />
-          <h3 className="text-[13px] font-semibold text-black/50">{title}</h3>
+          <h3 className="text-sm font-semibold text-black/60">{title}</h3>
         </div>
         {headerRight}
       </div>
@@ -376,17 +376,15 @@ function RecentTransfersTable({
           {/* Name + meta */}
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <span className="truncate text-[13px] font-semibold text-black/75">
-                {tx.full_name}
-              </span>
+              <span className="truncate text-sm font-semibold text-black/60">{tx.full_name}</span>
               <Tag variant={tx.isDeposit ? 'green' : 'red'} className="shrink-0 text-[9px]">
                 {tx.categoryName}
               </Tag>
             </div>
-            <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-black/30">
+            <div className="mt-0.5 flex items-center gap-1.5 text-xs text-black/40">
               <Link
                 to={`/psps/${tx.psp_id}`}
-                className="font-medium text-black/40 transition-colors hover:text-black/70"
+                className="font-medium text-black/40 transition-colors hover:text-black/60"
               >
                 {tx.pspName}
               </Link>
@@ -401,7 +399,7 @@ function RecentTransfersTable({
           <div className="shrink-0 text-right">
             <p
               className={cn(
-                'font-mono text-[14px] font-bold tabular-nums',
+                'font-mono text-sm font-bold tabular-nums',
                 tx.isDeposit ? 'text-green' : 'text-red',
               )}
             >
@@ -483,10 +481,10 @@ function TopCustomersList({
                   {i + 1}
                 </span>
                 <UserAvatar name={cust.name} size="sm" className="shrink-0" />
-                <span className="truncate text-[13px] font-medium text-black/65">{cust.name}</span>
+                <span className="truncate text-sm font-medium text-black/60">{cust.name}</span>
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
-                <span className="font-mono text-[12px] font-bold tabular-nums text-black/65">
+                <span className="font-mono text-xs font-bold tabular-nums text-black/60">
                   {fmtMoney(cust.volume, lang)}
                 </span>
                 {diff !== null && Math.abs(diff) >= 1 && (
@@ -542,8 +540,8 @@ function InsightCard({
         <Icon size={16} className={iconColor} weight="duotone" />
       </div>
       <div className="min-w-0">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-black/25">{label}</p>
-        <p className="mt-1 font-mono text-[15px] font-bold tabular-nums text-black/70">{value}</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-black/40">{label}</p>
+        <p className="mt-1 font-mono text-sm font-bold tabular-nums text-black/60">{value}</p>
       </div>
     </div>
   )
@@ -872,10 +870,10 @@ export function DashboardPage() {
             <button
               onClick={() => setViewMode('gross')}
               className={cn(
-                'px-3 py-1.5 text-[11px] font-bold tracking-wide transition-all',
+                'px-3 py-1.5 text-xs font-bold tracking-wide transition-all',
                 !isNet
                   ? 'bg-black/[0.07] text-black'
-                  : 'text-black/35 hover:bg-black/[0.03] hover:text-black/60',
+                  : 'text-black/40 hover:bg-black/[0.03] hover:text-black/60',
               )}
             >
               {t('dashboard.viewMode.gross')}
@@ -884,10 +882,10 @@ export function DashboardPage() {
             <button
               onClick={() => setViewMode('net')}
               className={cn(
-                'px-3 py-1.5 text-[11px] font-bold tracking-wide transition-all',
+                'px-3 py-1.5 text-xs font-bold tracking-wide transition-all',
                 isNet
                   ? 'bg-black/[0.07] text-black'
-                  : 'text-black/35 hover:bg-black/[0.03] hover:text-black/60',
+                  : 'text-black/40 hover:bg-black/[0.03] hover:text-black/60',
               )}
             >
               {t('dashboard.viewMode.net')}
@@ -898,10 +896,10 @@ export function DashboardPage() {
             <button
               onClick={() => setShowUsd(true)}
               className={cn(
-                'px-3 py-1.5 text-[11px] font-bold tracking-wide transition-all',
+                'px-3 py-1.5 text-xs font-bold tracking-wide transition-all',
                 isUSD
                   ? 'bg-black/[0.07] text-black'
-                  : 'text-black/35 hover:bg-black/[0.03] hover:text-black/60',
+                  : 'text-black/40 hover:bg-black/[0.03] hover:text-black/60',
               )}
             >
               $ USD
@@ -910,10 +908,10 @@ export function DashboardPage() {
             <button
               onClick={() => setShowUsd(false)}
               className={cn(
-                'px-3 py-1.5 text-[11px] font-bold tracking-wide transition-all',
+                'px-3 py-1.5 text-xs font-bold tracking-wide transition-all',
                 !isUSD
                   ? 'bg-black/[0.07] text-black'
-                  : 'text-black/35 hover:bg-black/[0.03] hover:text-black/60',
+                  : 'text-black/40 hover:bg-black/[0.03] hover:text-black/60',
               )}
             >
               {baseCurrencySymbol} {baseCurrency}
@@ -1097,15 +1095,11 @@ export function DashboardPage() {
               <div className="mt-3 flex items-center justify-center gap-6">
                 <div className="flex items-center gap-1.5">
                   <div className="size-2 rounded-full bg-green" />
-                  <span className="text-[11px] text-black/40">
-                    {t('dashboard.charts.deposits')}
-                  </span>
+                  <span className="text-xs text-black/40">{t('dashboard.charts.deposits')}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="size-2 rounded-full bg-red" />
-                  <span className="text-[11px] text-black/40">
-                    {t('dashboard.charts.withdrawals')}
-                  </span>
+                  <span className="text-xs text-black/40">{t('dashboard.charts.withdrawals')}</span>
                 </div>
               </div>
             </>
@@ -1121,10 +1115,10 @@ export function DashboardPage() {
             !isMonthlyLoading && paymentMethods.length > 0 ? (
               <Tabs value={pmView} onValueChange={(v) => setPmView(v as 'volume' | 'count')}>
                 <TabsList className="h-7 p-0.5">
-                  <TabsTrigger value="volume" className="px-2 py-1 text-[10px]">
+                  <TabsTrigger value="volume" className="px-2 py-1 text-xs">
                     {t('dashboard.charts.volume')}
                   </TabsTrigger>
-                  <TabsTrigger value="count" className="px-2 py-1 text-[10px]">
+                  <TabsTrigger value="count" className="px-2 py-1 text-xs">
                     {t('dashboard.charts.count')}
                   </TabsTrigger>
                 </TabsList>
@@ -1218,12 +1212,12 @@ export function DashboardPage() {
                             className="size-2.5 shrink-0 rounded-full"
                             style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }}
                           />
-                          <span className="truncate text-[12px] font-medium text-black/55">
+                          <span className="truncate text-xs font-medium text-black/60">
                             {pm.name}
                           </span>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
-                          <span className="font-mono text-[11px] font-bold tabular-nums text-black/60">
+                          <span className="font-mono text-xs font-bold tabular-nums text-black/60">
                             {pmView === 'volume' ? fmtCompact(pm.volume) : pm.count}
                           </span>
                           <span className="text-[10px] font-semibold text-black/20">{pct}%</span>
@@ -1293,7 +1287,7 @@ export function DashboardPage() {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex min-w-0 items-center gap-1.5">
-                              <span className="truncate text-[13px] font-semibold text-black/70">
+                              <span className="truncate text-sm font-semibold text-black/60">
                                 {psp.name}
                               </span>
                               {psp.commission_rate > 0 && (
@@ -1314,7 +1308,7 @@ export function DashboardPage() {
                                   {Math.abs(diff).toFixed(0)}%
                                 </span>
                               )}
-                              <span className="font-mono text-[12px] font-bold tabular-nums text-black/70">
+                              <span className="font-mono text-xs font-bold tabular-nums text-black/60">
                                 {fmtMoney(psp.commission, lang)}
                               </span>
                               <span className="rounded-full bg-black/[0.04] px-1.5 py-0.5 text-[10px] font-bold text-black/25">
@@ -1399,13 +1393,13 @@ export function DashboardPage() {
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ListBullets size={16} className="text-black/35" weight="duotone" />
-              <h2 className="text-[13px] font-semibold text-black/50">
+              <h2 className="text-sm font-semibold text-black/60">
                 {t('dashboard.tables.recentTransfers')}
               </h2>
             </div>
             <Link
               to="/transfers"
-              className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-black/35 transition-colors hover:bg-black/[0.03] hover:text-black/60"
+              className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-black/40 transition-colors hover:bg-black/[0.03] hover:text-black/60"
             >
               {t('dashboard.tables.viewAll')}
               <ArrowRight size={12} />
@@ -1490,10 +1484,10 @@ export function DashboardPage() {
                     <Skeleton className="h-4 w-36 rounded-md" />
                   ) : (
                     <>
-                      <h2 className="text-[13px] font-semibold text-black/55">
+                      <h2 className="text-sm font-semibold text-black/60">
                         {t('dashboard.prevMonth.title')}
                       </h2>
-                      <p className="text-[11px] text-black/30">
+                      <p className="text-xs text-black/40">
                         {prevMonthDate.toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', {
                           month: 'long',
                           year: 'numeric',
@@ -1758,13 +1752,13 @@ export function DashboardPage() {
                       <div className="mt-3 flex items-center justify-center gap-6">
                         <div className="flex items-center gap-1.5">
                           <div className="size-2 rounded-full bg-green opacity-70" />
-                          <span className="text-[11px] text-black/35">
+                          <span className="text-xs text-black/40">
                             {t('dashboard.charts.deposits')}
                           </span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <div className="size-2 rounded-full bg-red opacity-70" />
-                          <span className="text-[11px] text-black/35">
+                          <span className="text-xs text-black/40">
                             {t('dashboard.charts.withdrawals')}
                           </span>
                         </div>

@@ -11,14 +11,18 @@ export const Form: FC<FormProps> = ({ className, onSubmit, ...props }) => {
     onSubmit?.(e)
   }
   return (
-    <form className={cn('space-y-4 md:space-y-6', className)} onSubmit={handleSubmit} {...props} />
+    <form
+      className={cn('space-y-md md:space-y-lg', className)}
+      onSubmit={handleSubmit}
+      {...props}
+    />
   )
 }
 Form.displayName = 'Form'
 
 export type FormFieldProps = ComponentProps<'div'>
 export const FormField: FC<FormFieldProps> = ({ className, ...props }) => (
-  <div className={cn('space-y-2', className)} {...props} />
+  <div className={cn('space-y-sm', className)} {...props} />
 )
 FormField.displayName = 'FormField'
 

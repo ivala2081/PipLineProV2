@@ -21,6 +21,14 @@ export interface OrgAuditFilters {
   to?: string | null
   actorId?: string | null
   action?: string | null
+  search?: string | null
+}
+
+export interface OrgAuditStats {
+  created: number
+  updated: number
+  deleted: number
+  restored: number
 }
 
 export const AUDIT_PAGE_SIZE = 25
@@ -45,6 +53,7 @@ export function useOrgAuditLogQuery(filters: OrgAuditFilters, page: number) {
               p_to: filters.to ?? null,
               p_actor_id: filters.actorId ?? null,
               p_action: filters.action ?? null,
+              p_search: filters.search ?? null,
               p_limit: AUDIT_PAGE_SIZE,
               p_offset: (page - 1) * AUDIT_PAGE_SIZE,
             } as never,
@@ -57,6 +66,7 @@ export function useOrgAuditLogQuery(filters: OrgAuditFilters, page: number) {
               p_to: filters.to ?? null,
               p_actor_id: filters.actorId ?? null,
               p_action: filters.action ?? null,
+              p_search: filters.search ?? null,
             } as never,
           ),
         ])
@@ -81,4 +91,29 @@ export function useOrgAuditLogQuery(filters: OrgAuditFilters, page: number) {
     isLoading,
     error: error?.message ?? null,
   }
+}
+
+export function useOrgAuditLogStats(filters: OrgAuditFilters) {
+  const { currentOrg } = useOrganization()
+
+  return useQuery({
+    queryKey: [...queryKeys.audit.list(currentOrg?.id ?? '', filters), 'stats'],
+    queryFn: async () => {
+      if (!currentOrg) throw new Error('No organization selected')
+      const { data, error } = await supabase.rpc(
+        'get_org_audit_log_stats' as never,
+        {
+          p_org_id: currentOrg.id,
+          p_from: filters.from ?? null,
+          p_to: filters.to ?? null,
+          p_actor_id: filters.actorId ?? null,
+          p_search: filters.search ?? null,
+        } as never,
+      )
+      if (error) throw error
+      return (data as OrgAuditStats) ?? { created: 0, updated: 0, deleted: 0, restored: 0 }
+    },
+    enabled: !!currentOrg,
+    staleTime: 0,
+  })
 }

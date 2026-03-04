@@ -40,7 +40,7 @@ export type TableHeadProps = ComponentProps<'th'>
 export const TableHead: FC<TableHeadProps> = ({ className, ...props }) => (
   <th
     className={cn(
-      'h-10 px-4 text-left align-middle font-medium text-black/40 [&:has([role=checkbox])]:pr-0',
+      'h-10 whitespace-nowrap px-4 text-left align-middle text-xs font-semibold uppercase tracking-wider text-black/40 [&:has([role=checkbox])]:pr-0',
       className,
     )}
     {...props}

@@ -55,14 +55,14 @@ function PspCard({
   const accentColor = !psp.is_active
     ? 'bg-black/20'
     : isGlobal
-      ? 'bg-cyan-500'
+      ? 'bg-cyan'
       : psp.is_internal
-        ? 'bg-blue-400'
+        ? 'bg-blue'
         : psp.balance > 0
-          ? 'bg-amber-500'
+          ? 'bg-orange'
           : psp.balance < 0
-            ? 'bg-red-500'
-            : 'bg-green-500'
+            ? 'bg-red'
+            : 'bg-green'
 
   return (
     <Card
@@ -81,21 +81,21 @@ function PspCard({
           <div className="flex items-center justify-between">
             <div className="flex flex-wrap items-center gap-1 md:gap-2">
               <p className="text-sm font-semibold">{psp.psp_name}</p>
-              <Tag variant={psp.is_active ? 'green' : 'red'} className="text-[10px]">
+              <Tag variant={psp.is_active ? 'green' : 'red'} className="text-xs">
                 {psp.is_active ? t('psps.card.active') : t('psps.card.inactive')}
               </Tag>
               {isGlobal && (
-                <Tag variant="cyan" className="text-[10px]">
+                <Tag variant="cyan" className="text-xs">
                   Global
                 </Tag>
               )}
               {psp.provider && (
-                <Tag variant="blue" className="text-[10px]">
+                <Tag variant="blue" className="text-xs">
                   {psp.provider === 'unipayment' ? 'UniPayment' : psp.provider}
                 </Tag>
               )}
               {psp.is_internal && (
-                <Tag variant="purple" className="text-[10px]">
+                <Tag variant="purple" className="text-xs">
                   {t('psps.settings.internalTag')}
                 </Tag>
               )}
@@ -114,23 +114,23 @@ function PspCard({
                 !psp.is_active
                   ? 'text-black/40'
                   : psp.balance > 0
-                    ? 'text-amber-600'
+                    ? 'text-orange'
                     : psp.balance < 0
-                      ? 'text-red-600'
-                      : 'text-green-600'
+                      ? 'text-red'
+                      : 'text-green'
               }`}
             >
               {formatCurrency(psp.balance)}
             </p>
             {!isGlobal && (
-              <span className="text-[11px] font-medium text-black/30">
+              <span className="text-xs font-medium text-black/40">
                 {(psp.commission_rate * 100).toFixed(1)}%
               </span>
             )}
           </div>
 
           {/* Subtle footer */}
-          <div className="flex items-center gap-xs text-[11px] text-black/30">
+          <div className="flex items-center gap-xs text-xs text-black/40">
             <Clock size={10} />
             {psp.last_settlement_date ?? t('psps.card.noSettlement')}
           </div>

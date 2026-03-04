@@ -63,12 +63,12 @@ export const DialogContent: FC<DialogContentProps> = ({
         </div>
 
         {/* Content: scrollable on mobile, passthrough grid on desktop */}
-        <div className="flex-1 overflow-y-auto p-3 md:p-card grid gap-md content-start md:contents">
+        <div className="flex-1 overflow-y-auto px-4 py-3 md:p-card grid gap-md content-start md:contents">
           {children}
         </div>
 
         {/* Desktop: absolute close button */}
-        <DialogPrimitive.Close className="absolute right-4 top-4 hidden rounded-sm opacity-70 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-black/5 focus:ring-offset-2 disabled:pointer-events-none md:flex">
+        <DialogPrimitive.Close className="absolute right-4 top-4 hidden rounded-sm opacity-70 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:ring-offset-2 disabled:pointer-events-none md:flex">
           <XIcon size={16} />
           <span className="sr-only">{t('dialog.close')}</span>
         </DialogPrimitive.Close>
