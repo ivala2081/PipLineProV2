@@ -136,6 +136,26 @@ export const queryKeys = {
     failedLogins: () => [...queryKeys.security.all, 'failed-logins'] as const,
     godAudit: () => [...queryKeys.security.all, 'god-audit'] as const,
   },
+  audit: {
+    all: ['audit'] as const,
+    list: (orgId: string, filters: Record<string, unknown>) =>
+      ['audit', 'list', orgId, filters] as const,
+    count: (orgId: string, filters: Record<string, unknown>) =>
+      ['audit', 'count', orgId, filters] as const,
+  },
+  alerts: {
+    all: ['alerts'] as const,
+    list: (orgId: string) => ['alerts', 'list', orgId] as const,
+  },
+  webhooks: {
+    all: ['webhooks'] as const,
+    list: (orgId: string) => ['webhooks', 'list', orgId] as const,
+    deliveryLog: (webhookId: string) => ['webhooks', 'delivery', webhookId] as const,
+  },
+  apiKeys: {
+    all: ['apiKeys'] as const,
+    list: (orgId: string) => ['apiKeys', 'list', orgId] as const,
+  },
   hr: {
     root: ['hr'] as const,
     all: (orgId: string) => ['hr', orgId] as const,

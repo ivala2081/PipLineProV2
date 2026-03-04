@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState, useRef, useEffect } from 'react'
 import { Image, Trash, Upload } from '@phosphor-icons/react'
+import { supabase } from '@/lib/supabase'
 import { Card, Button, Input, Label, Separator } from '@ds'
 import { useToast } from '@/hooks/useToast'
 import { useUpdateOrganization } from '@/hooks/queries/useOrgMutations'
@@ -34,6 +35,15 @@ export function SettingsTab({ org, orgId }: SettingsTabProps) {
   const [cropperOpen, setCropperOpen] = useState(false)
   const [imageToCrop, setImageToCrop] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+
+  // Velocity alert thresholds
+  const [velocityCount, setVelocityCount] = useState(
+    (org as unknown as Record<string, number>).velocity_threshold_count ?? 20,
+  )
+  const [velocityWindow, setVelocityWindow] = useState(
+    (org as unknown as Record<string, number>).velocity_window_minutes ?? 10,
+  )
+  const [savingVelocity, setSavingVelocity] = useState(false)
 
   const form = useForm<UpdateOrganizationValues>({
     resolver: zodResolver(updateOrganizationSchema),
@@ -176,6 +186,28 @@ export function SettingsTab({ org, orgId }: SettingsTabProps) {
       toast({ title: (err as Error).message, variant: 'error' })
     }
   })
+
+  const handleSaveVelocity = async () => {
+    setSavingVelocity(true)
+    try {
+      const { error } = await supabase
+        .from('organizations')
+        .update({
+          velocity_threshold_count: velocityCount,
+          velocity_window_minutes: velocityWindow,
+        } as never)
+        .eq('id', orgId)
+      if (error) throw error
+      toast({
+        title: t('organizations.settings.velocitySaved', 'Velocity settings saved'),
+        variant: 'success',
+      })
+    } catch (err) {
+      toast({ title: (err as Error).message, variant: 'error' })
+    } finally {
+      setSavingVelocity(false)
+    }
+  }
 
   return (
     <div className="space-y-lg pt-md">
@@ -331,6 +363,60 @@ export function SettingsTab({ org, orgId }: SettingsTabProps) {
 
       {/* Organization PIN */}
       <OrgPinSettings />
+
+      {/* Velocity Alert Settings */}
+      <Card padding="spacious" className="space-y-md border border-black/5 bg-bg1">
+        <div>
+          <h2 className="text-lg font-semibold">
+            {t('organizations.settings.velocityTitle', 'Velocity Alert Thresholds')}
+          </h2>
+          <p className="text-sm text-black/60">
+            {t(
+              'organizations.settings.velocitySubtitle',
+              'Alert admins when an operator submits too many transfers in a short window. Set threshold to 0 to disable.',
+            )}
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-md">
+          <div className="space-y-sm">
+            <Label>{t('organizations.settings.velocityCount', 'Transfer Count Threshold')}</Label>
+            <Input
+              type="number"
+              min={0}
+              max={1000}
+              value={velocityCount}
+              onChange={(e) => setVelocityCount(parseInt(e.target.value) || 0)}
+            />
+            <p className="text-xs text-black/40">
+              {t(
+                'organizations.settings.velocityCountHint',
+                'Alert after this many transfers (0 = disabled)',
+              )}
+            </p>
+          </div>
+          <div className="space-y-sm">
+            <Label>{t('organizations.settings.velocityWindow', 'Time Window (minutes)')}</Label>
+            <Input
+              type="number"
+              min={1}
+              max={1440}
+              value={velocityWindow}
+              onChange={(e) => setVelocityWindow(parseInt(e.target.value) || 10)}
+            />
+            <p className="text-xs text-black/40">
+              {t(
+                'organizations.settings.velocityWindowHint',
+                'Rolling window to count transfers in',
+              )}
+            </p>
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <Button variant="filled" size="sm" onClick={handleSaveVelocity} disabled={savingVelocity}>
+            {savingVelocity ? t('organizations.settings.saving') : t('organizations.settings.save')}
+          </Button>
+        </div>
+      </Card>
 
       {/* Danger Zone */}
       <Card padding="spacious" className="space-y-md border border-red/20 bg-red/5">

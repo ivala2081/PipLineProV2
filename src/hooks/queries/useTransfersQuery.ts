@@ -197,6 +197,7 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
         .from('transfers')
         .select(SELECT_QUERY, { count: 'exact' })
         .eq('organization_id', currentOrg.id)
+        .is('deleted_at', null)
 
       // Apply filters
       if (filters.search) {
@@ -283,6 +284,7 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
             : 'transfer_date',
         )
         .eq('organization_id', currentOrg.id)
+        .is('deleted_at', null)
 
       // Apply same filters as main query
       if (filters.search) {
@@ -539,12 +541,13 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
     },
   })
 
-  // Delete mutation — optimistic
+  // Delete mutation — soft delete (sets deleted_at/deleted_by)
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      // hr_bonus_payments.transfer_id FK has ON DELETE CASCADE,
-      // so the auto-bonus payment is automatically deleted with the transfer.
-      const { error } = await supabase.from('transfers').delete().eq('id', id)
+      const { error } = await supabase
+        .from('transfers')
+        .update({ deleted_at: new Date().toISOString(), deleted_by: user?.id ?? null } as never)
+        .eq('id', id)
 
       if (error) throw error
     },
@@ -581,24 +584,30 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
     },
   })
 
-  // Bulk delete mutation — pass ['__all__'] to delete all org transfers
+  // Bulk delete mutation — soft delete; pass ['__all__'] to soft-delete all org transfers
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
+      const now = new Date().toISOString()
+      const deletedBy = user?.id ?? null
+
       if (ids.length === 1 && ids[0] === '__all__') {
-        // Delete ALL transfers for this organization
         if (!currentOrg) throw new Error('No organization selected')
         const { error } = await supabase
           .from('transfers')
-          .delete()
+          .update({ deleted_at: now, deleted_by: deletedBy } as never)
           .eq('organization_id', currentOrg.id)
+          .is('deleted_at', null)
         if (error) throw error
         return
       }
 
-      // Delete in batches of 50 to avoid query size limits
+      // Soft delete in batches of 50
       for (let i = 0; i < ids.length; i += 50) {
         const batch = ids.slice(i, i + 50)
-        const { error } = await supabase.from('transfers').delete().in('id', batch)
+        const { error } = await supabase
+          .from('transfers')
+          .update({ deleted_at: now, deleted_by: deletedBy } as never)
+          .in('id', batch)
         if (error) throw error
       }
     },
@@ -619,6 +628,7 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
       .from('transfers')
       .select(SELECT_QUERY)
       .eq('organization_id', currentOrg.id)
+      .is('deleted_at', null)
       .gte('transfer_date', startOfDay)
       .lte('transfer_date', endOfDay)
       .order('transfer_date', { ascending: false })

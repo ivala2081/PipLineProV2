@@ -6,7 +6,7 @@ export interface AuditLogEntry {
   id: string
   transfer_id: string
   organization_id: string
-  action: 'created' | 'updated'
+  action: 'created' | 'updated' | 'deleted' | 'restored'
   performed_by: string | null
   changes: Record<string, { old: unknown; new: unknown }> | null
   created_at: string

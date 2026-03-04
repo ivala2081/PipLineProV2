@@ -11,6 +11,7 @@ import type { User, Session, AuthError } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import type { Profile } from '@/lib/database.types'
 import { getDeviceId } from '@/lib/deviceFingerprinting'
+import { queryClient } from '@/lib/queryClient'
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -78,6 +79,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           hasSession: Boolean(session),
           userId: session?.user?.id ?? null,
         })
+      }
+
+      // On sign-out: clear all cached data and redirect to login
+      if (event === 'SIGNED_OUT') {
+        setState({ user: null, session: null, profile: null, isLoading: false })
+        queryClient.clear()
+        try {
+          localStorage.removeItem('piplinepro-org')
+        } catch {
+          /* ignore */
+        }
+        window.location.replace('/login')
+        return
+      }
+
+      // On token refresh: re-sync profile to pick up any role changes
+      if (event === 'TOKEN_REFRESHED' && session?.user) {
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+          .then(({ data }) => {
+            if (data && mounted) {
+              setState((prev) => ({ ...prev, profile: data as Profile }))
+            }
+          })
+          .catch(() => {
+            /* non-critical */
+          })
       }
 
       // Only update user/session here — profile is handled separately

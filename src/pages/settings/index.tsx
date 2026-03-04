@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { User, Gear, Buildings, ShieldCheck } from '@phosphor-icons/react'
+import { User, Gear, Buildings, ShieldCheck, Broadcast, Key } from '@phosphor-icons/react'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { PageHeader } from '@ds/components/PageHeader/PageHeader'
 import { SessionsTab } from './SessionsTab'
@@ -10,14 +10,21 @@ import { useToast } from '@/hooks/useToast'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@ds/utils'
+import { WebhooksTab } from './WebhooksTab'
+import { ApiKeysTab } from './ApiKeysTab'
 
-type SettingsTab = 'profile' | 'preferences' | 'organization' | 'security'
+type SettingsTab = 'profile' | 'preferences' | 'organization' | 'security' | 'webhooks' | 'apiKeys'
 
-const tabs: Array<{ id: SettingsTab; icon: typeof User; labelKey: string }> = [
+const BASE_TABS: Array<{ id: SettingsTab; icon: typeof User; labelKey: string }> = [
   { id: 'profile', icon: User, labelKey: 'settings.tabs.profile' },
   { id: 'preferences', icon: Gear, labelKey: 'settings.tabs.preferences' },
   { id: 'organization', icon: Buildings, labelKey: 'settings.tabs.organization' },
   { id: 'security', icon: ShieldCheck, labelKey: 'settings.tabs.security' },
+]
+
+const ADMIN_TABS: Array<{ id: SettingsTab; icon: typeof User; labelKey: string }> = [
+  { id: 'webhooks', icon: Broadcast, labelKey: 'settings.tabs.webhooks' },
+  { id: 'apiKeys', icon: Key, labelKey: 'settings.tabs.apiKeys' },
 ]
 
 /* ── Profile Tab ──────────────────────────────────────────────────── */
@@ -193,14 +200,19 @@ function OrganizationTab() {
 
 export function SettingsPage() {
   const { t } = useTranslation('pages')
+  const { isGod } = useAuth()
+  const { membership } = useOrganization()
+  const isAdmin = isGod || membership?.role === 'admin'
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile')
+
+  const tabs = isAdmin ? [...BASE_TABS, ...ADMIN_TABS] : BASE_TABS
 
   return (
     <div className="mx-auto max-w-3xl space-y-lg">
       <PageHeader title={t('settings.title', 'Settings')} />
 
       {/* Tab navigation */}
-      <div className="flex gap-1 rounded-xl border border-black/[0.06] bg-black/[0.02] p-1">
+      <div className="flex flex-wrap gap-1 rounded-xl border border-black/[0.06] bg-black/[0.02] p-1">
         {tabs.map(({ id, icon: Icon, labelKey }) => (
           <button
             key={id}
@@ -224,6 +236,8 @@ export function SettingsPage() {
       {activeTab === 'preferences' && <PreferencesTab />}
       {activeTab === 'organization' && <OrganizationTab />}
       {activeTab === 'security' && <SessionsTab />}
+      {activeTab === 'webhooks' && <WebhooksTab />}
+      {activeTab === 'apiKeys' && <ApiKeysTab />}
     </div>
   )
 }

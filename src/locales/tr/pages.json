@@ -17,7 +17,8 @@
     "security": "Güvenlik",
     "hr": "İK",
     "settings": "Ayarlar",
-    "more": "Daha Fazla"
+    "more": "Daha Fazla",
+    "audit": "Denetim Günlüğü"
   },
   "layout": {
     "noOrganization": "Organizasyon Yok",
@@ -153,7 +154,21 @@
     "tabs": {
       "transfers": "Transferler",
       "monthly": "Aylık",
-      "settings": "Ayarlar"
+      "settings": "Ayarlar",
+      "trash": "Çöp Kutusu"
+    },
+    "trash": {
+      "empty": "Çöp kutusu boş",
+      "emptyHint": "Silinen transferler 30 gün boyunca burada görünür",
+      "warning": "Kalıcı olarak silinen transferler kurtarılamaz. Geri yüklenen transferler ana listeye döner.",
+      "deletedAt": "Silindi",
+      "by": "tarafından",
+      "restore": "Geri Yükle",
+      "purge": "Kalıcı Sil",
+      "confirmRestore": "Geri Yüklemeyi Onayla",
+      "confirmRestoreDesc": "Bu transferi geri yüklemek için PIN'inizi girin.",
+      "confirmPurge": "Kalıcı Silmeyi Onayla",
+      "confirmPurgeDesc": "Bu transferi kalıcı olarak silmek için PIN'inizi girin. Bu işlem geri alınamaz."
     },
     "columns": {
       "fullName": "Ad Soyad",
@@ -278,7 +293,17 @@
       "deleteAllButton": "Tüm Transferleri Sil"
     },
     "detail": {
-      "title": "Transfer Detayı"
+      "title": "Transfer Detayı",
+      "firstDeposit": "İlk Yatırım",
+      "sectionFinancial": "Finansal",
+      "sectionIdentity": "Kimlik",
+      "sectionIds": "ID'ler",
+      "sectionNotes": "Notlar",
+      "sectionAudit": "Denetim",
+      "commission": "Komisyon",
+      "net": "Net",
+      "createdAt": "Oluşturuldu",
+      "updatedAt": "Güncellendi"
     },
     "pin": {
       "title": "Güvenlik PIN Gerekli",
@@ -506,8 +531,16 @@
         "exchange_rate": "Döviz Kuru",
         "amount_try": "TL Karşılığı",
         "amount_usd": "USD Karşılığı",
-        "commission_rate_snapshot": "Komisyon Oranı"
-      }
+        "commission_rate_snapshot": "Komisyon Oranı",
+        "notes": "Notlar",
+        "deleted_at": "Silinme Tarihi"
+      },
+      "actionDeleted": "Bu transferi sildi",
+      "actionRestored": "Bu transferi geri yükledi",
+      "rollback": "Bu alanı geri al",
+      "rollbackBtn": "Geri Al",
+      "rollbackConfirm": "Geri Almayı Onayla",
+      "rollbackConfirmDesc": "\"{{field}}\" alanını önceki değerine geri almak için PIN'inizi girin."
     },
     "import": {
       "title": "CSV'den Transfer İçe Aktar",
@@ -1254,7 +1287,14 @@
       "dangerZoneDescription": "Geri alınamaz ve yıkıcı işlemler.",
       "save": "Değişiklikleri Kaydet",
       "saving": "Kaydediliyor...",
-      "reset": "Sıfırla"
+      "reset": "Sıfırla",
+      "velocityTitle": "Hız Uyarı Eşikleri",
+      "velocitySubtitle": "Bir operatör kısa sürede çok fazla transfer gönderdiğinde yöneticileri uyar. Devre dışı bırakmak için eşiği 0 yapın.",
+      "velocityCount": "Transfer Sayısı Eşiği",
+      "velocityCountHint": "Bu kadar transferden sonra uyar (0 = devre dışı)",
+      "velocityWindow": "Zaman Penceresi (dakika)",
+      "velocityWindowHint": "Transferlerin sayılacağı kayan pencere",
+      "velocitySaved": "Hız ayarları kaydedildi"
     },
     "toast": {
       "created": "Organizasyon başarıyla oluşturuldu",
@@ -1528,7 +1568,44 @@
     },
     "notesHint": "Yalnızca yöneticiler görebilir"
   },
+  "audit": {
+    "title": "Denetim Günlüğü",
+    "subtitle": "Organizasyonunuzdaki tüm transfer değişiklikleri.",
+    "filters": {
+      "actor": "Aktör",
+      "allActors": "Tüm aktörler",
+      "action": "İşlem",
+      "allActions": "Tüm işlemler",
+      "dateFrom": "Başlangıç",
+      "dateTo": "Bitiş"
+    },
+    "actions": {
+      "created": "Oluşturuldu",
+      "updated": "Güncellendi",
+      "deleted": "Silindi",
+      "restored": "Geri yüklendi"
+    },
+    "table": {
+      "actor": "Aktör",
+      "action": "İşlem",
+      "transfer": "Transfer",
+      "changes": "Değişiklikler",
+      "date": "Tarih"
+    },
+    "empty": "Denetim kaydı bulunamadı.",
+    "noChanges": "Alan değişikliği kaydedilmedi.",
+    "fields": "alan değişti"
+  },
   "settings": {
+    "title": "Ayarlar",
+    "tabs": {
+      "profile": "Profil",
+      "preferences": "Tercihler",
+      "organization": "Organizasyon",
+      "security": "Güvenlik",
+      "webhooks": "Webhooklar",
+      "apiKeys": "API Anahtarları"
+    },
     "pin": {
       "title": "Organizasyon PIN",
       "description": "Bu PIN, kasa yönetimi ve oran değişiklikleri gibi hassas işlemler için gereklidir.",
@@ -1545,6 +1622,74 @@
       "unauthorized": "Yalnızca yöneticiler PIN'i değiştirebilir.",
       "error": "PIN güncellenemedi.",
       "hint": "PIN 4-6 haneli olmalıdır. Tüm organizasyon üyeleri bu PIN'i kullanacaktır."
+    },
+    "profile": {
+      "title": "Profil",
+      "email": "E-posta",
+      "displayName": "Görünen Ad",
+      "displayNamePlaceholder": "Adınız",
+      "save": "Kaydet",
+      "saving": "Kaydediliyor...",
+      "saved": "Profil güncellendi"
+    },
+    "preferences": {
+      "title": "Tercihler",
+      "theme": "Tema",
+      "theme_system": "Sistem",
+      "theme_light": "Açık",
+      "theme_dark": "Koyu",
+      "language": "Dil"
+    },
+    "organization": {
+      "title": "Organizasyon",
+      "name": "Ad",
+      "hint": "Organizasyon ayarlarını değiştirmek için Organizasyon detay sayfasına gidin."
+    },
+    "webhooks": {
+      "title": "Giden Webhooklar",
+      "subtitle": "Transfer olaylarını dış URL'lere gönderin.",
+      "add": "Webhook Ekle",
+      "newWebhook": "Yeni Webhook",
+      "name": "Ad",
+      "url": "Uç Nokta URL",
+      "events": "Olaylar",
+      "create": "Oluştur",
+      "created": "Webhook oluşturuldu",
+      "deleted": "Webhook silindi",
+      "active": "Aktif",
+      "inactive": "Pasif",
+      "test": "Test Et",
+      "testSuccess": "Test teslimatı başarılı",
+      "testFailed": "Test başarısız",
+      "disable": "Devre Dışı Bırak",
+      "enable": "Etkinleştir",
+      "showLogs": "Günlükler",
+      "hideLogs": "Günlükleri Gizle",
+      "recentDeliveries": "Son Teslimatlar",
+      "noDeliveries": "Henüz teslimat yok.",
+      "empty": "Webhook yapılandırılmamış.",
+      "adminOnly": "Yalnızca organizasyon yöneticileri webhook'ları yönetebilir.",
+      "signatureNote": "Teslimatlar HMAC-SHA256 ile imzalanmıştır. X-PipLine-Signature başlığını doğrulayın."
+    },
+    "apiKeys": {
+      "title": "API Anahtarları",
+      "subtitle": "Organizasyon verilerinize programatik erişim.",
+      "generate": "Anahtar Oluştur",
+      "newKey": "Yeni API Anahtarı",
+      "name": "Ad",
+      "scopes": "Yetkiler",
+      "expiresAt": "Bitiş Tarihi (isteğe bağlı)",
+      "create": "Oluştur",
+      "saveNow": "Bu anahtarı şimdi kaydedin — bir daha gösterilmeyecek.",
+      "dismiss": "Kapat",
+      "copied": "Panoya kopyalandı",
+      "revoked": "İptal Edildi",
+      "revoke": "İptal Et",
+      "lastUsed": "Son kullanım",
+      "expires": "Bitiş",
+      "empty": "Henüz API anahtarı yok.",
+      "adminOnly": "Yalnızca organizasyon yöneticileri API anahtarlarını yönetebilir.",
+      "example": "Örnek Kullanım"
     }
   }
 }

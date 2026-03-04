@@ -68,6 +68,7 @@ const HrPage = lazy(() => import('@/pages/hr').then((m) => ({ default: m.HrPage 
 const SettingsPage = lazy(() =>
   import('@/pages/settings').then((m) => ({ default: m.SettingsPage })),
 )
+const AuditLogPage = lazy(() => import('@/pages/audit').then((m) => ({ default: m.AuditLogPage })))
 
 /* ------------------------------------------------------------------ */
 /*  Route guards                                                       */
@@ -300,6 +301,16 @@ export function App() {
                               <PageSuspense>
                                 <SettingsPage />
                               </PageSuspense>
+                            }
+                          />
+                          <Route
+                            path="/audit"
+                            element={
+                              <RoleRoute allowedRoles={['admin', 'manager']}>
+                                <PageSuspense>
+                                  <AuditLogPage />
+                                </PageSuspense>
+                              </RoleRoute>
                             }
                           />
                           <Route path="*" element={<Navigate to="/" replace />} />

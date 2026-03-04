@@ -30,6 +30,7 @@ export interface TransferRow {
   is_first_deposit: boolean
   notes: string | null
   created_by: string | null
+  updated_by: string | null
   created_at: string
   updated_at: string
   // joined from foreign keys
@@ -174,6 +175,7 @@ export function useTransfers(): UseTransfersReturn {
       .from('transfers')
       .select(SELECT_QUERY, { count: 'exact' })
       .eq('organization_id', currentOrg.id)
+      .is('deleted_at', null)
       .order('transfer_date', { ascending: false })
       .range(from, to)
 
@@ -283,12 +285,15 @@ export function useTransfers(): UseTransfersReturn {
 
   const deleteTransfer = useCallback(
     async (id: string): Promise<{ error: string | null }> => {
-      const { error: deleteError } = await supabase.from('transfers').delete().eq('id', id)
+      const { error: deleteError } = await supabase
+        .from('transfers')
+        .update({ deleted_at: new Date().toISOString(), deleted_by: user?.id ?? null } as never)
+        .eq('id', id)
 
       if (!deleteError) await fetchTransfers().catch(() => {})
       return { error: deleteError?.message ?? null }
     },
-    [fetchTransfers],
+    [fetchTransfers, user],
   )
 
   return {

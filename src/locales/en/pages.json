@@ -17,7 +17,8 @@
     "security": "Security",
     "hr": "HR",
     "settings": "Settings",
-    "more": "More"
+    "more": "More",
+    "audit": "Audit Log"
   },
   "layout": {
     "noOrganization": "No Organization",
@@ -153,7 +154,21 @@
     "tabs": {
       "transfers": "Transfers",
       "monthly": "Monthly",
-      "settings": "Settings"
+      "settings": "Settings",
+      "trash": "Trash"
+    },
+    "trash": {
+      "empty": "Trash is empty",
+      "emptyHint": "Deleted transfers appear here for 30 days",
+      "warning": "Permanently deleted transfers cannot be recovered. Restored transfers return to the main list.",
+      "deletedAt": "Deleted",
+      "by": "by",
+      "restore": "Restore",
+      "purge": "Purge",
+      "confirmRestore": "Confirm Restore",
+      "confirmRestoreDesc": "Enter your PIN to restore this transfer.",
+      "confirmPurge": "Confirm Permanent Delete",
+      "confirmPurgeDesc": "Enter your PIN to permanently delete this transfer. This cannot be undone."
     },
     "columns": {
       "fullName": "Full Name",
@@ -278,7 +293,17 @@
       "deleteAllButton": "Delete All Transfers"
     },
     "detail": {
-      "title": "Transfer Details"
+      "title": "Transfer Details",
+      "firstDeposit": "First Deposit",
+      "sectionFinancial": "Financial",
+      "sectionIdentity": "Identity",
+      "sectionIds": "IDs",
+      "sectionNotes": "Notes",
+      "sectionAudit": "Audit",
+      "commission": "Commission",
+      "net": "Net",
+      "createdAt": "Created",
+      "updatedAt": "Updated"
     },
     "pin": {
       "title": "Security PIN Required",
@@ -506,8 +531,16 @@
         "exchange_rate": "Exchange Rate",
         "amount_try": "TL Equivalent",
         "amount_usd": "USD Equivalent",
-        "commission_rate_snapshot": "Commission Rate"
-      }
+        "commission_rate_snapshot": "Commission Rate",
+        "notes": "Notes",
+        "deleted_at": "Deleted At"
+      },
+      "actionDeleted": "Deleted this transfer",
+      "actionRestored": "Restored this transfer",
+      "rollback": "Rollback this field",
+      "rollbackBtn": "Rollback",
+      "rollbackConfirm": "Confirm Rollback",
+      "rollbackConfirmDesc": "Enter your PIN to rollback the \"{{field}}\" field to its previous value."
     },
     "import": {
       "title": "Import Transfers from CSV",
@@ -1254,7 +1287,14 @@
       "dangerZoneDescription": "Irreversible and destructive actions.",
       "save": "Save Changes",
       "saving": "Saving...",
-      "reset": "Reset"
+      "reset": "Reset",
+      "velocityTitle": "Velocity Alert Thresholds",
+      "velocitySubtitle": "Alert admins when an operator submits too many transfers in a short window. Set threshold to 0 to disable.",
+      "velocityCount": "Transfer Count Threshold",
+      "velocityCountHint": "Alert after this many transfers (0 = disabled)",
+      "velocityWindow": "Time Window (minutes)",
+      "velocityWindowHint": "Rolling window to count transfers in",
+      "velocitySaved": "Velocity settings saved"
     },
     "toast": {
       "created": "Organization created successfully",
@@ -1528,7 +1568,81 @@
     },
     "notesHint": "Only visible to admins"
   },
+  "audit": {
+    "title": "Audit Log",
+    "subtitle": "All transfer changes across your organization.",
+    "filters": {
+      "actor": "Actor",
+      "allActors": "All actors",
+      "action": "Action",
+      "allActions": "All actions",
+      "dateFrom": "From",
+      "dateTo": "To"
+    },
+    "actions": {
+      "created": "Created",
+      "updated": "Updated",
+      "deleted": "Deleted",
+      "restored": "Restored"
+    },
+    "table": {
+      "actor": "Actor",
+      "action": "Action",
+      "transfer": "Transfer",
+      "changes": "Changes",
+      "date": "Date"
+    },
+    "empty": "No audit log entries found.",
+    "noChanges": "No field changes recorded.",
+    "fields": "fields changed"
+  },
   "settings": {
+    "webhooks": {
+      "title": "Outbound Webhooks",
+      "subtitle": "Send transfer events to external URLs.",
+      "add": "Add Webhook",
+      "newWebhook": "New Webhook",
+      "name": "Name",
+      "url": "Endpoint URL",
+      "events": "Events",
+      "create": "Create",
+      "created": "Webhook created",
+      "deleted": "Webhook deleted",
+      "active": "Active",
+      "inactive": "Inactive",
+      "test": "Test",
+      "testSuccess": "Test delivery succeeded",
+      "testFailed": "Test failed",
+      "disable": "Disable",
+      "enable": "Enable",
+      "showLogs": "Logs",
+      "hideLogs": "Hide logs",
+      "recentDeliveries": "Recent Deliveries",
+      "noDeliveries": "No deliveries yet.",
+      "empty": "No webhooks configured.",
+      "adminOnly": "Only organization admins can manage webhooks.",
+      "signatureNote": "Deliveries are signed with HMAC-SHA256. Verify the X-PipLine-Signature header."
+    },
+    "apiKeys": {
+      "title": "API Keys",
+      "subtitle": "Programmatic access to your organization data.",
+      "generate": "Generate Key",
+      "newKey": "New API Key",
+      "name": "Name",
+      "scopes": "Scopes",
+      "expiresAt": "Expires At (optional)",
+      "create": "Generate",
+      "saveNow": "Save this key now — it will not be shown again.",
+      "dismiss": "Dismiss",
+      "copied": "Copied to clipboard",
+      "revoked": "Revoked",
+      "revoke": "Revoke",
+      "lastUsed": "Last used",
+      "expires": "Expires",
+      "empty": "No API keys yet.",
+      "adminOnly": "Only organization admins can manage API keys.",
+      "example": "Example Usage"
+    },
     "pin": {
       "title": "Organization PIN",
       "description": "This PIN is required for sensitive operations like PSP management and rate changes.",
@@ -1545,6 +1659,38 @@
       "unauthorized": "Only admins can change the PIN.",
       "error": "Failed to update PIN.",
       "hint": "PIN must be 4-6 digits. All org members will use this PIN."
-    }
+    },
+    "profile": {
+      "title": "Profile",
+      "email": "Email",
+      "displayName": "Display Name",
+      "displayNamePlaceholder": "Your name",
+      "save": "Save",
+      "saving": "Saving...",
+      "saved": "Profile updated"
+    },
+    "preferences": {
+      "title": "Preferences",
+      "theme": "Theme",
+      "theme_system": "System",
+      "theme_light": "Light",
+      "theme_dark": "Dark",
+      "language": "Language"
+    },
+    "organization": {
+      "title": "Organization",
+      "name": "Name",
+      "hint": "To change organization settings, go to the Organization detail page."
+    },
+    "tabs": {
+      "profile": "Profile",
+      "preferences": "Preferences",
+      "organization": "Organization",
+      "security": "Security",
+      "webhooks": "Webhooks",
+      "apiKeys": "API Keys"
+    },
+    "title": "Settings",
+    "title_alt": "Account Settings"
   }
 }
