@@ -38,6 +38,8 @@ import {
   Select,
   SelectTrigger,
   SelectValue,
+  SelectContent,
+  SelectItem,
   Pagination,
   PaginationContent,
   PaginationItem,
