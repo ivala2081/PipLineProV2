@@ -393,6 +393,19 @@ export function TransferFormContent({
     }
   }, [paymentMethodId, lookupData.psps, form])
 
+  /* ── Clear PSP when payment method changes and selected PSP no longer matches ── */
+  useEffect(() => {
+    if (!mountedRef.current) return
+    if (!pspId) return
+    const psp = lookupData.psps.find((p) => p.id === pspId)
+    if (!psp) return
+    const accepted = psp.accepted_payment_method_ids
+    if (!accepted || accepted.length === 0) return // no filter, keep it
+    if (paymentMethodId && !accepted.includes(paymentMethodId)) {
+      form.setValue('psp_id', '')
+    }
+  }, [paymentMethodId, pspId, lookupData.psps, form])
+
   /* ── Rate confirmation reset: any change to rate or currency requires re-confirm ── */
   useEffect(() => {
     setRateConfirmed(false)
@@ -504,8 +517,17 @@ export function TransferFormContent({
     [lookupData.transferTypes],
   )
   const pspOptions = useMemo<SelectOption[]>(
-    () => lookupData.psps.filter((p) => p.is_active).map((p) => ({ value: p.id, label: p.name })),
-    [lookupData.psps],
+    () =>
+      lookupData.psps
+        .filter((p) => p.is_active)
+        .filter((p) => {
+          const accepted = p.accepted_payment_method_ids
+          if (!accepted || accepted.length === 0) return true // no filter = show for all
+          if (!paymentMethodId) return true
+          return accepted.includes(paymentMethodId)
+        })
+        .map((p) => ({ value: p.id, label: p.name })),
+    [lookupData.psps, paymentMethodId],
   )
 
   const selectedPsp = useMemo(

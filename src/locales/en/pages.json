@@ -18,7 +18,7 @@
     "hr": "HR",
     "settings": "Settings",
     "more": "More",
-    "audit": "Audit Log"
+    "audit": "Audits"
   },
   "layout": {
     "noOrganization": "No Organization",
@@ -850,7 +850,9 @@
       "scopeLabel": "PSP Type",
       "providerLabel": "Provider",
       "selectProvider": "Select provider",
-      "appIdLabel": "App ID"
+      "appIdLabel": "App ID",
+      "receivingMethods": "Receiving Methods",
+      "receivingMethodsHint": "Optional. Leave empty to show this PSP for all payment methods."
     },
     "stats": {
       "outstanding": "Outstanding Balance",
@@ -1089,6 +1091,9 @@
       "internalCommissionHint": "Internal — always 0%",
       "currency": "Working Currency",
       "currencyDesc": "The currency used for this PSP's deposits, withdrawals and commissions.",
+      "receivingMethods": "Receiving Methods",
+      "receivingMethodsDesc": "Filter which payment methods show this PSP in the transfer form. Leave empty to show for all.",
+      "receivingMethodsSave": "Save",
       "dangerZone": "Danger Zone",
       "dangerZoneDesc": "Permanent actions that cannot be undone.",
       "deletePsp": "Delete PSP"

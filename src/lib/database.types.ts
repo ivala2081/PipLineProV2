@@ -1309,6 +1309,7 @@ export type Database = {
       }
       psps: {
         Row: {
+          accepted_payment_method_ids: string[] | null
           commission_rate: number
           created_at: string
           currency: string
@@ -1323,6 +1324,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          accepted_payment_method_ids?: string[] | null
           commission_rate?: number
           created_at?: string
           currency?: string
@@ -1337,6 +1339,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          accepted_payment_method_ids?: string[] | null
           commission_rate?: number
           created_at?: string
           currency?: string

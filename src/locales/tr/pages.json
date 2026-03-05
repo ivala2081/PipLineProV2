@@ -850,7 +850,9 @@
       "scopeLabel": "Kasa Tipi",
       "providerLabel": "Sağlayıcı",
       "selectProvider": "Sağlayıcı seç",
-      "appIdLabel": "App ID"
+      "appIdLabel": "App ID",
+      "receivingMethods": "Alım Yöntemleri",
+      "receivingMethodsHint": "İsteğe bağlı. Boş bırakırsanız tüm ödeme yöntemleri için gösterilir."
     },
     "stats": {
       "outstanding": "Devir Bakiye",
@@ -1089,6 +1091,9 @@
       "internalCommissionHint": "Dahili — her zaman %0",
       "currency": "Çalışma Para Birimi",
       "currencyDesc": "Bu kasanın yatırım, çekim ve komisyonlarında kullanılan para birimi.",
+      "receivingMethods": "Alım Yöntemleri",
+      "receivingMethodsDesc": "Bu kasanın transfer formunda hangi ödeme yöntemlerinde görüneceğini belirleyin. Boş bırakırsanız tüm yöntemler için gösterilir.",
+      "receivingMethodsSave": "Kaydet",
       "dangerZone": "Tehlikeli Bölge",
       "dangerZoneDesc": "Geri alınamayan kalıcı işlemler.",
       "deletePsp": "Kasayı Sil"

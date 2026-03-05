@@ -59,6 +59,7 @@ import { usePspDashboardQuery } from '@/hooks/queries/usePspDashboardQuery'
 import { usePspLedgerQuery } from '@/hooks/queries/usePspLedgerQuery'
 import { usePspSettlementsQuery } from '@/hooks/queries/usePspSettlementsQuery'
 import { useLookupMutation } from '@/hooks/queries/useLookupMutation'
+import { useLookupQueries } from '@/hooks/queries/useLookupQueries'
 import { usePspRates, usePspRateMutations } from '@/hooks/queries/usePspRatesQuery'
 import { useToast } from '@/hooks/useToast'
 import { ManagerPinDialog } from '@ds'
@@ -822,6 +823,47 @@ function SettingsTab({
   const { toast } = useToast()
   const navigate = useNavigate()
 
+  // Receiving methods
+  const { paymentMethods, psps } = useLookupQueries()
+  const currentPsp = useMemo(() => psps.find((p) => p.id === pspId), [psps, pspId])
+  const [selectedMethods, setSelectedMethods] = useState<string[]>(
+    currentPsp?.accepted_payment_method_ids ?? [],
+  )
+  const [methodsDirty, setMethodsDirty] = useState(false)
+  const [methodsSaving, setMethodsSaving] = useState(false)
+
+  useEffect(() => {
+    if (currentPsp) {
+      setSelectedMethods(currentPsp.accepted_payment_method_ids ?? [])
+      setMethodsDirty(false)
+    }
+  }, [currentPsp])
+
+  const toggleMethod = (methodId: string) => {
+    setSelectedMethods((prev) => {
+      const next = prev.includes(methodId)
+        ? prev.filter((id) => id !== methodId)
+        : [...prev, methodId]
+      return next
+    })
+    setMethodsDirty(true)
+  }
+
+  const handleMethodsSave = async () => {
+    setMethodsSaving(true)
+    try {
+      await pspMutation.updateItem(pspId, {
+        accepted_payment_method_ids: selectedMethods.length > 0 ? selectedMethods : null,
+      })
+      toast({ title: t('transfers.toast.lookupUpdated'), variant: 'success' })
+      setMethodsDirty(false)
+    } catch (error) {
+      toast({ title: (error as Error).message || t('transfers.toast.error'), variant: 'error' })
+    } finally {
+      setMethodsSaving(false)
+    }
+  }
+
   const pspMutation = useLookupMutation('psps')
 
   // Active/inactive toggle
@@ -1086,6 +1128,40 @@ function SettingsTab({
             <p className="mt-1 text-xs text-black/40">{t('psps.settings.currencyDesc')}</p>
           </div>
           <CurrencySelect value={currency} onChange={handleCurrencyChange} />
+        </div>
+      </Card>
+
+      {/* Receiving Methods */}
+      <Card padding="spacious" className="border border-black/5 bg-bg1">
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-sm font-semibold">{t('psps.settings.receivingMethods')}</h3>
+            <p className="mt-1 text-xs text-black/40">{t('psps.settings.receivingMethodsDesc')}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {paymentMethods.map((method) => (
+              <button
+                key={method.id}
+                type="button"
+                onClick={() => toggleMethod(method.id)}
+                className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                  selectedMethods.includes(method.id)
+                    ? 'border-blue bg-blue text-white'
+                    : 'border-black/15 bg-transparent text-black/50 hover:border-black/30'
+                }`}
+              >
+                {method.name}
+              </button>
+            ))}
+          </div>
+          {methodsDirty && (
+            <div className="flex justify-end">
+              <Button size="sm" onClick={handleMethodsSave} disabled={methodsSaving}>
+                {methodsSaving ? <SpinnerGap size={14} className="animate-spin" /> : null}
+                {t('psps.settings.receivingMethodsSave')}
+              </Button>
+            </div>
+          )}
         </div>
       </Card>
 

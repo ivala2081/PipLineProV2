@@ -29,6 +29,7 @@ import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { usePspDashboardQuery, type PspSummary } from '@/hooks/queries/usePspDashboardQuery'
 import { useLookupMutation } from '@/hooks/queries/useLookupMutation'
+import { useLookupQueries } from '@/hooks/queries/useLookupQueries'
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import { queryKeys } from '@/lib/queryKeys'
 
@@ -151,6 +152,7 @@ export function PspsPage() {
 
   const { psps, isLoading } = usePspDashboardQuery()
   const pspMutation = useLookupMutation('psps')
+  const { paymentMethods } = useLookupQueries()
 
   useRealtimeSubscription('psps', [queryKeys.pspDashboard.all])
 
@@ -163,6 +165,7 @@ export function PspsPage() {
   const [newAppId, setNewAppId] = useState('')
   const [newName, setNewName] = useState('')
   const [newRate, setNewRate] = useState('')
+  const [newAcceptedMethods, setNewAcceptedMethods] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const localPsps = useMemo(() => psps.filter((p) => p.psp_scope === 'local'), [psps])
@@ -173,6 +176,7 @@ export function PspsPage() {
     setNewAppId('')
     setNewName('')
     setNewRate('')
+    setNewAcceptedMethods([])
   }
 
   const handleAddPsp = async () => {
@@ -192,6 +196,9 @@ export function PspsPage() {
 
       if (newScope === 'local') {
         data.commission_rate = Number(newRate) / 100
+        if (newAcceptedMethods.length > 0) {
+          data.accepted_payment_method_ids = newAcceptedMethods
+        }
       } else {
         data.provider = newProvider
         data.provider_app_id = newAppId.trim()
@@ -406,6 +413,36 @@ export function PspsPage() {
                   onChange={(e) => setNewRate(e.target.value)}
                   placeholder="3.5"
                 />
+              </div>
+            )}
+
+            {/* Receiving Methods (Local only) */}
+            {newScope === 'local' && (
+              <div className="space-y-sm">
+                <Label>{t('psps.addDialog.receivingMethods')}</Label>
+                <div className="flex flex-wrap gap-2">
+                  {paymentMethods.map((method) => (
+                    <button
+                      key={method.id}
+                      type="button"
+                      onClick={() =>
+                        setNewAcceptedMethods((prev) =>
+                          prev.includes(method.id)
+                            ? prev.filter((id) => id !== method.id)
+                            : [...prev, method.id],
+                        )
+                      }
+                      className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                        newAcceptedMethods.includes(method.id)
+                          ? 'border-blue bg-blue text-white'
+                          : 'border-black/15 bg-transparent text-black/50 hover:border-black/30'
+                      }`}
+                    >
+                      {method.name}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-black/40">{t('psps.addDialog.receivingMethodsHint')}</p>
               </div>
             )}
           </div>

@@ -13,6 +13,7 @@ export interface Psp {
   provider: string | null
   provider_app_id: string | null
   currency: string
+  accepted_payment_method_ids: string[] | null
 }
 
 export function usePspsQuery() {
@@ -26,7 +27,7 @@ export function usePspsQuery() {
       const { data, error } = await supabase
         .from('psps')
         .select(
-          'id, name, commission_rate, is_active, is_internal, psp_scope, provider, provider_app_id, currency',
+          'id, name, commission_rate, is_active, is_internal, psp_scope, provider, provider_app_id, currency, accepted_payment_method_ids',
         )
         .eq('organization_id', currentOrg.id)
         .order('name')
