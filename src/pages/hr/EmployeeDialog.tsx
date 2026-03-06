@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -21,36 +21,29 @@ import {
   Separator,
 } from '@ds'
 import { useToast } from '@/hooks/useToast'
-import { useHrMutations, useHrSettingsQuery, type HrEmployee } from '@/hooks/queries/useHrQuery'
+import { useHrMutations, useHrSettingsQuery, HR_EMPLOYEE_ROLES, type HrEmployee } from '@/hooks/queries/useHrQuery'
 import { formatAmount, parseAmount, numberToDisplay, amountPlaceholder } from '@/lib/formatAmount'
 
 /* ------------------------------------------------------------------ */
 /*  Form schema                                                         */
 /* ------------------------------------------------------------------ */
 
-const employeeSchema = z.object({
-  full_name: z.string().min(2, 'En az 2 karakter olmalı'),
-  email: z.string().email('Geçerli bir e-posta girin'),
-  role: z.enum([
-    'Manager',
-    'Marketing',
-    'Operation',
-    'Retention',
-    'Project Management',
-    'Social Media',
-    'Sales Development',
-    'Programmer',
-  ]),
-  salary_tl: z.coerce.number().min(0, 'Maaş negatif olamaz'),
-  salary_currency: z.enum(['TL', 'USD']),
-  is_insured: z.boolean(),
-  receives_supplement: z.boolean(),
-  is_active: z.boolean(),
-  hire_date: z.string().optional(),
-  notes: z.string().optional(),
-})
+function buildEmployeeSchema(roles: string[]) {
+  return z.object({
+    full_name: z.string().min(2, 'En az 2 karakter olmalı'),
+    email: z.string().email('Geçerli bir e-posta girin'),
+    role: z.string().refine((v) => roles.includes(v), { message: 'Geçersiz rol' }),
+    salary_tl: z.coerce.number().min(0, 'Maaş negatif olamaz'),
+    salary_currency: z.enum(['TL', 'USD']),
+    is_insured: z.boolean(),
+    receives_supplement: z.boolean(),
+    is_active: z.boolean(),
+    hire_date: z.string().optional(),
+    notes: z.string().optional(),
+  })
+}
 
-type EmployeeFormValues = z.infer<typeof employeeSchema>
+type EmployeeFormValues = z.infer<ReturnType<typeof buildEmployeeSchema>>
 
 /* ------------------------------------------------------------------ */
 /*  Employee Dialog                                                     */
@@ -71,10 +64,12 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
 
   const { createEmployee, updateEmployee } = useHrMutations()
   const { data: hrSettings } = useHrSettingsQuery()
-  const settingsRoles = hrSettings?.roles ?? []
+  const settingsRoles = hrSettings?.roles ?? HR_EMPLOYEE_ROLES
+
+  const schema = useMemo(() => buildEmployeeSchema(settingsRoles), [settingsRoles])
 
   const form = useForm<EmployeeFormValues>({
-    resolver: zodResolver(employeeSchema),
+    resolver: zodResolver(schema),
     defaultValues: {
       full_name: '',
       email: '',

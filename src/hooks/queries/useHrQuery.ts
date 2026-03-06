@@ -5,12 +5,13 @@ import { useAuth } from '@/app/providers/AuthProvider'
 import { localDayStart, localDayEnd } from '@/lib/date'
 import { queryKeys } from '@/lib/queryKeys'
 import type {
-  HrEmployeeRole,
   HrDocumentType,
   HrBonusType,
   HrAttendanceStatus,
   HrLeaveType,
 } from '@/lib/database.types'
+
+export type HrEmployeeRole = string
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                               */
@@ -139,6 +140,7 @@ export const HR_EMPLOYEE_ROLES: HrEmployeeRole[] = [
   'Social Media',
   'Sales Development',
   'Programmer',
+  'Sales',
 ]
 
 /* ------------------------------------------------------------------ */
@@ -203,6 +205,7 @@ export const DEFAULT_HR_SETTINGS: HrSettings = {
     'Social Media',
     'Sales Development',
     'Programmer',
+    'Sales',
   ],
   supplement_tl: 4000,
   absence_full_day_divisor: 30,

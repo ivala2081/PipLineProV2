@@ -66,7 +66,7 @@ import { SalariesTab } from './SalariesTab'
 import { LeavesTab } from './LeavesTab'
 import { SettingsTab } from './SettingsTab'
 import { getRoleVariant } from './utils/hrConstants'
-import type { HrEmployeeRole } from '@/lib/database.types'
+import type { HrEmployeeRole } from '@/hooks/queries/useHrQuery'
 
 /* ------------------------------------------------------------------ */
 /*  Role color mapping                                                  */

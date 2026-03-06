@@ -61,7 +61,9 @@ type RememberedTransferFields = Pick<
 >
 
 const TRANSFER_PREFS_KEY = 'piplinepro:transfer-form-prefs'
-const AUTO_BONUS_ROLES = ['Marketing', 'Retention'] as const
+const AUTO_BONUS_ROLES = ['Marketing', 'Retention', 'Sales'] as const
+const FTD_ROLES: string[] = ['Marketing', 'Sales']
+const STD_ROLES: string[] = ['Retention']
 
 /* ── Pure helpers ─────────────────────────────────────────────────── */
 
@@ -486,13 +488,25 @@ export function TransferFormContent({
   )
 
   /* ── Computed / memos ─────────────────────────────────────── */
-  const employeeOptions = useMemo(
-    () =>
-      employees
-        .filter((e) => e.is_active && (AUTO_BONUS_ROLES as readonly string[]).includes(e.role))
-        .map((e) => ({ value: e.id, label: `${e.full_name} · ${e.role}` })),
-    [employees],
-  )
+  const employeeOptions = useMemo(() => {
+    const allowedRoles =
+      isFirstDeposit === true
+        ? FTD_ROLES
+        : isFirstDeposit === false
+          ? STD_ROLES
+          : (AUTO_BONUS_ROLES as readonly string[])
+    return employees
+      .filter((e) => e.is_active && allowedRoles.includes(e.role))
+      .map((e) => ({ value: e.id, label: `${e.full_name} · ${e.role}` }))
+  }, [employees, isFirstDeposit])
+
+  /* ── Reset employee when FTD/STD changes and selected employee no longer matches ── */
+  useEffect(() => {
+    if (!mountedRef.current) return
+    if (!employeeId) return
+    const stillValid = employeeOptions.some((o) => o.value === employeeId)
+    if (!stillValid) form.setValue('employee_id', '')
+  }, [isFirstDeposit, employeeOptions, employeeId, form])
 
   const selectedCategory = useMemo(
     () => lookupData.categories.find((c) => c.id === categoryId),
@@ -777,8 +791,16 @@ export function TransferFormContent({
                   {employeeOptions.length === 0 ? (
                     <p className="flex h-10 items-center rounded-xl border border-black/[0.07] bg-black/[0.02] px-3 text-xs text-black/35">
                       {lang === 'tr'
-                        ? 'Aktif MT / Retention çalışanı yok'
-                        : 'No active MT / Retention employees'}
+                        ? isFirstDeposit === true
+                          ? 'Aktif Marketing / Sales çalışanı yok'
+                          : isFirstDeposit === false
+                            ? 'Aktif Retention çalışanı yok'
+                            : 'Önce yatırım durumu seçin'
+                        : isFirstDeposit === true
+                          ? 'No active Marketing / Sales employees'
+                          : isFirstDeposit === false
+                            ? 'No active Retention employees'
+                            : 'Select deposit status first'}
                     </p>
                   ) : (
                     <SearchableSelectField
@@ -788,7 +810,7 @@ export function TransferFormContent({
                       options={[
                         {
                           value: '__none__',
-                          label: lang === 'tr' ? '— Çalışan yok —' : '-- No employee --',
+                          label: lang === 'tr' ? '— Çalışan seçilmedi —' : '-- No employee selected --',
                         },
                         ...employeeOptions,
                       ]}
