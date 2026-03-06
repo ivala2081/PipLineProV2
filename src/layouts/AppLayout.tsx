@@ -59,6 +59,7 @@ import { useLocale } from '@ds/hooks'
 import { cn } from '@ds/utils'
 
 import { navGroups } from '@/layouts/nav-config'
+import { usePagePermissions } from '@/hooks/usePagePermission'
 import { AvatarUpload } from '@/components/AvatarUpload'
 import { OnlineCount } from '@/components/OnlineCount'
 import { NotificationBell } from '@/components/NotificationBell'
@@ -123,14 +124,17 @@ function SidebarNav() {
 
   // Determine effective role for nav filtering
   const effectiveRole = isGod ? 'god' : membership?.role
+  const { canAccessPage } = usePagePermissions()
 
   return (
     <>
       {navGroups.map((group, idx) => {
-        // Filter items by role
-        const visibleItems = group.items.filter(
-          (item) => !item.roles || (effectiveRole && item.roles.includes(effectiveRole)),
-        )
+        // Filter items by role and page-level permissions
+        const visibleItems = group.items.filter((item) => {
+          if (item.roles && !(effectiveRole && item.roles.includes(effectiveRole))) return false
+          if (item.page && !canAccessPage(item.page)) return false
+          return true
+        })
         if (visibleItems.length === 0) return null
 
         return (

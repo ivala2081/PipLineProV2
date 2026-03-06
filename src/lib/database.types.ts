@@ -1253,6 +1253,53 @@ export type Database = {
           },
         ]
       }
+      role_permissions: {
+        Row: {
+          id: string
+          organization_id: string
+          table_name: string
+          role: string
+          can_select: boolean
+          can_insert: boolean
+          can_update: boolean
+          can_delete: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          table_name: string
+          role: string
+          can_select?: boolean
+          can_insert?: boolean
+          can_update?: boolean
+          can_delete?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          table_name?: string
+          role?: string
+          can_select?: boolean
+          can_insert?: boolean
+          can_update?: boolean
+          can_delete?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'role_permissions_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       psp_settlements: {
         Row: {
           amount: number

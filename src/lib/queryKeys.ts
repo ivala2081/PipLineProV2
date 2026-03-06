@@ -135,6 +135,9 @@ export const queryKeys = {
     metrics: () => [...queryKeys.security.all, 'metrics'] as const,
     failedLogins: () => [...queryKeys.security.all, 'failed-logins'] as const,
     godAudit: () => [...queryKeys.security.all, 'god-audit'] as const,
+    permissions: (orgId: string) => [...queryKeys.security.all, 'permissions', orgId] as const,
+    myPagePermissions: (orgId: string) =>
+      [...queryKeys.security.all, 'my-page-permissions', orgId] as const,
   },
   audit: {
     all: ['audit'] as const,

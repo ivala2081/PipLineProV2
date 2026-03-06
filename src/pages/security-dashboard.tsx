@@ -17,6 +17,7 @@ import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { canManageOrg } from '@/lib/roles'
 import { ApiIntegrationsTab } from './security/ApiIntegrationsTab'
+import { PermissionsTab } from './security/PermissionsTab'
 import {
   Card,
   StatCard,
@@ -178,6 +179,7 @@ export function SecurityDashboard() {
   const { isGod } = useAuth()
   const { membership } = useOrganization()
   const canAccess = isGod || canManageOrg(membership?.role)
+  const canManagePermissions = isGod || membership?.role === 'admin'
   const locale = i18n.language === 'tr' ? 'tr-TR' : 'en-US'
 
   const [activeTab, setActiveTab] = useState('overview')
@@ -289,12 +291,15 @@ export function SecurityDashboard() {
           <TabsTrigger value="failed-logins">{t('security.tabs.failedLogins')}</TabsTrigger>
           <TabsTrigger value="audit-log">{t('security.tabs.auditLog')}</TabsTrigger>
           <TabsTrigger value="api-integrations">{t('security.tabs.apiIntegrations')}</TabsTrigger>
+          {canManagePermissions && (
+            <TabsTrigger value="permissions">{t('security.tabs.permissions')}</TabsTrigger>
+          )}
         </TabsList>
 
         {/* ── Overview Tab ── */}
         <TabsContent value="overview">
           {metricsLoading ? (
-            <div className="grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-md sm:grid-cols-2 xl:grid-cols-4">
               {[...Array(8)].map((_, i) => (
                 <StatCard key={i} icon={Lightning} label="" value="" isLoading />
               ))}
@@ -312,7 +317,7 @@ export function SecurityDashboard() {
               </div>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-md sm:grid-cols-2 xl:grid-cols-4">
               {metrics.map((metric) => {
                 const mi = getMetricIcon(metric.metric)
                 return (
@@ -468,6 +473,13 @@ export function SecurityDashboard() {
         <TabsContent value="api-integrations">
           <ApiIntegrationsTab />
         </TabsContent>
+
+        {/* ── Permissions Tab ── */}
+        {canManagePermissions && (
+          <TabsContent value="permissions">
+            <PermissionsTab />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )

@@ -1488,7 +1488,7 @@ export function PspDetailPage() {
             </div>
           </div>
         </Card>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-20 rounded-xl" />
           ))}
@@ -1601,7 +1601,7 @@ export function PspDetailPage() {
 
       {/* Summary Stats */}
       <div
-        className={`grid grid-cols-2 gap-3 ${psp.is_internal ? 'lg:grid-cols-3' : 'lg:grid-cols-5'}`}
+        className={`grid grid-cols-2 gap-3 ${psp.is_internal ? 'lg:grid-cols-3' : 'xl:grid-cols-5'}`}
       >
         {!psp.is_internal && (
           <StatCard

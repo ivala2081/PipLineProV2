@@ -44,6 +44,15 @@ const KNOWN_TOKENS = new Set([
   'APENFT',
   'WTRX',
   'stUSDT',
+  'BNB',
+  'WBNB',
+  'ETH',
+  'WETH',
+  'SOL',
+  'BTC',
+  'WBTC',
+  'DAI',
+  'BUSD',
 ])
 
 /** Returns true if the symbol looks like a real token (not spam) */
@@ -51,6 +60,8 @@ function isLegitToken(symbol: string): boolean {
   if (!symbol) return false
   // Exact match in whitelist
   if (KNOWN_TOKENS.has(symbol)) return true
+  // Reject hex contract addresses
+  if (/^0x/i.test(symbol)) return false
   // Reject anything containing spaces, dots, "www", "com", "net", "org", URLs
   if (/[\s.]|www|\.com|\.net|\.org|http/i.test(symbol)) return false
   // Reject "fungible" or other generic junk

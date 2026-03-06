@@ -543,7 +543,7 @@ export function TransfersTable({
       {/* Expanded filter dropdowns */}
       {filtersOpen && (
         <div className="rounded-lg border border-black/[0.08] bg-gradient-to-b from-black/[0.02] to-black/[0.015] p-3 md:p-4">
-          <div className="grid gap-md md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-md md:grid-cols-2 xl:grid-cols-4">
             {/* Transaction Type */}
             <div className="space-y-1.5">
               <label className="block text-[10px] font-semibold uppercase tracking-widest text-black/40">

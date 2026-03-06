@@ -949,7 +949,7 @@ export function DashboardPage() {
       </div>
 
       {/* ── KPI Hero Row ────────────────────────────── */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <HeroKpiCard
           icon={ArrowCircleDown}
           iconBg="bg-green/10"
@@ -1387,9 +1387,9 @@ export function DashboardPage() {
       </div>
 
       {/* ── Bottom: Transfers + Customers side-by-side  */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
         {/* Recent Transfers */}
-        <div className="rounded-2xl border border-black/[0.06] bg-bg1 p-3 md:p-5 lg:col-span-3">
+        <div className="rounded-2xl border border-black/[0.06] bg-bg1 p-3 md:p-5 xl:col-span-3">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ListBullets size={16} className="text-black/35" weight="duotone" />
@@ -1414,7 +1414,7 @@ export function DashboardPage() {
         </div>
 
         {/* Top Customers */}
-        <div className="rounded-2xl border border-black/[0.06] bg-bg1 p-3 md:p-5 lg:col-span-2">
+        <div className="rounded-2xl border border-black/[0.06] bg-bg1 p-3 md:p-5 xl:col-span-2">
           <div className="mb-4 flex items-center gap-2">
             <Trophy size={16} className="text-yellow" weight="duotone" />
             <h2 className="text-[13px] font-semibold text-black/50">
@@ -1503,7 +1503,7 @@ export function DashboardPage() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
               {isPrevMonthlyLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <Skeleton key={i} className="h-24 w-full rounded-2xl" />

@@ -1439,7 +1439,33 @@
       "overview": "Genel Bakış",
       "failedLogins": "Başarısız Girişler",
       "auditLog": "Denetim Kaydı",
-      "apiIntegrations": "API Entegrasyonları"
+      "apiIntegrations": "API Entegrasyonları",
+      "permissions": "Yetkilendirme"
+    },
+    "permissions": {
+      "subtitle": "Her rol için tablo bazında yetkileri yönetin",
+      "tableHeader": "Tablo",
+      "groups": {
+        "pages": "Sayfalar",
+        "organization": "Organizasyon",
+        "transfers": "Transferler",
+        "psp": "PSP",
+        "accounting": "Muhasebe",
+        "hr": "İnsan Kaynakları"
+      },
+      "actions": {
+        "select": "Oku",
+        "insert": "Ekle",
+        "update": "Düzenle",
+        "delete": "Sil",
+        "access": "Erişim"
+      },
+      "save": "Değişiklikleri Kaydet",
+      "saved": "Yetkiler başarıyla güncellendi",
+      "error": "Yetkiler güncellenemedi",
+      "resetToDefault": "Geri Al",
+      "unsavedChanges": "değişiklik kaydedilmedi",
+      "godNote": "God rolü tüm yetkileri her zaman bypass eder. Organizasyon INSERT/DELETE yetkileri yalnızca God tarafından yönetilebilir."
     },
     "api": {
       "checkHealth": "Sağlık Kontrolü",

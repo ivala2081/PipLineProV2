@@ -23,10 +23,20 @@ const KNOWN_TOKENS = new Set([
   'APENFT',
   'WTRX',
   'stUSDT',
+  'BNB',
+  'WBNB',
+  'ETH',
+  'WETH',
+  'SOL',
+  'BTC',
+  'WBTC',
+  'DAI',
+  'BUSD',
 ])
 function isLegitToken(sym: string): boolean {
   if (!sym) return false
   if (KNOWN_TOKENS.has(sym)) return true
+  if (/^0x/i.test(sym)) return false
   if (/[\s.]|www|\.com|\.net|\.org|http/i.test(sym)) return false
   if (/^fungible$/i.test(sym)) return false
   if (sym.length > 10) return false
@@ -133,10 +143,11 @@ export function WalletCard({ wallet, onViewDetail, onEdit, onDelete }: WalletCar
     return entries.map(([sym, amount]) => {
       const c = sign === 'auto' ? (amount >= 0 ? 'text-green' : 'text-red') : colorClass
       const prefix = sign === 'auto' ? (amount >= 0 ? '+' : '') : sign
+      const displayValue = sign === '-' ? Math.abs(amount) : amount
       return (
-        <span key={sym} className={`font-mono text-[13px] font-semibold tabular-nums ${c}`}>
+        <span key={sym} className={`font-mono text-[12px] font-semibold tabular-nums ${c}`}>
           {prefix}
-          {fmt(sign === '-' ? -Math.abs(amount) : amount)}
+          {fmt(displayValue)}
           <span className="ml-0.5 text-[10px] font-medium opacity-50">{sym}</span>
         </span>
       )
@@ -145,12 +156,12 @@ export function WalletCard({ wallet, onViewDetail, onEdit, onDelete }: WalletCar
 
   return (
     <Card padding="none" className="group overflow-hidden border border-black/[0.06] bg-bg1">
-      {/* ── Main Row ── */}
+      {/* ── Main Row: Identity + Balance ── */}
       <div className="flex items-stretch">
         {/* Left: Identity */}
-        <div className="flex min-w-0 flex-1 flex-col justify-center px-5 py-4">
-          <div className="flex items-center gap-sm">
-            <span className="truncate text-[15px] font-semibold text-black/90">{wallet.label}</span>
+        <div className="flex min-w-0 flex-1 flex-col justify-center px-4 py-4">
+          <div className="flex items-center gap-2">
+            <span className="truncate text-[14px] font-semibold text-black/90">{wallet.label}</span>
             <span
               className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${chainInfo.color}`}
             >
@@ -174,8 +185,8 @@ export function WalletCard({ wallet, onViewDetail, onEdit, onDelete }: WalletCar
             </div>
           </div>
           <div className="mt-1 flex items-center gap-1.5">
-            <code className="text-[11px] text-black/30">{truncAddr(wallet.address)}</code>
-            <button onClick={handleCopy} className="text-black/15 transition hover:text-black/40">
+            <code className="truncate text-[11px] text-black/30">{truncAddr(wallet.address)}</code>
+            <button onClick={handleCopy} className="shrink-0 text-black/15 transition hover:text-black/40">
               <Copy size={10} />
             </button>
           </div>
@@ -184,29 +195,29 @@ export function WalletCard({ wallet, onViewDetail, onEdit, onDelete }: WalletCar
         {/* Divider */}
         <div className="w-px self-stretch bg-black/[0.04]" />
 
-        {/* Center: Balance */}
-        <div className="flex min-w-[180px] flex-col justify-center px-5 py-4">
+        {/* Right: Balance */}
+        <div className="flex w-[160px] shrink-0 flex-col justify-center px-4 py-4">
           <p className="text-[10px] font-medium uppercase tracking-wider text-black/25">
             {t('accounting.wallets.totalValue', 'Total Value')}
           </p>
           {isBalanceLoading ? (
-            <Skeleton className="mt-1 h-6 w-24 rounded" />
+            <Skeleton className="mt-1 h-6 w-20 rounded" />
           ) : balanceError ? (
             <p className="mt-0.5 text-xs text-red/80" title={balanceError}>API Error</p>
           ) : (
-            <p className="mt-0.5 font-mono text-lg font-bold tabular-nums text-black/85">
+            <p className="mt-0.5 font-mono text-base font-bold tabular-nums text-black/85">
               ${fmt(totalUsd)}
             </p>
           )}
           {!isBalanceLoading && sortedAssets.length > 0 && (
-            <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
-              {sortedAssets.slice(0, 3).map((asset, i) => {
+            <div className="mt-1.5 flex flex-wrap gap-x-2 gap-y-0.5">
+              {sortedAssets.slice(0, 2).map((asset, i) => {
                 const label =
                   asset.symbol ||
                   (asset.tokenAddress ? `${asset.tokenAddress.slice(0, 6)}…` : asset.type)
                 const bal = parseFloat(asset.balance)
                 return (
-                  <span key={i} className="text-[11px] text-black/40">
+                  <span key={i} className="text-[10px] text-black/40">
                     <span className="font-mono font-medium tabular-nums text-black/55">
                       {bal.toLocaleString('en-US', { maximumFractionDigits: 2 })}
                     </span>{' '}
@@ -214,48 +225,45 @@ export function WalletCard({ wallet, onViewDetail, onEdit, onDelete }: WalletCar
                   </span>
                 )
               })}
-              {sortedAssets.length > 3 && (
-                <span className="text-[10px] text-black/20">+{sortedAssets.length - 3}</span>
+              {sortedAssets.length > 2 && (
+                <span className="text-[10px] text-black/20">+{sortedAssets.length - 2}</span>
               )}
             </div>
           )}
         </div>
+      </div>
 
-        {/* Divider */}
-        {hasTodayData && <div className="w-px self-stretch bg-black/[0.04]" />}
-
-        {/* Right: Today's flow */}
-        {hasTodayData && (
-          <div className="flex min-w-[240px] flex-col justify-center px-5 py-4">
-            <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-black/25">
-              {t('accounting.wallets.today', 'Today')}
-            </p>
-            <div className="space-y-1">
-              {/* IN row */}
-              <div className="flex items-center gap-sm">
-                <span className="w-7 text-[10px] font-bold uppercase text-green/60">IN</span>
-                <div className="flex flex-wrap gap-x-3">
-                  {renderTokenAmounts(todaySummary.inByToken, '+', 'text-green')}
-                </div>
+      {/* ── Today's flow (full-width second row) ── */}
+      {hasTodayData && (
+        <div className="border-t border-black/[0.04] px-4 py-2.5">
+          <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-black/25">
+            {t('accounting.wallets.today', 'Today')}
+          </p>
+          <div className="space-y-1">
+            {/* IN row */}
+            <div className="flex items-center gap-2">
+              <span className="w-8 shrink-0 text-[10px] font-bold uppercase text-green/60">IN</span>
+              <div className="flex min-w-0 flex-wrap gap-x-3 gap-y-0.5">
+                {renderTokenAmounts(todaySummary.inByToken, '+', 'text-green')}
               </div>
-              {/* OUT row */}
-              <div className="flex items-center gap-sm">
-                <span className="w-7 text-[10px] font-bold uppercase text-red/60">OUT</span>
-                <div className="flex flex-wrap gap-x-3">
-                  {renderTokenAmounts(todaySummary.outByToken, '-', 'text-red')}
-                </div>
+            </div>
+            {/* OUT row */}
+            <div className="flex items-center gap-2">
+              <span className="w-8 shrink-0 text-[10px] font-bold uppercase text-red/60">OUT</span>
+              <div className="flex min-w-0 flex-wrap gap-x-3 gap-y-0.5">
+                {renderTokenAmounts(todaySummary.outByToken, '-', 'text-red')}
               </div>
-              {/* NET row */}
-              <div className="mt-0.5 flex items-center gap-2 border-t border-black/[0.04] pt-1.5">
-                <span className="w-7 text-[10px] font-bold uppercase text-black/30">NET</span>
-                <div className="flex flex-wrap gap-x-3">
-                  {renderTokenAmounts(todaySummary.netByToken, 'auto', '')}
-                </div>
+            </div>
+            {/* NET row */}
+            <div className="flex items-center gap-2 border-t border-black/[0.04] pt-1">
+              <span className="w-8 shrink-0 text-[10px] font-bold uppercase text-black/30">NET</span>
+              <div className="flex min-w-0 flex-wrap gap-x-3 gap-y-0.5">
+                {renderTokenAmounts(todaySummary.netByToken, 'auto', '')}
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* ── Actions ── */}
       <div className="flex border-t border-black/[0.04]">

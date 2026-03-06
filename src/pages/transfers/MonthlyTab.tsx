@@ -258,7 +258,7 @@ function InsightPill({
 function KpiSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-md lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-md xl:grid-cols-4">
         {Array.from({ length: 8 }).map((_, i) => (
           <div key={i} className="rounded-xl border border-black/10 bg-black/[0.015] px-4 py-3.5">
             <Skeleton className="h-3 w-20 rounded" />
@@ -268,7 +268,7 @@ function KpiSkeleton() {
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-2 gap-md lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-md xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <Skeleton key={i} className="h-14 rounded-lg" />
         ))}
@@ -463,7 +463,7 @@ export function MonthlyTab() {
       {!isLoading && data && data.kpis.transfer_count > 0 && (
         <>
           {/* KPI cards */}
-          <div className="grid grid-cols-2 gap-md lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-md xl:grid-cols-4">
             <KpiCard
               label={t('transfers.monthly.totalDeposits')}
               icon={ArrowDown}
@@ -642,7 +642,7 @@ export function MonthlyTab() {
 
           {/* Insights strip */}
           {insights && (
-            <div className="grid grid-cols-2 gap-md lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-md xl:grid-cols-4">
               <InsightPill
                 icon={Lightning}
                 label={t('transfers.monthly.peakDay')}

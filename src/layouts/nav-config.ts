@@ -19,6 +19,8 @@ export type NavItem = {
   icon: ComponentType<IconProps>
   /** If set, only users with one of these effective roles can see this item */
   roles?: string[]
+  /** If set, visibility is controlled by page-level permission (role_permissions table) */
+  page?: string
 }
 
 export type NavGroup = {
@@ -29,7 +31,7 @@ export type NavGroup = {
 export const navGroups: NavGroup[] = [
   {
     titleKey: 'nav.groups.main',
-    items: [{ titleKey: 'nav.dashboard', href: '/', icon: House }],
+    items: [{ titleKey: 'nav.dashboard', href: '/', icon: House, page: 'dashboard' }],
   },
   {
     titleKey: 'nav.groups.dataEntry',
@@ -50,6 +52,7 @@ export const navGroups: NavGroup[] = [
         titleKey: 'nav.members',
         href: '/members',
         icon: Users,
+        page: 'members',
       },
       { titleKey: 'nav.psps', href: '/psps', icon: CreditCard, roles: ['god', 'admin'] },
       {
@@ -85,6 +88,6 @@ export const navGroups: NavGroup[] = [
   },
   {
     titleKey: 'nav.groups.ai',
-    items: [{ titleKey: 'nav.future', href: '/ai', icon: Brain }],
+    items: [{ titleKey: 'nav.future', href: '/ai', icon: Brain, page: 'ai' }],
   },
 ]

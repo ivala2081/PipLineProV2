@@ -10,7 +10,7 @@ import { AppToastProvider } from '@/hooks/useToast'
 import { usePresence } from '@/hooks/usePresence'
 import { AppLayout } from '@/layouts/AppLayout'
 import { PageErrorBoundary } from '@/components/ErrorBoundary'
-import { RoleRoute } from '@/app/components/RoleRoute'
+import { RoleRoute, PageGuard } from '@/app/components/RoleRoute'
 import type { ReactNode } from 'react'
 
 /* ------------------------------------------------------------------ */
@@ -162,9 +162,11 @@ export function App() {
                           <Route
                             path="/"
                             element={
-                              <PageSuspense>
-                                <DashboardPage />
-                              </PageSuspense>
+                              <PageGuard page="dashboard">
+                                <PageSuspense>
+                                  <DashboardPage />
+                                </PageSuspense>
+                              </PageGuard>
                             }
                           />
                           <Route
@@ -234,17 +236,21 @@ export function App() {
                           <Route
                             path="/ai"
                             element={
-                              <PageSuspense>
-                                <AiPage />
-                              </PageSuspense>
+                              <PageGuard page="ai">
+                                <PageSuspense>
+                                  <AiPage />
+                                </PageSuspense>
+                              </PageGuard>
                             }
                           />
                           <Route
                             path="/members"
                             element={
-                              <PageSuspense>
-                                <MembersPage />
-                              </PageSuspense>
+                              <PageGuard page="members">
+                                <PageSuspense>
+                                  <MembersPage />
+                                </PageSuspense>
+                              </PageGuard>
                             }
                           />
                           <Route

@@ -2,6 +2,7 @@ import { Navigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
+import { usePagePermission } from '@/hooks/usePagePermission'
 import { Wrench, SpinnerGap } from '@phosphor-icons/react'
 import type { ReactNode } from 'react'
 
@@ -34,6 +35,27 @@ export function RoleRoute({ allowedRoles, children, godOnly }: RoleRouteProps) {
   }
 
   return <Navigate to="/" replace />
+}
+
+/**
+ * Guards a page behind a configurable page-level permission.
+ * Uses "page:<pageName>" entries from role_permissions table.
+ * God always has access. Shows spinner while loading. Redirects to "/" if denied.
+ */
+export function PageGuard({ page, children }: { page: string; children: ReactNode }) {
+  const { hasAccess, isLoading } = usePagePermission(page)
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <SpinnerGap className="h-8 w-8 animate-spin text-muted" />
+      </div>
+    )
+  }
+
+  if (!hasAccess) return <Navigate to="/" replace />
+
+  return <>{children}</>
 }
 
 function MaintenanceScreen() {

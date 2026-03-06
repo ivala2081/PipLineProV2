@@ -1439,7 +1439,33 @@
       "overview": "Overview",
       "failedLogins": "Failed Logins",
       "auditLog": "Audit Log",
-      "apiIntegrations": "API Integrations"
+      "apiIntegrations": "API Integrations",
+      "permissions": "Permissions"
+    },
+    "permissions": {
+      "subtitle": "Manage table-level permissions for each role",
+      "tableHeader": "Table",
+      "groups": {
+        "pages": "Pages",
+        "organization": "Organization",
+        "transfers": "Transfers",
+        "psp": "PSP",
+        "accounting": "Accounting",
+        "hr": "Human Resources"
+      },
+      "actions": {
+        "select": "Read",
+        "insert": "Create",
+        "update": "Edit",
+        "delete": "Delete",
+        "access": "Access"
+      },
+      "save": "Save Changes",
+      "saved": "Permissions updated successfully",
+      "error": "Failed to update permissions",
+      "resetToDefault": "Reset",
+      "unsavedChanges": "unsaved change(s)",
+      "godNote": "God role always bypasses all permissions. Organization INSERT/DELETE can only be managed by God."
     },
     "api": {
       "checkHealth": "Health Check",
