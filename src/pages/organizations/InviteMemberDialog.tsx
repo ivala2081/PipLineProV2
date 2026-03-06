@@ -10,6 +10,7 @@ import {
   EyeSlash,
   Crown,
   EnvelopeSimple,
+  IdentificationCard,
   Lock,
 } from '@phosphor-icons/react'
 import {
@@ -243,6 +244,15 @@ export function InviteMemberDialog({
                   icon={<ShieldCheck size={18} />}
                   title={t('organizations.inviteDialog.roleAdmin')}
                   description={t('organizations.inviteDialog.roleAdminDescription')}
+                />
+              )}
+              {(!assignableRoles || assignableRoles.includes('ik')) && (
+                <RoleCard
+                  selected={selectedRole === 'ik'}
+                  onClick={() => form.setValue('role', 'ik')}
+                  icon={<IdentificationCard size={18} />}
+                  title={t('organizations.inviteDialog.roleIk')}
+                  description={t('organizations.inviteDialog.roleIkDescription')}
                 />
               )}
             </div>

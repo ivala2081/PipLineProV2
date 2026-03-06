@@ -194,7 +194,7 @@ export function App() {
                           <Route
                             path="/accounting"
                             element={
-                              <RoleRoute allowedRoles={['admin', 'manager']}>
+                              <RoleRoute allowedRoles={['admin', 'manager', 'ik']}>
                                 <PageSuspense>
                                   <AccountingPage />
                                 </PageSuspense>
@@ -288,7 +288,7 @@ export function App() {
                           <Route
                             path="/hr"
                             element={
-                              <RoleRoute allowedRoles={['admin']} godOnly>
+                              <RoleRoute allowedRoles={['admin', 'ik']}>
                                 <PageSuspense>
                                   <HrPage />
                                 </PageSuspense>

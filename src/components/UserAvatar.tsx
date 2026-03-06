@@ -8,7 +8,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@ds'
 import { OnlineIndicator } from './OnlineIndicator'
 import { cn } from '@ds/utils'
 
-type UserRole = 'god' | 'admin' | 'manager' | 'operation'
+type UserRole = 'god' | 'admin' | 'manager' | 'operation' | 'ik'
 
 interface UserAvatarProps {
   /** Avatar image URL */

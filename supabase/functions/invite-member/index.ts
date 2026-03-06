@@ -12,8 +12,8 @@ import { checkRateLimit } from '../_shared/rateLimit.ts'
 const InviteMemberBodySchema = z.object({
   orgId: z.string().uuid('orgId must be a valid UUID'),
   email: z.string().email('Invalid email address'),
-  role: z.enum(['admin', 'manager', 'operation'], {
-    errorMap: () => ({ message: 'role must be one of: admin, manager, operation' }),
+  role: z.enum(['admin', 'manager', 'operation', 'ik'], {
+    errorMap: () => ({ message: 'role must be one of: admin, manager, operation, ik' }),
   }),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   displayName: z.string().optional(),
@@ -265,7 +265,7 @@ serve(async (req: Request) => {
     // ── 7. Create user or handle existing ───────────────────────────
     let userAlreadyExisted = false
 
-    const { error: createError } = await adminClient.auth.admin.createUser({
+    const { data: createData, error: createError } = await adminClient.auth.admin.createUser({
       email: normalizedEmail,
       password,
       email_confirm: true,
@@ -305,6 +305,26 @@ serve(async (req: Request) => {
 
         return errorResponse(500, 'USER_CREATION_FAILED', createError.message, origin)
       }
+    } else {
+      // New user created successfully — explicitly create org membership
+      // (don't rely solely on the DB trigger)
+      const newUserId = createData.user.id
+
+      await adminClient.from('organization_members').upsert(
+        {
+          organization_id: orgId,
+          user_id: newUserId,
+          role,
+          invited_by: caller.id,
+        },
+        { onConflict: 'organization_id,user_id' },
+      )
+
+      // Mark invitation as accepted
+      await adminClient
+        .from('organization_invitations')
+        .update({ status: 'accepted' })
+        .eq('id', invitation.id)
     }
 
     // ── 8. Send email via Resend ────────────────────────────────────

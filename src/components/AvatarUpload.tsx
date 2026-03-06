@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/useToast'
 import { ImageCropperDialog } from './ImageCropperDialog'
 
-type UserRole = 'god' | 'admin' | 'manager' | 'operation'
+type UserRole = 'god' | 'admin' | 'manager' | 'operation' | 'ik'
 
 const uploadIconSizes = { sm: 28, md: 40, lg: 52, xl: 64 }
 

@@ -92,7 +92,7 @@ describe('inviteMemberSchema', () => {
   })
 
   it('accepts all valid roles', () => {
-    for (const role of ['admin', 'manager', 'operation'] as const) {
+    for (const role of ['admin', 'manager', 'operation', 'ik'] as const) {
       const result = inviteMemberSchema.safeParse({
         email: 'user@example.com',
         password: 'StrongP@ss1',

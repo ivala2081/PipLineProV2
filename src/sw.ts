@@ -11,6 +11,13 @@ import { ExpirationPlugin } from 'workbox-expiration'
 
 declare let self: ServiceWorkerGlobalScope
 
+// Allow the main thread (vite-plugin-pwa) to activate the waiting SW on demand
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting()
+  }
+})
+
 // Guard: stop Workbox from touching non-HTTP requests (e.g. chrome-extension://).
 // This listener is registered first; stopImmediatePropagation() prevents
 // Workbox's own fetch listeners from running for these URLs.
@@ -24,9 +31,9 @@ self.addEventListener('fetch', (event) => {
 precacheAndRoute(self.__WB_MANIFEST)
 cleanupOutdatedCaches()
 
-// Offline navigation fallback
+// SPA navigation fallback — serve cached index.html for all navigation requests
 registerRoute(
-  new NavigationRoute(createHandlerBoundToURL('/offline.html'), {
+  new NavigationRoute(createHandlerBoundToURL('/index.html'), {
     denylist: [/^\/api/, /^\/functions/],
   }),
 )

@@ -13,6 +13,10 @@ describe('canManageOrg', () => {
     expect(canManageOrg('operation')).toBe(false)
   })
 
+  it('ik cannot manage org', () => {
+    expect(canManageOrg('ik')).toBe(false)
+  })
+
   it('null role cannot manage org', () => {
     expect(canManageOrg(null)).toBe(false)
   })
@@ -67,16 +71,20 @@ describe('isAdminOrAbove', () => {
 })
 
 describe('getAssignableRoles', () => {
-  it('admin can assign all 3 roles', () => {
-    expect(getAssignableRoles('admin')).toEqual(['admin', 'manager', 'operation'])
+  it('admin can assign all 4 roles', () => {
+    expect(getAssignableRoles('admin')).toEqual(['admin', 'manager', 'operation', 'ik'])
   })
 
-  it('god can assign all 3 roles regardless of role', () => {
-    expect(getAssignableRoles('operation', true)).toEqual(['admin', 'manager', 'operation'])
+  it('god can assign all 4 roles regardless of role', () => {
+    expect(getAssignableRoles('operation', true)).toEqual(['admin', 'manager', 'operation', 'ik'])
   })
 
-  it('manager can assign manager and operation', () => {
-    expect(getAssignableRoles('manager')).toEqual(['manager', 'operation'])
+  it('manager can assign manager, operation and ik', () => {
+    expect(getAssignableRoles('manager')).toEqual(['manager', 'operation', 'ik'])
+  })
+
+  it('ik cannot assign any roles', () => {
+    expect(getAssignableRoles('ik')).toEqual([])
   })
 
   it('operation cannot assign any roles', () => {

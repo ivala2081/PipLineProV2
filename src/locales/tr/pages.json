@@ -1211,6 +1211,7 @@
         "makeAdmin": "Admin Yap",
         "makeManager": "Yönetici Yap",
         "makeOperation": "Operasyon Yap",
+        "makeIk": "İK Yap",
         "remove": "Üyeyi Kaldır",
         "sendCredentials": "Kimlik Bilgilerini Gönder"
       },
@@ -1238,6 +1239,8 @@
       "roleManagerDescription": "Organizasyon içinde tam erişim",
       "roleOperation": "Operasyon",
       "roleOperationDescription": "Verileri görüntüleyebilir ve yönetebilir",
+      "roleIk": "İK",
+      "roleIkDescription": "İK, transferler ve muhasebe erişimi",
       "add": "Üye Ekle",
       "cancel": "İptal",
       "adding": "Ekleniyor..."
@@ -1259,6 +1262,8 @@
       "roleManagerDescription": "Organizasyon içinde tam erişim",
       "roleOperation": "Operasyon",
       "roleOperationDescription": "Verileri görüntüleyebilir ve yönetebilir",
+      "roleIk": "İK",
+      "roleIkDescription": "İK, transferler ve muhasebe erişimi",
       "method": "Ekleme Yöntemi",
       "methodEmail": "Davet E-postası Gönder",
       "methodEmailDescription": "Üyeye giriş bilgileri e-posta ile gönderilir",
@@ -1534,7 +1539,8 @@
     "roles": {
       "admin": "Admin",
       "manager": "Yönetici",
-      "operation": "Operasyon"
+      "operation": "Operasyon",
+      "ik": "İK"
     },
     "profileInfo": "Profil Bilgisi",
     "profileInfoSelf": "Bu sizin kişisel profiliniz. İletişim bilgilerinizi ve biyografinizi düzenleyebilirsiniz.",
@@ -1696,5 +1702,18 @@
       "adminOnly": "Yalnızca organizasyon yöneticileri API anahtarlarını yönetebilir.",
       "example": "Örnek Kullanım"
     }
+  },
+  "credentials": {
+    "title": "Kimlik Bilgileri",
+    "menuLabel": "Kimlik Bilgileri",
+    "email": "E-posta",
+    "newPassword": "Yeni Şifre",
+    "passwordPlaceholder": "Yeni şifre girin (boş bırakırsanız değişmez)",
+    "passwordHint": "En az 8 karakter. Boş bırakırsanız mevcut şifre korunur.",
+    "save": "Kaydet",
+    "saving": "Kaydediliyor...",
+    "cancel": "İptal",
+    "updated": "Kimlik bilgileri güncellendi",
+    "noChanges": "Değişiklik yapılmadı"
   }
 }

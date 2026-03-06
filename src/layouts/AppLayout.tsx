@@ -306,7 +306,9 @@ function UserMenu() {
         ? { label: 'Manager', variant: 'purple' as const }
         : membership?.role === 'operation'
           ? { label: 'Operation', variant: 'blue' as const }
-          : null
+          : membership?.role === 'ik'
+            ? { label: 'İK', variant: 'orange' as const }
+            : null
 
   const handleSignOut = async () => {
     if (isSigningOut) return

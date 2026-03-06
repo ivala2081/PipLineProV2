@@ -251,7 +251,7 @@ export function HrPage() {
   const { toast } = useToast()
   const { membership } = useOrganization()
   const { isGod } = useAuth()
-  const canManage = isGod || membership?.role === 'admin' || membership?.role === 'manager'
+  const canManage = isGod || membership?.role === 'admin' || membership?.role === 'manager' || membership?.role === 'ik'
 
   const { data: employees = [], isLoading } = useHrEmployeesQuery()
   const { deleteEmployee } = useHrMutations()

@@ -2064,6 +2064,10 @@ export type CompositeTypes<
     ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
     : never
 
+export type OrgMemberRole = 'admin' | 'manager' | 'operation' | 'ik'
+export type SystemRole = 'god' | 'user'
+export type InvitationStatus = 'pending' | 'accepted' | 'expired'
+
 export const Constants = {
   public: {
     Enums: {},

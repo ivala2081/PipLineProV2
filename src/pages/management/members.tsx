@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Crown, DotsThree, Plus, ShieldCheck, Users, Wrench } from '@phosphor-icons/react'
+import { Crown, DotsThree, IdentificationCard, Plus, ShieldCheck, Users, Wrench } from '@phosphor-icons/react'
 import {
   Table,
   TableHeader,
@@ -31,15 +31,17 @@ import { usePresenceSubscription } from '@/hooks/usePresenceSubscription'
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import { queryKeys } from '@/lib/queryKeys'
 import { canManageMembers, getAssignableRoles } from '@/lib/roles'
+import { CredentialsDialog } from './CredentialsDialog'
 
-type RoleKey = 'manager' | 'admin' | 'operation'
+type RoleKey = 'manager' | 'admin' | 'operation' | 'ik'
 
-const ROLE_ORDER: RoleKey[] = ['admin', 'manager', 'operation']
+const ROLE_ORDER: RoleKey[] = ['admin', 'manager', 'operation', 'ik']
 
 const ROLE_CONFIG = {
   manager: { RoleIcon: Crown, dotClass: 'bg-purple-400' },
   admin: { RoleIcon: ShieldCheck, dotClass: 'bg-green-400' },
   operation: { RoleIcon: Wrench, dotClass: 'bg-blue-400' },
+  ik: { RoleIcon: IdentificationCard, dotClass: 'bg-orange-400' },
 }
 
 export function MembersPage() {
@@ -72,12 +74,13 @@ export function MembersPage() {
   const [pinTarget, setPinTarget] = useState<MemberWithProfile | null>(null)
   const [removeTarget, setRemoveTarget] = useState<MemberWithProfile | null>(null)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [credTarget, setCredTarget] = useState<MemberWithProfile | null>(null)
 
   usePresenceSubscription()
 
   const handleChangeRole = async (
     member: MemberWithProfile,
-    newRole: 'admin' | 'manager' | 'operation',
+    newRole: 'admin' | 'manager' | 'operation' | 'ik',
   ) => {
     if (member.role === newRole) return
     try {
@@ -288,6 +291,21 @@ export function MembersPage() {
                                             {t('organizations.members.actions.makeOperation')}
                                           </DropdownMenuItem>
                                         )}
+                                      {assignableRoles.includes('ik') &&
+                                        member.role !== 'ik' && (
+                                          <DropdownMenuItem
+                                            onClick={() => handleChangeRole(member, 'ik')}
+                                          >
+                                            {t('organizations.members.actions.makeIk')}
+                                          </DropdownMenuItem>
+                                        )}
+                                      {isGod && (
+                                        <DropdownMenuItem
+                                          onClick={() => setCredTarget(member)}
+                                        >
+                                          {t('credentials.menuLabel')}
+                                        </DropdownMenuItem>
+                                      )}
                                       <DropdownMenuItem
                                         className="text-red"
                                         onClick={() => setPinTarget(member)}
@@ -345,6 +363,15 @@ export function MembersPage() {
           onClose={() => setAddDialogOpen(false)}
           orgId={orgId}
           assignableRoles={assignableRoles}
+        />
+      )}
+
+      {isGod && credTarget && (
+        <CredentialsDialog
+          open={!!credTarget}
+          onClose={() => setCredTarget(null)}
+          userId={credTarget.user_id}
+          displayName={credTarget.profile?.display_name ?? credTarget.user_id}
         />
       )}
     </div>

@@ -201,6 +201,12 @@ export function AddMemberDialog({ open, onClose, orgId, assignableRoles }: AddMe
                   <span className="text-sm">{t('organizations.addMemberDialog.roleAdmin')}</span>
                 </label>
               )}
+              {(!assignableRoles || assignableRoles.includes('ik')) && (
+                <label className="flex items-center gap-sm">
+                  <input type="radio" value="ik" {...form.register('role')} className="size-4" />
+                  <span className="text-sm">{t('organizations.addMemberDialog.roleIk')}</span>
+                </label>
+              )}
             </div>
           </div>
 

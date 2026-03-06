@@ -23,7 +23,7 @@ export type UpdateOrganizationValues = z.infer<typeof updateOrganizationSchema>
 export const inviteMemberSchema = z.object({
   email: z.string().email('Invalid email').min(1, 'Email is required').trim(),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  role: z.enum(['admin', 'manager', 'operation']),
+  role: z.enum(['admin', 'manager', 'operation', 'ik']),
   displayName: z.string().optional(),
   skipEmail: z.boolean().optional(),
 })

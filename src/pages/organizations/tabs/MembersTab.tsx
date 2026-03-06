@@ -60,7 +60,7 @@ export function MembersTab({ orgId, canManage, assignableRoles = [], isGod }: Me
 
   const handleChangeRole = async (
     member: MemberWithProfile,
-    newRole: 'admin' | 'manager' | 'operation',
+    newRole: 'admin' | 'manager' | 'operation' | 'ik',
   ) => {
     if (member.role === newRole) return
     try {
@@ -220,6 +220,14 @@ export function MembersTab({ orgId, canManage, assignableRoles = [], isGod }: Me
                                       onClick={() => handleChangeRole(member, 'operation')}
                                     >
                                       {t('organizations.members.actions.makeOperation')}
+                                    </DropdownMenuItem>
+                                  )}
+                                {assignableRoles.includes('ik') &&
+                                  member.role !== 'ik' && (
+                                    <DropdownMenuItem
+                                      onClick={() => handleChangeRole(member, 'ik')}
+                                    >
+                                      {t('organizations.members.actions.makeIk')}
                                     </DropdownMenuItem>
                                   )}
                                 <DropdownMenuItem

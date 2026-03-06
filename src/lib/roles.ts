@@ -20,7 +20,7 @@ export function getAssignableRoles(
   role?: OrgMemberRole | string | null,
   isGod = false,
 ): OrgMemberRole[] {
-  if (isGod || role === 'admin') return ['admin', 'manager', 'operation']
-  if (role === 'manager') return ['manager', 'operation']
+  if (isGod || role === 'admin') return ['admin', 'manager', 'operation', 'ik']
+  if (role === 'manager') return ['manager', 'operation', 'ik']
   return []
 }

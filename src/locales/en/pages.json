@@ -1211,6 +1211,7 @@
         "makeAdmin": "Make Admin",
         "makeManager": "Make Manager",
         "makeOperation": "Make Operation",
+        "makeIk": "Make HR",
         "remove": "Remove Member",
         "sendCredentials": "Send Credentials"
       },
@@ -1238,6 +1239,8 @@
       "roleManagerDescription": "Full access within the organization",
       "roleOperation": "Operation",
       "roleOperationDescription": "Can view and manage data",
+      "roleIk": "HR",
+      "roleIkDescription": "HR, transfers and accounting access",
       "add": "Add Member",
       "cancel": "Cancel",
       "adding": "Adding..."
@@ -1259,6 +1262,8 @@
       "roleManagerDescription": "Full access within the organization",
       "roleOperation": "Operation",
       "roleOperationDescription": "Can view and manage data",
+      "roleIk": "HR",
+      "roleIkDescription": "HR, transfers and accounting access",
       "method": "Add Method",
       "methodEmail": "Send Invitation Email",
       "methodEmailDescription": "Sends login credentials to the member via email",
@@ -1534,7 +1539,8 @@
     "roles": {
       "admin": "Admin",
       "manager": "Manager",
-      "operation": "Operation"
+      "operation": "Operation",
+      "ik": "HR"
     },
     "profileInfo": "Profile Information",
     "profileInfoSelf": "This is your personal profile. You can edit your contact information and bio.",
@@ -1697,5 +1703,18 @@
     },
     "title": "Settings",
     "title_alt": "Account Settings"
+  },
+  "credentials": {
+    "title": "Credentials",
+    "menuLabel": "Credentials",
+    "email": "Email",
+    "newPassword": "New Password",
+    "passwordPlaceholder": "Enter new password (leave empty to keep current)",
+    "passwordHint": "Minimum 8 characters. Leave empty to keep current password.",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "updated": "Credentials updated",
+    "noChanges": "No changes made"
   }
 }

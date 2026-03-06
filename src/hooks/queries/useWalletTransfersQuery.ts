@@ -45,11 +45,13 @@ export function useWalletTransfersQuery(
   // Sync API results into accumulated state
   if (data && data !== prevData) {
     setPrevData(data)
+    // Filter out dust/spam transfers (amounts below $0.01)
+    const nonZero = data.transfers.filter((tx) => parseFloat(tx.amount) >= 0.01)
     if (page === 0) {
-      setAllTxs(data.transfers)
+      setAllTxs(nonZero)
     } else {
       const seen = new Set(allTxs.map((tx) => tx.hash))
-      const fresh = data.transfers.filter((tx) => !seen.has(tx.hash))
+      const fresh = nonZero.filter((tx) => !seen.has(tx.hash))
       if (fresh.length > 0) {
         setAllTxs([...allTxs, ...fresh])
       }
