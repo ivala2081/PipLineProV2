@@ -10,7 +10,7 @@ import { AppToastProvider } from '@/hooks/useToast'
 import { usePresence } from '@/hooks/usePresence'
 import { AppLayout } from '@/layouts/AppLayout'
 import { PageErrorBoundary } from '@/components/ErrorBoundary'
-import { RoleRoute, PageGuard } from '@/app/components/RoleRoute'
+import { PageGuard } from '@/app/components/RoleRoute'
 import type { ReactNode } from 'react'
 
 /* ------------------------------------------------------------------ */
@@ -172,65 +172,71 @@ export function App() {
                           <Route
                             path="/transfers"
                             element={
-                              <PageSuspense>
-                                <TransfersPage />
-                              </PageSuspense>
+                              <PageGuard page="transfers">
+                                <PageSuspense>
+                                  <TransfersPage />
+                                </PageSuspense>
+                              </PageGuard>
                             }
                           />
                           <Route
                             path="/transfers/new"
                             element={
-                              <PageSuspense>
-                                <AddTransferPage />
-                              </PageSuspense>
+                              <PageGuard page="transfers">
+                                <PageSuspense>
+                                  <AddTransferPage />
+                                </PageSuspense>
+                              </PageGuard>
                             }
                           />
                           <Route
                             path="/transfers/:id/edit"
                             element={
-                              <PageSuspense>
-                                <EditTransferPage />
-                              </PageSuspense>
+                              <PageGuard page="transfers">
+                                <PageSuspense>
+                                  <EditTransferPage />
+                                </PageSuspense>
+                              </PageGuard>
                             }
                           />
                           <Route
                             path="/accounting"
                             element={
-                              <RoleRoute allowedRoles={['admin', 'manager', 'ik']}>
+                              <PageGuard page="accounting">
                                 <PageSuspense>
                                   <AccountingPage />
                                 </PageSuspense>
-                              </RoleRoute>
+                              </PageGuard>
                             }
                           />
                           <Route
                             path="/accounting/wallet/:walletId/transfers"
                             element={
-                              <RoleRoute allowedRoles={['admin', 'manager']}>
+                              <PageGuard page="accounting">
                                 <PageSuspense>
                                   <WalletTransfersPage />
                                 </PageSuspense>
-                              </RoleRoute>
+                              </PageGuard>
                             }
                           />
                           <Route
                             path="/psps"
                             element={
-                              <RoleRoute allowedRoles={['admin']}>
+                              <PageGuard page="psps">
                                 <PageSuspense>
                                   <PspsPage />
                                 </PageSuspense>
-                              </RoleRoute>
+                              </PageGuard>
                             }
                           />
                           <Route
                             path="/psps/:pspId"
                             element={
-                              <RoleRoute allowedRoles={['admin']}>
+                              <PageGuard page="psps">
                                 <PageSuspense>
                                   <PspDetailPage />
                                 </PageSuspense>
-                              </RoleRoute>
+                              </PageGuard>
                             }
                           />
                           <Route
@@ -256,49 +262,51 @@ export function App() {
                           <Route
                             path="/members/:userId"
                             element={
-                              <PageSuspense>
-                                <MemberProfilePage />
-                              </PageSuspense>
+                              <PageGuard page="members">
+                                <PageSuspense>
+                                  <MemberProfilePage />
+                                </PageSuspense>
+                              </PageGuard>
                             }
                           />
                           <Route
                             path="/organizations"
                             element={
-                              <RoleRoute allowedRoles={['admin']}>
+                              <PageGuard page="organizations">
                                 <PageSuspense>
                                   <OrganizationsListPage />
                                 </PageSuspense>
-                              </RoleRoute>
+                              </PageGuard>
                             }
                           />
                           <Route
                             path="/organizations/:orgId"
                             element={
-                              <RoleRoute allowedRoles={['admin']}>
+                              <PageGuard page="organizations">
                                 <PageSuspense>
                                   <OrganizationDetailPage />
                                 </PageSuspense>
-                              </RoleRoute>
+                              </PageGuard>
                             }
                           />
                           <Route
                             path="/security"
                             element={
-                              <RoleRoute allowedRoles={['admin', 'manager']}>
+                              <PageGuard page="security">
                                 <PageSuspense>
                                   <SecurityDashboard />
                                 </PageSuspense>
-                              </RoleRoute>
+                              </PageGuard>
                             }
                           />
                           <Route
                             path="/hr"
                             element={
-                              <RoleRoute allowedRoles={['admin', 'ik']}>
+                              <PageGuard page="hr">
                                 <PageSuspense>
                                   <HrPage />
                                 </PageSuspense>
-                              </RoleRoute>
+                              </PageGuard>
                             }
                           />
                           <Route
@@ -312,11 +320,11 @@ export function App() {
                           <Route
                             path="/audit"
                             element={
-                              <RoleRoute allowedRoles={['admin', 'manager']}>
+                              <PageGuard page="audit">
                                 <PageSuspense>
                                   <AuditLogPage />
                                 </PageSuspense>
-                              </RoleRoute>
+                              </PageGuard>
                             }
                           />
                           <Route path="*" element={<Navigate to="/" replace />} />

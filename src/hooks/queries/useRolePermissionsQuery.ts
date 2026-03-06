@@ -58,6 +58,7 @@ export function useUpsertRolePermissions() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.security.permissions(orgId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.security.myPagePermissions(orgId) })
     },
   })
 }

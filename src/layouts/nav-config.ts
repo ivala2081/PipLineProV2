@@ -17,8 +17,6 @@ export type NavItem = {
   titleKey: string
   href: string
   icon: ComponentType<IconProps>
-  /** If set, only users with one of these effective roles can see this item */
-  roles?: string[]
   /** If set, visibility is controlled by page-level permission (role_permissions table) */
   page?: string
 }
@@ -36,12 +34,12 @@ export const navGroups: NavGroup[] = [
   {
     titleKey: 'nav.groups.dataEntry',
     items: [
-      { titleKey: 'nav.transfers', href: '/transfers', icon: ArrowsLeftRight },
+      { titleKey: 'nav.transfers', href: '/transfers', icon: ArrowsLeftRight, page: 'transfers' },
       {
         titleKey: 'nav.accounting',
         href: '/accounting',
         icon: BookOpen,
-        roles: ['god', 'admin', 'manager', 'ik'],
+        page: 'accounting',
       },
     ],
   },
@@ -54,12 +52,12 @@ export const navGroups: NavGroup[] = [
         icon: Users,
         page: 'members',
       },
-      { titleKey: 'nav.psps', href: '/psps', icon: CreditCard, roles: ['god', 'admin'] },
+      { titleKey: 'nav.psps', href: '/psps', icon: CreditCard, page: 'psps' },
       {
         titleKey: 'nav.hr',
         href: '/hr',
         icon: IdentificationCard,
-        roles: ['god', 'admin', 'ik'],
+        page: 'hr',
       },
     ],
   },
@@ -70,19 +68,19 @@ export const navGroups: NavGroup[] = [
         titleKey: 'nav.organizations',
         href: '/organizations',
         icon: Buildings,
-        roles: ['god', 'admin'],
+        page: 'organizations',
       },
       {
         titleKey: 'nav.security',
         href: '/security',
         icon: Shield,
-        roles: ['god', 'admin', 'manager'],
+        page: 'security',
       },
       {
         titleKey: 'nav.audit',
         href: '/audit',
         icon: ClipboardText,
-        roles: ['god', 'admin', 'manager'],
+        page: 'audit',
       },
     ],
   },

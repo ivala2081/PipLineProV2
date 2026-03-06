@@ -280,8 +280,6 @@ export function useHrEmployeesQuery() {
       return (data ?? []) as HrEmployee[]
     },
     enabled: !!orgId,
-    staleTime: 10 * 60_000, // 10 min – employee list rarely changes
-    gcTime: 20 * 60_000,
   })
 }
 
@@ -302,8 +300,6 @@ export function useHrEmployeeDocumentsQuery(employeeId: string) {
       return (data ?? []) as HrDocument[]
     },
     enabled: !!orgId && !!employeeId,
-    staleTime: 10 * 60_000, // 10 min – documents rarely change
-    gcTime: 20 * 60_000,
   })
 }
 
@@ -312,6 +308,15 @@ export function useHrMutations() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const orgId = currentOrg?.id ?? ''
+
+  const invalidateHrQueries = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.hr.employees(orgId) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.hr.salaryPaymentsPrefix(orgId) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusAgreements(orgId) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusPayments(orgId) }),
+    ])
+  }
 
   const createEmployee = useMutation({
     mutationFn: async (payload: HrEmployeeInsert) => {
@@ -327,9 +332,7 @@ export function useHrMutations() {
       if (error) throw error
       return data as HrEmployee
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.employees(orgId) })
-    },
+    onSuccess: invalidateHrQueries,
   })
 
   const updateEmployee = useMutation({
@@ -344,9 +347,7 @@ export function useHrMutations() {
       if (error) throw error
       return data as HrEmployee
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.employees(orgId) })
-    },
+    onSuccess: invalidateHrQueries,
   })
 
   const deleteEmployee = useMutation({
@@ -358,9 +359,7 @@ export function useHrMutations() {
         .eq('organization_id', orgId)
       if (error) throw error
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.employees(orgId) })
-    },
+    onSuccess: invalidateHrQueries,
   })
 
   return { createEmployee, updateEmployee, deleteEmployee }
@@ -407,8 +406,8 @@ export function useHrDocumentMutations(employeeId: string) {
       if (error) throw error
       return data as HrDocument
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.documents(orgId, employeeId) })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.hr.documents(orgId, employeeId) })
     },
   })
 
@@ -426,8 +425,8 @@ export function useHrDocumentMutations(employeeId: string) {
 
       if (error) throw error
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.documents(orgId, employeeId) })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.hr.documents(orgId, employeeId) })
     },
   })
 

@@ -118,20 +118,15 @@ function SidebarBrand() {
 function SidebarNav() {
   const { t } = useTranslation('pages')
   const location = useLocation()
-  const { isGod } = useAuth()
-  const { membership } = useOrganization()
   const tNav = t as (key: string) => string
 
-  // Determine effective role for nav filtering
-  const effectiveRole = isGod ? 'god' : membership?.role
   const { canAccessPage } = usePagePermissions()
 
   return (
     <>
       {navGroups.map((group, idx) => {
-        // Filter items by role and page-level permissions
+        // Filter items by page-level permissions
         const visibleItems = group.items.filter((item) => {
-          if (item.roles && !(effectiveRole && item.roles.includes(effectiveRole))) return false
           if (item.page && !canAccessPage(item.page)) return false
           return true
         })

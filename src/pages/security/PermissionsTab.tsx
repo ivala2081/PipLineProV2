@@ -45,13 +45,21 @@ interface ResourceGroup {
   tables: string[]
 }
 
-const PAGE_TABLES = new Set(['page:dashboard', 'page:members', 'page:ai'])
+const PAGE_TABLES = new Set([
+  'page:dashboard', 'page:members', 'page:ai',
+  'page:transfers', 'page:accounting', 'page:psps',
+  'page:hr', 'page:organizations', 'page:security', 'page:audit',
+])
 
 const RESOURCE_GROUPS: ResourceGroup[] = [
   {
     key: 'pages',
     labelKey: 'security.permissions.groups.pages',
-    tables: ['page:dashboard', 'page:members', 'page:ai'],
+    tables: [
+      'page:dashboard', 'page:members', 'page:ai',
+      'page:transfers', 'page:accounting', 'page:psps',
+      'page:hr', 'page:organizations', 'page:security', 'page:audit',
+    ],
   },
   {
     key: 'organization',
@@ -95,6 +103,13 @@ const TABLE_DISPLAY: Record<string, string> = {
   'page:dashboard': 'Dashboard',
   'page:members': 'Members',
   'page:ai': 'AI / Future',
+  'page:transfers': 'Transfers',
+  'page:accounting': 'Accounting',
+  'page:psps': 'PSPs',
+  'page:hr': 'HR',
+  'page:organizations': 'Organizations',
+  'page:security': 'Security',
+  'page:audit': 'Audit Log',
   transfers: 'Transfers',
   transfer_audit_log: 'Transfer Audit Log',
   psps: 'PSPs',
@@ -342,14 +357,15 @@ export function PermissionsTab() {
                                 >
                                 const active = perm[field]
                                 const cfg = ACTION_CONFIG[action]
+                                const locked = table === 'page:security' && role === 'admin'
 
                                 return (
                                   <button
                                     key={action}
                                     type="button"
-                                    onClick={() => toggleAction(table, role, action)}
-                                    title={t(cfg.labelKey)}
-                                    className="cursor-pointer transition-transform hover:scale-110 active:scale-95"
+                                    onClick={() => !locked && toggleAction(table, role, action)}
+                                    title={locked ? t('security.permissions.lockedSecurity', 'Admin her zaman güvenlik sayfasına erişebilir') : t(cfg.labelKey)}
+                                    className={locked ? 'cursor-not-allowed opacity-50' : 'cursor-pointer transition-transform hover:scale-110 active:scale-95'}
                                   >
                                     <Tag
                                       variant={active ? cfg.activeVariant : 'default'}

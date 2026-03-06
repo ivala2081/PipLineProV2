@@ -10,8 +10,7 @@ import {
 } from '@phosphor-icons/react'
 import type { ComponentType } from 'react'
 import type { IconProps } from '@phosphor-icons/react'
-import { useAuth } from '@/app/providers/AuthProvider'
-import { useOrganization } from '@/app/providers/OrganizationProvider'
+import { usePagePermissions } from '@/hooks/usePagePermission'
 import { useSidebar } from '@ds'
 import { cn } from '@ds/utils'
 
@@ -21,31 +20,28 @@ interface BottomNavItem {
   icon: ComponentType<IconProps>
   /** 'more' opens the sidebar instead of navigating */
   action?: 'more'
-  roles?: string[]
+  page?: string
 }
 
 const bottomNavItems: BottomNavItem[] = [
-  { titleKey: 'nav.dashboard', href: '/', icon: House },
-  { titleKey: 'nav.transfers', href: '/transfers', icon: ArrowsLeftRight },
-  { titleKey: 'nav.hr', href: '/hr', icon: IdentificationCard, roles: ['god'] },
-  { titleKey: 'nav.members', href: '/members', icon: Users },
-  { titleKey: 'nav.future', href: '/ai', icon: Brain },
+  { titleKey: 'nav.dashboard', href: '/', icon: House, page: 'dashboard' },
+  { titleKey: 'nav.transfers', href: '/transfers', icon: ArrowsLeftRight, page: 'transfers' },
+  { titleKey: 'nav.hr', href: '/hr', icon: IdentificationCard, page: 'hr' },
+  { titleKey: 'nav.members', href: '/members', icon: Users, page: 'members' },
+  { titleKey: 'nav.future', href: '/ai', icon: Brain, page: 'ai' },
   { titleKey: 'nav.more', href: '#', icon: DotsThreeOutline, action: 'more' },
 ]
 
 export function BottomNav() {
   const { t } = useTranslation('pages')
   const location = useLocation()
-  const { isGod } = useAuth()
-  const { membership } = useOrganization()
+  const { canAccessPage } = usePagePermissions()
   const { toggleSidebar } = useSidebar()
 
-  const effectiveRole = isGod ? 'god' : membership?.role
-
-  // Filter items by role, then pick max 5 (4 nav + More)
+  // Filter items by page-level permissions, then pick max 5 (4 nav + More)
   const visibleItems = bottomNavItems.filter((item) => {
-    if (!item.roles) return true
-    return effectiveRole && item.roles.includes(effectiveRole)
+    if (item.page && !canAccessPage(item.page)) return false
+    return true
   })
 
   // If HR is not visible, keep Members; otherwise remove Members to keep 5 items max
