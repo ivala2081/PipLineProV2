@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Money,
   CheckCircle,
@@ -39,8 +40,6 @@ import {
   type HrEmployee,
   type BulkSalaryPayoutItem,
 } from '@/hooks/queries/useHrQuery'
-import { BulkSalaryConfirmDialog } from './BulkSalaryConfirmDialog'
-import { BulkBankDepositDialog } from './BulkBankDepositDialog'
 import { SalaryPaymentsTab } from './SalaryPaymentsTab'
 import { MONTH_NAMES_TR, MONTH_NAMES_EN, getRoleVariant } from './utils/hrConstants'
 import { isWeekendDate } from './utils/attendanceHelpers'
@@ -55,11 +54,10 @@ interface SalariesTabProps {
 }
 
 export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
+  const navigate = useNavigate()
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
-  const [bulkPayoutOpen, setBulkPayoutOpen] = useState(false)
-  const [bankDepositOpen, setBankDepositOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -359,7 +357,16 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                   <Button
                     variant="outline"
                     className="ml-auto w-full sm:w-auto"
-                    onClick={() => setBankDepositOpen(true)}
+                    onClick={() =>
+                      navigate('/hr/bank-deposit', {
+                        state: {
+                          employees: insuredWithoutDeposit,
+                          insuredBankAmountTl,
+                          periodLabel,
+                          lang,
+                        },
+                      })
+                    }
                   >
                     <Bank size={15} weight="fill" />
                     {lang === 'tr'
@@ -374,7 +381,11 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                 <Button
                   variant="filled"
                   className={`${canManage && activeEmployees.some((e) => e.is_insured && !insuredBankDepositByEmp.has(e.id) && !paidByEmp.has(e.id)) ? '' : 'ml-auto'} w-full sm:w-auto`}
-                  onClick={() => setBulkPayoutOpen(true)}
+                  onClick={() =>
+                    navigate('/hr/salary-payout', {
+                      state: { items: payoutItems, periodLabel, lang },
+                    })
+                  }
                 >
                   <CheckFat size={15} weight="fill" />
                   {hasSelection
@@ -647,32 +658,6 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
               </>
             )}
 
-            {/* Salary confirm dialog */}
-            <BulkSalaryConfirmDialog
-              open={bulkPayoutOpen}
-              onClose={() => {
-                setBulkPayoutOpen(false)
-                setSelectedIds(new Set())
-              }}
-              items={payoutItems}
-              periodLabel={periodLabel}
-              lang={lang}
-            />
-
-            {/* Bank deposit dialog */}
-            <BulkBankDepositDialog
-              open={bankDepositOpen}
-              onClose={() => setBankDepositOpen(false)}
-              employees={activeEmployees.filter(
-                (e) =>
-                  e.is_insured &&
-                  !insuredBankDepositByEmp.has(e.id) &&
-                  !paidByEmp.has(e.id),
-              )}
-              insuredBankAmountTl={insuredBankAmountTl}
-              periodLabel={periodLabel}
-              lang={lang}
-            />
           </div>
         </TabsContent>
 

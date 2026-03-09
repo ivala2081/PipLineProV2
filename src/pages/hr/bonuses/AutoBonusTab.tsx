@@ -57,8 +57,8 @@ import {
   type ReTier,
   type BulkPayoutItem,
 } from '@/hooks/queries/useHrQuery'
+import { useNavigate } from 'react-router-dom'
 import { useToast } from '@/hooks/useToast'
-import { BulkPayoutConfirmDialog } from './BulkPayoutConfirmDialog'
 import { formatAmount, parseAmount, numberToDisplay, amountPlaceholder } from '@/lib/formatAmount'
 import { MONTH_NAMES_TR, MONTH_NAMES_EN } from '../utils/hrConstants'
 
@@ -1102,10 +1102,10 @@ interface AutoBonusTabProps {
 }
 
 export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProps) {
+  const navigate = useNavigate()
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
-  const [bulkPayoutOpen, setBulkPayoutOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [selectedAutoIds, setSelectedAutoIds] = useState<Set<string>>(new Set())
   const { toast } = useToast()
@@ -1333,7 +1333,20 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
               <span className="text-sm font-bold tabular-nums text-purple">{fmt(total)} USDT</span>
             </div>
             {canManage && !isLoading && mtStats.some((s) => s.totalBonus > 0) && (
-              <Button variant="filled" size="sm" onClick={() => setBulkPayoutOpen(true)}>
+              <Button
+                variant="filled"
+                size="sm"
+                onClick={() =>
+                  navigate('/hr/bonus-payout', {
+                    state: {
+                      items: buildFilteredBulkItems(),
+                      dept: 'marketing' as const,
+                      periodLabel,
+                      lang,
+                    },
+                  })
+                }
+              >
                 <CheckFat size={14} weight="fill" />
                 {hasAutoSelection
                   ? lang === 'tr'
@@ -1371,17 +1384,6 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
           employeeMap={employeeMap}
           canManage={canManage}
           onDeletePayment={(id) => void handleDeletePayment(id)}
-        />
-        <BulkPayoutConfirmDialog
-          open={bulkPayoutOpen}
-          onClose={() => {
-            setBulkPayoutOpen(false)
-            setSelectedAutoIds(new Set())
-          }}
-          items={buildFilteredBulkItems()}
-          dept="marketing"
-          periodLabel={periodLabel}
-          lang={lang}
         />
         <AutoBonusPaymentDialog
           open={!!payTarget}
@@ -1422,7 +1424,20 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
               <span className="text-sm font-bold tabular-nums text-orange">{fmt(total)} USDT</span>
             </div>
             {canManage && !isLoading && reStats.some((s) => s.bonus > 0) && (
-              <Button variant="filled" size="sm" onClick={() => setBulkPayoutOpen(true)}>
+              <Button
+                variant="filled"
+                size="sm"
+                onClick={() =>
+                  navigate('/hr/bonus-payout', {
+                    state: {
+                      items: buildFilteredBulkItems(),
+                      dept: 'reattention' as const,
+                      periodLabel,
+                      lang,
+                    },
+                  })
+                }
+              >
                 <CheckFat size={14} weight="fill" />
                 {hasAutoSelection
                   ? lang === 'tr'
@@ -1459,17 +1474,6 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
           employeeMap={employeeMap}
           canManage={canManage}
           onDeletePayment={(id) => void handleDeletePayment(id)}
-        />
-        <BulkPayoutConfirmDialog
-          open={bulkPayoutOpen}
-          onClose={() => {
-            setBulkPayoutOpen(false)
-            setSelectedAutoIds(new Set())
-          }}
-          items={buildFilteredBulkItems()}
-          dept="reattention"
-          periodLabel={periodLabel}
-          lang={lang}
         />
         <AutoBonusPaymentDialog
           open={!!payTarget}

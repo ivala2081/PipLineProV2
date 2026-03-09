@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   CurrencyDollar,
   Plus,
@@ -57,7 +58,6 @@ import {
 } from '@/hooks/queries/useHrQuery'
 import { BonusAgreementDialog } from './BonusAgreementDialog'
 import { BonusPaymentDialog } from './BonusPaymentDialog'
-import { BulkPayoutConfirmDialog } from './BulkPayoutConfirmDialog'
 import { VariablePendingDialog } from './VariablePendingDialog'
 import { AutoBonusTab } from './AutoBonusTab'
 import { MtConfigTab } from './MtConfigTab'
@@ -110,6 +110,7 @@ const AUTO_BONUS_ROLES = ['Marketing', 'Retention'] as const
 type DeptTab = 'marketing' | 'reattention' | 'other' | 'history' | 'config' | 're-config'
 
 export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabProps) {
+  const navigate = useNavigate()
   const { toast } = useToast()
 
   const { data: agreements = [], isLoading } = useBonusAgreementsQuery()
@@ -132,7 +133,6 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
   const [variablePendingAgreement, setVariablePendingAgreement] = useState<HrBonusAgreement | null>(
     null,
   )
-  const [bulkPayoutOpen, setBulkPayoutOpen] = useState(false)
   const [pendingSearch, setPendingSearch] = useState('')
   const [pendingPage, setPendingPage] = useState(1)
   const [selectedBonusIds, setSelectedBonusIds] = useState<Set<string>>(new Set())
@@ -710,7 +710,20 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
                       </div>
                     </div>
                     {canManage && otherBulkItems.length > 0 && (
-                      <Button variant="filled" size="sm" onClick={() => setBulkPayoutOpen(true)}>
+                      <Button
+                        variant="filled"
+                        size="sm"
+                        onClick={() =>
+                          navigate('/hr/bonus-payout', {
+                            state: {
+                              items: bonusPayoutItems,
+                              dept: 'other' as const,
+                              periodLabel: otherPeriodLabel,
+                              lang,
+                            },
+                          })
+                        }
+                      >
                         <CheckFat size={14} weight="fill" />
                         {hasBonusSelection
                           ? lang === 'tr'
@@ -928,17 +941,6 @@ export function BonusesTab({ employees, canManage, lang, onAddRef }: BonusesTabP
                   ? (variablePendingByAgreement.get(variablePendingAgreement.id) ?? null)
                   : null
               }
-            />
-            <BulkPayoutConfirmDialog
-              open={bulkPayoutOpen}
-              onClose={() => {
-                setBulkPayoutOpen(false)
-                setSelectedBonusIds(new Set())
-              }}
-              items={bonusPayoutItems}
-              dept="other"
-              periodLabel={otherPeriodLabel}
-              lang={lang}
             />
           </div>
         </TabsContent>

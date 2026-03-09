@@ -65,6 +65,21 @@ const OrganizationDetailPage = lazy(() =>
 )
 const SecurityDashboard = lazy(() => import('@/pages/security-dashboard'))
 const HrPage = lazy(() => import('@/pages/hr').then((m) => ({ default: m.HrPage })))
+const BulkSalaryPayoutPage = lazy(() =>
+  import('@/pages/hr/payments/BulkSalaryPayoutPage').then((m) => ({
+    default: m.BulkSalaryPayoutPage,
+  })),
+)
+const BulkBankDepositPage = lazy(() =>
+  import('@/pages/hr/payments/BulkBankDepositPage').then((m) => ({
+    default: m.BulkBankDepositPage,
+  })),
+)
+const BulkBonusPayoutPage = lazy(() =>
+  import('@/pages/hr/payments/BulkBonusPayoutPage').then((m) => ({
+    default: m.BulkBonusPayoutPage,
+  })),
+)
 const SettingsPage = lazy(() =>
   import('@/pages/settings').then((m) => ({ default: m.SettingsPage })),
 )
@@ -305,6 +320,36 @@ export function App() {
                               <PageGuard page="hr">
                                 <PageSuspense>
                                   <HrPage />
+                                </PageSuspense>
+                              </PageGuard>
+                            }
+                          />
+                          <Route
+                            path="/hr/salary-payout"
+                            element={
+                              <PageGuard page="hr">
+                                <PageSuspense>
+                                  <BulkSalaryPayoutPage />
+                                </PageSuspense>
+                              </PageGuard>
+                            }
+                          />
+                          <Route
+                            path="/hr/bank-deposit"
+                            element={
+                              <PageGuard page="hr">
+                                <PageSuspense>
+                                  <BulkBankDepositPage />
+                                </PageSuspense>
+                              </PageGuard>
+                            }
+                          />
+                          <Route
+                            path="/hr/bonus-payout"
+                            element={
+                              <PageGuard page="hr">
+                                <PageSuspense>
+                                  <BulkBonusPayoutPage />
                                 </PageSuspense>
                               </PageGuard>
                             }
