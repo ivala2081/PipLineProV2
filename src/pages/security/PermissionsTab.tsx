@@ -357,7 +357,10 @@ export function PermissionsTab() {
                                 >
                                 const active = perm[field]
                                 const cfg = ACTION_CONFIG[action]
-                                const locked = table === 'page:security' && role === 'admin'
+                                // Prevent admin from losing access to critical pages
+                                const locked =
+                                  (table === 'page:security' && role === 'admin') ||
+                                  (table === 'page:dashboard' && role === 'admin')
 
                                 return (
                                   <button

@@ -6,6 +6,9 @@
 -- can be called by any org member to check their own page access.
 -- ============================================================================
 
+-- ⚠️  NOTE: Migration 101 extends this function to 10 pages.
+--    If you CREATE OR REPLACE this function in a later migration,
+--    make sure to include ALL pages from _pages array in 101.
 CREATE OR REPLACE FUNCTION public.get_my_page_permissions(_org_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public

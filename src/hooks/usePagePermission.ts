@@ -11,10 +11,28 @@ interface MyPagePerm {
 }
 
 /**
+ * Client-side fallback defaults matching the SQL default_permission() function.
+ * Used when the RPC hasn't loaded yet or fails, so the sidebar is never empty.
+ * This mirrors the old hardcoded roles behavior before the permission system.
+ */
+const PAGE_DEFAULTS: Record<string, string[]> = {
+  dashboard: ['admin', 'manager', 'operation', 'ik'],
+  members: ['admin', 'manager', 'operation', 'ik'],
+  ai: ['admin', 'manager', 'operation', 'ik'],
+  transfers: ['admin', 'manager', 'operation', 'ik'],
+  accounting: ['admin', 'manager', 'ik'],
+  psps: ['admin'],
+  hr: ['admin', 'ik'],
+  organizations: ['admin'],
+  security: ['admin', 'manager'],
+  audit: ['admin', 'manager'],
+}
+
+/**
  * Returns { canAccessPage, isLoading } for page-level permissions.
  * Uses get_my_page_permissions RPC — callable by ALL org members.
- * God always has access. Returns null (indeterminate) while loading
- * so callers can distinguish "loading" from "denied".
+ * God always has access. Falls back to client-side defaults when RPC
+ * hasn't loaded yet, so the sidebar is never blank.
  */
 export function usePagePermissions() {
   const { isGod } = useAuth()
@@ -22,11 +40,7 @@ export function usePagePermissions() {
   const orgId = currentOrg?.id ?? ''
   const role = membership?.role
 
-  const {
-    data: permissions,
-    isLoading: queryLoading,
-    isFetching,
-  } = useQuery({
+  const { data: permissions } = useQuery({
     queryKey: queryKeys.security.myPagePermissions(orgId),
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_my_page_permissions', {
@@ -41,8 +55,8 @@ export function usePagePermissions() {
     retryDelay: (attempt) => Math.min(1000 * (attempt + 1), 5000),
   })
 
-  // True loading = org provider still loading OR query actively fetching
-  const stillLoading = !isGod && (orgLoading || (!permissions && (queryLoading || isFetching)))
+  // True loading = org provider still loading (don't know role yet)
+  const stillLoading = !isGod && orgLoading
 
   const permMap = useMemo(() => {
     const map = new Map<string, boolean>()
@@ -57,13 +71,27 @@ export function usePagePermissions() {
   const canAccessPage = useCallback(
     (pageName: string): boolean | null => {
       if (isGod) return true
-      // While loading, return null (indeterminate) — callers decide how to handle
+
+      // Org provider still loading — show skeleton
       if (stillLoading) return null
-      // After loading: if no permissions or role, deny
-      if (!permissions || !role) return false
-      const val = permMap.get(`page:${pageName}`)
-      // If no permission entry exists, default to true (backwards compat)
-      return val ?? true
+
+      // RPC loaded — use server permissions
+      if (permissions && role) {
+        const val = permMap.get(`page:${pageName}`)
+        // If no permission entry exists for this page, allow (backwards compat)
+        return val ?? true
+      }
+
+      // Fallback: RPC not loaded yet (role undefined, query disabled, or error).
+      // Use client-side defaults so the sidebar is never empty.
+      if (role) {
+        const allowed = PAGE_DEFAULTS[pageName]
+        return allowed ? allowed.includes(role) : true
+      }
+
+      // No role at all (membership failed) — allow basic pages to avoid blank sidebar
+      const basicPages = PAGE_DEFAULTS[pageName]
+      return basicPages ? basicPages.length === 4 : false // only show "all roles" pages
     },
     [isGod, stillLoading, permissions, role, permMap],
   )
@@ -73,7 +101,7 @@ export function usePagePermissions() {
 
 /**
  * Single page permission check hook.
- * hasAccess: true/false after resolved, null while loading.
+ * hasAccess: true/false after resolved, null while org is loading.
  */
 export function usePagePermission(pageName: string) {
   const { canAccessPage, isLoading } = usePagePermissions()

@@ -129,6 +129,10 @@ CREATE TRIGGER set_updated_at
 -- ============================================================
 -- 8. default_permission fonksiyonunu güncelle
 --    hr_bulk_payments + hr_bulk_payment_items tablolarını ekle
+--
+-- ⚠️  CRITICAL: Bu fonksiyon her güncellendiğinde page:* entries
+--    DAHİL EDİLMELİDİR! Yoksa sidebar erişimi bozulur.
+--    Bkz: migration 101_extend_page_permissions.sql
 -- ============================================================
 CREATE OR REPLACE FUNCTION private.default_permission(
   _role TEXT, _table TEXT, _action TEXT
@@ -136,6 +140,55 @@ CREATE OR REPLACE FUNCTION private.default_permission(
 LANGUAGE sql IMMUTABLE
 AS $$
   SELECT CASE
+    -- ══════════════════════════════════════════════════════
+    -- PAGE-LEVEL PERMISSIONS (only select = can view)
+    -- ⚠️  Bu bölüm SİLİNMEMELİDİR — sidebar erişimi için gerekli
+    -- ══════════════════════════════════════════════════════
+
+    WHEN _table = 'page:dashboard' AND _action = 'select'
+      THEN _role IN ('admin','manager','operation','ik')
+    WHEN _table = 'page:dashboard' THEN false
+
+    WHEN _table = 'page:members' AND _action = 'select'
+      THEN _role IN ('admin','manager','operation','ik')
+    WHEN _table = 'page:members' THEN false
+
+    WHEN _table = 'page:ai' AND _action = 'select'
+      THEN _role IN ('admin','manager','operation','ik')
+    WHEN _table = 'page:ai' THEN false
+
+    WHEN _table = 'page:transfers' AND _action = 'select'
+      THEN _role IN ('admin','manager','operation','ik')
+    WHEN _table = 'page:transfers' THEN false
+
+    WHEN _table = 'page:accounting' AND _action = 'select'
+      THEN _role IN ('admin','manager','ik')
+    WHEN _table = 'page:accounting' THEN false
+
+    WHEN _table = 'page:psps' AND _action = 'select'
+      THEN _role = 'admin'
+    WHEN _table = 'page:psps' THEN false
+
+    WHEN _table = 'page:hr' AND _action = 'select'
+      THEN _role IN ('admin','ik')
+    WHEN _table = 'page:hr' THEN false
+
+    WHEN _table = 'page:organizations' AND _action = 'select'
+      THEN _role = 'admin'
+    WHEN _table = 'page:organizations' THEN false
+
+    WHEN _table = 'page:security' AND _action = 'select'
+      THEN _role IN ('admin','manager')
+    WHEN _table = 'page:security' THEN false
+
+    WHEN _table = 'page:audit' AND _action = 'select'
+      THEN _role IN ('admin','manager')
+    WHEN _table = 'page:audit' THEN false
+
+    -- ══════════════════════════════════════════════════════
+    -- TABLE-LEVEL PERMISSIONS
+    -- ══════════════════════════════════════════════════════
+
     -- transfers: all org members SELECT/INSERT/UPDATE, admin+manager+ik DELETE
     WHEN _table = 'transfers' AND _action IN ('select','insert','update')
       THEN _role IN ('admin','manager','operation','ik')
@@ -205,6 +258,9 @@ AS $$
 $$;
 
 -- get_role_permissions_with_defaults tablosu da güncelle
+-- ⚠️  CRITICAL: _tables dizisi page:* entries İÇERMELİDİR!
+--    Eksik bırakılırsa güvenlik panelinde sayfalar boş görünür
+--    ve yanlış custom entry oluşturulabilir → sidebar bozulur.
 CREATE OR REPLACE FUNCTION public.get_role_permissions_with_defaults(_org_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
@@ -212,6 +268,11 @@ AS $$
 DECLARE
   _result JSONB := '[]'::jsonb;
   _tables TEXT[] := ARRAY[
+    -- ⚠️  Page entries — SİLMEYİN
+    'page:dashboard','page:members','page:ai',
+    'page:transfers','page:accounting','page:psps','page:hr',
+    'page:organizations','page:security','page:audit',
+    -- Table entries
     'transfers','transfer_audit_log',
     'psps','psp_commission_rates','psp_settlements',
     'accounting_entries','accounting_monthly_config',
@@ -222,28 +283,47 @@ DECLARE
     'organizations','organization_members','organization_invitations'
   ];
   _roles TEXT[] := ARRAY['admin','manager','operation','ik'];
-  _r TEXT;
   _t TEXT;
-  _row JSONB;
+  _r TEXT;
+  _rp RECORD;
 BEGIN
-  FOREACH _r IN ARRAY _roles LOOP
-    FOREACH _t IN ARRAY _tables LOOP
-      SELECT jsonb_build_object(
-        'role', _r,
-        'table_name', _t,
-        'can_select', COALESCE(rp.can_select, private.default_permission(_r, _t, 'select')),
-        'can_insert', COALESCE(rp.can_insert, private.default_permission(_r, _t, 'insert')),
-        'can_update', COALESCE(rp.can_update, private.default_permission(_r, _t, 'update')),
-        'can_delete', COALESCE(rp.can_delete, private.default_permission(_r, _t, 'delete')),
-        'is_custom',  rp.id IS NOT NULL
-      ) INTO _row
-      FROM (SELECT NULL::uuid AS id, NULL::boolean AS can_select, NULL::boolean AS can_insert, NULL::boolean AS can_update, NULL::boolean AS can_delete) AS defaults
-      LEFT JOIN role_permissions rp
-        ON rp.organization_id = _org_id AND rp.role = _r AND rp.table_name = _t;
+  -- Permission check
+  IF NOT (private.is_god() OR private.is_org_admin(_org_id)) THEN
+    RAISE EXCEPTION 'Permission denied';
+  END IF;
 
-      _result := _result || _row;
+  FOR _t IN SELECT unnest(_tables) LOOP
+    FOR _r IN SELECT unnest(_roles) LOOP
+      SELECT * INTO _rp
+      FROM role_permissions
+      WHERE organization_id = _org_id
+        AND table_name = _t
+        AND role = _r;
+
+      IF _rp IS NOT NULL THEN
+        _result := _result || jsonb_build_object(
+          'table_name', _t,
+          'role', _r,
+          'can_select', _rp.can_select,
+          'can_insert', _rp.can_insert,
+          'can_update', _rp.can_update,
+          'can_delete', _rp.can_delete,
+          'is_custom', true
+        );
+      ELSE
+        _result := _result || jsonb_build_object(
+          'table_name', _t,
+          'role', _r,
+          'can_select', private.default_permission(_r, _t, 'select'),
+          'can_insert', private.default_permission(_r, _t, 'insert'),
+          'can_update', private.default_permission(_r, _t, 'update'),
+          'can_delete', private.default_permission(_r, _t, 'delete'),
+          'is_custom', false
+        );
+      END IF;
     END LOOP;
   END LOOP;
+
   RETURN _result;
 END;
 $$;
