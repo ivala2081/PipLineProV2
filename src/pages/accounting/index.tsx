@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import {
   Plus,
   UploadSimple,
@@ -52,6 +53,7 @@ export function AccountingPage() {
   const [walletDialogOpen, setWalletDialogOpen] = useState(false)
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const navigate = useNavigate()
 
   const handleAddEntry = () => {
     setEditingEntry(null)
@@ -59,6 +61,11 @@ export function AccountingPage() {
   }
 
   const handleEditEntry = (entry: AccountingEntry) => {
+    // Bulk payment entries → navigate to detail page instead of edit dialog
+    if (entry.hr_bulk_payment_id) {
+      navigate(`/accounting/bulk/${entry.hr_bulk_payment_id}`)
+      return
+    }
     setEditingEntry(entry)
     setEntryDialogOpen(true)
   }

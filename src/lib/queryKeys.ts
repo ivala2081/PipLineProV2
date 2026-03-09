@@ -186,7 +186,13 @@ export const queryKeys = {
     leavesMonth: (orgId: string, year: number, month: number) =>
       ['hr', orgId, 'leaves-month', year, month] as const,
     leavesMonthAll: (orgId: string) => ['hr', orgId, 'leaves-month'] as const,
+    leavesForDate: (orgId: string, date: string) => ['hr', orgId, 'leaves-date', date] as const,
     advances: (orgId: string, year: number, month: number) =>
       ['hr', orgId, 'advances', year, month] as const,
+    bulkPayments: (orgId: string) => ['hr', orgId, 'bulk-payments'] as const,
+    bulkPaymentDetail: (orgId: string, id: string) =>
+      ['hr', orgId, 'bulk-payment', id] as const,
+    baremFailures: (orgId: string, period: string) =>
+      ['hr', orgId, 'barem-failures', period] as const,
   },
 } as const

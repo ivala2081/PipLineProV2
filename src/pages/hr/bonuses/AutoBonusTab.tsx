@@ -10,6 +10,7 @@ import {
   MagnifyingGlass,
   CaretLeft,
   CaretRight,
+  Prohibit,
 } from '@phosphor-icons/react'
 import { localYMD } from '@/lib/date'
 import {
@@ -48,6 +49,9 @@ import {
   useBonusPaymentsQuery,
   useBonusMutations,
   useAdvancesQuery,
+  useBaremFailuresQuery,
+  useBaremFailureMutation,
+  useHrSettingsQuery,
   type HrEmployee,
   type AutoBonusTransfer,
   type HrBonusPayment,
@@ -545,6 +549,9 @@ function MarketingBonusTable({
   selectedIds,
   onToggleSelect,
   onToggleSelectAll,
+  baremEnabled = false,
+  baremFailedIds,
+  onToggleBarem,
 }: {
   stats: MtEmployeeStat[]
   isLoading: boolean
@@ -558,6 +565,9 @@ function MarketingBonusTable({
   selectedIds?: Set<string>
   onToggleSelect?: (id: string) => void
   onToggleSelectAll?: () => void
+  baremEnabled?: boolean
+  baremFailedIds?: Set<string>
+  onToggleBarem?: (employeeId: string, failed: boolean) => void
 }) {
   const [page, setPage] = useState(1)
 
@@ -679,6 +689,11 @@ function MarketingBonusTable({
               </TableHead>
               <TableHead className="text-right">{lang === 'tr' ? 'Ödül' : 'Prize'}</TableHead>
               <TableHead className="text-right">{lang === 'tr' ? 'Avans' : 'Advance'}</TableHead>
+              {baremEnabled && canManage && (
+                <TableHead className="w-20 text-center">
+                  {lang === 'tr' ? 'Barem' : 'Threshold'}
+                </TableHead>
+              )}
               <TableHead className="text-right">
                 {lang === 'tr' ? 'Net Prim' : 'Net Bonus'}
               </TableHead>
@@ -687,8 +702,10 @@ function MarketingBonusTable({
           </TableHeader>
           <TableBody>
             {paginatedStats.map((stat, idx) => {
+              const isBaremedOut = baremEnabled && (baremFailedIds?.has(stat.employee.id) ?? false)
               const advance = advancesByEmp.get(stat.employee.id) ?? 0
-              const net = Math.max(0, stat.totalBonus - advance)
+              const effectiveBonus = isBaremedOut ? 0 : stat.totalBonus
+              const net = Math.max(0, effectiveBonus - advance)
               return (
                 <TableRow
                   key={stat.employee.id}
@@ -759,8 +776,42 @@ function MarketingBonusTable({
                       <span className="text-xs text-black/30">—</span>
                     )}
                   </TableCell>
+                  {baremEnabled && canManage && (
+                    <TableCell className="w-20 text-center">
+                      <button
+                        type="button"
+                        onClick={() => onToggleBarem?.(stat.employee.id, !isBaremedOut)}
+                        className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold transition-colors ${
+                          isBaremedOut
+                            ? 'bg-red/10 text-red hover:bg-red/20'
+                            : 'bg-green/10 text-green hover:bg-green/20'
+                        }`}
+                        title={
+                          isBaremedOut
+                            ? lang === 'tr' ? 'Baremi geçemedi — tıkla kaldır' : 'Below threshold — click to remove'
+                            : lang === 'tr' ? 'Baremi geçti — tıkla işaretle' : 'Passed — click to mark failed'
+                        }
+                      >
+                        {isBaremedOut ? (
+                          <>
+                            <Prohibit size={12} weight="bold" />
+                            {lang === 'tr' ? 'Geçemedi' : 'Failed'}
+                          </>
+                        ) : (
+                          <>
+                            <CheckFat size={12} weight="fill" />
+                            {lang === 'tr' ? 'Geçti' : 'Passed'}
+                          </>
+                        )}
+                      </button>
+                    </TableCell>
+                  )}
                   <TableCell className="text-right">
-                    {stat.totalBonus > 0 ? (
+                    {isBaremedOut ? (
+                      <span className="text-xs font-medium text-red/60">
+                        {lang === 'tr' ? 'Barem ✗' : 'Threshold ✗'}
+                      </span>
+                    ) : effectiveBonus > 0 ? (
                       <span
                         className={`tabular-nums text-sm font-bold ${advance > 0 ? 'text-blue' : 'text-green'}`}
                       >
@@ -772,12 +823,12 @@ function MarketingBonusTable({
                   </TableCell>
                   {canManage && (
                     <TableCell className="w-28 text-right">
-                      {stat.totalBonus > 0 && onPayEmployee ? (
+                      {effectiveBonus > 0 && !isBaremedOut && onPayEmployee ? (
                         <Button
                           variant="outline"
                           size="sm"
                           className="h-7 gap-1 px-2 text-xs"
-                          onClick={() => onPayEmployee(stat.employee, stat.totalBonus)}
+                          onClick={() => onPayEmployee(stat.employee, effectiveBonus)}
                         >
                           <Money size={13} />
                           {lang === 'tr' ? 'Ödeme Ekle' : 'Add Payment'}
@@ -834,6 +885,9 @@ function ReattentionBonusTable({
   selectedIds,
   onToggleSelect,
   onToggleSelectAll,
+  baremEnabled = false,
+  baremFailedIds,
+  onToggleBarem,
 }: {
   stats: ReEmployeeStat[]
   isLoading: boolean
@@ -846,6 +900,9 @@ function ReattentionBonusTable({
   selectedIds?: Set<string>
   onToggleSelect?: (id: string) => void
   onToggleSelectAll?: () => void
+  baremEnabled?: boolean
+  baremFailedIds?: Set<string>
+  onToggleBarem?: (employeeId: string, failed: boolean) => void
 }) {
   const [page, setPage] = useState(1)
 
@@ -946,6 +1003,11 @@ function ReattentionBonusTable({
                 {lang === 'tr' ? 'Prim (USDT)' : 'Bonus (USDT)'}
               </TableHead>
               <TableHead className="text-right">{lang === 'tr' ? 'Avans' : 'Advance'}</TableHead>
+              {baremEnabled && canManage && (
+                <TableHead className="w-20 text-center">
+                  {lang === 'tr' ? 'Barem' : 'Threshold'}
+                </TableHead>
+              )}
               <TableHead className="text-right">
                 {lang === 'tr' ? 'Net Prim' : 'Net Bonus'}
               </TableHead>
@@ -954,8 +1016,10 @@ function ReattentionBonusTable({
           </TableHeader>
           <TableBody>
             {paginatedReStats.map((stat) => {
+              const isBaremedOut = baremEnabled && (baremFailedIds?.has(stat.employee.id) ?? false)
               const advance = advancesByEmp.get(stat.employee.id) ?? 0
-              const net = Math.max(0, stat.bonus - advance)
+              const effectiveBonus = isBaremedOut ? 0 : stat.bonus
+              const net = Math.max(0, effectiveBonus - advance)
               return (
                 <TableRow
                   key={stat.employee.id}
@@ -1008,8 +1072,42 @@ function ReattentionBonusTable({
                       <span className="text-xs text-black/30">—</span>
                     )}
                   </TableCell>
+                  {baremEnabled && canManage && (
+                    <TableCell className="w-20 text-center">
+                      <button
+                        type="button"
+                        onClick={() => onToggleBarem?.(stat.employee.id, !isBaremedOut)}
+                        className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold transition-colors ${
+                          isBaremedOut
+                            ? 'bg-red/10 text-red hover:bg-red/20'
+                            : 'bg-green/10 text-green hover:bg-green/20'
+                        }`}
+                        title={
+                          isBaremedOut
+                            ? lang === 'tr' ? 'Baremi geçemedi — tıkla kaldır' : 'Below threshold — click to remove'
+                            : lang === 'tr' ? 'Baremi geçti — tıkla işaretle' : 'Passed — click to mark failed'
+                        }
+                      >
+                        {isBaremedOut ? (
+                          <>
+                            <Prohibit size={12} weight="bold" />
+                            {lang === 'tr' ? 'Geçemedi' : 'Failed'}
+                          </>
+                        ) : (
+                          <>
+                            <CheckFat size={12} weight="fill" />
+                            {lang === 'tr' ? 'Geçti' : 'Passed'}
+                          </>
+                        )}
+                      </button>
+                    </TableCell>
+                  )}
                   <TableCell className="text-right">
-                    {stat.bonus > 0 ? (
+                    {isBaremedOut ? (
+                      <span className="text-xs font-medium text-red/60">
+                        {lang === 'tr' ? 'Barem ✗' : 'Threshold ✗'}
+                      </span>
+                    ) : effectiveBonus > 0 ? (
                       <span
                         className={`tabular-nums text-sm font-bold ${advance > 0 ? 'text-blue' : 'text-green'}`}
                       >
@@ -1021,12 +1119,12 @@ function ReattentionBonusTable({
                   </TableCell>
                   {canManage && (
                     <TableCell className="w-28 text-right">
-                      {stat.bonus > 0 && onPayEmployee ? (
+                      {effectiveBonus > 0 && !isBaremedOut && onPayEmployee ? (
                         <Button
                           variant="outline"
                           size="sm"
                           className="h-7 gap-1 px-2 text-xs"
-                          onClick={() => onPayEmployee(stat.employee, stat.bonus)}
+                          onClick={() => onPayEmployee(stat.employee, effectiveBonus)}
                         >
                           <Money size={13} />
                           {lang === 'tr' ? 'Ödeme Ekle' : 'Add Payment'}
@@ -1120,6 +1218,11 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
   const { data: allPayments = [] } = useBonusPaymentsQuery()
   const { data: advances = [] } = useAdvancesQuery(year, month)
   const { deletePayment, createPayment } = useBonusMutations()
+  const { data: hrSettings } = useHrSettingsQuery()
+
+  const baremRoles = hrSettings?.barem_roles ?? []
+  const mtBaremEnabled = baremRoles.includes('Marketing')
+  const reBaremEnabled = baremRoles.includes('Retention')
 
   const [payTarget, setPayTarget] = useState<AutoPayTarget | null>(null)
 
@@ -1137,6 +1240,14 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
   // Period label for display and bulk payout
   const monthNames = lang === 'tr' ? MONTH_NAMES_TR : MONTH_NAMES_EN
   const periodLabel = `${monthNames[month - 1]} ${year}`
+
+  // Barem failures for Marketing
+  const { data: baremFailedIds = new Set<string>() } = useBaremFailuresQuery(periodLabel)
+  const { toggleBarem } = useBaremFailureMutation()
+
+  const handleToggleBarem = (employeeId: string, failed: boolean) => {
+    toggleBarem.mutate({ employeeId, period: periodLabel, failed })
+  }
 
   // Build advance map per employee (bonus advances only)
   const advancesByEmp = useMemo(() => {
@@ -1216,7 +1327,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
   const buildBulkItems = (): BulkPayoutItem[] => {
     if (dept === 'marketing') {
       return mtStats
-        .filter((s) => s.totalBonus > 0 && !paidMtIds.has(s.employee.id))
+        .filter((s) => s.totalBonus > 0 && !paidMtIds.has(s.employee.id) && !(mtBaremEnabled && baremFailedIds.has(s.employee.id)))
         .map((s) => ({
           employee_id: s.employee.id,
           employee_name: s.employee.full_name,
@@ -1227,7 +1338,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
     }
     if (dept === 'reattention') {
       return reStats
-        .filter((s) => s.bonus > 0 && !paidReIds.has(s.employee.id))
+        .filter((s) => s.bonus > 0 && !paidReIds.has(s.employee.id) && !(reBaremEnabled && baremFailedIds.has(s.employee.id)))
         .map((s) => ({
           employee_id: s.employee.id,
           employee_name: s.employee.full_name,
@@ -1255,12 +1366,12 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
 
   // Get unpaid stats for the current dept (used for select-all logic)
   const unpaidMtStats = useMemo(
-    () => mtStats.filter((s) => s.totalBonus > 0 && !paidMtIds.has(s.employee.id)),
-    [mtStats, paidMtIds],
+    () => mtStats.filter((s) => s.totalBonus > 0 && !paidMtIds.has(s.employee.id) && !(mtBaremEnabled && baremFailedIds.has(s.employee.id))),
+    [mtStats, paidMtIds, baremFailedIds, mtBaremEnabled],
   )
   const unpaidReStats = useMemo(
-    () => reStats.filter((s) => s.bonus > 0 && !paidReIds.has(s.employee.id)),
-    [reStats, paidReIds],
+    () => reStats.filter((s) => s.bonus > 0 && !paidReIds.has(s.employee.id) && !(reBaremEnabled && baremFailedIds.has(s.employee.id))),
+    [reStats, paidReIds, baremFailedIds, reBaremEnabled],
   )
 
   const toggleAutoSelectAll = () => {
@@ -1307,7 +1418,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
 
   // Single-department mode (used by department tabs in BonusesTab)
   if (dept === 'marketing') {
-    const total = mtStats.reduce((s, e) => s + e.totalBonus, 0)
+    const total = mtStats.reduce((s, e) => s + ((mtBaremEnabled && baremFailedIds.has(e.employee.id)) ? 0 : e.totalBonus), 0)
     const pmts = getPaymentsForDept('Marketing')
     return (
       <div className="space-y-lg">
@@ -1377,6 +1488,9 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
           selectedIds={selectedAutoIds}
           onToggleSelect={toggleAutoSelect}
           onToggleSelectAll={toggleAutoSelectAll}
+          baremEnabled={mtBaremEnabled}
+          baremFailedIds={baremFailedIds}
+          onToggleBarem={handleToggleBarem}
         />
         <RecentPaymentsSection
           pmts={pmts}
@@ -1398,7 +1512,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
   }
 
   if (dept === 'reattention') {
-    const total = reStats.reduce((s, e) => s + e.bonus, 0)
+    const total = reStats.reduce((s, e) => s + ((reBaremEnabled && baremFailedIds.has(e.employee.id)) ? 0 : e.bonus), 0)
     const pmts = getPaymentsForDept('Retention')
     return (
       <div className="space-y-lg">
@@ -1467,6 +1581,9 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
           selectedIds={selectedAutoIds}
           onToggleSelect={toggleAutoSelect}
           onToggleSelectAll={toggleAutoSelectAll}
+          baremEnabled={reBaremEnabled}
+          baremFailedIds={baremFailedIds}
+          onToggleBarem={handleToggleBarem}
         />
         <RecentPaymentsSection
           pmts={pmts}
@@ -1488,8 +1605,8 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
   }
 
   // Full mode (both departments + sub-tabs) — kept for backward compat
-  const mtTotalBonus = mtStats.reduce((s, e) => s + e.totalBonus, 0)
-  const reTotalBonus = reStats.reduce((s, e) => s + e.bonus, 0)
+  const mtTotalBonus = mtStats.reduce((s, e) => s + ((mtBaremEnabled && baremFailedIds.has(e.employee.id)) ? 0 : e.totalBonus), 0)
+  const reTotalBonus = reStats.reduce((s, e) => s + ((reBaremEnabled && baremFailedIds.has(e.employee.id)) ? 0 : e.bonus), 0)
 
   return (
     <div className="space-y-lg">
@@ -1524,6 +1641,8 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
             config={config}
             advancesByEmp={advancesByEmp}
             search=""
+            baremEnabled={mtBaremEnabled}
+            baremFailedIds={baremFailedIds}
           />
         </TabsContent>
         <TabsContent value="reattention" className="pt-lg">
@@ -1533,6 +1652,8 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
             lang={lang}
             advancesByEmp={advancesByEmp}
             search=""
+            baremEnabled={reBaremEnabled}
+            baremFailedIds={baremFailedIds}
           />
         </TabsContent>
       </Tabs>

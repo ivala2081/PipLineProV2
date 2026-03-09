@@ -407,6 +407,48 @@ export function SettingsTab({ employees, canManage, lang }: SettingsTabProps) {
         </div>
       </div>
 
+      {/* ── Section: Barem Departmanları ── */}
+      <div className="space-y-sm">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-black/40">
+          {lang === 'tr' ? 'Barem Departmanları' : 'Threshold Departments'}
+        </h3>
+        <div className="rounded-xl border border-black/[0.07] bg-bg1 p-4 space-y-md">
+          <p className="text-[11px] text-black/30">
+            {lang === 'tr'
+              ? 'Seçilen departmanlarda İK yöneticisi, çalışanları "baremi geçemedi" olarak işaretleyebilir. Barem geçemeyenler prim hak etmez.'
+              : 'In selected departments, HR managers can mark employees as "failed threshold". Employees who fail receive no bonus.'}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {current.roles.map((role) => {
+              const isSelected = current.barem_roles.includes(role)
+              return (
+                <button
+                  key={role}
+                  type="button"
+                  disabled={!isEditing}
+                  onClick={() => {
+                    if (!isEditing) return
+                    const next = isSelected
+                      ? current.barem_roles.filter((r) => r !== role)
+                      : [...current.barem_roles, role]
+                    setDraft({ ...current, barem_roles: next })
+                  }}
+                  className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    isSelected
+                      ? 'border-brand/40 bg-brand/5 text-brand'
+                      : isEditing
+                        ? 'border-black/[0.07] bg-bg2 text-black/50 hover:border-black/20'
+                        : 'border-black/[0.07] bg-bg2 text-black/30'
+                  }`}
+                >
+                  {role}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
       {/* ── Section 3: Devam Kesintisi ── */}
       <div className="space-y-sm">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-black/40">
@@ -630,9 +672,49 @@ export function SettingsTab({ employees, canManage, lang }: SettingsTabProps) {
           {lang === 'tr' ? 'Sigorta Elden Ödeme' : 'Insurance Supplement'}
         </h3>
         <div className="rounded-xl border border-black/[0.07] bg-bg1 p-4 space-y-md">
+          {/* Currency selector */}
           <div className="space-y-xs">
             <Label className="text-xs text-black/50">
-              {lang === 'tr' ? 'Aylık ek ödeme tutarı (TL)' : 'Monthly supplement amount (TL)'}
+              {lang === 'tr' ? 'Para Birimi' : 'Currency'}
+            </Label>
+            {isEditing ? (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDraft({ ...current, supplement_currency: 'TL' })}
+                  className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    current.supplement_currency === 'TL'
+                      ? 'border-brand/40 bg-brand/5 text-brand'
+                      : 'border-black/[0.07] bg-bg2 text-black/50 hover:border-black/20'
+                  }`}
+                >
+                  ₺ TL
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDraft({ ...current, supplement_currency: 'USD' })}
+                  className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    current.supplement_currency === 'USD'
+                      ? 'border-brand/40 bg-brand/5 text-brand'
+                      : 'border-black/[0.07] bg-bg2 text-black/50 hover:border-black/20'
+                  }`}
+                >
+                  $ USD
+                </button>
+              </div>
+            ) : (
+              <p className="text-sm font-medium text-black/70">
+                {current.supplement_currency === 'TL' ? '₺ Türk Lirası (TL)' : '$ Amerikan Doları (USD)'}
+              </p>
+            )}
+          </div>
+
+          {/* Amount */}
+          <div className="space-y-xs">
+            <Label className="text-xs text-black/50">
+              {lang === 'tr'
+                ? `Aylık ek ödeme tutarı (${current.supplement_currency})`
+                : `Monthly supplement amount (${current.supplement_currency})`}
             </Label>
             {isEditing ? (
               <div className="flex items-center gap-2">
@@ -648,11 +730,11 @@ export function SettingsTab({ employees, canManage, lang }: SettingsTabProps) {
                     })
                   }
                 />
-                <span className="text-sm text-black/40">TL</span>
+                <span className="text-sm text-black/40">{current.supplement_currency}</span>
               </div>
             ) : (
               <p className="text-sm font-medium text-black/70">
-                {current.supplement_tl.toLocaleString('tr-TR')} TL
+                {current.supplement_tl.toLocaleString('tr-TR')} {current.supplement_currency}
               </p>
             )}
             <p className="text-[11px] text-black/30">
@@ -670,11 +752,54 @@ export function SettingsTab({ employees, canManage, lang }: SettingsTabProps) {
           {lang === 'tr' ? 'Sigortalı Banka Ödeme' : 'Insured Bank Deposit'}
         </h3>
         <div className="rounded-xl border border-black/[0.07] bg-bg1 p-4 space-y-md">
+          {/* Currency selector */}
+          <div className="space-y-xs">
+            <Label className="text-xs text-black/50">
+              {lang === 'tr' ? 'Para Birimi' : 'Currency'}
+            </Label>
+            {isEditing ? (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDraft({ ...current, insured_bank_currency: 'TL' })}
+                  className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    current.insured_bank_currency === 'TL'
+                      ? 'border-brand/40 bg-brand/5 text-brand'
+                      : 'border-black/[0.07] bg-bg2 text-black/50 hover:border-black/20'
+                  }`}
+                >
+                  ₺ TL
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDraft({ ...current, insured_bank_currency: 'USD' })}
+                  className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    current.insured_bank_currency === 'USD'
+                      ? 'border-brand/40 bg-brand/5 text-brand'
+                      : 'border-black/[0.07] bg-bg2 text-black/50 hover:border-black/20'
+                  }`}
+                >
+                  $ USD
+                </button>
+              </div>
+            ) : (
+              <p className="text-sm font-medium text-black/70">
+                {current.insured_bank_currency === 'TL' ? '₺ Türk Lirası (TL)' : '$ Amerikan Doları (USD)'}
+              </p>
+            )}
+            <p className="text-[11px] text-black/30">
+              {lang === 'tr'
+                ? 'Sadece bu para birimi ile maaş alan sigortalı çalışanlara otomatik tutar uygulanır. Farklı para birimi ile maaş alanlar için elle girilir.'
+                : 'Automatic amount only applies to insured employees paid in this currency. Others require manual entry.'}
+            </p>
+          </div>
+
+          {/* Amount */}
           <div className="space-y-xs">
             <Label className="text-xs text-black/50">
               {lang === 'tr'
-                ? 'Aylık bankaya yatırılacak tutar (TL)'
-                : 'Monthly bank deposit amount (TL)'}
+                ? `Aylık bankaya yatırılacak tutar (${current.insured_bank_currency})`
+                : `Monthly bank deposit amount (${current.insured_bank_currency})`}
             </Label>
             {isEditing ? (
               <div className="flex items-center gap-2">
@@ -691,7 +816,7 @@ export function SettingsTab({ employees, canManage, lang }: SettingsTabProps) {
                     })
                   }
                 />
-                <span className="text-sm text-black/40">TL</span>
+                <span className="text-sm text-black/40">{current.insured_bank_currency}</span>
               </div>
             ) : (
               <p className="text-sm font-medium text-black/70">
@@ -699,7 +824,7 @@ export function SettingsTab({ employees, canManage, lang }: SettingsTabProps) {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}{' '}
-                TL
+                {current.insured_bank_currency}
               </p>
             )}
             <p className="text-[11px] text-black/30">

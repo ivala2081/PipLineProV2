@@ -759,6 +759,28 @@
       "edit": "Edit",
       "delete": "Delete"
     },
+    "bulk": {
+      "tag": "Bulk",
+      "detailTitle": "Bulk Payment Detail",
+      "viewDetail": "View Detail",
+      "salary": "Salary",
+      "bonus": "Bonus",
+      "bankDeposit": "Bank Deposit",
+      "period": "Period",
+      "totalAmount": "Total Amount",
+      "itemCount": "Item Count",
+      "paidAt": "Paid At",
+      "deleteAll": "Delete All",
+      "deleteAllConfirm": "This bulk payment and all its items will be deleted. This action cannot be undone.",
+      "deleteItem": "Delete Item",
+      "deleteItemConfirm": "This item will be deleted and the total amount will be updated.",
+      "editItem": "Edit Item",
+      "employee": "Employee",
+      "amount": "Amount",
+      "description": "Description",
+      "deductions": "Deductions",
+      "noItems": "No items in this bulk payment."
+    },
     "wallets": {
       "empty": {
         "title": "No wallets yet",

@@ -18,6 +18,7 @@ import {
   TableHead,
   TableCell,
   PageHeader,
+  Tag,
 } from '@ds'
 import { useToast } from '@/hooks/useToast'
 import { useBulkBankDepositMutation, type HrEmployee } from '@/hooks/queries/useHrQuery'
@@ -28,8 +29,11 @@ import { fmtNum, fmtAmount } from '../utils/salaryCalculations'
 interface BankDepositItem {
   employee_id: string
   employee_name: string
-  amount_tl: number
+  amount: number
+  currency: 'TL' | 'USD'
   salary_tl: number
+  salary_currency: 'TL' | 'USD'
+  is_auto: boolean
   period: string
   description: string
 }
@@ -37,6 +41,7 @@ interface BankDepositItem {
 interface LocationState {
   employees: HrEmployee[]
   insuredBankAmountTl: number
+  insuredBankCurrency: 'TL' | 'USD'
   periodLabel: string
   lang: 'tr' | 'en'
 }
@@ -57,6 +62,7 @@ export function BulkBankDepositPage() {
     <Content
       employees={state.employees}
       insuredBankAmountTl={state.insuredBankAmountTl}
+      insuredBankCurrency={state.insuredBankCurrency ?? 'TL'}
       periodLabel={state.periodLabel}
       lang={state.lang}
     />
@@ -68,11 +74,13 @@ export function BulkBankDepositPage() {
 function Content({
   employees,
   insuredBankAmountTl,
+  insuredBankCurrency,
   periodLabel,
   lang,
 }: {
   employees: HrEmployee[]
   insuredBankAmountTl: number
+  insuredBankCurrency: 'TL' | 'USD'
   periodLabel: string
   lang: 'tr' | 'en'
 }) {
@@ -87,23 +95,37 @@ function Content({
   const [paidAt, setPaidAt] = useState(defaultDate)
 
   const [editableItems, setEditableItems] = useState<BankDepositItem[]>(() =>
-    employees.map((emp) => ({
-      employee_id: emp.id,
-      employee_name: emp.full_name,
-      amount_tl: emp.bank_salary_tl ?? insuredBankAmountTl,
-      salary_tl: emp.salary_tl,
-      period: periodLabel,
-      description: `${emp.full_name} — ${periodLabel} Sigortalı Maaş Avans Ödeme`,
-    })),
+    employees.map((emp) => {
+      const empCurrency = (emp.salary_currency ?? 'TL') as 'TL' | 'USD'
+      const isAuto = empCurrency === insuredBankCurrency
+      return {
+        employee_id: emp.id,
+        employee_name: emp.full_name,
+        amount: isAuto ? (emp.bank_salary_tl ?? insuredBankAmountTl) : 0,
+        currency: empCurrency,
+        salary_tl: emp.salary_tl,
+        salary_currency: empCurrency,
+        is_auto: isAuto,
+        period: periodLabel,
+        description: `${emp.full_name} — ${periodLabel} Sigortalı Maaş Avans Ödeme`,
+      }
+    }),
   )
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set())
 
   const activeItems = useMemo(
-    () => editableItems.filter((i) => !excludedIds.has(i.employee_id) && i.amount_tl > 0),
+    () => editableItems.filter((i) => !excludedIds.has(i.employee_id) && i.amount > 0),
     [editableItems, excludedIds],
   )
 
-  const totalAmount = activeItems.reduce((s, i) => s + i.amount_tl, 0)
+  // Group totals by currency
+  const totalByCurrency = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const item of activeItems) {
+      map.set(item.currency, (map.get(item.currency) ?? 0) + item.amount)
+    }
+    return map
+  }, [activeItems])
 
   const toggleExclude = (id: string) => {
     setExcludedIds((prev) => {
@@ -120,14 +142,30 @@ function Content({
 
   const updateAmount = (id: string, value: number) => {
     setEditableItems((prev) =>
-      prev.map((i) => (i.employee_id === id ? { ...i, amount_tl: value } : i)),
+      prev.map((i) => (i.employee_id === id ? { ...i, amount: value } : i)),
+    )
+  }
+
+  const updateCurrency = (id: string, currency: 'TL' | 'USD') => {
+    setEditableItems((prev) =>
+      prev.map((i) => (i.employee_id === id ? { ...i, currency } : i)),
     )
   }
 
   const handleConfirm = async () => {
     if (activeItems.length === 0) return
     try {
-      await bulkDeposit.mutateAsync({ items: activeItems, paidAt })
+      await bulkDeposit.mutateAsync({
+        items: activeItems.map((i) => ({
+          employee_id: i.employee_id,
+          employee_name: i.employee_name,
+          amount: i.amount,
+          currency: i.currency,
+          period: i.period,
+          description: i.description,
+        })),
+        paidAt,
+      })
       toast({
         title: t
           ? `${activeItems.length} sigortalı banka ödemesi kasa defterine işlendi`
@@ -142,6 +180,8 @@ function Content({
       })
     }
   }
+
+  const hasManualItems = editableItems.some((i) => !i.is_auto)
 
   return (
     <div className="space-y-lg">
@@ -209,6 +249,9 @@ function Content({
                   <TableHead>{t ? 'Çalışan' : 'Employee'}</TableHead>
                   <TableHead className="text-right">{t ? 'Brüt Maaş' : 'Gross Salary'}</TableHead>
                   <TableHead className="text-right">
+                    {t ? 'Para Birimi' : 'Currency'}
+                  </TableHead>
+                  <TableHead className="text-right">
                     {t ? 'Banka Tutarı' : 'Bank Amount'}
                   </TableHead>
                   <TableHead>{t ? 'Açıklama' : 'Description'}</TableHead>
@@ -232,20 +275,59 @@ function Content({
                         />
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm font-medium text-black">
-                          {item.employee_name}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-black">
+                            {item.employee_name}
+                          </span>
+                          {!item.is_auto && (
+                            <Tag variant="orange">
+                              {t ? 'Elle' : 'Manual'}
+                            </Tag>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <span className="tabular-nums text-sm text-black/50">
-                          {fmtAmount(item.salary_tl, 'TL')}
+                          {fmtAmount(item.salary_tl, item.salary_currency)}
                         </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {item.is_auto ? (
+                          <span className="text-sm text-black/50">{item.currency}</span>
+                        ) : (
+                          <div className="ml-auto flex items-center justify-end gap-1">
+                            <button
+                              type="button"
+                              disabled={excluded}
+                              onClick={() => updateCurrency(item.employee_id, 'TL')}
+                              className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${
+                                item.currency === 'TL'
+                                  ? 'bg-brand/10 text-brand'
+                                  : 'text-black/30 hover:text-black/50'
+                              }`}
+                            >
+                              TL
+                            </button>
+                            <button
+                              type="button"
+                              disabled={excluded}
+                              onClick={() => updateCurrency(item.employee_id, 'USD')}
+                              className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${
+                                item.currency === 'USD'
+                                  ? 'bg-brand/10 text-brand'
+                                  : 'text-black/30 hover:text-black/50'
+                              }`}
+                            >
+                              USD
+                            </button>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <Input
                           type="number"
                           className="ml-auto h-7 w-32 text-right text-sm tabular-nums font-semibold"
-                          value={item.amount_tl}
+                          value={item.amount}
                           onChange={(e) =>
                             updateAmount(item.employee_id, Number(e.target.value) || 0)
                           }
@@ -271,15 +353,19 @@ function Content({
 
                 {/* Totals row */}
                 <TableRow className="border-t-2 border-black/[0.07] bg-black/[0.02]">
-                  <TableCell colSpan={3}>
+                  <TableCell colSpan={4}>
                     <span className="text-xs font-semibold text-black/50">
                       {t ? 'Toplam' : 'Total'}
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
-                    <span className="tabular-nums text-base font-bold text-blue">
-                      {fmtAmount(totalAmount, 'TL')}
-                    </span>
+                    <div className="flex flex-col items-end gap-0.5">
+                      {Array.from(totalByCurrency.entries()).map(([cur, total]) => (
+                        <span key={cur} className="tabular-nums text-base font-bold text-blue">
+                          {fmtAmount(total, cur)}
+                        </span>
+                      ))}
+                    </div>
                   </TableCell>
                   <TableCell colSpan={2} />
                 </TableRow>
@@ -291,11 +377,27 @@ function Content({
           <div className="flex flex-col gap-sm sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-2 rounded-lg border border-blue/20 bg-blue/5 px-3 py-2">
               <Bank size={14} weight="fill" className="mt-0.5 shrink-0 text-blue" />
-              <p className="text-xs text-black/60">
-                {t
-                  ? `${activeItems.length} sigortalı çalışan için ${fmtNum(totalAmount)} TL banka ödemesi oluşturulacak. Nakit TL kasasına "Sigortalı Maaş Avans Ödeme" olarak işlenecek.`
-                  : `${activeItems.length} insured bank deposits totaling ${fmtNum(totalAmount)} TL will be created. Recorded in Cash TL register as "Insured Salary Bank Deposit".`}
-              </p>
+              <div className="text-xs text-black/60">
+                <p>
+                  {t
+                    ? `${activeItems.length} sigortalı çalışan için banka ödemesi oluşturulacak.`
+                    : `${activeItems.length} insured bank deposits will be created.`}
+                </p>
+                {Array.from(totalByCurrency.entries()).map(([cur, total]) => (
+                  <p key={cur}>
+                    {t
+                      ? `${fmtNum(total)} ${cur} → Nakit ${cur} kasası`
+                      : `${fmtNum(total)} ${cur} → Cash ${cur} register`}
+                  </p>
+                ))}
+                {hasManualItems && (
+                  <p className="mt-1 text-orange">
+                    {t
+                      ? '"Elle" işaretli çalışanlar için tutar ve para birimini kontrol ediniz.'
+                      : 'Please verify amount and currency for employees marked as "Manual".'}
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center gap-2">

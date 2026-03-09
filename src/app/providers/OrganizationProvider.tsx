@@ -123,13 +123,30 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     // Fetch membership for selected org (null for gods without membership)
     let membership: OrganizationMember | null = null
     if (currentOrg && !currentIsGod) {
-      const { data } = await supabase
-        .from('organization_members')
-        .select('*')
-        .eq('organization_id', currentOrg.id)
-        .eq('user_id', currentUser.id)
-        .single()
-      membership = data as OrganizationMember | null
+      // Retry up to 2 times on transient failures (e.g. stale token after app update)
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { data, error } = await supabase
+          .from('organization_members')
+          .select('*')
+          .eq('organization_id', currentOrg.id)
+          .eq('user_id', currentUser.id)
+          .single()
+
+        if (!error && data) {
+          membership = data as OrganizationMember
+          break
+        }
+
+        console.warn(
+          `[OrganizationProvider] Membership fetch attempt ${attempt + 1} failed:`,
+          error?.message,
+        )
+
+        // Wait briefly before retrying (skip wait on last attempt)
+        if (attempt < 2) {
+          await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)))
+        }
+      }
     }
 
     // Bail if a newer fetch cycle started (check again after second async op)

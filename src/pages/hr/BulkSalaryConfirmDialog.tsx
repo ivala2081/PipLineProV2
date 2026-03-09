@@ -156,7 +156,7 @@ export function BulkSalaryConfirmDialog({
                         >
                           {(item.supplement_tl ?? 0) > 0 ? (
                             <span className="tabular-nums text-sm font-semibold text-orange">
-                              +{fmtAmount(item.supplement_tl, 'TL')}
+                              +{fmtAmount(item.supplement_tl, item.supplement_currency ?? 'TL')}
                             </span>
                           ) : (
                             <span className="text-xs text-black/25">—</span>

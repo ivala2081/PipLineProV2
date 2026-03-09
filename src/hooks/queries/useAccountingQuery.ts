@@ -245,19 +245,46 @@ export function useAccountingQuery(): UseAccountingQueryReturn {
   // Delete (with cascade to linked HR payments) — optimistic
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      // Fetch the entry first to check for linked HR payment
+      // Fetch the entry first to check for linked HR payment or bulk payment
       const { data: entryRaw, error: fetchError } = await supabase
         .from('accounting_entries')
-        .select('hr_payment_id, hr_payment_type')
+        .select('hr_payment_id, hr_payment_type, hr_bulk_payment_id')
         .eq('id', id)
         .single()
       if (fetchError) throw fetchError
       const entry = entryRaw as {
         hr_payment_id: string | null
         hr_payment_type: 'bonus' | 'salary' | null
+        hr_bulk_payment_id: string | null
       } | null
 
-      // Delete the accounting entry
+      // ── Bulk payment cascade ──
+      if (entry?.hr_bulk_payment_id) {
+        // Fetch all items to cascade-delete linked HR payments
+        const { data: items } = await supabase
+          .from('hr_bulk_payment_items')
+          .select('salary_payment_id, bonus_payment_id')
+          .eq('bulk_payment_id', entry.hr_bulk_payment_id)
+
+        const salaryIds = (items ?? []).map((i) => i.salary_payment_id).filter(Boolean) as string[]
+        const bonusIds = (items ?? []).map((i) => i.bonus_payment_id).filter(Boolean) as string[]
+
+        if (salaryIds.length > 0) {
+          await supabase.from('hr_salary_payments').delete().in('id', salaryIds)
+        }
+        if (bonusIds.length > 0) {
+          await supabase.from('hr_bonus_payments').delete().in('id', bonusIds)
+        }
+
+        // Delete all accounting entries linked to this bulk payment
+        await supabase.from('accounting_entries').delete().eq('hr_bulk_payment_id', entry.hr_bulk_payment_id)
+
+        // Delete the bulk payment (CASCADE deletes items)
+        await supabase.from('hr_bulk_payments').delete().eq('id', entry.hr_bulk_payment_id)
+        return
+      }
+
+      // ── Single entry delete ──
       const { error } = await supabase.from('accounting_entries').delete().eq('id', id)
       if (error) throw error
 
@@ -267,7 +294,6 @@ export function useAccountingQuery(): UseAccountingQueryReturn {
           entry.hr_payment_type === 'bonus' ? 'hr_bonus_payments' : 'hr_salary_payments'
         const { error: hrError } = await supabase.from(table).delete().eq('id', entry.hr_payment_id)
         if (hrError) {
-          // Non-fatal: log but don't block (payment may have been manually deleted)
           console.warn('Could not cascade delete HR payment:', hrError.message)
         }
       }
@@ -301,7 +327,11 @@ export function useAccountingQuery(): UseAccountingQueryReturn {
         queryKey: queryKeys.accounting.summary(currentOrg?.id ?? ''),
       })
       // Also invalidate HR payment queries so UI reflects deletion
-      queryClient.invalidateQueries({ queryKey: queryKeys.hr.root })
+      const orgId = currentOrg?.id ?? ''
+      queryClient.invalidateQueries({ queryKey: queryKeys.hr.salaryPaymentsPrefix(orgId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.hr.allSalaryPayments(orgId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusPayments(orgId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.hr.bulkPayments(orgId) })
     },
   })
 

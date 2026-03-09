@@ -65,6 +65,9 @@ const OrganizationDetailPage = lazy(() =>
 )
 const SecurityDashboard = lazy(() => import('@/pages/security-dashboard'))
 const HrPage = lazy(() => import('@/pages/hr').then((m) => ({ default: m.HrPage })))
+const EmployeeFormPage = lazy(() =>
+  import('@/pages/hr/EmployeeFormPage').then((m) => ({ default: m.EmployeeFormPage })),
+)
 const BulkSalaryPayoutPage = lazy(() =>
   import('@/pages/hr/payments/BulkSalaryPayoutPage').then((m) => ({
     default: m.BulkSalaryPayoutPage,
@@ -78,6 +81,11 @@ const BulkBankDepositPage = lazy(() =>
 const BulkBonusPayoutPage = lazy(() =>
   import('@/pages/hr/payments/BulkBonusPayoutPage').then((m) => ({
     default: m.BulkBonusPayoutPage,
+  })),
+)
+const BulkPaymentDetailPage = lazy(() =>
+  import('@/pages/accounting/BulkPaymentDetailPage').then((m) => ({
+    default: m.BulkPaymentDetailPage,
   })),
 )
 const SettingsPage = lazy(() =>
@@ -225,6 +233,16 @@ export function App() {
                             }
                           />
                           <Route
+                            path="/accounting/bulk/:bulkPaymentId"
+                            element={
+                              <PageGuard page="accounting">
+                                <PageSuspense>
+                                  <BulkPaymentDetailPage />
+                                </PageSuspense>
+                              </PageGuard>
+                            }
+                          />
+                          <Route
                             path="/accounting/wallet/:walletId/transfers"
                             element={
                               <PageGuard page="accounting">
@@ -320,6 +338,26 @@ export function App() {
                               <PageGuard page="hr">
                                 <PageSuspense>
                                   <HrPage />
+                                </PageSuspense>
+                              </PageGuard>
+                            }
+                          />
+                          <Route
+                            path="/hr/employees/new"
+                            element={
+                              <PageGuard page="hr">
+                                <PageSuspense>
+                                  <EmployeeFormPage />
+                                </PageSuspense>
+                              </PageGuard>
+                            }
+                          />
+                          <Route
+                            path="/hr/employees/:id/edit"
+                            element={
+                              <PageGuard page="hr">
+                                <PageSuspense>
+                                  <EmployeeFormPage />
                                 </PageSuspense>
                               </PageGuard>
                             }

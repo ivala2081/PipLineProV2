@@ -36,6 +36,7 @@ export interface AttendanceRowProps {
   canManage: boolean
   lang: 'tr' | 'en'
   settings: HrSettings
+  onAbsentSelected: (employee: HrEmployee) => void
 }
 
 /* ------------------------------------------------------------------ */
@@ -49,6 +50,7 @@ export function AttendanceRow({
   canManage,
   lang,
   settings,
+  onAbsentSelected,
 }: AttendanceRowProps) {
   const { toast } = useToast()
   const { upsertAttendance } = useHrAttendanceMutations()
@@ -86,12 +88,13 @@ export function AttendanceRow({
 
   const handleStatusChange = async (val: string) => {
     const s = val as HrAttendanceStatus
-    setLocalStatus(s)
     if (s === 'absent') {
-      setAbsentHours(0)
-      setCheckIn('')
-      await handleSave(s, null, undefined, null)
-    } else if (s === 'half_day') {
+      // Don't save directly — open the AbsenceReasonDialog via parent
+      onAbsentSelected(employee)
+      return
+    }
+    setLocalStatus(s)
+    if (s === 'half_day') {
       setAbsentHours(0)
       await handleSave(s, null)
     } else {

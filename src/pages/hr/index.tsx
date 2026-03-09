@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   IdentificationCard,
@@ -57,13 +58,11 @@ import {
   useHrSettingsQuery,
   type HrEmployee,
 } from '@/hooks/queries/useHrQuery'
-import { EmployeeDialog } from './EmployeeDialog'
 import { DeleteEmployeeDialog } from './DeleteEmployeeDialog'
 import { DocumentsDialog } from './DocumentsDialog'
 import { BonusesTab } from './bonuses'
 import { AttendanceTab } from './AttendanceTab'
 import { SalariesTab } from './SalariesTab'
-import { LeavesTab } from './LeavesTab'
 import { SettingsTab } from './SettingsTab'
 import { getRoleVariant } from './utils/hrConstants'
 import type { HrEmployeeRole } from '@/hooks/queries/useHrQuery'
@@ -266,11 +265,11 @@ export function HrPage() {
   const currentMonth = now.getMonth() + 1
   const { data: currentSalaryPayments = [] } = useHrSalaryPaymentsQuery(currentYear, currentMonth)
 
+  const navigate = useNavigate()
+
   const [activeTab, setActiveTab] = useState('employees')
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState<string>('all')
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [editTarget, setEditTarget] = useState<HrEmployee | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<HrEmployee | null>(null)
   const [docsEmployee, setDocsEmployee] = useState<HrEmployee | null>(null)
 
@@ -300,12 +299,10 @@ export function HrPage() {
   }, [employees, currentSalaryPayments])
 
   const handleEdit = (emp: HrEmployee) => {
-    setEditTarget(emp)
-    setDialogOpen(true)
+    navigate(`/hr/employees/${emp.id}/edit`)
   }
   const handleAddNew = () => {
-    setEditTarget(null)
-    setDialogOpen(true)
+    navigate('/hr/employees/new')
   }
 
   const handleDelete = async () => {
@@ -358,7 +355,6 @@ export function HrPage() {
           <TabsTrigger value="attendance">
             {lang === 'tr' ? 'Devam Takibi' : 'Attendance'}
           </TabsTrigger>
-          <TabsTrigger value="leaves">{lang === 'tr' ? 'İzinler' : 'Leaves'}</TabsTrigger>
           {canManage && (
             <TabsTrigger value="settings">
               <GearSix size={14} className="mr-1" />
@@ -619,13 +615,6 @@ export function HrPage() {
           </div>
         </TabsContent>
 
-        {/* ── Leaves Tab ── */}
-        <TabsContent value="leaves">
-          <div className="pt-lg">
-            <LeavesTab employees={employees} canManage={canManage} lang={lang} />
-          </div>
-        </TabsContent>
-
         {/* ── Settings Tab ── */}
         {canManage && (
           <TabsContent value="settings">
@@ -637,15 +626,6 @@ export function HrPage() {
       </Tabs>
 
       {/* Dialogs */}
-      <EmployeeDialog
-        open={dialogOpen}
-        onClose={() => {
-          setDialogOpen(false)
-          setEditTarget(null)
-        }}
-        employee={editTarget}
-      />
-
       <DeleteEmployeeDialog
         open={!!deleteTarget}
         employee={deleteTarget}

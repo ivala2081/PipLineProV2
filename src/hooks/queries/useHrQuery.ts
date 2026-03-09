@@ -73,6 +73,7 @@ export type HrAttendance = {
   check_out: string | null
   absent_hours: number | null
   deduction_exempt: boolean
+  leave_id: string | null
   notes: string | null
   recorded_by: string | null
   created_at: string
@@ -186,7 +187,9 @@ export const DEFAULT_RE_CONFIG: ReConfig = {
 export type HrSettings = {
   roles: string[]
   supplement_tl: number
+  supplement_currency: 'TL' | 'USD'
   insured_bank_amount_tl: number
+  insured_bank_currency: 'TL' | 'USD'
   absence_full_day_divisor: number
   absence_half_day_divisor: number
   absence_hourly_divisor: number
@@ -196,6 +199,7 @@ export type HrSettings = {
   standard_check_out: string
   timezone: string
   weekend_off: boolean
+  barem_roles: string[]
 }
 
 export const DEFAULT_HR_SETTINGS: HrSettings = {
@@ -211,7 +215,9 @@ export const DEFAULT_HR_SETTINGS: HrSettings = {
     'Sales',
   ],
   supplement_tl: 4000,
+  supplement_currency: 'TL' as const,
   insured_bank_amount_tl: 28075.50,
+  insured_bank_currency: 'TL' as const,
   absence_full_day_divisor: 30,
   absence_half_day_divisor: 60,
   absence_hourly_divisor: 240,
@@ -221,6 +227,7 @@ export const DEFAULT_HR_SETTINGS: HrSettings = {
   standard_check_out: '18:30',
   timezone: 'Europe/Istanbul',
   weekend_off: true,
+  barem_roles: ['Marketing'],
 }
 
 export const DEFAULT_MT_CONFIG: MtConfig = {
@@ -1054,6 +1061,27 @@ export function useHrMonthlyLeavesQuery(year: number, month: number) {
   })
 }
 
+export function useHrLeavesForDateQuery(date: string) {
+  const { currentOrg } = useOrganization()
+  const orgId = currentOrg?.id ?? ''
+
+  return useQuery<HrLeave[]>({
+    queryKey: queryKeys.hr.leavesForDate(orgId, date),
+    enabled: !!orgId && !!date,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('hr_leaves')
+        .select('*')
+        .eq('organization_id', orgId)
+        .lte('start_date', date)
+        .gte('end_date', date)
+      if (error) throw error
+      return data as HrLeave[]
+    },
+  })
+}
+
 export function useHrLeaveMutations() {
   const { currentOrg } = useOrganization()
   const { user } = useAuth()
@@ -1083,6 +1111,7 @@ export function useHrLeaveMutations() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.hr.leaves(orgId) })
       void queryClient.invalidateQueries({ queryKey: queryKeys.hr.leavesMonthAll(orgId) })
+      void queryClient.invalidateQueries({ queryKey: ['hr', orgId, 'leaves-date'] })
     },
   })
 
@@ -1113,11 +1142,18 @@ export function useHrLeaveMutations() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.hr.leaves(orgId) })
       void queryClient.invalidateQueries({ queryKey: queryKeys.hr.leavesMonthAll(orgId) })
+      void queryClient.invalidateQueries({ queryKey: ['hr', orgId, 'leaves-date'] })
     },
   })
 
   const deleteLeave = useMutation({
     mutationFn: async (id: string) => {
+      // Also delete any linked attendance records
+      await supabase
+        .from('hr_attendance')
+        .delete()
+        .eq('leave_id', id)
+        .eq('organization_id', orgId)
       const { error } = await supabase
         .from('hr_leaves')
         .delete()
@@ -1128,6 +1164,8 @@ export function useHrLeaveMutations() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.hr.leaves(orgId) })
       void queryClient.invalidateQueries({ queryKey: queryKeys.hr.leavesMonthAll(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.attendanceAll(orgId) })
+      void queryClient.invalidateQueries({ queryKey: ['hr', orgId, 'leaves-date'] })
     },
   })
 
@@ -1149,6 +1187,76 @@ export function countLeaveDaysInMonth(leave: HrLeave, year: number, month: numbe
   // Count calendar days (inclusive)
   const diffMs = overlapEnd.getTime() - overlapStart.getTime()
   return Math.floor(diffMs / 86_400_000) + 1
+}
+
+/* ------------------------------------------------------------------ */
+/*  Absence + Leave combined mutation                                */
+/* ------------------------------------------------------------------ */
+
+export function useAbsenceWithLeaveMutation() {
+  const { currentOrg } = useOrganization()
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+  const orgId = currentOrg?.id ?? ''
+
+  return useMutation({
+    mutationFn: async (payload: {
+      employee_id: string
+      date: string
+      leave_type: HrLeaveType
+      notes?: string | null
+    }) => {
+      // 1. Create leave record (single-day)
+      const { data: leave, error: leaveErr } = await supabase
+        .from('hr_leaves')
+        .insert({
+          employee_id: payload.employee_id,
+          organization_id: orgId,
+          leave_type: payload.leave_type,
+          start_date: payload.date,
+          end_date: payload.date,
+          notes: payload.notes ?? null,
+          created_by: user?.id ?? null,
+        })
+        .select()
+        .single()
+      if (leaveErr) throw leaveErr
+
+      // 2. Upsert attendance with leave_id link + deduction_exempt
+      const { error: attErr } = await supabase
+        .from('hr_attendance')
+        .upsert(
+          {
+            employee_id: payload.employee_id,
+            organization_id: orgId,
+            date: payload.date,
+            status: 'absent' as HrAttendanceStatus,
+            check_in: null,
+            check_out: null,
+            absent_hours: null,
+            deduction_exempt: true,
+            leave_id: (leave as HrLeave).id,
+            recorded_by: user?.id ?? null,
+          },
+          { onConflict: 'employee_id,date' },
+        )
+      if (attErr) throw attErr
+
+      return leave as HrLeave
+    },
+    onSuccess: (_data, variables) => {
+      const d = new Date(variables.date)
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.attendance(orgId, variables.date) })
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.hr.attendanceMonth(orgId, d.getFullYear(), d.getMonth() + 1),
+      })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.leaves(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.leavesMonthAll(orgId) })
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.hr.leavesForDate(orgId, variables.date),
+      })
+    },
+  })
 }
 
 /* ------------------------------------------------------------------ */
@@ -1225,11 +1333,13 @@ export function useBulkBonusPayoutMutation() {
     }) => {
       if (!orgId || !user) throw new Error('No organization selected')
 
-      // Separate new (fixed) items from existing pending (variable) items
       const newItems = items.filter((i) => !i.pending_payment_id)
       const pendingItems = items.filter((i) => !!i.pending_payment_id)
 
-      // ── Fixed items: create new hr_bonus_payment + accounting_entry ──
+      // Map: employee_id → bonus_payment_id (for bulk_payment_items)
+      const bonusPaymentIdByEmployee = new Map<string, string>()
+
+      // ── Fixed items: create new hr_bonus_payment ──
       if (newItems.length > 0) {
         const paymentsPayload = newItems.map((item) => ({
           organization_id: orgId,
@@ -1249,32 +1359,12 @@ export function useBulkBonusPayoutMutation() {
           .select('id, employee_id')
         if (paymentError) throw paymentError
 
-        const paymentIdByEmployee = new Map<string, string>(
-          (payments ?? []).map((p) => [p.employee_id, p.id]),
-        )
-
-        const entriesPayload = newItems.map((item) => ({
-          organization_id: orgId,
-          description: item.description,
-          entry_type: 'ODEME' as const,
-          direction: 'out' as const,
-          amount: item.amount_usdt,
-          currency: 'USDT',
-          entry_date: paidAt,
-          payment_period: item.period,
-          register: 'USDT',
-          hr_payment_id: paymentIdByEmployee.get(item.employee_id) ?? null,
-          hr_payment_type: 'bonus' as const,
-          created_by: user.id,
-        }))
-
-        const { error: entryError } = await supabase
-          .from('accounting_entries')
-          .insert(entriesPayload)
-        if (entryError) throw entryError
+        for (const p of payments ?? []) {
+          bonusPaymentIdByEmployee.set(p.employee_id, p.id)
+        }
       }
 
-      // ── Variable pending items: update status to 'paid' + create accounting_entry ──
+      // ── Variable pending items: update status to 'paid' ──
       if (pendingItems.length > 0) {
         const pendingIds = pendingItems.map((i) => i.pending_payment_id!).filter(Boolean)
 
@@ -1284,30 +1374,69 @@ export function useBulkBonusPayoutMutation() {
           .in('id', pendingIds)
         if (updateError) throw updateError
 
-        const pendingEntriesPayload = pendingItems.map((item) => ({
-          organization_id: orgId,
-          description: item.description,
-          entry_type: 'ODEME' as const,
-          direction: 'out' as const,
-          amount: item.amount_usdt,
-          currency: 'USDT',
-          entry_date: paidAt,
-          payment_period: item.period,
-          register: 'USDT',
-          hr_payment_id: item.pending_payment_id,
-          hr_payment_type: 'bonus' as const,
-          created_by: user.id,
-        }))
-
-        const { error: pendingEntryError } = await supabase
-          .from('accounting_entries')
-          .insert(pendingEntriesPayload)
-        if (pendingEntryError) throw pendingEntryError
+        for (const item of pendingItems) {
+          if (item.pending_payment_id) {
+            bonusPaymentIdByEmployee.set(item.employee_id, item.pending_payment_id)
+          }
+        }
       }
+
+      // ── Create hr_bulk_payments (tek kayıt, USDT) ──
+      const totalAmount = items.reduce((sum, i) => sum + i.amount_usdt, 0)
+      const period = items[0].period
+
+      const { data: bulkPayment, error: bulkError } = await supabase
+        .from('hr_bulk_payments')
+        .insert({
+          organization_id: orgId,
+          batch_type: 'bonus',
+          period,
+          total_amount: totalAmount,
+          currency: 'USDT',
+          item_count: items.length,
+          paid_at: paidAt,
+          created_by: user.id,
+        })
+        .select('id')
+        .single()
+      if (bulkError) throw bulkError
+
+      // ── Create hr_bulk_payment_items ──
+      const bulkItemsPayload = items.map((item) => ({
+        bulk_payment_id: bulkPayment.id,
+        employee_id: item.employee_id,
+        organization_id: orgId,
+        amount: item.amount_usdt,
+        currency: 'USDT',
+        description: item.description,
+        agreement_id: item.agreement_id ?? null,
+        bonus_payment_id: bonusPaymentIdByEmployee.get(item.employee_id) ?? null,
+      }))
+      const { error: itemsError } = await supabase
+        .from('hr_bulk_payment_items')
+        .insert(bulkItemsPayload)
+      if (itemsError) throw itemsError
+
+      // ── Create ONE accounting_entry ──
+      const { error: entryError } = await supabase.from('accounting_entries').insert({
+        organization_id: orgId,
+        description: `Toplu Prim Ödemesi — ${period} (${items.length} kişi)`,
+        entry_type: 'ODEME',
+        direction: 'out',
+        amount: totalAmount,
+        currency: 'USDT',
+        entry_date: paidAt,
+        payment_period: period,
+        register: 'USDT',
+        hr_bulk_payment_id: bulkPayment.id,
+        created_by: user.id,
+      })
+      if (entryError) throw entryError
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusPayments(orgId) })
       void queryClient.invalidateQueries({ queryKey: queryKeys.hr.variablePending(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.bulkPayments(orgId) })
       void queryClient.invalidateQueries({ queryKey: queryKeys.accounting.all })
     },
   })
@@ -1336,6 +1465,7 @@ export type BulkSalaryPayoutItem = {
   amount_tl: number
   salary_currency: 'TL' | 'USD'
   supplement_tl: number
+  supplement_currency: 'TL' | 'USD'
   bank_deposit_tl: number
   attendance_deduction_tl: number
   unpaid_leave_deduction_tl: number
@@ -1398,72 +1528,123 @@ export function useBulkSalaryPayoutMutation() {
         created_by: user.id,
       }))
 
-      console.log('Salary insert payload:', JSON.stringify(paymentsPayload[0]))
       const { data: payments, error: paymentError } = await supabase
         .from('hr_salary_payments')
         .insert(paymentsPayload)
         .select('id, employee_id')
-      if (paymentError) {
-        console.error('Salary insert error details:', JSON.stringify(paymentError))
-        throw paymentError
-      }
+      if (paymentError) throw paymentError
 
       const paymentIdByEmployee = new Map<string, string>(
         (payments ?? []).map((p) => [p.employee_id, p.id]),
       )
 
-      // 2. Create accounting_entries linked to salary payments
-      const entriesPayload = items.map((item) => ({
-        organization_id: orgId,
-        description: item.description,
-        entry_type: 'ODEME' as const,
-        direction: 'out' as const,
-        amount: Math.max(
+      // 2. Register bazında gruplama (NAKIT_TL / NAKIT_USD)
+      const netAmount = (item: BulkSalaryPayoutItem) =>
+        Math.max(
           0,
           item.amount_tl -
             item.attendance_deduction_tl -
             item.unpaid_leave_deduction_tl -
             (item.bank_deposit_tl ?? 0),
-        ),
-        currency: item.salary_currency === 'USD' ? 'USD' : 'TL',
-        entry_date: paidAt,
-        payment_period: item.period,
-        register: item.salary_currency === 'USD' ? 'NAKIT_USD' : 'NAKIT_TL',
-        hr_payment_id: paymentIdByEmployee.get(item.employee_id) ?? null,
-        hr_payment_type: 'salary' as const,
-        created_by: user.id,
-      }))
+        )
 
-      const { error: entryError } = await supabase.from('accounting_entries').insert(entriesPayload)
-      if (entryError) throw entryError
+      const tlItems = items.filter((i) => i.salary_currency !== 'USD')
+      const usdItems = items.filter((i) => i.salary_currency === 'USD')
 
-      // 3. Create separate supplement entries for uninsured employees with receives_supplement
-      const supplementItems = items.filter((item) => item.supplement_tl > 0)
-      if (supplementItems.length > 0) {
-        const supplementPayload = supplementItems.map((item) => ({
+      const registerGroups: {
+        items: BulkSalaryPayoutItem[]
+        register: string
+        currency: string
+      }[] = []
+      if (tlItems.length > 0) registerGroups.push({ items: tlItems, register: 'NAKIT_TL', currency: 'TL' })
+      if (usdItems.length > 0) registerGroups.push({ items: usdItems, register: 'NAKIT_USD', currency: 'USD' })
+
+      for (const group of registerGroups) {
+        const totalNet = group.items.reduce((sum, i) => sum + netAmount(i), 0)
+        const period = group.items[0].period
+
+        // 3. Create hr_bulk_payments
+        const { data: bulkPayment, error: bulkError } = await supabase
+          .from('hr_bulk_payments')
+          .insert({
+            organization_id: orgId,
+            batch_type: 'salary',
+            period,
+            total_amount: totalNet,
+            currency: group.currency,
+            item_count: group.items.length,
+            paid_at: paidAt,
+            created_by: user.id,
+          })
+          .select('id')
+          .single()
+        if (bulkError) throw bulkError
+
+        // 4. Create hr_bulk_payment_items
+        const itemsPayload = group.items.map((item) => ({
+          bulk_payment_id: bulkPayment.id,
+          employee_id: item.employee_id,
           organization_id: orgId,
-          description: `${item.employee_name} — ${item.period} Sigorta Elden Ödeme`,
-          entry_type: 'ODEME' as const,
-          direction: 'out' as const,
-          amount: item.supplement_tl,
-          currency: 'TL',
-          entry_date: paidAt,
-          payment_period: item.period,
-          register: 'NAKIT_TL',
-          hr_payment_id: paymentIdByEmployee.get(item.employee_id) ?? null,
-          hr_payment_type: 'salary' as const,
-          created_by: user.id,
+          amount: netAmount(item),
+          currency: group.currency,
+          description: item.description,
+          salary_currency: item.salary_currency,
+          supplement_amount: item.supplement_tl > 0 ? item.supplement_tl : null,
+          supplement_currency: item.supplement_tl > 0 ? item.supplement_currency : null,
+          bank_deposit_amount: item.bank_deposit_tl > 0 ? item.bank_deposit_tl : null,
+          attendance_deduction: item.attendance_deduction_tl > 0 ? item.attendance_deduction_tl : null,
+          unpaid_leave_deduction: item.unpaid_leave_deduction_tl > 0 ? item.unpaid_leave_deduction_tl : null,
+          salary_payment_id: paymentIdByEmployee.get(item.employee_id) ?? null,
         }))
-        const { error: suppError } = await supabase
-          .from('accounting_entries')
-          .insert(supplementPayload)
-        if (suppError) throw suppError
+        const { error: itemsError } = await supabase
+          .from('hr_bulk_payment_items')
+          .insert(itemsPayload)
+        if (itemsError) throw itemsError
+
+        // 5. Create ONE accounting_entry for the entire group
+        const { error: entryError } = await supabase.from('accounting_entries').insert({
+          organization_id: orgId,
+          description: `Toplu Maaş Ödemesi — ${period} (${group.items.length} kişi)`,
+          entry_type: 'ODEME',
+          direction: 'out',
+          amount: totalNet,
+          currency: group.currency,
+          entry_date: paidAt,
+          payment_period: period,
+          register: group.register,
+          hr_bulk_payment_id: bulkPayment.id,
+          created_by: user.id,
+        })
+        if (entryError) throw entryError
+
+        // 6. Supplement entries (aynı bulk payment'a bağlı, ayrı accounting entry)
+        const supplementItems = group.items.filter((item) => item.supplement_tl > 0)
+        if (supplementItems.length > 0) {
+          const totalSupplement = supplementItems.reduce((sum, i) => sum + i.supplement_tl, 0)
+          const suppCurrency = supplementItems[0].supplement_currency
+          const suppRegister = suppCurrency === 'USD' ? 'NAKIT_USD' : 'NAKIT_TL'
+
+          const { error: suppError } = await supabase.from('accounting_entries').insert({
+            organization_id: orgId,
+            description: `Toplu Sigorta Elden Ödeme — ${period} (${supplementItems.length} kişi)`,
+            entry_type: 'ODEME',
+            direction: 'out',
+            amount: totalSupplement,
+            currency: suppCurrency,
+            entry_date: paidAt,
+            payment_period: period,
+            register: suppRegister,
+            hr_bulk_payment_id: bulkPayment.id,
+            created_by: user.id,
+          })
+          if (suppError) throw suppError
+        }
       }
     },
     onSuccess: () => {
-      // Invalidate all salary payment queries
       void queryClient.invalidateQueries({ queryKey: queryKeys.hr.salaryPaymentsPrefix(orgId) })
       void queryClient.invalidateQueries({ queryKey: queryKeys.hr.allSalaryPayments(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.bulkPayments(orgId) })
       void queryClient.invalidateQueries({ queryKey: queryKeys.accounting.all })
     },
   })
@@ -1476,7 +1657,8 @@ export function useBulkSalaryPayoutMutation() {
 export type BulkBankDepositItem = {
   employee_id: string
   employee_name: string
-  amount_tl: number
+  amount: number
+  currency: 'TL' | 'USD'
   period: string
   description: string
 }
@@ -1491,26 +1673,72 @@ export function useBulkBankDepositMutation() {
     mutationFn: async ({ items, paidAt }: { items: BulkBankDepositItem[]; paidAt: string }) => {
       if (!orgId || !user) throw new Error('No organization selected')
 
-      const entriesPayload = items.map((item) => ({
-        organization_id: orgId,
-        description: item.description,
-        entry_type: 'ODEME' as const,
-        direction: 'out' as const,
-        amount: item.amount_tl,
-        currency: 'TL',
-        entry_date: paidAt,
-        payment_period: item.period,
-        register: 'NAKIT_TL',
-        advance_type: 'insured_salary',
-        hr_employee_id: item.employee_id,
-        created_by: user.id,
-      }))
+      // Register bazında gruplama
+      const tlItems = items.filter((i) => i.currency === 'TL')
+      const usdItems = items.filter((i) => i.currency !== 'TL')
 
-      const { error } = await supabase.from('accounting_entries').insert(entriesPayload)
-      if (error) throw error
+      const registerGroups: { items: BulkBankDepositItem[]; register: string; currency: string }[] = []
+      if (tlItems.length > 0) registerGroups.push({ items: tlItems, register: 'NAKIT_TL', currency: 'TL' })
+      if (usdItems.length > 0) registerGroups.push({ items: usdItems, register: 'NAKIT_USD', currency: 'USD' })
+
+      for (const group of registerGroups) {
+        const totalAmount = group.items.reduce((sum, i) => sum + i.amount, 0)
+        const period = group.items[0].period
+
+        // 1. Create hr_bulk_payments
+        const { data: bulkPayment, error: bulkError } = await supabase
+          .from('hr_bulk_payments')
+          .insert({
+            organization_id: orgId,
+            batch_type: 'bank_deposit',
+            period,
+            total_amount: totalAmount,
+            currency: group.currency,
+            item_count: group.items.length,
+            paid_at: paidAt,
+            created_by: user.id,
+          })
+          .select('id')
+          .single()
+        if (bulkError) throw bulkError
+
+        // 2. Create hr_bulk_payment_items
+        const itemsPayload = group.items.map((item) => ({
+          bulk_payment_id: bulkPayment.id,
+          employee_id: item.employee_id,
+          organization_id: orgId,
+          amount: item.amount,
+          currency: item.currency,
+          description: item.description,
+          advance_type: 'insured_salary',
+        }))
+        const { error: itemsError } = await supabase
+          .from('hr_bulk_payment_items')
+          .insert(itemsPayload)
+        if (itemsError) throw itemsError
+
+        // 3. Create ONE accounting_entry
+        const { error: entryError } = await supabase.from('accounting_entries').insert({
+          organization_id: orgId,
+          description: `Toplu Banka Yatırımı — ${period} (${group.items.length} kişi)`,
+          entry_type: 'ODEME',
+          direction: 'out',
+          amount: totalAmount,
+          currency: group.currency,
+          entry_date: paidAt,
+          payment_period: period,
+          register: group.register,
+          advance_type: 'insured_salary',
+          hr_bulk_payment_id: bulkPayment.id,
+          created_by: user.id,
+        })
+        if (entryError) throw entryError
+      }
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.root })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.salaryPaymentsPrefix(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.allSalaryPayments(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.bulkPayments(orgId) })
       void queryClient.invalidateQueries({ queryKey: queryKeys.accounting.all })
     },
   })
@@ -1618,9 +1846,13 @@ export function useHrSettingsQuery() {
 
       return {
         roles: (data.roles ?? DEFAULT_HR_SETTINGS.roles) as string[],
-        supplement_tl: Number(data.supplement_tl) || DEFAULT_HR_SETTINGS.supplement_tl,
+        supplement_tl: data.supplement_tl != null ? Number(data.supplement_tl) : DEFAULT_HR_SETTINGS.supplement_tl,
+        supplement_currency:
+          (data.supplement_currency as 'TL' | 'USD') ?? DEFAULT_HR_SETTINGS.supplement_currency,
         insured_bank_amount_tl:
-          Number(data.insured_bank_amount_tl) || DEFAULT_HR_SETTINGS.insured_bank_amount_tl,
+          data.insured_bank_amount_tl != null ? Number(data.insured_bank_amount_tl) : DEFAULT_HR_SETTINGS.insured_bank_amount_tl,
+        insured_bank_currency:
+          (data.insured_bank_currency as 'TL' | 'USD') ?? DEFAULT_HR_SETTINGS.insured_bank_currency,
         absence_full_day_divisor:
           Number(data.absence_full_day_divisor) || DEFAULT_HR_SETTINGS.absence_full_day_divisor,
         absence_half_day_divisor:
@@ -1635,6 +1867,7 @@ export function useHrSettingsQuery() {
         standard_check_out: data.standard_check_out ?? DEFAULT_HR_SETTINGS.standard_check_out,
         timezone: data.timezone ?? DEFAULT_HR_SETTINGS.timezone,
         weekend_off: data.weekend_off ?? DEFAULT_HR_SETTINGS.weekend_off,
+        barem_roles: (data.barem_roles ?? DEFAULT_HR_SETTINGS.barem_roles) as string[],
       } as HrSettings
     },
     enabled: !!orgId,
@@ -1655,7 +1888,9 @@ export function useUpdateHrSettingsMutation() {
           organization_id: orgId,
           roles: settings.roles,
           supplement_tl: settings.supplement_tl,
+          supplement_currency: settings.supplement_currency,
           insured_bank_amount_tl: settings.insured_bank_amount_tl,
+          insured_bank_currency: settings.insured_bank_currency,
           absence_full_day_divisor: settings.absence_full_day_divisor,
           absence_half_day_divisor: settings.absence_half_day_divisor,
           absence_hourly_divisor: settings.absence_hourly_divisor,
@@ -1665,6 +1900,7 @@ export function useUpdateHrSettingsMutation() {
           standard_check_out: settings.standard_check_out,
           timezone: settings.timezone,
           weekend_off: settings.weekend_off,
+          barem_roles: settings.barem_roles,
           updated_at: new Date().toISOString(),
         },
         { onConflict: 'organization_id' },
@@ -1675,4 +1911,304 @@ export function useUpdateHrSettingsMutation() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.hr.hrSettings(orgId) })
     },
   })
+}
+
+/* ------------------------------------------------------------------ */
+/*  Barem Failures (Marketing)                                         */
+/* ------------------------------------------------------------------ */
+
+export function useBaremFailuresQuery(period: string) {
+  const { currentOrg } = useOrganization()
+  const orgId = currentOrg?.id ?? ''
+
+  return useQuery({
+    queryKey: queryKeys.hr.baremFailures(orgId, period),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('hr_mt_barem_failures')
+        .select('id, employee_id, period')
+        .eq('organization_id', orgId)
+        .eq('period', period)
+      if (error) throw error
+      return new Set((data ?? []).map((r) => r.employee_id))
+    },
+    enabled: !!orgId && !!period,
+    staleTime: 5 * 60_000,
+  })
+}
+
+export function useBaremFailureMutation() {
+  const { currentOrg } = useOrganization()
+  const queryClient = useQueryClient()
+  const orgId = currentOrg?.id ?? ''
+
+  const toggle = useMutation({
+    mutationFn: async ({ employeeId, period, failed }: { employeeId: string; period: string; failed: boolean }) => {
+      if (failed) {
+        // Insert barem failure
+        const { error } = await supabase.from('hr_mt_barem_failures').upsert(
+          { organization_id: orgId, employee_id: employeeId, period },
+          { onConflict: 'organization_id,employee_id,period' },
+        )
+        if (error) throw error
+      } else {
+        // Remove barem failure
+        const { error } = await supabase
+          .from('hr_mt_barem_failures')
+          .delete()
+          .eq('organization_id', orgId)
+          .eq('employee_id', employeeId)
+          .eq('period', period)
+        if (error) throw error
+      }
+    },
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.baremFailures(orgId, vars.period) })
+    },
+  })
+
+  return { toggleBarem: toggle }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Bulk Payment Detail Query & Mutations                               */
+/* ------------------------------------------------------------------ */
+
+export type BulkPaymentItemWithEmployee = {
+  id: string
+  bulk_payment_id: string
+  employee_id: string
+  organization_id: string
+  amount: number
+  currency: string
+  description: string
+  salary_currency: string | null
+  supplement_amount: number | null
+  supplement_currency: string | null
+  bank_deposit_amount: number | null
+  attendance_deduction: number | null
+  unpaid_leave_deduction: number | null
+  agreement_id: string | null
+  bonus_payment_id: string | null
+  salary_payment_id: string | null
+  advance_type: string | null
+  created_at: string
+  employee_name: string
+  employee_role: string
+}
+
+export function useBulkPaymentDetailQuery(bulkPaymentId: string) {
+  const { currentOrg } = useOrganization()
+  const orgId = currentOrg?.id ?? ''
+
+  return useQuery({
+    queryKey: queryKeys.hr.bulkPaymentDetail(orgId, bulkPaymentId),
+    queryFn: async () => {
+      // Fetch bulk payment header
+      const { data: bulkPayment, error: bpError } = await supabase
+        .from('hr_bulk_payments')
+        .select('*')
+        .eq('id', bulkPaymentId)
+        .single()
+      if (bpError) throw bpError
+
+      // Fetch items with employee names
+      const { data: itemsRaw, error: itemsError } = await supabase
+        .from('hr_bulk_payment_items')
+        .select('*, hr_employees(full_name, role)')
+        .eq('bulk_payment_id', bulkPaymentId)
+        .order('created_at', { ascending: true })
+      if (itemsError) throw itemsError
+
+      const items: BulkPaymentItemWithEmployee[] = (itemsRaw ?? []).map((item: any) => ({
+        ...item,
+        employee_name: item.hr_employees?.full_name ?? '—',
+        employee_role: item.hr_employees?.role ?? '—',
+        hr_employees: undefined,
+      }))
+
+      // Fetch linked accounting entries
+      const { data: entries, error: entriesError } = await supabase
+        .from('accounting_entries')
+        .select('*')
+        .eq('hr_bulk_payment_id', bulkPaymentId)
+      if (entriesError) throw entriesError
+
+      return {
+        bulkPayment: bulkPayment as import('@/lib/database.types').HrBulkPayment,
+        items,
+        accountingEntries: (entries ?? []) as import('@/lib/database.types').AccountingEntry[],
+      }
+    },
+    enabled: !!orgId && !!bulkPaymentId,
+    staleTime: 3 * 60_000,
+  })
+}
+
+export function useBulkPaymentItemMutations(bulkPaymentId: string) {
+  const { currentOrg } = useOrganization()
+  const queryClient = useQueryClient()
+  const orgId = currentOrg?.id ?? ''
+
+  // Update a single item amount
+  const updateItem = useMutation({
+    mutationFn: async ({ itemId, amount }: { itemId: string; amount: number }) => {
+      // 1. Update the item
+      const { error: updateError } = await supabase
+        .from('hr_bulk_payment_items')
+        .update({ amount })
+        .eq('id', itemId)
+      if (updateError) throw updateError
+
+      // 2. Recalculate totals
+      const { data: allItems, error: fetchError } = await supabase
+        .from('hr_bulk_payment_items')
+        .select('amount')
+        .eq('bulk_payment_id', bulkPaymentId)
+      if (fetchError) throw fetchError
+
+      const newTotal = (allItems ?? []).reduce((sum, i) => sum + Number(i.amount), 0)
+
+      // 3. Update bulk payment total
+      const { error: bpError } = await supabase
+        .from('hr_bulk_payments')
+        .update({ total_amount: newTotal })
+        .eq('id', bulkPaymentId)
+      if (bpError) throw bpError
+
+      // 4. Update ALL linked accounting entries proportionally
+      // For simplicity: update the main entry (non-supplement) to the new total
+      const { data: entries, error: entriesError } = await supabase
+        .from('accounting_entries')
+        .select('id, description')
+        .eq('hr_bulk_payment_id', bulkPaymentId)
+      if (entriesError) throw entriesError
+
+      // Update the main (non-supplement) entry
+      const mainEntry = (entries ?? []).find((e) => !e.description.includes('Sigorta Elden'))
+      if (mainEntry) {
+        const { error: entryError } = await supabase
+          .from('accounting_entries')
+          .update({ amount: newTotal })
+          .eq('id', mainEntry.id)
+        if (entryError) throw entryError
+      }
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.bulkPaymentDetail(orgId, bulkPaymentId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.accounting.all })
+    },
+  })
+
+  // Delete a single item
+  const deleteItem = useMutation({
+    mutationFn: async (itemId: string) => {
+      // 1. Fetch the item to get linked payment IDs
+      const { data: item, error: fetchError } = await supabase
+        .from('hr_bulk_payment_items')
+        .select('*')
+        .eq('id', itemId)
+        .single()
+      if (fetchError) throw fetchError
+
+      // 2. Delete linked HR payments
+      if (item.salary_payment_id) {
+        await supabase.from('hr_salary_payments').delete().eq('id', item.salary_payment_id)
+      }
+      if (item.bonus_payment_id) {
+        await supabase.from('hr_bonus_payments').delete().eq('id', item.bonus_payment_id)
+      }
+
+      // 3. Delete the item
+      const { error: deleteError } = await supabase
+        .from('hr_bulk_payment_items')
+        .delete()
+        .eq('id', itemId)
+      if (deleteError) throw deleteError
+
+      // 4. Check remaining items
+      const { data: remaining, error: remainError } = await supabase
+        .from('hr_bulk_payment_items')
+        .select('amount')
+        .eq('bulk_payment_id', bulkPaymentId)
+      if (remainError) throw remainError
+
+      if (!remaining || remaining.length === 0) {
+        // No items left — delete the entire bulk payment + accounting entries
+        await supabase.from('accounting_entries').delete().eq('hr_bulk_payment_id', bulkPaymentId)
+        await supabase.from('hr_bulk_payments').delete().eq('id', bulkPaymentId)
+      } else {
+        // Recalculate totals
+        const newTotal = remaining.reduce((sum, i) => sum + Number(i.amount), 0)
+        await supabase
+          .from('hr_bulk_payments')
+          .update({ total_amount: newTotal, item_count: remaining.length })
+          .eq('id', bulkPaymentId)
+
+        // Update main accounting entry
+        const { data: entries } = await supabase
+          .from('accounting_entries')
+          .select('id, description')
+          .eq('hr_bulk_payment_id', bulkPaymentId)
+
+        const mainEntry = (entries ?? []).find((e) => !e.description.includes('Sigorta Elden'))
+        if (mainEntry) {
+          await supabase
+            .from('accounting_entries')
+            .update({ amount: newTotal })
+            .eq('id', mainEntry.id)
+        }
+      }
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.bulkPaymentDetail(orgId, bulkPaymentId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.bulkPayments(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.salaryPaymentsPrefix(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.allSalaryPayments(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusPayments(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.accounting.all })
+    },
+  })
+
+  // Delete entire bulk payment
+  const deleteBulkPayment = useMutation({
+    mutationFn: async () => {
+      // 1. Fetch all items to cascade-delete linked HR payments
+      const { data: items, error: fetchError } = await supabase
+        .from('hr_bulk_payment_items')
+        .select('salary_payment_id, bonus_payment_id')
+        .eq('bulk_payment_id', bulkPaymentId)
+      if (fetchError) throw fetchError
+
+      // 2. Delete linked HR payments
+      const salaryIds = (items ?? []).map((i) => i.salary_payment_id).filter(Boolean) as string[]
+      const bonusIds = (items ?? []).map((i) => i.bonus_payment_id).filter(Boolean) as string[]
+
+      if (salaryIds.length > 0) {
+        await supabase.from('hr_salary_payments').delete().in('id', salaryIds)
+      }
+      if (bonusIds.length > 0) {
+        await supabase.from('hr_bonus_payments').delete().in('id', bonusIds)
+      }
+
+      // 3. Delete accounting entries linked to this bulk payment
+      await supabase.from('accounting_entries').delete().eq('hr_bulk_payment_id', bulkPaymentId)
+
+      // 4. Delete the bulk payment (CASCADE deletes items)
+      const { error: deleteError } = await supabase
+        .from('hr_bulk_payments')
+        .delete()
+        .eq('id', bulkPaymentId)
+      if (deleteError) throw deleteError
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.bulkPayments(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.salaryPaymentsPrefix(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.allSalaryPayments(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusPayments(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.accounting.all })
+    },
+  })
+
+  return { updateItem, deleteItem, deleteBulkPayment }
 }

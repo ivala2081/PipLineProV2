@@ -759,6 +759,28 @@
       "edit": "Düzenle",
       "delete": "Sil"
     },
+    "bulk": {
+      "tag": "Toplu",
+      "detailTitle": "Toplu Ödeme Detayı",
+      "viewDetail": "Detay Gör",
+      "salary": "Maaş",
+      "bonus": "Prim",
+      "bankDeposit": "Banka Yatırımı",
+      "period": "Dönem",
+      "totalAmount": "Toplam Tutar",
+      "itemCount": "Kalem Sayısı",
+      "paidAt": "Ödeme Tarihi",
+      "deleteAll": "Tümünü Sil",
+      "deleteAllConfirm": "Bu toplu ödeme ve tüm alt kalemleri silinecek. Bu işlem geri alınamaz.",
+      "deleteItem": "Kalemi Sil",
+      "deleteItemConfirm": "Bu kalem silinecek ve toplam tutar güncellenecek.",
+      "editItem": "Kalemi Düzenle",
+      "employee": "Çalışan",
+      "amount": "Tutar",
+      "description": "Açıklama",
+      "deductions": "Kesintiler",
+      "noItems": "Bu toplu ödemede kalem bulunmuyor."
+    },
     "wallets": {
       "empty": {
         "title": "Henüz cüzdan yok",

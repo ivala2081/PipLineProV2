@@ -27,6 +27,7 @@ export type Database = {
           organization_id: string
           payment_period: string | null
           register: string
+          hr_bulk_payment_id: string | null
           updated_at: string
         }
         Insert: {
@@ -40,6 +41,7 @@ export type Database = {
           direction: string
           entry_date?: string
           entry_type: string
+          hr_bulk_payment_id?: string | null
           hr_employee_id?: string | null
           hr_payment_id?: string | null
           hr_payment_type?: string | null
@@ -60,6 +62,7 @@ export type Database = {
           direction?: string
           entry_date?: string
           entry_type?: string
+          hr_bulk_payment_id?: string | null
           hr_employee_id?: string | null
           hr_payment_id?: string | null
           hr_payment_type?: string | null
@@ -70,6 +73,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: 'accounting_entries_hr_bulk_payment_id_fkey'
+            columns: ['hr_bulk_payment_id']
+            isOneToOne: false
+            referencedRelation: 'hr_bulk_payments'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'accounting_entries_hr_employee_id_fkey'
             columns: ['hr_employee_id']
@@ -378,6 +388,7 @@ export type Database = {
           deduction_exempt: boolean
           employee_id: string
           id: string
+          leave_id: string | null
           notes: string | null
           organization_id: string
           recorded_by: string | null
@@ -392,6 +403,7 @@ export type Database = {
           deduction_exempt?: boolean
           employee_id: string
           id?: string
+          leave_id?: string | null
           notes?: string | null
           organization_id: string
           recorded_by?: string | null
@@ -406,6 +418,7 @@ export type Database = {
           deduction_exempt?: boolean
           employee_id?: string
           id?: string
+          leave_id?: string | null
           notes?: string | null
           organization_id?: string
           recorded_by?: string | null
@@ -417,6 +430,13 @@ export type Database = {
             columns: ['employee_id']
             isOneToOne: false
             referencedRelation: 'hr_employees'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'hr_attendance_leave_id_fkey'
+            columns: ['leave_id']
+            isOneToOne: false
+            referencedRelation: 'hr_leaves'
             referencedColumns: ['id']
           },
           {
@@ -580,6 +600,144 @@ export type Database = {
             columns: ['transfer_id']
             isOneToOne: false
             referencedRelation: 'transfers'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      hr_bulk_payments: {
+        Row: {
+          id: string
+          organization_id: string
+          batch_type: string
+          period: string
+          total_amount: number
+          currency: string
+          item_count: number
+          paid_at: string
+          notes: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          batch_type: string
+          period: string
+          total_amount?: number
+          currency?: string
+          item_count?: number
+          paid_at: string
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          batch_type?: string
+          period?: string
+          total_amount?: number
+          currency?: string
+          item_count?: number
+          paid_at?: string
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'hr_bulk_payments_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      hr_bulk_payment_items: {
+        Row: {
+          id: string
+          bulk_payment_id: string
+          employee_id: string
+          organization_id: string
+          amount: number
+          currency: string
+          description: string
+          salary_currency: string | null
+          supplement_amount: number | null
+          supplement_currency: string | null
+          bank_deposit_amount: number | null
+          attendance_deduction: number | null
+          unpaid_leave_deduction: number | null
+          agreement_id: string | null
+          bonus_payment_id: string | null
+          salary_payment_id: string | null
+          advance_type: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          bulk_payment_id: string
+          employee_id: string
+          organization_id: string
+          amount: number
+          currency: string
+          description: string
+          salary_currency?: string | null
+          supplement_amount?: number | null
+          supplement_currency?: string | null
+          bank_deposit_amount?: number | null
+          attendance_deduction?: number | null
+          unpaid_leave_deduction?: number | null
+          agreement_id?: string | null
+          bonus_payment_id?: string | null
+          salary_payment_id?: string | null
+          advance_type?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          bulk_payment_id?: string
+          employee_id?: string
+          organization_id?: string
+          amount?: number
+          currency?: string
+          description?: string
+          salary_currency?: string | null
+          supplement_amount?: number | null
+          supplement_currency?: string | null
+          bank_deposit_amount?: number | null
+          attendance_deduction?: number | null
+          unpaid_leave_deduction?: number | null
+          agreement_id?: string | null
+          bonus_payment_id?: string | null
+          salary_payment_id?: string | null
+          advance_type?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'hr_bulk_payment_items_bulk_payment_id_fkey'
+            columns: ['bulk_payment_id']
+            isOneToOne: false
+            referencedRelation: 'hr_bulk_payments'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'hr_bulk_payment_items_employee_id_fkey'
+            columns: ['employee_id']
+            isOneToOne: false
+            referencedRelation: 'hr_employees'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'hr_bulk_payment_items_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
             referencedColumns: ['id']
           },
         ]
@@ -751,6 +909,45 @@ export type Database = {
           },
         ]
       }
+      hr_mt_barem_failures: {
+        Row: {
+          id: string
+          organization_id: string
+          employee_id: string
+          period: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          employee_id: string
+          period: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          employee_id?: string
+          period?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'hr_mt_barem_failures_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'hr_mt_barem_failures_employee_id_fkey'
+            columns: ['employee_id']
+            isOneToOne: false
+            referencedRelation: 'hr_employees'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       hr_mt_config: {
         Row: {
           count_tiers: Json
@@ -890,6 +1087,7 @@ export type Database = {
           absence_full_day_divisor: number
           absence_half_day_divisor: number
           absence_hourly_divisor: number
+          barem_roles: Json
           daily_deduction_enabled: boolean
           hourly_deduction_enabled: boolean
           id: string
@@ -898,7 +1096,9 @@ export type Database = {
           standard_check_in: string
           standard_check_out: string
           insured_bank_amount_tl: number
+          insured_bank_currency: string
           supplement_tl: number
+          supplement_currency: string
           timezone: string
           updated_at: string
           weekend_off: boolean
@@ -907,15 +1107,18 @@ export type Database = {
           absence_full_day_divisor?: number
           absence_half_day_divisor?: number
           absence_hourly_divisor?: number
+          barem_roles?: Json
           daily_deduction_enabled?: boolean
           hourly_deduction_enabled?: boolean
           id?: string
           insured_bank_amount_tl?: number
+          insured_bank_currency?: string
           organization_id: string
           roles?: Json
           standard_check_in?: string
           standard_check_out?: string
           supplement_tl?: number
+          supplement_currency?: string
           timezone?: string
           updated_at?: string
           weekend_off?: boolean
@@ -924,15 +1127,18 @@ export type Database = {
           absence_full_day_divisor?: number
           absence_half_day_divisor?: number
           absence_hourly_divisor?: number
+          barem_roles?: Json
           daily_deduction_enabled?: boolean
           hourly_deduction_enabled?: boolean
           id?: string
           insured_bank_amount_tl?: number
+          insured_bank_currency?: string
           organization_id?: string
           roles?: Json
           standard_check_in?: string
           standard_check_out?: string
           supplement_tl?: number
+          supplement_currency?: string
           timezone?: string
           updated_at?: string
           weekend_off?: boolean
@@ -2116,6 +2322,10 @@ export type CompositeTypes<
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
     ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
     : never
+
+export type AccountingEntry = Database['public']['Tables']['accounting_entries']['Row']
+export type HrBulkPayment = Database['public']['Tables']['hr_bulk_payments']['Row']
+export type HrBulkPaymentItem = Database['public']['Tables']['hr_bulk_payment_items']['Row']
 
 export type OrgMemberRole = 'admin' | 'manager' | 'operation' | 'ik'
 export type SystemRole = 'god' | 'user'

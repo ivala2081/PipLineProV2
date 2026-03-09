@@ -53,6 +53,7 @@ import {
   Label,
   Tag,
   Separator,
+  Skeleton,
   useTheme,
 } from '@ds'
 import { useLocale } from '@ds/hooks'
@@ -115,19 +116,38 @@ function SidebarBrand() {
 /*  Sidebar Navigation                                                 */
 /* ------------------------------------------------------------------ */
 
+function SidebarNavSkeleton() {
+  return (
+    <div className="space-y-4 px-3 py-2">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div key={i} className="flex items-center gap-2.5">
+          <Skeleton className="size-5 rounded" />
+          <Skeleton className="h-4 w-24 rounded" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function SidebarNav() {
   const { t } = useTranslation('pages')
   const location = useLocation()
   const tNav = t as (key: string) => string
 
-  const { canAccessPage } = usePagePermissions()
+  const { canAccessPage, isLoading } = usePagePermissions()
+
+  if (isLoading) return <SidebarNavSkeleton />
 
   return (
     <>
       {navGroups.map((group, idx) => {
         // Filter items by page-level permissions
         const visibleItems = group.items.filter((item) => {
-          if (item.page && !canAccessPage(item.page)) return false
+          if (item.page) {
+            const access = canAccessPage(item.page)
+            // null = still loading (shouldn't happen here, but guard)
+            if (access === null || access === false) return false
+          }
           return true
         })
         if (visibleItems.length === 0) return null

@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import {
   DotsThree,
   PencilSimple,
@@ -11,6 +12,7 @@ import {
   MagnifyingGlass,
   X,
   Funnel,
+  Eye,
 } from '@phosphor-icons/react'
 import type { AccountingEntry } from '@/lib/database.types'
 import { formatAmount, parseAmount, amountPlaceholder } from '@/lib/formatAmount'
@@ -121,6 +123,7 @@ export function LedgerTable({
   hasActiveFilters,
 }: LedgerTableProps) {
   const { t, i18n } = useTranslation('pages')
+  const navigate = useNavigate()
   const lang = (i18n.language === 'tr' ? 'tr' : 'en') as 'tr' | 'en'
   const totalPages = Math.ceil(total / pageSize)
   const from = (page - 1) * pageSize + 1
@@ -477,13 +480,26 @@ export function LedgerTable({
                   </TableHeader>
                   <TableBody className="divide-y divide-black/[0.04]">
                     {group.entries.map((row) => (
-                      <TableRow key={row.id} className="hover:bg-black/[0.015]">
+                      <TableRow
+                        key={row.id}
+                        className={`hover:bg-black/[0.015] ${row.hr_bulk_payment_id ? 'cursor-pointer' : ''}`}
+                        onClick={
+                          row.hr_bulk_payment_id
+                            ? () => navigate(`/accounting/bulk/${row.hr_bulk_payment_id}`)
+                            : undefined
+                        }
+                      >
                         <TableCell
                           className="whitespace-nowrap"
                           data-label={t('accounting.columns.description')}
                         >
-                          <span className="text-sm font-medium text-black/90">
-                            {row.description}
+                          <span className="inline-flex items-center gap-2">
+                            <span className="text-sm font-medium text-black/90">
+                              {row.description}
+                            </span>
+                            {row.hr_bulk_payment_id && (
+                              <Tag variant="purple">{t('accounting.bulk.tag', 'Toplu')}</Tag>
+                            )}
                           </span>
                         </TableCell>
                         <TableCell
@@ -547,11 +563,29 @@ export function LedgerTable({
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" sideOffset={4}>
-                              <DropdownMenuItem onClick={() => onEdit(row)}>
-                                <PencilSimple size={14} />
-                                {t('accounting.actions.edit')}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="text-red" onClick={() => onDelete(row)}>
+                              {row.hr_bulk_payment_id ? (
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    navigate(`/accounting/bulk/${row.hr_bulk_payment_id}`)
+                                  }}
+                                >
+                                  <Eye size={14} />
+                                  {t('accounting.bulk.viewDetail', 'Detay Gör')}
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem onClick={() => onEdit(row)}>
+                                  <PencilSimple size={14} />
+                                  {t('accounting.actions.edit')}
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem
+                                className="text-red"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  onDelete(row)
+                                }}
+                              >
                                 <Trash size={14} />
                                 {t('accounting.actions.delete')}
                               </DropdownMenuItem>

@@ -69,7 +69,9 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
   const { data: monthlyLeaves = [] } = useHrMonthlyLeavesQuery(year, month)
   const { data: hrSettings } = useHrSettingsQuery()
   const supplementTl = hrSettings?.supplement_tl ?? 4000
+  const supplementCurrency = hrSettings?.supplement_currency ?? 'TL'
   const insuredBankAmountTl = hrSettings?.insured_bank_amount_tl ?? 28075.50
+  const insuredBankCurrency = hrSettings?.insured_bank_currency ?? 'TL'
   const fullDayDivisor = hrSettings?.absence_full_day_divisor ?? 30
   const halfDayDivisor = hrSettings?.absence_half_day_divisor ?? 60
   const hourlyDivisor = hrSettings?.absence_hourly_divisor ?? 240
@@ -206,14 +208,18 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
         const hasSupp = !e.is_insured && e.receives_supplement
         const deduction = attendanceDeductionByEmp.get(e.id) ?? 0
         const leaveDeduction = unpaidLeaveDeductionByEmp.get(e.id) ?? 0
-        const bankDeposit = e.is_insured ? (insuredBankDepositByEmp.get(e.id) ?? 0) : 0
+        const cur = (e.salary_currency ?? 'TL') as 'TL' | 'USD'
+        const isAutoBank = e.is_insured && cur === insuredBankCurrency
+        // Use expected bank amount for auto-bank employees (not actual deposit)
+        const expectedBankAmount = isAutoBank ? (e.bank_salary_tl ?? insuredBankAmountTl) : 0
         return {
           employee_id: e.id,
           employee_name: e.full_name,
           amount_tl: e.salary_tl,
-          salary_currency: e.salary_currency ?? ('TL' as const),
+          salary_currency: cur,
           supplement_tl: hasSupp ? supplementTl : 0,
-          bank_deposit_tl: bankDeposit,
+          supplement_currency: supplementCurrency as 'TL' | 'USD',
+          bank_deposit_tl: expectedBankAmount,
           attendance_deduction_tl: deduction,
           unpaid_leave_deduction_tl: leaveDeduction,
           period: periodLabel,
@@ -231,7 +237,9 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
     attendanceDeductionByEmp,
     unpaidLeaveDeductionByEmp,
     supplementTl,
-    insuredBankDepositByEmp,
+    supplementCurrency,
+    insuredBankCurrency,
+    insuredBankAmountTl,
   ])
 
   const unpaidCount = bulkItems.length
@@ -349,9 +357,9 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
               )}
 
               {/* Bank deposit button — insured employees without deposit this period */}
-              {canManage && (() => {
+              {canManage && insuredBankAmountTl > 0 && (() => {
                 const insuredWithoutDeposit = activeEmployees.filter(
-                  (e) => e.is_insured && !insuredBankDepositByEmp.has(e.id) && !paidByEmp.has(e.id),
+                  (e) => e.is_insured && !insuredBankDepositByEmp.has(e.id),
                 )
                 return insuredWithoutDeposit.length > 0 ? (
                   <Button
@@ -362,6 +370,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                         state: {
                           employees: insuredWithoutDeposit,
                           insuredBankAmountTl,
+                          insuredBankCurrency,
                           periodLabel,
                           lang,
                         },
@@ -380,7 +389,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
               {canManage && unpaidCount > 0 && (
                 <Button
                   variant="filled"
-                  className={`${canManage && activeEmployees.some((e) => e.is_insured && !insuredBankDepositByEmp.has(e.id) && !paidByEmp.has(e.id)) ? '' : 'ml-auto'} w-full sm:w-auto`}
+                  className={`${canManage && insuredBankAmountTl > 0 && activeEmployees.some((e) => e.is_insured && !insuredBankDepositByEmp.has(e.id)) ? '' : 'ml-auto'} w-full sm:w-auto`}
                   onClick={() =>
                     navigate('/hr/salary-payout', {
                       state: { items: payoutItems, periodLabel, lang },
@@ -486,10 +495,11 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                         const deduction = attendanceDeductionByEmp.get(emp.id) ?? 0
                         const leaveDeduction = unpaidLeaveDeductionByEmp.get(emp.id) ?? 0
                         const bankDeposit = insuredBankDepositByEmp.get(emp.id) ?? 0
-                        const bankAmount = emp.is_insured
+                        const isAutoBank = emp.is_insured && cur === insuredBankCurrency
+                        const bankAmount = isAutoBank
                           ? (emp.bank_salary_tl ?? insuredBankAmountTl)
                           : 0
-                        const cashAmount = emp.is_insured
+                        const cashAmount = isAutoBank
                           ? Math.max(0, emp.salary_tl - bankAmount)
                           : 0
                         // Net salary in employee's currency (supplement excluded for USD employees)
@@ -538,7 +548,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
 
                             {/* Bank deposit */}
                             <TableCell data-label="Bank" className="text-right">
-                              {emp.is_insured ? (
+                              {emp.is_insured && isAutoBank ? (
                                 <div className="flex items-center justify-end gap-1">
                                   {bankDeposit > 0 && (
                                     <CheckCircle
@@ -550,9 +560,13 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                                   <span
                                     className={`tabular-nums text-sm font-medium ${bankDeposit > 0 ? 'text-green' : 'text-blue'}`}
                                   >
-                                    {fmtAmount(bankAmount, 'TL')}
+                                    {fmtAmount(bankAmount, insuredBankCurrency)}
                                   </span>
                                 </div>
+                              ) : emp.is_insured ? (
+                                <span className="text-xs text-orange/70">
+                                  {lang === 'tr' ? 'Elle' : 'Manual'}
+                                </span>
                               ) : (
                                 <span className="text-xs text-black/25">—</span>
                               )}
@@ -560,9 +574,9 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
 
                             {/* Cash amount */}
                             <TableCell data-label="Cash" className="text-right">
-                              {emp.is_insured ? (
+                              {emp.is_insured && isAutoBank ? (
                                 <span className="tabular-nums text-sm font-medium text-black/50">
-                                  {fmtAmount(cashAmount, 'TL')}
+                                  {fmtAmount(cashAmount, cur)}
                                 </span>
                               ) : (
                                 <span className="text-xs text-black/25">—</span>
@@ -573,7 +587,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                             <TableCell data-label="Supplement" className="text-right">
                               {supplement > 0 ? (
                                 <span className="tabular-nums text-sm font-medium text-orange">
-                                  +{fmtAmount(supplement, 'TL')}
+                                  +{fmtAmount(supplement, supplementCurrency)}
                                 </span>
                               ) : (
                                 <span className="text-xs text-black/25">—</span>
@@ -621,7 +635,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                                 </span>
                                 {hasMixedNet && (
                                   <span className="tabular-nums text-xs font-medium text-orange">
-                                    + {fmtAmount(supplement, 'TL')}
+                                    + {fmtAmount(supplement, supplementCurrency)}
                                   </span>
                                 )}
                               </div>
