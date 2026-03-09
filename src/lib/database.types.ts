@@ -647,6 +647,7 @@ export type Database = {
           is_insured: boolean
           notes: string | null
           organization_id: string
+          bank_salary_tl: number | null
           receives_supplement: boolean
           role: string
           salary_currency: string
@@ -654,6 +655,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          bank_salary_tl?: number | null
           created_at?: string
           created_by?: string | null
           email: string
@@ -671,6 +673,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          bank_salary_tl?: number | null
           created_at?: string
           created_by?: string | null
           email?: string
@@ -894,6 +897,7 @@ export type Database = {
           roles: Json
           standard_check_in: string
           standard_check_out: string
+          insured_bank_amount_tl: number
           supplement_tl: number
           timezone: string
           updated_at: string
@@ -906,6 +910,7 @@ export type Database = {
           daily_deduction_enabled?: boolean
           hourly_deduction_enabled?: boolean
           id?: string
+          insured_bank_amount_tl?: number
           organization_id: string
           roles?: Json
           standard_check_in?: string
@@ -922,6 +927,7 @@ export type Database = {
           daily_deduction_enabled?: boolean
           hourly_deduction_enabled?: boolean
           id?: string
+          insured_bank_amount_tl?: number
           organization_id?: string
           roles?: Json
           standard_check_in?: string

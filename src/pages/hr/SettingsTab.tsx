@@ -664,6 +664,53 @@ export function SettingsTab({ employees, canManage, lang }: SettingsTabProps) {
         </div>
       </div>
 
+      {/* ── Section 4: Sigortalı Banka Ödeme ── */}
+      <div className="space-y-sm">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-black/40">
+          {lang === 'tr' ? 'Sigortalı Banka Ödeme' : 'Insured Bank Deposit'}
+        </h3>
+        <div className="rounded-xl border border-black/[0.07] bg-bg1 p-4 space-y-md">
+          <div className="space-y-xs">
+            <Label className="text-xs text-black/50">
+              {lang === 'tr'
+                ? 'Aylık bankaya yatırılacak tutar (TL)'
+                : 'Monthly bank deposit amount (TL)'}
+            </Label>
+            {isEditing ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  className="w-40 text-sm"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={current.insured_bank_amount_tl}
+                  onChange={(e) =>
+                    setDraft({
+                      ...current,
+                      insured_bank_amount_tl: parseFloat(e.target.value) || 0,
+                    })
+                  }
+                />
+                <span className="text-sm text-black/40">TL</span>
+              </div>
+            ) : (
+              <p className="text-sm font-medium text-black/70">
+                {current.insured_bank_amount_tl.toLocaleString('tr-TR', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}{' '}
+                TL
+              </p>
+            )}
+            <p className="text-[11px] text-black/30">
+              {lang === 'tr'
+                ? 'Her ayın 5\'inde sigortalı çalışanların banka hesabına yatırılan asgari ücret tutarı'
+                : 'Minimum wage amount deposited to insured employees\' bank accounts on the 5th of each month'}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* ── Role delete confirm dialog ── */}
       <RoleDeleteDialog
         deleteRole={deleteRole}

@@ -27,6 +27,7 @@ export type HrEmployee = {
   salary_currency: 'TL' | 'USD'
   is_insured: boolean
   receives_supplement: boolean
+  bank_salary_tl: number | null
   is_active: boolean
   hire_date: string | null
   notes: string | null
@@ -56,6 +57,7 @@ export type HrEmployeeInsert = {
   salary_currency?: 'TL' | 'USD'
   is_insured?: boolean
   receives_supplement?: boolean
+  bank_salary_tl?: number | null
   is_active?: boolean
   hire_date?: string | null
   notes?: string | null
@@ -184,6 +186,7 @@ export const DEFAULT_RE_CONFIG: ReConfig = {
 export type HrSettings = {
   roles: string[]
   supplement_tl: number
+  insured_bank_amount_tl: number
   absence_full_day_divisor: number
   absence_half_day_divisor: number
   absence_hourly_divisor: number
@@ -208,6 +211,7 @@ export const DEFAULT_HR_SETTINGS: HrSettings = {
     'Sales',
   ],
   supplement_tl: 4000,
+  insured_bank_amount_tl: 28075.50,
   absence_full_day_divisor: 30,
   absence_half_day_divisor: 60,
   absence_hourly_divisor: 240,
@@ -1154,7 +1158,7 @@ export function countLeaveDaysInMonth(leave: HrLeave, year: number, month: numbe
 export type EmployeeAdvance = {
   id: string
   hr_employee_id: string
-  advance_type: 'salary' | 'bonus'
+  advance_type: 'salary' | 'bonus' | 'insured_salary'
   amount: number
   currency: string
   entry_date: string
@@ -1332,6 +1336,7 @@ export type BulkSalaryPayoutItem = {
   amount_tl: number
   salary_currency: 'TL' | 'USD'
   supplement_tl: number
+  bank_deposit_tl: number
   attendance_deduction_tl: number
   unpaid_leave_deduction_tl: number
   period: string
@@ -1382,7 +1387,10 @@ export function useBulkSalaryPayoutMutation() {
         period: item.period,
         amount_tl: Math.max(
           0,
-          item.amount_tl - item.attendance_deduction_tl - item.unpaid_leave_deduction_tl,
+          item.amount_tl -
+            item.attendance_deduction_tl -
+            item.unpaid_leave_deduction_tl -
+            (item.bank_deposit_tl ?? 0),
         ),
         salary_currency: item.salary_currency,
         paid_at: paidAt,
@@ -1412,7 +1420,10 @@ export function useBulkSalaryPayoutMutation() {
         direction: 'out' as const,
         amount: Math.max(
           0,
-          item.amount_tl - item.attendance_deduction_tl - item.unpaid_leave_deduction_tl,
+          item.amount_tl -
+            item.attendance_deduction_tl -
+            item.unpaid_leave_deduction_tl -
+            (item.bank_deposit_tl ?? 0),
         ),
         currency: item.salary_currency === 'USD' ? 'USD' : 'TL',
         entry_date: paidAt,
@@ -1453,6 +1464,53 @@ export function useBulkSalaryPayoutMutation() {
       // Invalidate all salary payment queries
       void queryClient.invalidateQueries({ queryKey: queryKeys.hr.salaryPaymentsPrefix(orgId) })
       void queryClient.invalidateQueries({ queryKey: queryKeys.hr.allSalaryPayments(orgId) })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.accounting.all })
+    },
+  })
+}
+
+/* ------------------------------------------------------------------ */
+/*  Bulk Bank Deposit Mutation (insured salary)                         */
+/* ------------------------------------------------------------------ */
+
+export type BulkBankDepositItem = {
+  employee_id: string
+  employee_name: string
+  amount_tl: number
+  period: string
+  description: string
+}
+
+export function useBulkBankDepositMutation() {
+  const { currentOrg } = useOrganization()
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+  const orgId = currentOrg?.id ?? ''
+
+  return useMutation({
+    mutationFn: async ({ items, paidAt }: { items: BulkBankDepositItem[]; paidAt: string }) => {
+      if (!orgId || !user) throw new Error('No organization selected')
+
+      const entriesPayload = items.map((item) => ({
+        organization_id: orgId,
+        description: item.description,
+        entry_type: 'ODEME' as const,
+        direction: 'out' as const,
+        amount: item.amount_tl,
+        currency: 'TL',
+        entry_date: paidAt,
+        payment_period: item.period,
+        register: 'NAKIT_TL',
+        advance_type: 'insured_salary',
+        hr_employee_id: item.employee_id,
+        created_by: user.id,
+      }))
+
+      const { error } = await supabase.from('accounting_entries').insert(entriesPayload)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.root })
       void queryClient.invalidateQueries({ queryKey: queryKeys.accounting.all })
     },
   })
@@ -1561,6 +1619,8 @@ export function useHrSettingsQuery() {
       return {
         roles: (data.roles ?? DEFAULT_HR_SETTINGS.roles) as string[],
         supplement_tl: Number(data.supplement_tl) || DEFAULT_HR_SETTINGS.supplement_tl,
+        insured_bank_amount_tl:
+          Number(data.insured_bank_amount_tl) || DEFAULT_HR_SETTINGS.insured_bank_amount_tl,
         absence_full_day_divisor:
           Number(data.absence_full_day_divisor) || DEFAULT_HR_SETTINGS.absence_full_day_divisor,
         absence_half_day_divisor:
@@ -1595,6 +1655,7 @@ export function useUpdateHrSettingsMutation() {
           organization_id: orgId,
           roles: settings.roles,
           supplement_tl: settings.supplement_tl,
+          insured_bank_amount_tl: settings.insured_bank_amount_tl,
           absence_full_day_divisor: settings.absence_full_day_divisor,
           absence_half_day_divisor: settings.absence_half_day_divisor,
           absence_hourly_divisor: settings.absence_hourly_divisor,

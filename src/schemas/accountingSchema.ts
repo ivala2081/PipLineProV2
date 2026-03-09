@@ -1,11 +1,11 @@
 import { z } from 'zod'
 
-export const DESCRIPTION_PRESETS = ['maas_avans', 'prim_avans', 'diger'] as const
+export const DESCRIPTION_PRESETS = ['maas_avans', 'prim_avans', 'sigortali_maas_avans', 'diger'] as const
 
 export type DescriptionPreset = (typeof DESCRIPTION_PRESETS)[number]
 
 export const entryFormSchema = z.object({
-  description_preset: z.enum(['maas_avans', 'prim_avans', 'diger']).default('diger'),
+  description_preset: z.enum(['maas_avans', 'prim_avans', 'sigortali_maas_avans', 'diger']).default('diger'),
   description: z.string().min(1, 'Description is required').trim(),
   entry_type: z.enum(['ODEME', 'TRANSFER']),
   direction: z.enum(['in', 'out']),
@@ -16,7 +16,7 @@ export const entryFormSchema = z.object({
   payment_period: z.string().optional(),
   register: z.enum(['USDT', 'NAKIT_TL', 'NAKIT_USD']),
   hr_employee_id: z.string().nullable().optional(),
-  advance_type: z.enum(['salary', 'bonus']).nullable().optional(),
+  advance_type: z.enum(['salary', 'bonus', 'insured_salary']).nullable().optional(),
 })
 
 export type EntryFormValues = z.infer<typeof entryFormSchema>

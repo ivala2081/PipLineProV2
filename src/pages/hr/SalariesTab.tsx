@@ -10,6 +10,7 @@ import {
   MagnifyingGlass,
   CaretLeft,
   CaretRight,
+  Bank,
 } from '@phosphor-icons/react'
 import {
   Button,
@@ -39,6 +40,7 @@ import {
   type BulkSalaryPayoutItem,
 } from '@/hooks/queries/useHrQuery'
 import { BulkSalaryConfirmDialog } from './BulkSalaryConfirmDialog'
+import { BulkBankDepositDialog } from './BulkBankDepositDialog'
 import { SalaryPaymentsTab } from './SalaryPaymentsTab'
 import { MONTH_NAMES_TR, MONTH_NAMES_EN, getRoleVariant } from './utils/hrConstants'
 import { isWeekendDate } from './utils/attendanceHelpers'
@@ -57,6 +59,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [bulkPayoutOpen, setBulkPayoutOpen] = useState(false)
+  const [bankDepositOpen, setBankDepositOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -68,6 +71,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
   const { data: monthlyLeaves = [] } = useHrMonthlyLeavesQuery(year, month)
   const { data: hrSettings } = useHrSettingsQuery()
   const supplementTl = hrSettings?.supplement_tl ?? 4000
+  const insuredBankAmountTl = hrSettings?.insured_bank_amount_tl ?? 28075.50
   const fullDayDivisor = hrSettings?.absence_full_day_divisor ?? 30
   const halfDayDivisor = hrSettings?.absence_half_day_divisor ?? 60
   const hourlyDivisor = hrSettings?.absence_hourly_divisor ?? 240
@@ -122,6 +126,17 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
     const map = new Map<string, number>()
     for (const a of advances) {
       if (a.advance_type === 'salary') {
+        map.set(a.hr_employee_id, (map.get(a.hr_employee_id) ?? 0) + a.amount)
+      }
+    }
+    return map
+  }, [advances])
+
+  /* Map of employee_id → insured bank deposit total for this period */
+  const insuredBankDepositByEmp = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const a of advances) {
+      if (a.advance_type === 'insured_salary') {
         map.set(a.hr_employee_id, (map.get(a.hr_employee_id) ?? 0) + a.amount)
       }
     }
@@ -193,12 +208,14 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
         const hasSupp = !e.is_insured && e.receives_supplement
         const deduction = attendanceDeductionByEmp.get(e.id) ?? 0
         const leaveDeduction = unpaidLeaveDeductionByEmp.get(e.id) ?? 0
+        const bankDeposit = e.is_insured ? (insuredBankDepositByEmp.get(e.id) ?? 0) : 0
         return {
           employee_id: e.id,
           employee_name: e.full_name,
           amount_tl: e.salary_tl,
           salary_currency: e.salary_currency ?? ('TL' as const),
           supplement_tl: hasSupp ? supplementTl : 0,
+          bank_deposit_tl: bankDeposit,
           attendance_deduction_tl: deduction,
           unpaid_leave_deduction_tl: leaveDeduction,
           period: periodLabel,
@@ -216,6 +233,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
     attendanceDeductionByEmp,
     unpaidLeaveDeductionByEmp,
     supplementTl,
+    insuredBankDepositByEmp,
   ])
 
   const unpaidCount = bulkItems.length
@@ -332,11 +350,30 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                 </div>
               )}
 
+              {/* Bank deposit button — insured employees without deposit this period */}
+              {canManage && (() => {
+                const insuredWithoutDeposit = activeEmployees.filter(
+                  (e) => e.is_insured && !insuredBankDepositByEmp.has(e.id) && !paidByEmp.has(e.id),
+                )
+                return insuredWithoutDeposit.length > 0 ? (
+                  <Button
+                    variant="outline"
+                    className="ml-auto w-full sm:w-auto"
+                    onClick={() => setBankDepositOpen(true)}
+                  >
+                    <Bank size={15} weight="fill" />
+                    {lang === 'tr'
+                      ? `Banka Ödemeleri (${insuredWithoutDeposit.length})`
+                      : `Bank Deposits (${insuredWithoutDeposit.length})`}
+                  </Button>
+                ) : null
+              })()}
+
               {/* Pay button — selected or all */}
               {canManage && unpaidCount > 0 && (
                 <Button
                   variant="filled"
-                  className="ml-auto w-full sm:w-auto"
+                  className={`${canManage && activeEmployees.some((e) => e.is_insured && !insuredBankDepositByEmp.has(e.id) && !paidByEmp.has(e.id)) ? '' : 'ml-auto'} w-full sm:w-auto`}
                   onClick={() => setBulkPayoutOpen(true)}
                 >
                   <CheckFat size={15} weight="fill" />
@@ -407,6 +444,12 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                           {lang === 'tr' ? 'Brüt Maaş' : 'Gross Salary'}
                         </TableHead>
                         <TableHead className="text-right">
+                          {lang === 'tr' ? 'Banka' : 'Bank'}
+                        </TableHead>
+                        <TableHead className="text-right">
+                          {lang === 'tr' ? 'Elden' : 'Cash'}
+                        </TableHead>
+                        <TableHead className="text-right">
                           {lang === 'tr' ? 'Sigorta Elden' : 'Supplement'}
                         </TableHead>
                         <TableHead className="text-right">
@@ -431,8 +474,16 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                           !emp.is_insured && emp.receives_supplement ? supplementTl : 0
                         const deduction = attendanceDeductionByEmp.get(emp.id) ?? 0
                         const leaveDeduction = unpaidLeaveDeductionByEmp.get(emp.id) ?? 0
+                        const bankDeposit = insuredBankDepositByEmp.get(emp.id) ?? 0
+                        const bankAmount = emp.is_insured
+                          ? (emp.bank_salary_tl ?? insuredBankAmountTl)
+                          : 0
+                        const cashAmount = emp.is_insured
+                          ? Math.max(0, emp.salary_tl - bankAmount)
+                          : 0
                         // Net salary in employee's currency (supplement excluded for USD employees)
-                        const netSalary = emp.salary_tl - advance - deduction - leaveDeduction
+                        const netSalary =
+                          emp.salary_tl - advance - deduction - leaveDeduction - bankDeposit
                         // For TL employees supplement is same currency, for USD it stays separate
                         const netTl = cur === 'TL' ? netSalary + supplement : netSalary
                         const hasMixedNet = cur === 'USD' && supplement > 0
@@ -472,6 +523,39 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                               <span className="tabular-nums text-sm font-medium text-black/70">
                                 {fmtAmount(emp.salary_tl, cur)}
                               </span>
+                            </TableCell>
+
+                            {/* Bank deposit */}
+                            <TableCell data-label="Bank" className="text-right">
+                              {emp.is_insured ? (
+                                <div className="flex items-center justify-end gap-1">
+                                  {bankDeposit > 0 && (
+                                    <CheckCircle
+                                      size={13}
+                                      weight="fill"
+                                      className="text-green"
+                                    />
+                                  )}
+                                  <span
+                                    className={`tabular-nums text-sm font-medium ${bankDeposit > 0 ? 'text-green' : 'text-blue'}`}
+                                  >
+                                    {fmtAmount(bankAmount, 'TL')}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-black/25">—</span>
+                              )}
+                            </TableCell>
+
+                            {/* Cash amount */}
+                            <TableCell data-label="Cash" className="text-right">
+                              {emp.is_insured ? (
+                                <span className="tabular-nums text-sm font-medium text-black/50">
+                                  {fmtAmount(cashAmount, 'TL')}
+                                </span>
+                              ) : (
+                                <span className="text-xs text-black/25">—</span>
+                              )}
                             </TableCell>
 
                             {/* Supplement */}
@@ -571,6 +655,21 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                 setSelectedIds(new Set())
               }}
               items={payoutItems}
+              periodLabel={periodLabel}
+              lang={lang}
+            />
+
+            {/* Bank deposit dialog */}
+            <BulkBankDepositDialog
+              open={bankDepositOpen}
+              onClose={() => setBankDepositOpen(false)}
+              employees={activeEmployees.filter(
+                (e) =>
+                  e.is_insured &&
+                  !insuredBankDepositByEmp.has(e.id) &&
+                  !paidByEmp.has(e.id),
+              )}
+              insuredBankAmountTl={insuredBankAmountTl}
               periodLabel={periodLabel}
               lang={lang}
             />

@@ -37,6 +37,8 @@ function buildEmployeeSchema(roles: string[]) {
     salary_currency: z.enum(['TL', 'USD']),
     is_insured: z.boolean(),
     receives_supplement: z.boolean(),
+    use_custom_bank_salary: z.boolean(),
+    bank_salary_tl: z.coerce.number().min(0).optional(),
     is_active: z.boolean(),
     hire_date: z.string().optional(),
     notes: z.string().optional(),
@@ -61,10 +63,12 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
   const lang = i18n.language === 'tr' ? 'tr' : 'en'
   const isEdit = !!employee
   const [salaryDisplay, setSalaryDisplay] = useState('')
+  const [bankSalaryDisplay, setBankSalaryDisplay] = useState('')
 
   const { createEmployee, updateEmployee } = useHrMutations()
   const { data: hrSettings } = useHrSettingsQuery()
   const settingsRoles = hrSettings?.roles ?? HR_EMPLOYEE_ROLES
+  const insuredBankAmountTl = hrSettings?.insured_bank_amount_tl ?? 28075.50
 
   const schema = useMemo(() => buildEmployeeSchema(settingsRoles), [settingsRoles])
 
@@ -78,6 +82,8 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
       salary_currency: 'TL' as const,
       is_insured: true,
       receives_supplement: false,
+      use_custom_bank_salary: false,
+      bank_salary_tl: 0,
       is_active: true,
       hire_date: '',
       notes: '',
@@ -87,6 +93,7 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
   useEffect(() => {
     if (open) {
       if (employee) {
+        const hasCustomBank = employee.bank_salary_tl !== null && employee.bank_salary_tl !== undefined
         form.reset({
           full_name: employee.full_name,
           email: employee.email,
@@ -95,11 +102,14 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
           salary_currency: employee.salary_currency ?? 'TL',
           is_insured: employee.is_insured ?? true,
           receives_supplement: employee.receives_supplement ?? false,
+          use_custom_bank_salary: hasCustomBank,
+          bank_salary_tl: employee.bank_salary_tl ?? 0,
           is_active: employee.is_active,
           hire_date: employee.hire_date ?? '',
           notes: employee.notes ?? '',
         })
         setSalaryDisplay(numberToDisplay(employee.salary_tl ?? 0, lang))
+        setBankSalaryDisplay(hasCustomBank ? numberToDisplay(employee.bank_salary_tl!, lang) : '')
       } else {
         form.reset({
           full_name: '',
@@ -109,11 +119,14 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
           salary_currency: 'TL' as const,
           is_insured: true,
           receives_supplement: false,
+          use_custom_bank_salary: false,
+          bank_salary_tl: 0,
           is_active: true,
           hire_date: '',
           notes: '',
         })
         setSalaryDisplay('')
+        setBankSalaryDisplay('')
       }
     }
   }, [open, employee, form, lang])
@@ -128,6 +141,8 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
         salary_currency: data.salary_currency,
         is_insured: data.is_insured,
         receives_supplement: data.is_insured ? false : data.receives_supplement,
+        bank_salary_tl:
+          data.is_insured && data.use_custom_bank_salary ? (data.bank_salary_tl ?? null) : null,
         is_active: data.is_active,
         hire_date: data.hire_date || null,
         notes: data.notes?.trim() || null,
@@ -391,6 +406,114 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
                   )}
                 </div>
               </div>
+
+              {/* ── Bank Salary Split (insured only) ── */}
+              {form.watch('is_insured') && (
+                <div className="sm:col-span-2 space-y-sm">
+                  <Label className="mb-1 text-xs font-medium tracking-wide text-black/70">
+                    {lang === 'tr' ? 'Banka Ödeme Tutarı' : 'Bank Deposit Amount'}
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        form.setValue('use_custom_bank_salary', false)
+                        form.setValue('bank_salary_tl', 0)
+                        setBankSalaryDisplay('')
+                      }}
+                      className={`rounded-lg border px-3 py-2 text-center transition-colors ${
+                        !form.watch('use_custom_bank_salary')
+                          ? 'border-brand/40 bg-brand/5 text-black'
+                          : 'border-black/[0.09] bg-bg1 text-black/70'
+                      }`}
+                    >
+                      <span className="text-xs font-medium">
+                        {lang === 'tr' ? 'Varsayılan' : 'Default'} (
+                        {insuredBankAmountTl.toLocaleString('tr-TR', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}{' '}
+                        TL)
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => form.setValue('use_custom_bank_salary', true)}
+                      className={`rounded-lg border px-3 py-2 text-center transition-colors ${
+                        form.watch('use_custom_bank_salary')
+                          ? 'border-brand/40 bg-brand/5 text-black'
+                          : 'border-black/[0.09] bg-bg1 text-black/70'
+                      }`}
+                    >
+                      <span className="text-xs font-medium">
+                        {lang === 'tr' ? 'Özel Tutar' : 'Custom Amount'}
+                      </span>
+                    </button>
+                  </div>
+
+                  {form.watch('use_custom_bank_salary') && (
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      value={bankSalaryDisplay}
+                      onChange={(e) => {
+                        const formatted = formatAmount(e.target.value, lang)
+                        setBankSalaryDisplay(formatted)
+                        form.setValue('bank_salary_tl', parseAmount(formatted, lang), {
+                          shouldValidate: true,
+                        })
+                      }}
+                      placeholder={amountPlaceholder(lang)}
+                    />
+                  )}
+
+                  {/* Split summary */}
+                  {form.watch('salary_tl') > 0 && (
+                    <div className="flex items-center gap-3 rounded-lg border border-blue/20 bg-blue/5 px-3 py-2">
+                      <div className="flex-1 text-center">
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-blue/60">
+                          {lang === 'tr' ? 'Banka' : 'Bank'}
+                        </p>
+                        <p className="text-sm font-bold tabular-nums text-blue">
+                          {(form.watch('use_custom_bank_salary')
+                            ? form.watch('bank_salary_tl') ?? 0
+                            : insuredBankAmountTl
+                          ).toLocaleString('tr-TR', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}{' '}
+                          TL
+                        </p>
+                      </div>
+                      <span className="text-black/20">|</span>
+                      <div className="flex-1 text-center">
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-green/60">
+                          {lang === 'tr' ? 'Elden' : 'Cash'}
+                        </p>
+                        <p className="text-sm font-bold tabular-nums text-green">
+                          {Math.max(
+                            0,
+                            form.watch('salary_tl') -
+                              (form.watch('use_custom_bank_salary')
+                                ? form.watch('bank_salary_tl') ?? 0
+                                : insuredBankAmountTl),
+                          ).toLocaleString('tr-TR', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}{' '}
+                          TL
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="text-[11px] text-black/30">
+                    {lang === 'tr'
+                      ? 'Her ayın 5\'inde bankaya yatırılacak tutar. Kalan kısım elden ödenecek.'
+                      : 'Amount to be deposited to bank on the 5th. The rest is paid as cash.'}
+                  </p>
+                </div>
+              )}
             </div>
 
             <div>

@@ -45,6 +45,7 @@ export function BulkSalaryConfirmDialog({
   const totalSalaryTl = tlItems.reduce((s, i) => s + i.amount_tl, 0)
   const totalSalaryUsd = usdItems.reduce((s, i) => s + i.amount_tl, 0)
   const totalSupplement = eligibleItems.reduce((s, i) => s + (i.supplement_tl ?? 0), 0)
+  const totalBankDeposit = eligibleItems.reduce((s, i) => s + (i.bank_deposit_tl ?? 0), 0)
   const hasMixed = totalSalaryTl > 0 && totalSalaryUsd > 0
   const hasItems = eligibleItems.length > 0
 
@@ -116,6 +117,9 @@ export function BulkSalaryConfirmDialog({
                         {lang === 'tr' ? 'Sigorta Elden Ödeme' : 'Insurance Supplement'}
                       </TableHead>
                       <TableHead className="text-right">
+                        {lang === 'tr' ? 'Banka Ödeme' : 'Bank Deposit'}
+                      </TableHead>
+                      <TableHead className="text-right">
                         {lang === 'tr' ? 'Devam Kesintisi' : 'Absence Ded.'}
                       </TableHead>
                       <TableHead className="text-right">
@@ -159,6 +163,18 @@ export function BulkSalaryConfirmDialog({
                           )}
                         </TableCell>
                         <TableCell
+                          data-label={lang === 'tr' ? 'Banka Ödeme' : 'Bank Deposit'}
+                          className="text-right"
+                        >
+                          {(item.bank_deposit_tl ?? 0) > 0 ? (
+                            <span className="tabular-nums text-sm font-semibold text-blue">
+                              -{fmtAmount(item.bank_deposit_tl, 'TL')}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-black/25">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell
                           data-label={lang === 'tr' ? 'Devam Kesintisi' : 'Absence Ded.'}
                           className="text-right"
                         >
@@ -195,7 +211,7 @@ export function BulkSalaryConfirmDialog({
                     {/* Total row */}
                     <TableRow className="bg-black/[0.02]">
                       <TableCell
-                        colSpan={5}
+                        colSpan={6}
                         className="text-right text-xs font-semibold text-black/50"
                       >
                         {lang === 'tr' ? 'Toplam' : 'Total'}
@@ -207,6 +223,7 @@ export function BulkSalaryConfirmDialog({
                               {fmtAmount(
                                 totalSalaryTl +
                                   totalSupplement -
+                                  totalBankDeposit -
                                   tlItems.reduce(
                                     (s, i) =>
                                       s +

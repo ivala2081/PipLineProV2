@@ -81,6 +81,7 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
         let preset: EntryFormValues['description_preset'] = 'diger'
         if (entry.advance_type === 'salary') preset = 'maas_avans'
         else if (entry.advance_type === 'bonus') preset = 'prim_avans'
+        else if (entry.advance_type === 'insured_salary') preset = 'sigortali_maas_avans'
 
         reset({
           description_preset: preset,
@@ -120,7 +121,10 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
   // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch is intentional
   const direction = watch('direction')
   const descriptionPreset = watch('description_preset')
-  const isAdvance = descriptionPreset === 'maas_avans' || descriptionPreset === 'prim_avans'
+  const isAdvance =
+    descriptionPreset === 'maas_avans' ||
+    descriptionPreset === 'prim_avans' ||
+    descriptionPreset === 'sigortali_maas_avans'
 
   // When preset changes, sync advance_type and description
   const handlePresetChange = (val: EntryFormValues['description_preset']) => {
@@ -131,6 +135,9 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
     } else if (val === 'prim_avans') {
       setValue('advance_type', 'bonus')
       setValue('description', 'Prim Avans Ödemesi')
+    } else if (val === 'sigortali_maas_avans') {
+      setValue('advance_type', 'insured_salary')
+      setValue('description', 'Sigortalı Maaş Avans Ödeme')
     } else {
       setValue('advance_type', null)
       setValue('hr_employee_id', null)
@@ -165,6 +172,7 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
               <SelectContent>
                 <SelectItem value="maas_avans">Maaş Avans Ödemesi</SelectItem>
                 <SelectItem value="prim_avans">Prim Avans Ödemesi</SelectItem>
+                <SelectItem value="sigortali_maas_avans">Sigortalı Maaş Avans Ödeme</SelectItem>
                 <SelectItem value="diger">{t('accounting.form.descriptionOther')}</SelectItem>
               </SelectContent>
             </Select>
@@ -196,7 +204,11 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
                   </SelectTrigger>
                   <SelectContent>
                     {employees
-                      .filter((e) => e.is_active)
+                      .filter(
+                        (e) =>
+                          e.is_active &&
+                          (descriptionPreset !== 'sigortali_maas_avans' || e.is_insured),
+                      )
                       .map((emp) => (
                         <SelectItem key={emp.id} value={emp.id}>
                           {emp.full_name}
