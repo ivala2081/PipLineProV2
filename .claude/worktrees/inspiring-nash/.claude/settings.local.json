@@ -1,7 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git -C \"C:/Users/PC/Desktop/Projeler/PipLineProV2\" worktree prune)"
+      "Bash(git -C \"C:/Users/PC/Desktop/Projeler/PipLineProV2\" branch -D claude/angry-feistel claude/distracted-heyrovsky)",
+      "Bash(git -C \"C:/Users/PC/Desktop/Projeler/PipLineProV2\" branch -a)",
+      "Bash(git -C \"C:/Users/PC/Desktop/Projeler/PipLineProV2\" --work-tree=\"C:/Users/PC/Desktop/Projeler/PipLineProV2\" status --short)",
+      "Bash(git -C \"C:/Users/PC/Desktop/Projeler/PipLineProV2\" diff --stat)",
+      "Bash(GIT_DIR=\"C:/Users/PC/Desktop/Projeler/PipLineProV2/.git\" GIT_WORK_TREE=\"C:/Users/PC/Desktop/Projeler/PipLineProV2\" git status --short)",
+      "Bash(GIT_DIR=\"C:/Users/PC/Desktop/Projeler/PipLineProV2/.git\" GIT_WORK_TREE=\"C:/Users/PC/Desktop/Projeler/PipLineProV2\" git status --short -- src/)",
+      "Bash(GIT_DIR=\"C:/Users/PC/Desktop/Projeler/PipLineProV2/.git\" GIT_WORK_TREE=\"C:/Users/PC/Desktop/Projeler/PipLineProV2\" git diff --stat HEAD -- src/app/App.tsx src/pages/hr/SalariesTab.tsx src/pages/hr/bonuses/ src/pages/hr/payments/)",
+      "Bash(GIT_DIR=\"C:/Users/PC/Desktop/Projeler/PipLineProV2/.git\" GIT_WORK_TREE=\"C:/Users/PC/Desktop/Projeler/PipLineProV2\" git diff HEAD -- src/app/App.tsx)"
     ]
   }
 }
