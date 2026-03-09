@@ -8,7 +8,8 @@
       "Bash(GIT_DIR=\"C:/Users/PC/Desktop/Projeler/PipLineProV2/.git\" GIT_WORK_TREE=\"C:/Users/PC/Desktop/Projeler/PipLineProV2\" git status --short)",
       "Bash(GIT_DIR=\"C:/Users/PC/Desktop/Projeler/PipLineProV2/.git\" GIT_WORK_TREE=\"C:/Users/PC/Desktop/Projeler/PipLineProV2\" git status --short -- src/)",
       "Bash(GIT_DIR=\"C:/Users/PC/Desktop/Projeler/PipLineProV2/.git\" GIT_WORK_TREE=\"C:/Users/PC/Desktop/Projeler/PipLineProV2\" git diff --stat HEAD -- src/app/App.tsx src/pages/hr/SalariesTab.tsx src/pages/hr/bonuses/ src/pages/hr/payments/)",
-      "Bash(GIT_DIR=\"C:/Users/PC/Desktop/Projeler/PipLineProV2/.git\" GIT_WORK_TREE=\"C:/Users/PC/Desktop/Projeler/PipLineProV2\" git diff HEAD -- src/app/App.tsx)"
+      "Bash(GIT_DIR=\"C:/Users/PC/Desktop/Projeler/PipLineProV2/.git\" GIT_WORK_TREE=\"C:/Users/PC/Desktop/Projeler/PipLineProV2\" git diff HEAD -- src/app/App.tsx)",
+      "Bash(GIT_DIR=\"C:/Users/PC/Desktop/Projeler/PipLineProV2/.git\" GIT_WORK_TREE=\"C:/Users/PC/Desktop/Projeler/PipLineProV2\" git add src/app/App.tsx src/pages/hr/SalariesTab.tsx src/pages/hr/bonuses/AutoBonusTab.tsx src/pages/hr/bonuses/index.tsx src/pages/hr/payments/)"
     ]
   }
 }
