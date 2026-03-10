@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Plus, UploadSimple } from '@phosphor-icons/react'
+import { Plus, UploadSimple, DownloadSimple } from '@phosphor-icons/react'
 import { useQuery } from '@tanstack/react-query'
 import { useLookupQueries } from '@/hooks/queries/useLookupQueries'
 import { useTransfersQuery } from '@/hooks/queries/useTransfersQuery'
@@ -16,6 +16,7 @@ import { DeleteConfirmDialog } from './DeleteConfirmDialog'
 import { LookupSettings } from './LookupSettings'
 import { MonthlyTab } from './MonthlyTab'
 import { CsvImportDialog } from './CsvImportDialog'
+import { ExcelExportDialog } from './ExcelExportDialog'
 
 export function TransfersPage() {
   const { t } = useTranslation('pages')
@@ -44,6 +45,7 @@ export function TransfersPage() {
 
   const [deleteTarget, setDeleteTarget] = useState<TransferRow | null>(null)
   const [importOpen, setImportOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
 
   const handleAdd = () => navigate('/transfers/new')
 
@@ -92,6 +94,10 @@ export function TransfersPage() {
         subtitle={t('transfers.subtitle')}
         actions={
           <>
+            <Button variant="outline" onClick={() => setExportOpen(true)}>
+              <DownloadSimple size={16} weight="bold" />
+              {t('transfers.exportExcel', 'Excel Dışa Aktar')}
+            </Button>
             <Button variant="outline" onClick={() => setImportOpen(true)}>
               <UploadSimple size={16} weight="bold" />
               {t('transfers.importCsv')}
@@ -118,6 +124,8 @@ export function TransfersPage() {
           <LookupSettings lookupData={lookupData} />
         </TabsContent>
       </Tabs>
+
+      <ExcelExportDialog open={exportOpen} onClose={() => setExportOpen(false)} />
 
       <CsvImportDialog
         open={importOpen}

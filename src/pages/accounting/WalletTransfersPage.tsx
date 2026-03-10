@@ -9,12 +9,15 @@ import {
   CaretRight,
   List,
   CalendarBlank,
+  DownloadSimple,
+  EyeSlash,
 } from '@phosphor-icons/react'
 import { useWalletsQuery } from '@/hooks/queries/useWalletsQuery'
 import { useWalletTransfersQuery } from '@/hooks/queries/useWalletTransfersQuery'
 import { useWalletBalanceQuery } from '@/hooks/queries/useWalletBalanceQuery'
-import { WalletTransfersTable } from './WalletTransfersTable'
+import { WalletTransfersTable, isKnownToken } from './WalletTransfersTable'
 import { WalletDailyClosing } from './WalletDailyClosing'
+import { WalletExcelExportDialog } from './WalletExcelExportDialog'
 import { Button, Tag, Skeleton } from '@ds'
 import type { Wallet } from '@/lib/database.types'
 
@@ -68,6 +71,8 @@ export function WalletTransfersPage() {
   const [view, setView] = useState<'transfers' | 'daily'>('transfers')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
+  const [exportOpen, setExportOpen] = useState(false)
+  const [hideFakeTokens, setHideFakeTokens] = useState(true)
 
   // When in daily view, auto-fetch all pages so we have complete data
   useEffect(() => {
@@ -77,10 +82,15 @@ export function WalletTransfersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- txQuery object identity changes; we only care about hasMore, isLoading, loadMore
   }, [view, txQuery.hasMore, txQuery.isLoading])
 
-  const totalLoaded = txQuery.transfers.length
+  const filteredTransfers = useMemo(() => {
+    if (!hideFakeTokens || !wallet) return txQuery.transfers
+    return txQuery.transfers.filter((tx) => isKnownToken(wallet.chain, tx.tokenAddress))
+  }, [txQuery.transfers, hideFakeTokens, wallet])
+
+  const totalLoaded = filteredTransfers.length
   const start = (currentPage - 1) * pageSize
   const end = start + pageSize
-  const pageTxs = txQuery.transfers.slice(start, end)
+  const pageTxs = filteredTransfers.slice(start, end)
 
   // Known page count so far (may grow as more data is fetched)
   const loadedPages = Math.ceil(totalLoaded / pageSize) || 1
@@ -166,15 +176,39 @@ export function WalletTransfersPage() {
             </button>
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="gap-1 text-xs"
-          onClick={() => txQuery.refetch()}
-        >
-          <ArrowsClockwise size={14} />
-          {t('accounting.wallets.refresh')}
-        </Button>
+        <div className="flex items-center gap-xs">
+          <Button
+            variant={hideFakeTokens ? 'filled' : 'ghost'}
+            size="sm"
+            className="gap-1 text-xs"
+            onClick={() => {
+              setHideFakeTokens((v) => !v)
+              setCurrentPage(1)
+            }}
+          >
+            <EyeSlash size={14} />
+            {t('accounting.transfers.hideFakeTokens', 'Sahte Token Gizle')}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1 text-xs"
+            onClick={() => setExportOpen(true)}
+            disabled={txQuery.isLoading && txQuery.transfers.length === 0}
+          >
+            <DownloadSimple size={14} />
+            Excel
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1 text-xs"
+            onClick={() => txQuery.refetch()}
+          >
+            <ArrowsClockwise size={14} />
+            {t('accounting.wallets.refresh')}
+          </Button>
+        </div>
       </div>
 
       {/* View toggle + info bar */}
@@ -345,6 +379,21 @@ export function WalletTransfersPage() {
           currentBalances={currentBalances}
         />
       )}
+
+      {/* Excel Export Dialog */}
+      <WalletExcelExportDialog
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        transfers={txQuery.transfers}
+        currentBalances={currentBalances}
+        walletLabel={wallet.label}
+        walletAddress={wallet.address}
+        chain={wallet.chain}
+        hasMore={txQuery.hasMore}
+        isFetching={txQuery.isLoading}
+        loadMore={txQuery.loadMore}
+        defaultHideFakeTokens={hideFakeTokens}
+      />
     </div>
   )
 }

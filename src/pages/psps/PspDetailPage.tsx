@@ -19,6 +19,8 @@ import {
   ArrowsDownUp as SortIcon,
   SpinnerGap,
   CaretDown,
+  CaretLeft,
+  CaretRight,
 } from '@phosphor-icons/react'
 import {
   Button,
@@ -46,7 +48,6 @@ import {
   Input,
   DatePickerField,
   Label,
-  DatePicker,
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
@@ -931,6 +932,25 @@ function SettingsTab({
     }
   }
 
+  // Initial balance
+  const [initialBalanceInput, setInitialBalanceInput] = useState('')
+  const [balanceSaving, setBalanceSaving] = useState(false)
+
+  const handleInitialBalanceSave = async () => {
+    const parsed = parseFloat(initialBalanceInput.replace(/[.,]/g, (m) => (m === ',' ? '.' : '')))
+    if (isNaN(parsed)) return
+    setBalanceSaving(true)
+    try {
+      await pspMutation.updateItem(pspId, { initial_balance: parsed })
+      toast({ title: t('transfers.toast.lookupUpdated'), variant: 'success' })
+      setInitialBalanceInput('')
+    } catch (error) {
+      toast({ title: (error as Error).message || t('transfers.toast.error'), variant: 'error' })
+    } finally {
+      setBalanceSaving(false)
+    }
+  }
+
   // Simple rate update
   const [newRate, setNewRate] = useState('')
   const [ratePinOpen, setRatePinOpen] = useState(false)
@@ -1162,6 +1182,43 @@ function SettingsTab({
               </Button>
             </div>
           )}
+        </div>
+      </Card>
+
+      {/* Initial Balance */}
+      <Card padding="spacious" className="border border-black/5 bg-bg1">
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-sm font-semibold">{t('psps.settings.initialBalance')}</h3>
+            <p className="mt-1 text-xs text-black/40">{t('psps.settings.initialBalanceDesc')}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 rounded-lg bg-black/[0.03] px-3 py-2">
+              <span className="text-xs text-black/50">{t('psps.settings.current')}</span>
+              <span className="font-mono text-sm font-semibold tabular-nums">
+                {Number(currentPsp?.initial_balance ?? 0).toLocaleString('tr-TR')}
+              </span>
+            </div>
+            <Separator orientation="vertical" className="h-8" />
+            <div className="flex items-center gap-2">
+              <Input
+                type="text"
+                placeholder="0"
+                value={initialBalanceInput}
+                onChange={(e) => setInitialBalanceInput(e.target.value)}
+                className="w-32"
+                inputSize="sm"
+              />
+              <Button
+                size="sm"
+                onClick={handleInitialBalanceSave}
+                disabled={balanceSaving || !initialBalanceInput}
+              >
+                {balanceSaving ? <SpinnerGap size={14} className="animate-spin" /> : null}
+                {t('psps.settings.updateRate')}
+              </Button>
+            </div>
+          </div>
         </div>
       </Card>
 
@@ -1445,8 +1502,17 @@ export function PspDetailPage() {
   const navigate = useNavigate()
   const { t } = useTranslation('pages')
   const [activeTab, setActiveTab] = useState('ledger')
-  const [ledgerDateFrom, setLedgerDateFrom] = useState<string | null>(null)
-  const [ledgerDateTo, setLedgerDateTo] = useState<string | null>(null)
+
+  // Month-based ledger navigation – default to current month
+  const now = new Date()
+  const [ledgerMonth, setLedgerMonth] = useState(now.getMonth()) // 0-based
+  const [ledgerYear, setLedgerYear] = useState(now.getFullYear())
+
+  const ledgerDateFrom = `${ledgerYear}-${String(ledgerMonth + 1).padStart(2, '0')}-01`
+  const ledgerDateTo = (() => {
+    const lastDay = new Date(ledgerYear, ledgerMonth + 1, 0).getDate()
+    return `${ledgerYear}-${String(ledgerMonth + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+  })()
   const [ledgerSortBy, setLedgerSortBy] = useState<PspLedgerSortKey>('date')
   const [ledgerSortDir, setLedgerSortDir] = useState<'asc' | 'desc'>('desc')
   const { locale } = useLocale()
@@ -1692,14 +1758,43 @@ export function PspDetailPage() {
           <div className="flex items-center gap-2">
             {activeTab === 'ledger' && psp && (
               <>
-                <DatePicker
-                  dateFrom={ledgerDateFrom}
-                  dateTo={ledgerDateTo}
-                  onChange={(from, to) => {
-                    setLedgerDateFrom(from)
-                    setLedgerDateTo(to)
-                  }}
-                />
+                {/* Month navigator */}
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    className="flex size-8 items-center justify-center rounded-lg border border-black/10 bg-bg1 transition-colors hover:border-black/20 hover:bg-black/[0.02]"
+                    onClick={() => {
+                      if (ledgerMonth === 0) {
+                        setLedgerMonth(11)
+                        setLedgerYear((y) => y - 1)
+                      } else {
+                        setLedgerMonth((m) => m - 1)
+                      }
+                    }}
+                  >
+                    <CaretLeft size={14} className="text-black/50" />
+                  </button>
+                  <span className="min-w-[9rem] text-center text-xs font-medium capitalize">
+                    {new Date(ledgerYear, ledgerMonth).toLocaleDateString(
+                      locale === 'tr' ? 'tr-TR' : 'en-US',
+                      { month: 'long', year: 'numeric' },
+                    )}
+                  </span>
+                  <button
+                    type="button"
+                    className="flex size-8 items-center justify-center rounded-lg border border-black/10 bg-bg1 transition-colors hover:border-black/20 hover:bg-black/[0.02]"
+                    onClick={() => {
+                      if (ledgerMonth === 11) {
+                        setLedgerMonth(0)
+                        setLedgerYear((y) => y + 1)
+                      } else {
+                        setLedgerMonth((m) => m + 1)
+                      }
+                    }}
+                  >
+                    <CaretRight size={14} className="text-black/50" />
+                  </button>
+                </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button

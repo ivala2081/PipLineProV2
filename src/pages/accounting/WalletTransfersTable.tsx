@@ -13,6 +13,34 @@ import {
   Button,
 } from '@ds'
 
+/* ── Known legitimate token contracts (lowercase) ── */
+const KNOWN_TOKENS: Record<string, Record<string, string>> = {
+  bsc: {
+    '0x55d398326f99059ff775485246999027b3197955': 'USDT',
+    '0xe9e7cea3dedca5984780bafc599bd69add087d56': 'BUSD',
+    '0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d': 'USDC',
+    '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c': 'WBNB',
+    '0x2170ed0880ac9a755fd29b2688956bd959f933f8': 'ETH',
+    '0x1af3f329e8be154074d8769d1ffa4ee058b1dbc3': 'DAI',
+  },
+  ethereum: {
+    '0xdac17f958d2ee523a2206206994597c13d831ec7': 'USDT',
+    '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48': 'USDC',
+    '0x6b175474e89094c44da98b954eedeac495271d0f': 'DAI',
+  },
+  tron: {
+    'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t': 'USDT',
+    'TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8': 'USDC',
+  },
+}
+
+export function isKnownToken(chain: string, tokenAddress?: string): boolean {
+  if (!tokenAddress) return true // native transfers are fine
+  const map = KNOWN_TOKENS[chain]
+  if (!map) return true // no known-token list for this chain → don't flag
+  return !!map[tokenAddress] || !!map[tokenAddress.toLowerCase()]
+}
+
 function truncateHash(hash: string): string {
   if (!hash || hash.length <= 16) return hash
   return `${hash.slice(0, 8)}…${hash.slice(-5)}`
@@ -202,14 +230,25 @@ export function WalletTransfersTable({
 
                   {/* Token */}
                   <TableCell className="px-3 py-2" data-label={t('accounting.transactions.token')}>
-                    <div className="flex flex-col">
-                      <span className="text-xs font-semibold text-black/70">{tx.symbol}</span>
-                      {tx.tokenAddress && (
-                        <span className="font-mono text-[10px] text-black/25">
+                    {tx.tokenAddress && !isKnownToken(chain, tx.tokenAddress) ? (
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-semibold text-black/30">
+                          {i18n.language === 'tr' ? 'Bilinmeyen / Sahte Token' : 'Unknown / Fake Token'}
+                        </span>
+                        <span className="font-mono text-[10px] text-black/15">
                           {truncateAddr(tx.tokenAddress)}
                         </span>
-                      )}
-                    </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col">
+                        <span className="text-xs font-semibold text-black/70">{tx.symbol}</span>
+                        {tx.tokenAddress && (
+                          <span className="font-mono text-[10px] text-black/25">
+                            {truncateAddr(tx.tokenAddress)}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
               )

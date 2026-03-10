@@ -150,6 +150,16 @@
     "subtitle": "Finansal transfer ve işlemleri yönetin.",
     "addTransfer": "Transfer Ekle",
     "importCsv": "CSV İçe Aktar",
+    "exportExcel": "Excel Dışa Aktar",
+    "export": {
+      "title": "Excel Dışa Aktarma",
+      "subtitle": "Seçilen tarih aralığındaki transferleri Excel dosyasına aktarın.",
+      "selectDateRange": "Tarih Aralığı",
+      "exporting": "Dışa aktarılıyor...",
+      "fetchingTransfers": "Transferler getiriliyor ({{count}})...",
+      "noData": "Seçilen tarih aralığında transfer bulunamadı.",
+      "export": "Dışa Aktar"
+    },
     "editTransfer": "Transfer Düzenle",
     "tabs": {
       "transfers": "Transferler",
@@ -1116,6 +1126,8 @@
       "receivingMethods": "Alım Yöntemleri",
       "receivingMethodsDesc": "Bu kasanın transfer formunda hangi ödeme yöntemlerinde görüneceğini belirleyin. Boş bırakırsanız tüm yöntemler için gösterilir.",
       "receivingMethodsSave": "Kaydet",
+      "initialBalance": "Başlangıç Bakiyesi (Devir)",
+      "initialBalanceDesc": "Hesap defterinde ilk günün devir bakiyesi. Sistem öncesi döneme ait kalan bakiye varsa buraya girin.",
       "dangerZone": "Tehlikeli Bölge",
       "dangerZoneDesc": "Geri alınamayan kalıcı işlemler.",
       "deletePsp": "Kasayı Sil"

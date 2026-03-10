@@ -1573,6 +1573,7 @@ export type Database = {
           created_at: string
           currency: string
           id: string
+          initial_balance: number
           is_active: boolean
           is_internal: boolean
           name: string
@@ -1588,6 +1589,7 @@ export type Database = {
           created_at?: string
           currency?: string
           id?: string
+          initial_balance?: number
           is_active?: boolean
           is_internal?: boolean
           name: string
@@ -1603,6 +1605,7 @@ export type Database = {
           created_at?: string
           currency?: string
           id?: string
+          initial_balance?: number
           is_active?: boolean
           is_internal?: boolean
           name?: string

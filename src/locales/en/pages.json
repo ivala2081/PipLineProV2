@@ -150,6 +150,16 @@
     "subtitle": "Manage financial transfers and transactions.",
     "addTransfer": "Add Transfer",
     "importCsv": "Import CSV",
+    "exportExcel": "Export Excel",
+    "export": {
+      "title": "Excel Export",
+      "subtitle": "Export transfers for the selected date range to an Excel file.",
+      "selectDateRange": "Date Range",
+      "exporting": "Exporting...",
+      "fetchingTransfers": "Fetching transfers ({{count}})...",
+      "noData": "No transfers found for the selected date range.",
+      "export": "Export"
+    },
     "editTransfer": "Edit Transfer",
     "tabs": {
       "transfers": "Transfers",
@@ -1116,6 +1126,8 @@
       "receivingMethods": "Receiving Methods",
       "receivingMethodsDesc": "Filter which payment methods show this PSP in the transfer form. Leave empty to show for all.",
       "receivingMethodsSave": "Save",
+      "initialBalance": "Initial Balance (Carry-over)",
+      "initialBalanceDesc": "The opening carry-over balance for the first day of the ledger. Enter any balance remaining from before the system started tracking.",
       "dangerZone": "Danger Zone",
       "dangerZoneDesc": "Permanent actions that cannot be undone.",
       "deletePsp": "Delete PSP"

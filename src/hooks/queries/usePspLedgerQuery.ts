@@ -30,16 +30,24 @@ export function usePspLedgerQuery(pspId: string | undefined): UsePspLedgerReturn
     queryFn: async () => {
       if (!currentOrg || !pspId) throw new Error('Missing context')
 
-      // Use server-side RPC (SECURITY DEFINER) — same approach as get_psp_summary.
-      // This avoids PostgREST client-side join issues with transfer_categories.
-      const { data: rows, error: rpcErr } = await supabase.rpc('get_psp_ledger', {
-        _psp_id: pspId,
-        _org_id: currentOrg.id,
-      })
+      // Fetch initial_balance and ledger data in parallel
+      const [pspRes, ledgerRes] = await Promise.all([
+        supabase
+          .from('psps')
+          .select('initial_balance')
+          .eq('id', pspId)
+          .single(),
+        supabase.rpc('get_psp_ledger', {
+          _psp_id: pspId,
+          _org_id: currentOrg.id,
+        }),
+      ])
 
-      if (rpcErr) throw rpcErr
+      if (ledgerRes.error) throw ledgerRes.error
 
-      const rawRows = (rows ?? []) as Array<{
+      const initialBalance = Number(pspRes.data?.initial_balance ?? 0)
+
+      const rawRows = (ledgerRes.data ?? []) as Array<{
         day: string
         total_deposits: number
         total_withdrawals: number
@@ -54,7 +62,7 @@ export function usePspLedgerQuery(pspId: string | undefined): UsePspLedgerReturn
       //   DEVİR    = carry-over from previous day (prev kasaTop - prev settlement)
       //   KASA TOP = devir + net
       //   next devir = kasaTop - settlement
-      let carryOver = 0
+      let carryOver = initialBalance
       return rawRows.map((r): PspLedgerRow => {
         const deposit = Number(r.total_deposits)
         const withdrawal = Number(r.total_withdrawals)
