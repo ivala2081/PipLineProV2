@@ -7,12 +7,13 @@ import { queryKeys } from '@/lib/queryKeys'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import type { TransferRow } from '@/hooks/useTransfers'
 import { useLookupQueries } from '@/hooks/queries/useLookupQueries'
-import { useTransfersQuery } from '@/hooks/queries/useTransfersQuery'
+import { useTransferMutations } from '@/hooks/queries/useTransfersQuery'
+import { useHrEmployeesQuery } from '@/hooks/queries/useHrQuery'
 import { PageHeader } from '@ds'
 import { TransferFormContent } from './TransferFormContent'
 
 const SELECT_QUERY =
-  '*, category:transfer_categories!category_id(name, is_deposit), payment_method:payment_methods!payment_method_id(name), psp:psps!psp_id(name, commission_rate), type:transfer_types!type_id(name)'
+  '*, category:transfer_categories!category_id(name, is_deposit), payment_method:payment_methods!payment_method_id(name), psp:psps!psp_id(name, commission_rate), type:transfer_types!type_id(name), employee:hr_employees!employee_id(full_name, role)'
 
 export function EditTransferPage() {
   const { t } = useTranslation('pages')
@@ -20,7 +21,8 @@ export function EditTransferPage() {
   const navigate = useNavigate()
   const { currentOrg } = useOrganization()
   const lookupData = useLookupQueries()
-  const transfers = useTransfersQuery()
+  const { isLoading: employeesLoading } = useHrEmployeesQuery()
+  const mutations = useTransferMutations()
 
   const {
     data: transfer,
@@ -53,7 +55,7 @@ export function EditTransferPage() {
     </button>
   )
 
-  if (isLoading) {
+  if (isLoading || lookupData.isLoading || employeesLoading) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-black/10 border-t-brand" />
@@ -83,7 +85,7 @@ export function EditTransferPage() {
       <TransferFormContent
         transfer={transfer}
         lookupData={lookupData}
-        onSubmit={transfers}
+        onSubmit={mutations}
         onDone={handleDone}
       />
     </div>

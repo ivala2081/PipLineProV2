@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -18,6 +18,8 @@ import {
   Money,
   Users,
   GearSix,
+  CaretLeft,
+  CaretRight,
 } from '@phosphor-icons/react'
 import {
   PageHeader,
@@ -272,6 +274,8 @@ export function HrPage() {
   const [roleFilter, setRoleFilter] = useState<string>('all')
   const [deleteTarget, setDeleteTarget] = useState<HrEmployee | null>(null)
   const [docsEmployee, setDocsEmployee] = useState<HrEmployee | null>(null)
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 15
 
   const filtered = useMemo(() => {
     let list = employees
@@ -284,6 +288,16 @@ export function HrPage() {
     }
     return list
   }, [employees, search, roleFilter])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const paginatedFiltered = useMemo(
+    () => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filtered, page],
+  )
+
+  useEffect(() => {
+    setPage(1) // eslint-disable-line react-hooks/set-state-in-effect -- pagination reset on filter change
+  }, [search, roleFilter])
 
   const stats = useMemo(() => {
     const active = employees.filter((e) => e.is_active).length
@@ -550,7 +564,8 @@ export function HrPage() {
                 }
               />
             ) : (
-              <div className="rounded-xl border border-black/[0.07] bg-bg1">
+              <>
+              <div className="rounded-xl border border-black/[0.07] bg-bg1 [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
                 <Table cardOnMobile>
                   <TableHeader>
                     <TableRow className="border-b border-black/[0.07]">
@@ -576,7 +591,7 @@ export function HrPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filtered.map((emp) => (
+                    {paginatedFiltered.map((emp) => (
                       <EmployeeRow
                         key={emp.id}
                         emp={emp}
@@ -590,6 +605,30 @@ export function HrPage() {
                   </TableBody>
                 </Table>
               </div>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 pt-sm">
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                  >
+                    <CaretLeft size={14} />
+                  </Button>
+                  <span className="text-xs tabular-nums text-black/50">
+                    {page} / {totalPages}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                  >
+                    <CaretRight size={14} />
+                  </Button>
+                </div>
+              )}
+              </>
             )}
           </div>
         </TabsContent>

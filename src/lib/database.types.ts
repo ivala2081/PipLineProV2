@@ -909,6 +909,54 @@ export type Database = {
           },
         ]
       }
+      hr_barem_targets: {
+        Row: {
+          id: string
+          organization_id: string
+          employee_id: string
+          period: string
+          count_target: number | null
+          volume_target: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          employee_id: string
+          period: string
+          count_target?: number | null
+          volume_target?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          employee_id?: string
+          period?: string
+          count_target?: number | null
+          volume_target?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'hr_barem_targets_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'hr_barem_targets_employee_id_fkey'
+            columns: ['employee_id']
+            isOneToOne: false
+            referencedRelation: 'hr_employees'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       hr_mt_barem_failures: {
         Row: {
           id: string

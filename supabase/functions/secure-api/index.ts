@@ -15,6 +15,7 @@ const EXCHANGE_RATE_API_KEY = Deno.env.get('EXCHANGE_RATE_API_KEY')
 
 const TATUM_BASE_V4 = 'https://api.tatum.io/v4'
 const TATUM_BASE_V3 = 'https://api.tatum.io/v3'
+const SOLANA_RPC = 'https://solana-mainnet.gateway.tatum.io/'
 const TRONGRID_BASE = 'https://api.trongrid.io/v1'
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta'
 const EXCHANGE_RATE_BASE = 'https://api.freecurrencyapi.com/v1'
@@ -117,6 +118,42 @@ async function handleTatumRequest(
         url = new URL(`${TATUM_BASE_V3}/bitcoin/transaction/address/${address}`)
         url.searchParams.set('pageSize', String(pageSize || 50))
         url.searchParams.set('offset', String(offset || 0))
+        break
+      }
+
+      case 'getSolanaSignatures': {
+        const { address, limit, before } = params
+        url = new URL(SOLANA_RPC)
+        fetchOptions.method = 'POST'
+        ;(fetchOptions.headers as Record<string, string>)['Content-Type'] = 'application/json'
+        fetchOptions.body = JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'getSignaturesForAddress',
+          params: [
+            String(address),
+            {
+              limit: Number(limit) || 50,
+              ...(before ? { before: String(before) } : {}),
+            },
+          ],
+        })
+        break
+      }
+
+      case 'getSolanaTransactionBatch': {
+        const sigs = (params.signatures ?? []) as string[]
+        url = new URL(SOLANA_RPC)
+        fetchOptions.method = 'POST'
+        ;(fetchOptions.headers as Record<string, string>)['Content-Type'] = 'application/json'
+        fetchOptions.body = JSON.stringify(
+          sigs.map((sig, i) => ({
+            jsonrpc: '2.0',
+            id: i,
+            method: 'getTransaction',
+            params: [sig, { encoding: 'jsonParsed', maxSupportedTransactionVersion: 0 }],
+          })),
+        )
         break
       }
 

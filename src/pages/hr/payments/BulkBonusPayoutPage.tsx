@@ -165,7 +165,7 @@ function Content({
         </div>
         <div className="flex items-center gap-2">
           <CalendarBlank size={14} className="text-black/40" />
-          <span className="text-xs text-black/40">{t ? 'Ödeme Tarihi' : 'Date'}</span>
+          <span className="whitespace-nowrap text-xs text-black/40">{t ? 'Ödeme Tarihi' : 'Date'}</span>
           <Input
             type="date"
             className="h-8 w-40 text-sm"

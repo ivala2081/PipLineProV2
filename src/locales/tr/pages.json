@@ -18,7 +18,7 @@
     "hr": "İK",
     "settings": "Ayarlar",
     "more": "Daha Fazla",
-    "audit": "Denetim Günlüğü"
+    "audit": "Denetim"
   },
   "layout": {
     "noOrganization": "Organizasyon Yok",
@@ -1640,7 +1640,7 @@
     "notesHint": "Yalnızca yöneticiler görebilir"
   },
   "audit": {
-    "title": "Denetim Günlüğü",
+    "title": "Denetim",
     "subtitle": "Organizasyonunuzdaki tüm transfer değişiklikleri.",
     "filters": {
       "actor": "Aktör",

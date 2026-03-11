@@ -45,10 +45,321 @@ function calcAutoBonus(
   return 0
 }
 
+/* ------------------------------------------------------------------ */
+/*  Standalone mutations hook — usable without useSearchParams          */
+/* ------------------------------------------------------------------ */
+
+export interface TransferMutations {
+  createTransfer: (data: TransferFormData, category: TransferCategory) => Promise<void>
+  updateTransfer: (id: string, data: TransferFormData, category: TransferCategory) => Promise<void>
+  deleteTransfer: (id: string) => Promise<void>
+  bulkDeleteTransfers: (ids: string[]) => Promise<unknown>
+  isCreating: boolean
+  isUpdating: boolean
+  isDeleting: boolean
+  isBulkDeleting: boolean
+}
+
+export function useTransferMutations(): TransferMutations {
+  const { user } = useAuth()
+  const { currentOrg } = useOrganization()
+  const queryClient = useQueryClient()
+
+  // Create mutation
+  const createMutation = useMutation({
+    mutationFn: async ({
+      data,
+      category,
+    }: {
+      data: TransferFormData
+      category: TransferCategory
+    }) => {
+      if (!currentOrg || !user) throw new Error('No organization selected')
+
+      const { data: pspData } = await supabase
+        .from('psps')
+        .select('commission_rate')
+        .eq('id', data.psp_id)
+        .single()
+
+      const isBlocked = data.type_id === 'blocked'
+      const commissionRate = isBlocked ? 0 : (pspData?.commission_rate ?? 0)
+
+      const { amount, amountTry, amountUsd, commission, net } = computeTransfer(
+        data.raw_amount,
+        category,
+        data.exchange_rate,
+        data.currency,
+        commissionRate,
+        data.type_id,
+        currentOrg?.base_currency ?? 'TRY',
+        data.usd_to_base_rate,
+      )
+
+      const { data: newTransfer, error } = await supabase
+        .from('transfers')
+        .insert({
+          organization_id: currentOrg.id,
+          full_name: data.full_name,
+          payment_method_id: data.payment_method_id,
+          psp_id: data.psp_id,
+          transfer_date: data.transfer_date,
+          category_id: data.category_id,
+          amount,
+          commission,
+          net,
+          currency: data.currency,
+          type_id: data.type_id,
+          crm_id: data.crm_id || null,
+          meta_id: data.meta_id || null,
+          employee_id: data.employee_id || null,
+          is_first_deposit: data.is_first_deposit ?? false,
+          notes: data.notes || null,
+          created_by: user.id,
+          exchange_rate: data.exchange_rate,
+          amount_try: amountTry,
+          amount_usd: amountUsd,
+          commission_rate_snapshot: commissionRate,
+        } as never)
+        .select('id')
+        .single()
+
+      if (error) throw error
+
+      // Auto-bonus: Marketing / Retention
+      if (data.employee_id && newTransfer) {
+        const { data: emp } = await supabase
+          .from('hr_employees')
+          .select('role')
+          .eq('id', data.employee_id)
+          .single()
+
+        if (emp) {
+          const { data: mtCfg } = await supabase
+            .from('hr_mt_config')
+            .select('deposit_tiers')
+            .eq('organization_id', currentOrg.id)
+            .maybeSingle()
+          const depositTiers =
+            (mtCfg?.deposit_tiers as MtTier[] | null) ?? DEFAULT_MT_CONFIG.deposit_tiers
+
+          const bonusAmount = calcAutoBonus(emp.role, category.is_deposit, amountUsd, depositTiers)
+          if (bonusAmount !== 0) {
+            const period = String(data.transfer_date).slice(0, 7)
+            await supabase.from('hr_bonus_payments').insert({
+              agreement_id: null,
+              employee_id: data.employee_id,
+              organization_id: currentOrg.id,
+              period,
+              amount_usdt: bonusAmount,
+              notes: `Otomatik: ${emp.role}`,
+              transfer_id: (newTransfer as { id: string }).id,
+              created_by: user.id,
+            } as never)
+          }
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.transfers.lists() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusPayments(currentOrg?.id ?? '') })
+    },
+  })
+
+  // Update mutation
+  const updateMutation = useMutation({
+    mutationFn: async ({
+      id,
+      data,
+      category,
+    }: {
+      id: string
+      data: TransferFormData
+      category: TransferCategory
+    }) => {
+      if (!currentOrg) throw new Error('No organization selected')
+
+      const { data: pspData } = await supabase
+        .from('psps')
+        .select('commission_rate')
+        .eq('id', data.psp_id)
+        .single()
+
+      const isBlocked = data.type_id === 'blocked'
+      const commissionRate = isBlocked ? 0 : (pspData?.commission_rate ?? 0)
+
+      const { amount, amountTry, amountUsd, commission, net } = computeTransfer(
+        data.raw_amount,
+        category,
+        data.exchange_rate,
+        data.currency,
+        commissionRate,
+        data.type_id,
+        currentOrg?.base_currency ?? 'TRY',
+        data.usd_to_base_rate,
+      )
+
+      const { error } = await supabase
+        .from('transfers')
+        .update({
+          full_name: data.full_name,
+          payment_method_id: data.payment_method_id,
+          psp_id: data.psp_id,
+          transfer_date: data.transfer_date,
+          category_id: data.category_id,
+          amount,
+          commission,
+          net,
+          currency: data.currency,
+          type_id: data.type_id,
+          crm_id: data.crm_id || null,
+          meta_id: data.meta_id || null,
+          employee_id: data.employee_id || null,
+          is_first_deposit: data.is_first_deposit ?? false,
+          notes: data.notes || null,
+          exchange_rate: data.exchange_rate,
+          amount_try: amountTry,
+          amount_usd: amountUsd,
+          commission_rate_snapshot: commissionRate,
+        } as never)
+        .eq('id', id)
+
+      if (error) throw error
+
+      // Re-calculate auto-bonus: delete existing auto-payment then recreate
+      await supabase
+        .from('hr_bonus_payments')
+        .delete()
+        .eq('transfer_id', id)
+        .eq('organization_id', currentOrg.id)
+
+      if (data.employee_id) {
+        const { data: emp } = await supabase
+          .from('hr_employees')
+          .select('role')
+          .eq('id', data.employee_id)
+          .single()
+
+        if (emp) {
+          const { data: mtCfg } = await supabase
+            .from('hr_mt_config')
+            .select('deposit_tiers')
+            .eq('organization_id', currentOrg.id)
+            .maybeSingle()
+          const depositTiers =
+            (mtCfg?.deposit_tiers as MtTier[] | null) ?? DEFAULT_MT_CONFIG.deposit_tiers
+
+          const bonusAmount = calcAutoBonus(emp.role, category.is_deposit, amountUsd, depositTiers)
+          if (bonusAmount !== 0) {
+            const period = String(data.transfer_date).slice(0, 7)
+            await supabase.from('hr_bonus_payments').insert({
+              agreement_id: null,
+              employee_id: data.employee_id,
+              organization_id: currentOrg.id,
+              period,
+              amount_usdt: bonusAmount,
+              notes: `Otomatik: ${emp.role}`,
+              transfer_id: id,
+              created_by: user?.id ?? null,
+            } as never)
+          }
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.transfers.lists() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusPayments(currentOrg?.id ?? '') })
+    },
+  })
+
+  // Delete mutation — soft delete
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('transfers')
+        .update({ deleted_at: new Date().toISOString(), deleted_by: user?.id ?? null } as never)
+        .eq('id', id)
+
+      if (error) throw error
+    },
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.transfers.lists() })
+      const snapshot = queryClient.getQueriesData({ queryKey: queryKeys.transfers.lists() })
+      queryClient.setQueriesData(
+        { queryKey: queryKeys.transfers.lists() },
+        (old: { transfers: TransferRow[]; total: number } | undefined) => {
+          if (!old?.transfers) return old
+          return {
+            ...old,
+            transfers: old.transfers.filter((t: TransferRow) => t.id !== id),
+            total: Math.max(0, old.total - 1),
+          }
+        },
+      )
+      return { snapshot }
+    },
+    onError: (_err, _id, context) => {
+      if (context?.snapshot) {
+        for (const [key, data] of context.snapshot) {
+          queryClient.setQueryData(key, data)
+        }
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.transfers.lists() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusPayments(currentOrg?.id ?? '') })
+    },
+  })
+
+  // Bulk delete mutation
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const now = new Date().toISOString()
+      const deletedBy = user?.id ?? null
+
+      if (ids.length === 1 && ids[0] === '__all__') {
+        if (!currentOrg) throw new Error('No organization selected')
+        const { error } = await supabase
+          .from('transfers')
+          .update({ deleted_at: now, deleted_by: deletedBy } as never)
+          .eq('organization_id', currentOrg.id)
+          .is('deleted_at', null)
+        if (error) throw error
+        return
+      }
+
+      for (let i = 0; i < ids.length; i += 50) {
+        const batch = ids.slice(i, i + 50)
+        const { error } = await supabase
+          .from('transfers')
+          .update({ deleted_at: now, deleted_by: deletedBy } as never)
+          .in('id', batch)
+        if (error) throw error
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.transfers.lists() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusPayments(currentOrg?.id ?? '') })
+    },
+  })
+
+  return {
+    createTransfer: async (data, category) => createMutation.mutateAsync({ data, category }),
+    updateTransfer: async (id, data, category) =>
+      updateMutation.mutateAsync({ id, data, category }),
+    deleteTransfer: deleteMutation.mutateAsync,
+    bulkDeleteTransfers: bulkDeleteMutation.mutateAsync,
+    isCreating: createMutation.isPending,
+    isUpdating: updateMutation.isPending,
+    isDeleting: deleteMutation.isPending,
+    isBulkDeleting: bulkDeleteMutation.isPending,
+  }
+}
+
 const DEFAULT_PAGE_SIZE = 25
 
 const SELECT_QUERY =
-  '*, category:transfer_categories!category_id(name, is_deposit), payment_method:payment_methods!payment_method_id(name), psp:psps!psp_id(name, commission_rate), type:transfer_types!type_id(name)'
+  '*, category:transfer_categories!category_id(name, is_deposit), payment_method:payment_methods!payment_method_id(name), psp:psps!psp_id(name, commission_rate), type:transfer_types!type_id(name), employee:hr_employees!employee_id(full_name, role)'
 
 export interface TransferFilters {
   search: string | null
@@ -109,9 +420,7 @@ interface UseTransfersQueryReturn {
 }
 
 export function useTransfersQuery(): UseTransfersQueryReturn {
-  const { user } = useAuth()
   const { currentOrg } = useOrganization()
-  const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
@@ -330,292 +639,7 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
     gcTime: 5 * 60_000,
   })
 
-  // Create mutation
-  const createMutation = useMutation({
-    mutationFn: async ({
-      data,
-      category,
-    }: {
-      data: TransferFormData
-      category: TransferCategory
-    }) => {
-      if (!currentOrg || !user) throw new Error('No organization selected')
-
-      // Fetch PSP to get commission rate
-      const { data: pspData } = await supabase
-        .from('psps')
-        .select('commission_rate')
-        .eq('id', data.psp_id)
-        .single()
-
-      const isBlocked = data.type_id === 'blocked'
-      const commissionRate = isBlocked ? 0 : (pspData?.commission_rate ?? 0)
-
-      const { amount, amountTry, amountUsd, commission, net } = computeTransfer(
-        data.raw_amount,
-        category,
-        data.exchange_rate,
-        data.currency,
-        commissionRate,
-        data.type_id,
-        currentOrg?.base_currency ?? 'TRY',
-        data.usd_to_base_rate,
-      )
-
-      const { data: newTransfer, error } = await supabase
-        .from('transfers')
-        .insert({
-          organization_id: currentOrg.id,
-          full_name: data.full_name,
-          payment_method_id: data.payment_method_id,
-          psp_id: data.psp_id,
-          transfer_date: data.transfer_date,
-          category_id: data.category_id,
-          amount,
-          commission,
-          net,
-          currency: data.currency,
-          type_id: data.type_id,
-          crm_id: data.crm_id || null,
-          meta_id: data.meta_id || null,
-          employee_id: data.employee_id || null,
-          is_first_deposit: data.is_first_deposit ?? false,
-          notes: data.notes || null,
-          created_by: user.id,
-          exchange_rate: data.exchange_rate,
-          amount_try: amountTry,
-          amount_usd: amountUsd,
-          commission_rate_snapshot: commissionRate,
-        } as never)
-        .select('id')
-        .single()
-
-      if (error) throw error
-
-      // Auto-bonus: Marketing / Retention
-      if (data.employee_id && newTransfer) {
-        const { data: emp } = await supabase
-          .from('hr_employees')
-          .select('role')
-          .eq('id', data.employee_id)
-          .single()
-
-        if (emp) {
-          // Fetch org-specific MT config; fall back to defaults if not configured yet
-          const { data: mtCfg } = await supabase
-            .from('hr_mt_config')
-            .select('deposit_tiers')
-            .eq('organization_id', currentOrg.id)
-            .maybeSingle()
-          const depositTiers =
-            (mtCfg?.deposit_tiers as MtTier[] | null) ?? DEFAULT_MT_CONFIG.deposit_tiers
-
-          const bonusAmount = calcAutoBonus(emp.role, category.is_deposit, amountUsd, depositTiers)
-          if (bonusAmount !== 0) {
-            const period = String(data.transfer_date).slice(0, 7)
-            await supabase.from('hr_bonus_payments').insert({
-              agreement_id: null,
-              employee_id: data.employee_id,
-              organization_id: currentOrg.id,
-              period,
-              amount_usdt: bonusAmount,
-              notes: `Otomatik: ${emp.role}`,
-              transfer_id: (newTransfer as { id: string }).id,
-              created_by: user.id,
-            } as never)
-          }
-        }
-      }
-    },
-    onSuccess: () => {
-      // Invalidate both transfers list and date counts
-      queryClient.invalidateQueries({ queryKey: queryKeys.transfers.lists() })
-      queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusPayments(currentOrg?.id ?? '') })
-    },
-  })
-
-  // Update mutation
-  const updateMutation = useMutation({
-    mutationFn: async ({
-      id,
-      data,
-      category,
-    }: {
-      id: string
-      data: TransferFormData
-      category: TransferCategory
-    }) => {
-      if (!currentOrg) throw new Error('No organization selected')
-
-      // Fetch PSP to get commission rate
-      const { data: pspData } = await supabase
-        .from('psps')
-        .select('commission_rate')
-        .eq('id', data.psp_id)
-        .single()
-
-      const isBlocked = data.type_id === 'blocked'
-      const commissionRate = isBlocked ? 0 : (pspData?.commission_rate ?? 0)
-
-      const { amount, amountTry, amountUsd, commission, net } = computeTransfer(
-        data.raw_amount,
-        category,
-        data.exchange_rate,
-        data.currency,
-        commissionRate,
-        data.type_id,
-        currentOrg?.base_currency ?? 'TRY',
-        data.usd_to_base_rate,
-      )
-
-      const { error } = await supabase
-        .from('transfers')
-        .update({
-          full_name: data.full_name,
-          payment_method_id: data.payment_method_id,
-          psp_id: data.psp_id,
-          transfer_date: data.transfer_date,
-          category_id: data.category_id,
-          amount,
-          commission,
-          net,
-          currency: data.currency,
-          type_id: data.type_id,
-          crm_id: data.crm_id || null,
-          meta_id: data.meta_id || null,
-          employee_id: data.employee_id || null,
-          is_first_deposit: data.is_first_deposit ?? false,
-          notes: data.notes || null,
-          exchange_rate: data.exchange_rate,
-          amount_try: amountTry,
-          amount_usd: amountUsd,
-          commission_rate_snapshot: commissionRate,
-        } as never)
-        .eq('id', id)
-
-      if (error) throw error
-
-      // Re-calculate auto-bonus: delete existing auto-payment then recreate
-      await supabase
-        .from('hr_bonus_payments')
-        .delete()
-        .eq('transfer_id', id)
-        .eq('organization_id', currentOrg.id)
-
-      if (data.employee_id) {
-        const { data: emp } = await supabase
-          .from('hr_employees')
-          .select('role')
-          .eq('id', data.employee_id)
-          .single()
-
-        if (emp) {
-          const { data: mtCfg } = await supabase
-            .from('hr_mt_config')
-            .select('deposit_tiers')
-            .eq('organization_id', currentOrg.id)
-            .maybeSingle()
-          const depositTiers =
-            (mtCfg?.deposit_tiers as MtTier[] | null) ?? DEFAULT_MT_CONFIG.deposit_tiers
-
-          const bonusAmount = calcAutoBonus(emp.role, category.is_deposit, amountUsd, depositTiers)
-          if (bonusAmount !== 0) {
-            const period = String(data.transfer_date).slice(0, 7)
-            await supabase.from('hr_bonus_payments').insert({
-              agreement_id: null,
-              employee_id: data.employee_id,
-              organization_id: currentOrg.id,
-              period,
-              amount_usdt: bonusAmount,
-              notes: `Otomatik: ${emp.role}`,
-              transfer_id: id,
-              created_by: user?.id ?? null,
-            } as never)
-          }
-        }
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.transfers.lists() })
-      queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusPayments(currentOrg?.id ?? '') })
-    },
-  })
-
-  // Delete mutation — soft delete (sets deleted_at/deleted_by)
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('transfers')
-        .update({ deleted_at: new Date().toISOString(), deleted_by: user?.id ?? null } as never)
-        .eq('id', id)
-
-      if (error) throw error
-    },
-    onMutate: async (id: string) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: queryKeys.transfers.lists() })
-      // Snapshot current cache
-      const snapshot = queryClient.getQueriesData({ queryKey: queryKeys.transfers.lists() })
-      // Optimistically remove the item from all cached transfer lists
-      queryClient.setQueriesData(
-        { queryKey: queryKeys.transfers.lists() },
-        (old: { transfers: TransferRow[]; total: number } | undefined) => {
-          if (!old?.transfers) return old
-          return {
-            ...old,
-            transfers: old.transfers.filter((t: TransferRow) => t.id !== id),
-            total: Math.max(0, old.total - 1),
-          }
-        },
-      )
-      return { snapshot }
-    },
-    onError: (_err, _id, context) => {
-      // Restore snapshot on failure
-      if (context?.snapshot) {
-        for (const [key, data] of context.snapshot) {
-          queryClient.setQueryData(key, data)
-        }
-      }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.transfers.lists() })
-      queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusPayments(currentOrg?.id ?? '') })
-    },
-  })
-
-  // Bulk delete mutation — soft delete; pass ['__all__'] to soft-delete all org transfers
-  const bulkDeleteMutation = useMutation({
-    mutationFn: async (ids: string[]) => {
-      const now = new Date().toISOString()
-      const deletedBy = user?.id ?? null
-
-      if (ids.length === 1 && ids[0] === '__all__') {
-        if (!currentOrg) throw new Error('No organization selected')
-        const { error } = await supabase
-          .from('transfers')
-          .update({ deleted_at: now, deleted_by: deletedBy } as never)
-          .eq('organization_id', currentOrg.id)
-          .is('deleted_at', null)
-        if (error) throw error
-        return
-      }
-
-      // Soft delete in batches of 50
-      for (let i = 0; i < ids.length; i += 50) {
-        const batch = ids.slice(i, i + 50)
-        const { error } = await supabase
-          .from('transfers')
-          .update({ deleted_at: now, deleted_by: deletedBy } as never)
-          .in('id', batch)
-        if (error) throw error
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.transfers.lists() })
-      queryClient.invalidateQueries({ queryKey: queryKeys.hr.bonusPayments(currentOrg?.id ?? '') })
-    },
-  })
+  const mutations = useTransferMutations()
 
   // Function to fetch all transfers for a specific date
   const fetchTransfersByDate = async (dateKey: string): Promise<TransferRow[]> => {
@@ -667,15 +691,7 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
     fetchTransfersByDate,
     isLoading,
     error: error?.message ?? null,
-    createTransfer: async (data, category) => createMutation.mutateAsync({ data, category }),
-    updateTransfer: async (id, data, category) =>
-      updateMutation.mutateAsync({ id, data, category }),
-    deleteTransfer: deleteMutation.mutateAsync,
-    bulkDeleteTransfers: bulkDeleteMutation.mutateAsync,
-    isCreating: createMutation.isPending,
-    isUpdating: updateMutation.isPending,
-    isDeleting: deleteMutation.isPending,
-    isBulkDeleting: bulkDeleteMutation.isPending,
+    ...mutations,
     loadMore,
     hasMore,
     isLoadMoreMode,

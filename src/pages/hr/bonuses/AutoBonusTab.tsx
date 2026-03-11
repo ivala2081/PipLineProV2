@@ -10,7 +10,8 @@ import {
   MagnifyingGlass,
   CaretLeft,
   CaretRight,
-  Prohibit,
+  Crosshair,
+  PencilSimple,
 } from '@phosphor-icons/react'
 import { localYMD } from '@/lib/date'
 import {
@@ -49,8 +50,8 @@ import {
   useBonusPaymentsQuery,
   useBonusMutations,
   useAdvancesQuery,
-  useBaremFailuresQuery,
-  useBaremFailureMutation,
+  useBaremTargetsQuery,
+  useBaremTargetMutation,
   useHrSettingsQuery,
   type HrEmployee,
   type AutoBonusTransfer,
@@ -60,7 +61,9 @@ import {
   type ReConfig,
   type ReTier,
   type BulkPayoutItem,
+  type BaremTarget,
 } from '@/hooks/queries/useHrQuery'
+import { cn } from '@ds/utils'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '@/hooks/useToast'
 import { formatAmount, parseAmount, numberToDisplay, amountPlaceholder } from '@/lib/formatAmount'
@@ -124,14 +127,14 @@ function RecentPaymentsSection({
         {lang === 'tr' ? 'Son Ödemeler' : 'Recent Payments'}
       </h3>
       <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
-        <Table>
+        <Table className="[&_td]:px-2 [&_td]:py-1.5 [&_th]:px-2 [&_th]:h-8">
           <TableHeader>
             <TableRow>
               <TableHead>{lang === 'tr' ? 'Çalışan' : 'Employee'}</TableHead>
               <TableHead>{lang === 'tr' ? 'Dönem' : 'Period'}</TableHead>
               <TableHead>{lang === 'tr' ? 'Tutar (USDT)' : 'Amount (USDT)'}</TableHead>
               <TableHead>{lang === 'tr' ? 'Ödeme Tarihi' : 'Paid At'}</TableHead>
-              <TableHead className="w-10" />
+              <TableHead className="w-8" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -140,7 +143,7 @@ function RecentPaymentsSection({
               return (
                 <TableRow key={p.id} className="group">
                   <TableCell>
-                    <span className="text-sm font-medium text-black/80">
+                    <span className="text-xs font-medium text-black/80">
                       {emp?.full_name ?? '—'}
                     </span>
                   </TableCell>
@@ -148,12 +151,12 @@ function RecentPaymentsSection({
                     <Tag variant="blue">{p.period || '—'}</Tag>
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm tabular-nums font-semibold text-purple">
-                      {p.amount_usdt.toLocaleString('tr-TR', { minimumFractionDigits: 2 })} USDT
+                    <span className="text-xs tabular-nums font-semibold text-purple">
+                      {p.amount_usdt.toLocaleString('tr-TR', { minimumFractionDigits: 2 })}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className="text-xs tabular-nums text-black/50">
+                    <span className="text-[11px] tabular-nums text-black/50">
                       {p.paid_at
                         ? new Date(p.paid_at).toLocaleDateString(
                             lang === 'tr' ? 'tr-TR' : 'en-US',
@@ -228,21 +231,22 @@ function computeMtStats(
   transfers: AutoBonusTransfer[],
   config: MtConfig,
 ): MtEmployeeStat[] {
-  const marketingEmps = employees.filter((e) => e.role === 'Marketing' && e.is_active)
+  const marketingEmps = employees.filter((e) => (e.role === 'Marketing' || e.role === 'Marketing Manager') && e.is_active)
   if (marketingEmps.length === 0) return []
 
   const empStats = marketingEmps.map((emp) => {
+    const isManager = emp.role === 'Marketing Manager'
     const firstDeposits = transfers.filter(
       (t) => t.employee_id === emp.id && t.category_id === 'dep',
     )
     const count = firstDeposits.length
     const totalVolumeUsd = firstDeposits.reduce((s, t) => s + Math.abs(t.amount_usd), 0)
-    const depositBonus = firstDeposits.reduce(
+    const depositBonus = isManager ? 0 : firstDeposits.reduce(
       (s, t) => s + getMtDepositBonus(Math.abs(t.amount_usd), config.deposit_tiers),
       0,
     )
-    const countBonus = getMtCountBonus(count, config.count_tiers)
-    const volumeBonus = getMtVolumeBonus(totalVolumeUsd, config.volume_tiers)
+    const countBonus = isManager ? 0 : getMtCountBonus(count, config.count_tiers)
+    const volumeBonus = isManager ? 0 : getMtVolumeBonus(totalVolumeUsd, config.volume_tiers)
 
     return {
       employee: emp,
@@ -258,9 +262,13 @@ function computeMtStats(
     } as MtEmployeeStat
   })
 
-  // Weekly prizes
+  // Manager IDs — excluded from prizes and bonus calculation
+  const managerIds = new Set(empStats.filter((s) => s.employee.role === 'Marketing Manager').map((s) => s.employee.id))
+
+  // Weekly prizes (managers excluded)
   const weeklyEmpCounts = new Map<string, Map<string, { count: number; volume: number }>>()
   for (const stat of empStats) {
+    if (managerIds.has(stat.employee.id)) continue
     for (const t of stat.firstDeposits) {
       const weekKey = getMondayKey(t.transfer_date)
       if (!weeklyEmpCounts.has(weekKey)) weeklyEmpCounts.set(weekKey, new Map())
@@ -292,9 +300,10 @@ function computeMtStats(
     weeklyPrizeMap.set(winnerId, (weeklyPrizeMap.get(winnerId) ?? 0) + config.weekly_prize_amount)
   }
 
-  // Monthly prize
+  // Monthly prize (managers excluded)
   let monthlyWinner: MtEmployeeStat | null = null
   for (const stat of empStats) {
+    if (managerIds.has(stat.employee.id)) continue
     if (stat.count < config.monthly_prize_min_sales) continue
     if (
       !monthlyWinner ||
@@ -306,6 +315,9 @@ function computeMtStats(
   }
 
   return empStats.map((stat) => {
+    if (managerIds.has(stat.employee.id)) {
+      return { ...stat, weeklyPrize: 0, monthlyPrize: false, totalBonus: 0 }
+    }
     const weeklyPrize = weeklyPrizeMap.get(stat.employee.id) ?? 0
     const monthlyPrize = monthlyWinner?.employee.id === stat.employee.id
     const totalBonus =
@@ -323,8 +335,9 @@ function computeReStats(
   transfers: AutoBonusTransfer[],
   config: ReConfig,
 ): ReEmployeeStat[] {
-  const reEmps = employees.filter((e) => e.role === 'Retention' && e.is_active)
+  const reEmps = employees.filter((e) => (e.role === 'Retention' || e.role === 'Retention Manager') && e.is_active)
   return reEmps.map((emp) => {
+    const isManager = emp.role === 'Retention Manager'
     const empTransfers = transfers.filter((t) => t.employee_id === emp.id)
     const totalDepositsUsd = empTransfers
       .filter((t) => t.category_id === 'dep')
@@ -333,8 +346,8 @@ function computeReStats(
       .filter((t) => t.category_id === 'wd')
       .reduce((s, t) => s + Math.abs(t.amount_usd), 0)
     const netUsd = totalDepositsUsd - totalWithdrawalsUsd
-    const rate = getReRate(netUsd, config.rate_tiers)
-    const bonus = netUsd > 0 ? Math.round(netUsd * (rate / 100) * 100) / 100 : 0
+    const rate = isManager ? 0 : getReRate(netUsd, config.rate_tiers)
+    const bonus = isManager ? 0 : (netUsd > 0 ? Math.round(netUsd * (rate / 100) * 100) / 100 : 0)
     return { employee: emp, totalDepositsUsd, totalWithdrawalsUsd, netUsd, bonus }
   })
 }
@@ -350,9 +363,231 @@ function fmt(n: number, digits = 2) {
   })
 }
 
-function BonusCell({ value }: { value: number }) {
-  if (value === 0) return <span className="text-xs text-black/30">—</span>
-  return <span className="text-sm tabular-nums font-semibold text-purple">{fmt(value)} USDT</span>
+function BonusCell({ value, color = 'text-purple' }: { value: number; color?: string }) {
+  if (value === 0) return <span className="text-[11px] text-black/30">—</span>
+  return <span className={`text-xs tabular-nums font-semibold ${color}`}>{fmt(value)}</span>
+}
+
+/* ------------------------------------------------------------------ */
+/*  Barem progress helpers                                              */
+/* ------------------------------------------------------------------ */
+
+interface BaremProgress {
+  pct: number       // 0-100
+  countPct: number | null
+  volumePct: number | null
+  passed: boolean
+  hasTarget: boolean
+}
+
+function calcBaremProgress(
+  target: BaremTarget | undefined,
+  count: number,
+  volumeUsd: number,
+): BaremProgress {
+  if (!target || (target.count_target == null && target.volume_target == null)) {
+    return { pct: 100, countPct: null, volumePct: null, passed: true, hasTarget: false }
+  }
+  const countPct = target.count_target != null && target.count_target > 0
+    ? Math.min(100, Math.round((count / target.count_target) * 100))
+    : null
+  const volumePct = target.volume_target != null && target.volume_target > 0
+    ? Math.min(100, Math.round((volumeUsd / target.volume_target) * 100))
+    : null
+
+  // If both set, must pass both. If only one, use that.
+  let pct: number
+  if (countPct != null && volumePct != null) {
+    pct = Math.min(countPct, volumePct)
+  } else {
+    pct = countPct ?? volumePct ?? 100
+  }
+
+  return { pct, countPct, volumePct, passed: pct >= 100, hasTarget: true }
+}
+
+function BaremProgressCell({
+  progress,
+  lang,
+  canManage,
+  onEdit,
+}: {
+  progress: BaremProgress
+  lang: 'tr' | 'en'
+  canManage: boolean
+  onEdit?: () => void
+}) {
+  if (!progress.hasTarget) {
+    if (canManage) {
+      return (
+        <button
+          type="button"
+          onClick={onEdit}
+          className="inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-medium text-black/30 transition-colors hover:bg-black/[0.04] hover:text-black/50"
+          title={lang === 'tr' ? 'Hedef belirle' : 'Set target'}
+        >
+          <Crosshair size={10} />
+          {lang === 'tr' ? 'Hedef' : 'Target'}
+        </button>
+      )
+    }
+    return <span className="text-[11px] text-black/30">—</span>
+  }
+
+  const pct = progress.pct
+  const barColor = pct >= 100
+    ? 'bg-green'
+    : pct >= 70
+      ? 'bg-yellow-500'
+      : pct >= 40
+        ? 'bg-orange'
+        : 'bg-red'
+
+  const tooltipParts: string[] = []
+  if (progress.countPct != null) tooltipParts.push(`${lang === 'tr' ? 'Adet' : 'Count'}: ${progress.countPct}%`)
+  if (progress.volumePct != null) tooltipParts.push(`${lang === 'tr' ? 'Hacim' : 'Vol'}: ${progress.volumePct}%`)
+
+  return (
+    <button
+      type="button"
+      onClick={canManage ? onEdit : undefined}
+      className={cn(
+        'group relative flex w-full min-w-[56px] flex-col items-center gap-0.5',
+        canManage && 'cursor-pointer',
+      )}
+      title={tooltipParts.join(' / ')}
+    >
+      <div className="relative h-[5px] w-full overflow-hidden rounded-full bg-black/[0.06]">
+        <div
+          className={cn('absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out', barColor)}
+          style={{ width: `${Math.min(100, pct)}%` }}
+        />
+      </div>
+      <span className={cn(
+        'text-[10px] font-semibold tabular-nums leading-none',
+        pct >= 100 ? 'text-green' : pct >= 70 ? 'text-yellow-600' : 'text-red',
+      )}>
+        %{pct}
+      </span>
+      {canManage && (
+        <PencilSimple
+          size={8}
+          className="absolute -right-0.5 -top-0.5 text-black/20 opacity-0 transition-opacity group-hover:opacity-100"
+        />
+      )}
+    </button>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Barem Target Dialog                                                 */
+/* ------------------------------------------------------------------ */
+
+function BaremTargetDialog({
+  open,
+  onClose,
+  employee,
+  target,
+  lang,
+  onSave,
+  isPending,
+}: {
+  open: boolean
+  onClose: () => void
+  employee: HrEmployee | null
+  target: BaremTarget | undefined
+  lang: 'tr' | 'en'
+  onSave: (countTarget: number | null, volumeTarget: number | null) => void
+  isPending: boolean
+}) {
+  const [countStr, setCountStr] = useState('')
+  const [volumeStr, setVolumeStr] = useState('')
+
+  useEffect(() => {
+    if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing form
+      setCountStr(target?.count_target != null ? String(target.count_target) : '')
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing form
+      setVolumeStr(target?.volume_target != null ? String(target.volume_target) : '')
+    }
+  }, [open, target])
+
+  const handleSave = () => {
+    const ct = countStr.trim() ? parseInt(countStr, 10) : null
+    const vt = volumeStr.trim() ? parseFloat(volumeStr) : null
+    onSave(
+      ct != null && !isNaN(ct) && ct > 0 ? ct : null,
+      vt != null && !isNaN(vt) && vt > 0 ? vt : null,
+    )
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent size="sm" onInteractOutside={(e) => e.preventDefault()}>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <Crosshair size={18} className="text-brand" weight="duotone" />
+            {lang === 'tr' ? 'Barem Hedefi' : 'Threshold Target'}
+          </DialogTitle>
+          <DialogDescription className="text-xs text-black/55">
+            {employee && (
+              <span className="font-medium text-black/70">{employee.full_name}</span>
+            )}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-md">
+          <div>
+            <Label className="mb-1 text-xs font-medium tracking-wide text-black/70">
+              {lang === 'tr' ? 'Adet Hedefi' : 'Count Target'}
+            </Label>
+            <Input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              value={countStr}
+              onChange={(e) => setCountStr(e.target.value)}
+              placeholder={lang === 'tr' ? 'Ör: 25' : 'E.g: 25'}
+            />
+            <p className="mt-0.5 text-[10px] text-black/30">
+              {lang === 'tr' ? 'Boş bırakılırsa adet hedefi uygulanmaz' : 'Leave empty to skip count target'}
+            </p>
+          </div>
+          <div>
+            <Label className="mb-1 text-xs font-medium tracking-wide text-black/70">
+              {lang === 'tr' ? 'Hacim Hedefi (USD)' : 'Volume Target (USD)'}
+            </Label>
+            <Input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              value={volumeStr}
+              onChange={(e) => setVolumeStr(e.target.value)}
+              placeholder={lang === 'tr' ? 'Ör: 10000' : 'E.g: 10000'}
+            />
+            <p className="mt-0.5 text-[10px] text-black/30">
+              {lang === 'tr' ? 'Boş bırakılırsa hacim hedefi uygulanmaz' : 'Leave empty to skip volume target'}
+            </p>
+          </div>
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <Button type="button" variant="outline" size="sm" onClick={onClose}>
+              {lang === 'tr' ? 'İptal' : 'Cancel'}
+            </Button>
+            <Button
+              type="button"
+              variant="filled"
+              size="sm"
+              disabled={isPending}
+              onClick={handleSave}
+            >
+              {isPending
+                ? lang === 'tr' ? 'Kaydediliyor...' : 'Saving...'
+                : lang === 'tr' ? 'Kaydet' : 'Save'}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
 }
 
 /* ------------------------------------------------------------------ */
@@ -550,8 +785,8 @@ function MarketingBonusTable({
   onToggleSelect,
   onToggleSelectAll,
   baremEnabled = false,
-  baremFailedIds,
-  onToggleBarem,
+  baremTargets,
+  onEditBaremTarget,
 }: {
   stats: MtEmployeeStat[]
   isLoading: boolean
@@ -566,8 +801,8 @@ function MarketingBonusTable({
   onToggleSelect?: (id: string) => void
   onToggleSelectAll?: () => void
   baremEnabled?: boolean
-  baremFailedIds?: Set<string>
-  onToggleBarem?: (employeeId: string, failed: boolean) => void
+  baremTargets?: Map<string, BaremTarget>
+  onEditBaremTarget?: (emp: HrEmployee) => void
 }) {
   const [page, setPage] = useState(1)
 
@@ -585,7 +820,12 @@ function MarketingBonusTable({
   const totalPages = Math.max(1, Math.ceil(filteredStats.length / PAGE_SIZE))
   const sortedStats = useMemo(
     () =>
-      [...filteredStats].sort((a, b) => b.count - a.count || b.totalVolumeUsd - a.totalVolumeUsd),
+      [...filteredStats].sort((a, b) => {
+        const aManager = a.employee.role === 'Marketing Manager' ? 1 : 0
+        const bManager = b.employee.role === 'Marketing Manager' ? 1 : 0
+        if (aManager !== bManager) return bManager - aManager
+        return b.count - a.count || b.totalVolumeUsd - a.totalVolumeUsd
+      }),
     [filteredStats],
   )
   const paginatedStats = useMemo(
@@ -646,28 +886,25 @@ function MarketingBonusTable({
     <div className="space-y-lg">
       {/* Monthly winner banner */}
       {monthlyWinner && (
-        <div className="flex items-center gap-3 rounded-xl border border-yellow-400/30 bg-yellow-400/[0.06] px-4 py-3">
-          <Trophy size={18} weight="duotone" className="shrink-0 text-yellow-500" />
-          <div className="min-w-0">
-            <p className="text-xs font-semibold text-yellow-700">
-              {lang === 'tr' ? 'Ayın Birincisi' : 'Monthly Winner'} (+
-              {config?.monthly_prize_amount ?? 200} USDT)
-            </p>
-            <p className="truncate text-sm font-bold text-yellow-800">
-              {monthlyWinner.employee.full_name} —{' '}
-              {lang === 'tr' ? `${monthlyWinner.count} satış` : `${monthlyWinner.count} sales`}
-            </p>
-          </div>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-black/[0.07] bg-bg1 px-4 py-2.5 text-sm">
+          <Trophy size={16} weight="fill" className="shrink-0 text-orange" />
+          <span className="font-semibold text-black">{monthlyWinner.employee.full_name}</span>
+          <span className="text-black/40">—</span>
+          <span className="text-black/70">{lang === 'tr' ? `${monthlyWinner.count} satış` : `${monthlyWinner.count} sales`}</span>
+          <span className="text-xs text-black/40">+{config?.monthly_prize_amount ?? 200} USDT</span>
+          <Tag variant="orange" className="shrink-0 text-[10px]">
+            {lang === 'tr' ? 'Ay Birincisi' : '1st Place'}
+          </Tag>
         </div>
       )}
 
       {/* Summary table */}
-      <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
-        <Table>
+      <div className="overflow-x-auto rounded-xl border border-black/[0.07] bg-bg1">
+        <Table className="[&_td]:px-2 [&_td]:py-1.5 [&_th]:px-2 [&_th]:h-8">
           <TableHeader>
             <TableRow>
               {canManage && onToggleSelectAll && (
-                <TableHead className="w-10">
+                <TableHead className="w-8">
                   <input
                     type="checkbox"
                     className="size-3.5 cursor-pointer rounded border-black/20 accent-brand"
@@ -676,162 +913,159 @@ function MarketingBonusTable({
                   />
                 </TableHead>
               )}
-              <TableHead className="w-48">{lang === 'tr' ? 'Çalışan' : 'Employee'}</TableHead>
-              <TableHead className="text-right">{lang === 'tr' ? 'FD Adet' : 'FD Count'}</TableHead>
-              <TableHead className="text-right">
-                {lang === 'tr' ? 'Dep. Prim' : 'Dep. Bonus'}
-              </TableHead>
-              <TableHead className="text-right">
-                {lang === 'tr' ? 'Adet Prim' : 'Count Bonus'}
-              </TableHead>
-              <TableHead className="text-right">
-                {lang === 'tr' ? 'Hacim Prim' : 'Vol. Bonus'}
-              </TableHead>
-              <TableHead className="text-right">{lang === 'tr' ? 'Ödül' : 'Prize'}</TableHead>
-              <TableHead className="text-right">{lang === 'tr' ? 'Avans' : 'Advance'}</TableHead>
-              {baremEnabled && canManage && (
-                <TableHead className="w-20 text-center">
-                  {lang === 'tr' ? 'Barem' : 'Threshold'}
+              <TableHead className="min-w-[100px]">{lang === 'tr' ? 'Çalışan' : 'Employee'}</TableHead>
+              <TableHead className="text-right text-[11px] whitespace-nowrap">{lang === 'tr' ? 'FD' : 'FD'}</TableHead>
+              <TableHead className="text-right text-[11px] whitespace-nowrap">{lang === 'tr' ? 'Hacim' : 'Vol.'}</TableHead>
+              <TableHead className="text-right text-[11px] whitespace-nowrap">{lang === 'tr' ? 'Dep.P' : 'Dep.B'}</TableHead>
+              <TableHead className="text-right text-[11px] whitespace-nowrap">{lang === 'tr' ? 'Adet P' : 'Cnt.B'}</TableHead>
+              <TableHead className="text-right text-[11px] whitespace-nowrap">{lang === 'tr' ? 'Hacim P' : 'Vol.B'}</TableHead>
+              <TableHead className="text-right text-[11px] whitespace-nowrap">{lang === 'tr' ? 'H.Ödül' : 'W.Prize'}</TableHead>
+              <TableHead className="text-right text-[11px] whitespace-nowrap">{lang === 'tr' ? 'A.Ödül' : 'M.Prize'}</TableHead>
+              <TableHead className="text-right text-[11px] whitespace-nowrap">{lang === 'tr' ? 'Avans' : 'Adv.'}</TableHead>
+              {baremEnabled && (
+                <TableHead className="w-14 text-center text-[11px]">
+                  {lang === 'tr' ? 'Barem' : 'Thr.'}
                 </TableHead>
               )}
-              <TableHead className="text-right">
-                {lang === 'tr' ? 'Net Prim' : 'Net Bonus'}
+              <TableHead className="text-right text-[11px] whitespace-nowrap">
+                {lang === 'tr' ? 'Net' : 'Net'}
               </TableHead>
-              {canManage && <TableHead className="w-28" />}
+              {canManage && <TableHead className="w-7" />}
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedStats.map((stat, idx) => {
-              const isBaremedOut = baremEnabled && (baremFailedIds?.has(stat.employee.id) ?? false)
+              const isManager = stat.employee.role === 'Marketing Manager'
+              const baremTarget = baremTargets?.get(stat.employee.id)
+              const baremProgress = calcBaremProgress(baremTarget, stat.count, stat.totalVolumeUsd)
+              const isBaremedOut = baremEnabled && baremProgress.hasTarget && !baremProgress.passed
               const advance = advancesByEmp.get(stat.employee.id) ?? 0
               const effectiveBonus = isBaremedOut ? 0 : stat.totalBonus
               const net = Math.max(0, effectiveBonus - advance)
               return (
                 <TableRow
                   key={stat.employee.id}
-                  className={selectedIds?.has(stat.employee.id) ? 'bg-brand/[0.03]' : ''}
+                  className={cn(
+                    selectedIds?.has(stat.employee.id) && 'bg-brand/[0.03]',
+                    isManager && 'bg-purple/[0.06] border-l-2 border-l-purple/40',
+                  )}
                 >
                   {canManage && onToggleSelect && (
                     <TableCell>
-                      <input
-                        type="checkbox"
-                        className="size-3.5 cursor-pointer rounded border-black/20 accent-brand"
-                        checked={selectedIds?.has(stat.employee.id) ?? false}
-                        onChange={() => onToggleSelect(stat.employee.id)}
-                      />
+                      {!isManager && (
+                        <input
+                          type="checkbox"
+                          className="size-3.5 cursor-pointer rounded border-black/20 accent-brand"
+                          checked={selectedIds?.has(stat.employee.id) ?? false}
+                          onChange={() => onToggleSelect(stat.employee.id)}
+                        />
+                      )}
                     </TableCell>
                   )}
-                  <TableCell>
-                    <div className="flex items-center gap-sm">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          {idx === 0 && (
-                            <Star size={12} weight="fill" className="text-yellow-500" />
-                          )}
-                          <span className="truncate text-sm font-medium text-black">
-                            {stat.employee.full_name}
-                          </span>
-                        </div>
-                        {stat.monthlyPrize && (
-                          <Tag variant="orange" className="mt-0.5 text-[10px]">
-                            {lang === 'tr' ? 'Ay Birincisi' : '1st Monthly'}
-                          </Tag>
-                        )}
-                      </div>
+                  <TableCell className="max-w-[140px]">
+                    <div className="flex items-center gap-1 overflow-hidden">
+                      {idx === 0 && !isManager && (
+                        <Star size={11} weight="fill" className="shrink-0 text-yellow-500" />
+                      )}
+                      <span className="truncate text-xs font-medium text-black" title={stat.employee.full_name}>
+                        {stat.employee.full_name}
+                      </span>
+                      {isManager && (
+                        <Tag variant="purple" className="shrink-0 text-[10px]">
+                          Mgr
+                        </Tag>
+                      )}
+                      {stat.monthlyPrize && (
+                        <Tag variant="orange" className="shrink-0 text-[10px]">
+                          1.
+                        </Tag>
+                      )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">
-                    <span className="tabular-nums text-sm font-semibold text-black/80">
+                  <TableCell className="whitespace-nowrap text-right">
+                    <span className="tabular-nums text-xs font-semibold text-black/80">
                       {stat.count}
                     </span>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="whitespace-nowrap text-right">
+                    <span className="tabular-nums text-xs font-medium text-black/60">
+                      {fmt(stat.totalVolumeUsd, 0)}
+                    </span>
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-right">
                     <BonusCell value={stat.depositBonus} />
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="whitespace-nowrap text-right">
                     <BonusCell value={stat.countBonus} />
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="whitespace-nowrap text-right">
                     <BonusCell value={stat.volumeBonus} />
                   </TableCell>
-                  <TableCell className="text-right">
-                    {stat.weeklyPrize > 0 || stat.monthlyPrize ? (
-                      <span className="tabular-nums text-sm font-semibold text-yellow-600">
-                        {fmt(
-                          stat.weeklyPrize +
-                            (stat.monthlyPrize ? (config?.monthly_prize_amount ?? 200) : 0),
-                        )}{' '}
-                        USDT
+                  <TableCell className="whitespace-nowrap text-right">
+                    {stat.weeklyPrize > 0 ? (
+                      <span className="tabular-nums text-xs font-semibold text-yellow-600">
+                        {fmt(stat.weeklyPrize)}
                       </span>
                     ) : (
-                      <span className="text-xs text-black/30">—</span>
+                      <span className="text-[11px] text-black/30">—</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="whitespace-nowrap text-right">
+                    {stat.monthlyPrize ? (
+                      <span className="tabular-nums text-xs font-semibold text-orange">
+                        {fmt(config?.monthly_prize_amount ?? 200)}
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-black/30">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-right">
                     {advance > 0 ? (
-                      <span className="tabular-nums text-sm font-semibold text-orange">
-                        -{fmt(advance)} USDT
+                      <span className="tabular-nums text-xs font-semibold text-orange">
+                        -{fmt(advance)}
                       </span>
                     ) : (
-                      <span className="text-xs text-black/30">—</span>
+                      <span className="text-[11px] text-black/30">—</span>
                     )}
                   </TableCell>
-                  {baremEnabled && canManage && (
-                    <TableCell className="w-20 text-center">
-                      <button
-                        type="button"
-                        onClick={() => onToggleBarem?.(stat.employee.id, !isBaremedOut)}
-                        className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold transition-colors ${
-                          isBaremedOut
-                            ? 'bg-red/10 text-red hover:bg-red/20'
-                            : 'bg-green/10 text-green hover:bg-green/20'
-                        }`}
-                        title={
-                          isBaremedOut
-                            ? lang === 'tr' ? 'Baremi geçemedi — tıkla kaldır' : 'Below threshold — click to remove'
-                            : lang === 'tr' ? 'Baremi geçti — tıkla işaretle' : 'Passed — click to mark failed'
-                        }
-                      >
-                        {isBaremedOut ? (
-                          <>
-                            <Prohibit size={12} weight="bold" />
-                            {lang === 'tr' ? 'Geçemedi' : 'Failed'}
-                          </>
-                        ) : (
-                          <>
-                            <CheckFat size={12} weight="fill" />
-                            {lang === 'tr' ? 'Geçti' : 'Passed'}
-                          </>
-                        )}
-                      </button>
+                  {baremEnabled && (
+                    <TableCell className="w-14">
+                      {!isManager && (
+                        <BaremProgressCell
+                          progress={baremProgress}
+                          lang={lang}
+                          canManage={canManage}
+                          onEdit={() => onEditBaremTarget?.(stat.employee)}
+                        />
+                      )}
                     </TableCell>
                   )}
-                  <TableCell className="text-right">
+                  <TableCell className="whitespace-nowrap text-right">
                     {isBaremedOut ? (
-                      <span className="text-xs font-medium text-red/60">
-                        {lang === 'tr' ? 'Barem ✗' : 'Threshold ✗'}
+                      <span className="text-[11px] font-medium text-red/60">
+                        {lang === 'tr' ? 'Barem ✗' : 'Thr. ✗'}
                       </span>
                     ) : effectiveBonus > 0 ? (
                       <span
-                        className={`tabular-nums text-sm font-bold ${advance > 0 ? 'text-blue' : 'text-green'}`}
+                        className={`tabular-nums text-xs font-bold ${advance > 0 ? 'text-blue' : 'text-green'}`}
                       >
-                        {fmt(net)} USDT
+                        {fmt(net)}
                       </span>
                     ) : (
-                      <span className="text-xs text-black/30">—</span>
+                      <span className="text-[11px] text-black/30">—</span>
                     )}
                   </TableCell>
                   {canManage && (
-                    <TableCell className="w-28 text-right">
+                    <TableCell className="w-7 text-right">
                       {effectiveBonus > 0 && !isBaremedOut && onPayEmployee ? (
                         <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 gap-1 px-2 text-xs"
+                          variant="ghost"
+                          size="icon-sm"
+                          className="text-black/30 hover:text-brand"
                           onClick={() => onPayEmployee(stat.employee, effectiveBonus)}
+                          title={lang === 'tr' ? 'Ödeme Ekle' : 'Add Payment'}
                         >
-                          <Money size={13} />
-                          {lang === 'tr' ? 'Ödeme Ekle' : 'Add Payment'}
+                          <Money size={14} />
                         </Button>
                       ) : null}
                     </TableCell>
@@ -886,8 +1120,8 @@ function ReattentionBonusTable({
   onToggleSelect,
   onToggleSelectAll,
   baremEnabled = false,
-  baremFailedIds,
-  onToggleBarem,
+  baremTargets,
+  onEditBaremTarget,
 }: {
   stats: ReEmployeeStat[]
   isLoading: boolean
@@ -901,8 +1135,8 @@ function ReattentionBonusTable({
   onToggleSelect?: (id: string) => void
   onToggleSelectAll?: () => void
   baremEnabled?: boolean
-  baremFailedIds?: Set<string>
-  onToggleBarem?: (employeeId: string, failed: boolean) => void
+  baremTargets?: Map<string, BaremTarget>
+  onEditBaremTarget?: (emp: HrEmployee) => void
 }) {
   const [page, setPage] = useState(1)
 
@@ -921,7 +1155,13 @@ function ReattentionBonusTable({
     selectedIds && filteredReStats.length > 0 && selectedIds.size === filteredReStats.length
 
   const sortedReStats = useMemo(
-    () => [...filteredReStats].sort((a, b) => b.bonus - a.bonus),
+    () =>
+      [...filteredReStats].sort((a, b) => {
+        const aManager = a.employee.role === 'Retention Manager' ? 1 : 0
+        const bManager = b.employee.role === 'Retention Manager' ? 1 : 0
+        if (aManager !== bManager) return bManager - aManager
+        return b.bonus - a.bonus
+      }),
     [filteredReStats],
   )
   const totalPages = Math.max(1, Math.ceil(sortedReStats.length / PAGE_SIZE))
@@ -975,12 +1215,12 @@ function ReattentionBonusTable({
 
   return (
     <div className="space-y-lg">
-      <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
-        <Table>
+      <div className="overflow-x-auto rounded-xl border border-black/[0.07] bg-bg1">
+        <Table className="[&_td]:px-2 [&_td]:py-1.5 [&_th]:px-2 [&_th]:h-8">
           <TableHeader>
             <TableRow>
               {canManage && onToggleSelectAll && (
-                <TableHead className="w-10">
+                <TableHead className="w-8">
                   <input
                     type="checkbox"
                     className="size-3.5 cursor-pointer rounded border-black/20 accent-brand"
@@ -989,145 +1229,141 @@ function ReattentionBonusTable({
                   />
                 </TableHead>
               )}
-              <TableHead className="w-52">{lang === 'tr' ? 'Çalışan' : 'Employee'}</TableHead>
-              <TableHead className="text-right">
-                {lang === 'tr' ? 'Toplam Dep. (USD)' : 'Total Dep. (USD)'}
+              <TableHead className="min-w-[100px]">{lang === 'tr' ? 'Çalışan' : 'Employee'}</TableHead>
+              <TableHead className="text-right text-[11px] whitespace-nowrap">
+                {lang === 'tr' ? 'Dep.' : 'Dep.'}
               </TableHead>
-              <TableHead className="text-right">
-                {lang === 'tr' ? 'Toplam Wd. (USD)' : 'Total Wd. (USD)'}
+              <TableHead className="text-right text-[11px] whitespace-nowrap">
+                {lang === 'tr' ? 'Wd.' : 'Wd.'}
               </TableHead>
-              <TableHead className="text-right">
-                {lang === 'tr' ? 'Net (USD)' : 'Net (USD)'}
+              <TableHead className="text-right text-[11px] whitespace-nowrap">
+                {lang === 'tr' ? 'Net' : 'Net'}
               </TableHead>
-              <TableHead className="text-right">
-                {lang === 'tr' ? 'Prim (USDT)' : 'Bonus (USDT)'}
+              <TableHead className="text-right text-[11px] whitespace-nowrap">
+                {lang === 'tr' ? 'Prim' : 'Bonus'}
               </TableHead>
-              <TableHead className="text-right">{lang === 'tr' ? 'Avans' : 'Advance'}</TableHead>
-              {baremEnabled && canManage && (
-                <TableHead className="w-20 text-center">
-                  {lang === 'tr' ? 'Barem' : 'Threshold'}
+              <TableHead className="text-right text-[11px] whitespace-nowrap">{lang === 'tr' ? 'Avans' : 'Adv.'}</TableHead>
+              {baremEnabled && (
+                <TableHead className="w-14 text-center text-[11px]">
+                  {lang === 'tr' ? 'Barem' : 'Thr.'}
                 </TableHead>
               )}
-              <TableHead className="text-right">
-                {lang === 'tr' ? 'Net Prim' : 'Net Bonus'}
+              <TableHead className="text-right text-[11px] whitespace-nowrap">
+                {lang === 'tr' ? 'Net' : 'Net'}
               </TableHead>
-              {canManage && <TableHead className="w-28" />}
+              {canManage && <TableHead className="w-7" />}
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedReStats.map((stat) => {
-              const isBaremedOut = baremEnabled && (baremFailedIds?.has(stat.employee.id) ?? false)
+              const isManager = stat.employee.role === 'Retention Manager'
+              const baremTarget = baremTargets?.get(stat.employee.id)
+              // RE uses deposit count and net volume for barem
+              const baremProgress = calcBaremProgress(baremTarget, 0, stat.totalDepositsUsd)
+              const isBaremedOut = baremEnabled && baremProgress.hasTarget && !baremProgress.passed
               const advance = advancesByEmp.get(stat.employee.id) ?? 0
               const effectiveBonus = isBaremedOut ? 0 : stat.bonus
               const net = Math.max(0, effectiveBonus - advance)
               return (
                 <TableRow
                   key={stat.employee.id}
-                  className={selectedIds?.has(stat.employee.id) ? 'bg-brand/[0.03]' : ''}
+                  className={cn(
+                    selectedIds?.has(stat.employee.id) && 'bg-brand/[0.03]',
+                    isManager && 'bg-purple/[0.06] border-l-2 border-l-purple/40',
+                  )}
                 >
                   {canManage && onToggleSelect && (
                     <TableCell>
-                      <input
-                        type="checkbox"
-                        className="size-3.5 cursor-pointer rounded border-black/20 accent-brand"
-                        checked={selectedIds?.has(stat.employee.id) ?? false}
-                        onChange={() => onToggleSelect(stat.employee.id)}
-                      />
+                      {!isManager && (
+                        <input
+                          type="checkbox"
+                          className="size-3.5 cursor-pointer rounded border-black/20 accent-brand"
+                          checked={selectedIds?.has(stat.employee.id) ?? false}
+                          onChange={() => onToggleSelect(stat.employee.id)}
+                        />
+                      )}
                     </TableCell>
                   )}
-                  <TableCell>
-                    <div className="flex items-center gap-sm">
-                      <span className="truncate text-sm font-medium text-black">
+                  <TableCell className="max-w-[140px]">
+                    <div className="flex items-center gap-1 overflow-hidden">
+                      <span className="truncate text-xs font-medium text-black" title={stat.employee.full_name}>
                         {stat.employee.full_name}
                       </span>
+                      {isManager && (
+                        <Tag variant="purple" className="shrink-0 text-[10px]">
+                          Mgr
+                        </Tag>
+                      )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">
-                    <span className="tabular-nums text-sm text-green">
+                  <TableCell className="whitespace-nowrap text-right">
+                    <span className="tabular-nums text-xs text-green">
                       +{fmt(stat.totalDepositsUsd, 0)}
                     </span>
                   </TableCell>
-                  <TableCell className="text-right">
-                    <span className="tabular-nums text-sm text-red">
+                  <TableCell className="whitespace-nowrap text-right">
+                    <span className="tabular-nums text-xs text-red">
                       −{fmt(stat.totalWithdrawalsUsd, 0)}
                     </span>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="whitespace-nowrap text-right">
                     <span
-                      className={`tabular-nums text-sm font-semibold ${stat.netUsd >= 0 ? 'text-blue' : 'text-red'}`}
+                      className={`tabular-nums text-xs font-semibold ${stat.netUsd >= 0 ? 'text-blue' : 'text-red'}`}
                     >
                       {stat.netUsd >= 0 ? '+' : ''}
-                      {fmt(stat.netUsd, 0)} USD
+                      {fmt(stat.netUsd, 0)}
                     </span>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="whitespace-nowrap text-right">
                     <BonusCell value={stat.bonus} />
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="whitespace-nowrap text-right">
                     {advance > 0 ? (
-                      <span className="tabular-nums text-sm font-semibold text-orange">
-                        -{fmt(advance)} USDT
+                      <span className="tabular-nums text-xs font-semibold text-orange">
+                        -{fmt(advance)}
                       </span>
                     ) : (
-                      <span className="text-xs text-black/30">—</span>
+                      <span className="text-[11px] text-black/30">—</span>
                     )}
                   </TableCell>
-                  {baremEnabled && canManage && (
-                    <TableCell className="w-20 text-center">
-                      <button
-                        type="button"
-                        onClick={() => onToggleBarem?.(stat.employee.id, !isBaremedOut)}
-                        className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold transition-colors ${
-                          isBaremedOut
-                            ? 'bg-red/10 text-red hover:bg-red/20'
-                            : 'bg-green/10 text-green hover:bg-green/20'
-                        }`}
-                        title={
-                          isBaremedOut
-                            ? lang === 'tr' ? 'Baremi geçemedi — tıkla kaldır' : 'Below threshold — click to remove'
-                            : lang === 'tr' ? 'Baremi geçti — tıkla işaretle' : 'Passed — click to mark failed'
-                        }
-                      >
-                        {isBaremedOut ? (
-                          <>
-                            <Prohibit size={12} weight="bold" />
-                            {lang === 'tr' ? 'Geçemedi' : 'Failed'}
-                          </>
-                        ) : (
-                          <>
-                            <CheckFat size={12} weight="fill" />
-                            {lang === 'tr' ? 'Geçti' : 'Passed'}
-                          </>
-                        )}
-                      </button>
+                  {baremEnabled && (
+                    <TableCell className="w-14">
+                      {!isManager && (
+                        <BaremProgressCell
+                          progress={baremProgress}
+                          lang={lang}
+                          canManage={canManage}
+                          onEdit={() => onEditBaremTarget?.(stat.employee)}
+                        />
+                      )}
                     </TableCell>
                   )}
-                  <TableCell className="text-right">
+                  <TableCell className="whitespace-nowrap text-right">
                     {isBaremedOut ? (
-                      <span className="text-xs font-medium text-red/60">
-                        {lang === 'tr' ? 'Barem ✗' : 'Threshold ✗'}
+                      <span className="text-[11px] font-medium text-red/60">
+                        {lang === 'tr' ? 'Barem ✗' : 'Thr. ✗'}
                       </span>
                     ) : effectiveBonus > 0 ? (
                       <span
-                        className={`tabular-nums text-sm font-bold ${advance > 0 ? 'text-blue' : 'text-green'}`}
+                        className={`tabular-nums text-xs font-bold ${advance > 0 ? 'text-blue' : 'text-green'}`}
                       >
-                        {fmt(net)} USDT
+                        {fmt(net)}
                       </span>
                     ) : (
-                      <span className="text-xs text-black/30">—</span>
+                      <span className="text-[11px] text-black/30">—</span>
                     )}
                   </TableCell>
                   {canManage && (
-                    <TableCell className="w-28 text-right">
+                    <TableCell className="w-7 text-right">
                       {effectiveBonus > 0 && !isBaremedOut && onPayEmployee ? (
                         <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 gap-1 px-2 text-xs"
+                          variant="ghost"
+                          size="icon-sm"
+                          className="text-black/30 hover:text-brand"
                           onClick={() => onPayEmployee(stat.employee, effectiveBonus)}
+                          title={lang === 'tr' ? 'Ödeme Ekle' : 'Add Payment'}
                         >
-                          <Money size={13} />
-                          {lang === 'tr' ? 'Ödeme Ekle' : 'Add Payment'}
+                          <Money size={14} />
                         </Button>
                       ) : null}
                     </TableCell>
@@ -1140,19 +1376,18 @@ function ReattentionBonusTable({
               <TableRow className="bg-black/[0.02]">
                 <TableCell
                   colSpan={canManage && onToggleSelectAll ? 7 : 6}
-                  className="text-right text-xs font-semibold text-black/50"
+                  className="text-right text-[11px] font-semibold text-black/50"
                 >
                   {lang === 'tr' ? 'Toplam' : 'Total'}
                 </TableCell>
                 <TableCell className="text-right">
-                  <span className="tabular-nums text-sm font-bold text-green">
+                  <span className="tabular-nums text-xs font-bold text-green">
                     {fmt(
                       stats.reduce((s, stat) => {
                         const advance = advancesByEmp.get(stat.employee.id) ?? 0
                         return s + Math.max(0, stat.bonus - advance)
                       }, 0),
-                    )}{' '}
-                    USDT
+                    )}
                   </span>
                 </TableCell>
                 {canManage && <TableCell />}
@@ -1241,12 +1476,24 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
   const monthNames = lang === 'tr' ? MONTH_NAMES_TR : MONTH_NAMES_EN
   const periodLabel = `${monthNames[month - 1]} ${year}`
 
-  // Barem failures for Marketing
-  const { data: baremFailedIds = new Set<string>() } = useBaremFailuresQuery(periodLabel)
-  const { toggleBarem } = useBaremFailureMutation()
+  // Barem targets
+  const { data: baremTargets = new Map<string, BaremTarget>() } = useBaremTargetsQuery(periodLabel)
+  const { upsertTarget } = useBaremTargetMutation()
+  const [baremTargetEmp, setBaremTargetEmp] = useState<HrEmployee | null>(null)
 
-  const handleToggleBarem = (employeeId: string, failed: boolean) => {
-    toggleBarem.mutate({ employeeId, period: periodLabel, failed })
+  const handleSaveBaremTarget = (countTarget: number | null, volumeTarget: number | null) => {
+    if (!baremTargetEmp) return
+    upsertTarget.mutate(
+      { employeeId: baremTargetEmp.id, period: periodLabel, countTarget, volumeTarget },
+      { onSuccess: () => setBaremTargetEmp(null) },
+    )
+  }
+
+  // Helper: check if employee is baremed out based on targets
+  const isBaremFailed = (empId: string, count: number, volumeUsd: number) => {
+    const target = baremTargets.get(empId)
+    const progress = calcBaremProgress(target, count, volumeUsd)
+    return progress.hasTarget && !progress.passed
   }
 
   // Build advance map per employee (bonus advances only)
@@ -1261,7 +1508,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
 
   // Already-paid employee IDs for this period (matched by period label, not paid_at date)
   const paidMtIds = useMemo(() => {
-    const mtIds = new Set(employees.filter((e) => e.role === 'Marketing').map((e) => e.id))
+    const mtIds = new Set(employees.filter((e) => e.role === 'Marketing' || e.role === 'Marketing Manager').map((e) => e.id))
     return new Set(
       allPayments
         .filter(
@@ -1275,7 +1522,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
   }, [allPayments, employees, periodLabel])
 
   const paidReIds = useMemo(() => {
-    const reIds = new Set(employees.filter((e) => e.role === 'Retention').map((e) => e.id))
+    const reIds = new Set(employees.filter((e) => e.role === 'Retention' || e.role === 'Retention Manager').map((e) => e.id))
     return new Set(
       allPayments
         .filter(
@@ -1307,7 +1554,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
 
   // Payments for a dept, filtered by selected period label
   const getPaymentsForDept = (role: 'Marketing' | 'Retention') => {
-    const deptIds = new Set(employees.filter((e) => e.role === role).map((e) => e.id))
+    const deptIds = new Set(employees.filter((e) => e.role === role || e.role === `${role} Manager`).map((e) => e.id))
     return allPayments.filter((p) => {
       if (!deptIds.has(p.employee_id)) return false
       return p.period === periodLabel
@@ -1327,7 +1574,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
   const buildBulkItems = (): BulkPayoutItem[] => {
     if (dept === 'marketing') {
       return mtStats
-        .filter((s) => s.totalBonus > 0 && !paidMtIds.has(s.employee.id) && !(mtBaremEnabled && baremFailedIds.has(s.employee.id)))
+        .filter((s) => s.totalBonus > 0 && !paidMtIds.has(s.employee.id) && !(mtBaremEnabled && isBaremFailed(s.employee.id, s.count, s.totalVolumeUsd)))
         .map((s) => ({
           employee_id: s.employee.id,
           employee_name: s.employee.full_name,
@@ -1338,7 +1585,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
     }
     if (dept === 'reattention') {
       return reStats
-        .filter((s) => s.bonus > 0 && !paidReIds.has(s.employee.id) && !(reBaremEnabled && baremFailedIds.has(s.employee.id)))
+        .filter((s) => s.bonus > 0 && !paidReIds.has(s.employee.id) && !(reBaremEnabled && isBaremFailed(s.employee.id, 0, s.totalDepositsUsd)))
         .map((s) => ({
           employee_id: s.employee.id,
           employee_name: s.employee.full_name,
@@ -1366,12 +1613,12 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
 
   // Get unpaid stats for the current dept (used for select-all logic)
   const unpaidMtStats = useMemo(
-    () => mtStats.filter((s) => s.totalBonus > 0 && !paidMtIds.has(s.employee.id) && !(mtBaremEnabled && baremFailedIds.has(s.employee.id))),
-    [mtStats, paidMtIds, baremFailedIds, mtBaremEnabled],
+    () => mtStats.filter((s) => s.totalBonus > 0 && !paidMtIds.has(s.employee.id) && !(mtBaremEnabled && isBaremFailed(s.employee.id, s.count, s.totalVolumeUsd))),
+    [mtStats, paidMtIds, baremTargets, mtBaremEnabled],
   )
   const unpaidReStats = useMemo(
-    () => reStats.filter((s) => s.bonus > 0 && !paidReIds.has(s.employee.id) && !(reBaremEnabled && baremFailedIds.has(s.employee.id))),
-    [reStats, paidReIds, baremFailedIds, reBaremEnabled],
+    () => reStats.filter((s) => s.bonus > 0 && !paidReIds.has(s.employee.id) && !(reBaremEnabled && isBaremFailed(s.employee.id, 0, s.totalDepositsUsd))),
+    [reStats, paidReIds, baremTargets, reBaremEnabled],
   )
 
   const toggleAutoSelectAll = () => {
@@ -1407,7 +1654,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
         amount_usdt: amount,
         paid_at: new Date().toISOString().split('T')[0],
         agreement_id: null,
-        description: `${payTarget.employee.role === 'Marketing' ? 'Marketing' : 'Retention'} Primi — ${payTarget.employee.full_name} (${payTarget.period})`,
+        description: `${payTarget.employee.role.startsWith('Marketing') ? 'Marketing' : 'Retention'} Primi — ${payTarget.employee.full_name} (${payTarget.period})`,
       })
       toast({ title: lang === 'tr' ? 'Ödeme kaydedildi' : 'Payment recorded', variant: 'success' })
       setPayTarget(null)
@@ -1418,7 +1665,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
 
   // Single-department mode (used by department tabs in BonusesTab)
   if (dept === 'marketing') {
-    const total = mtStats.reduce((s, e) => s + ((mtBaremEnabled && baremFailedIds.has(e.employee.id)) ? 0 : e.totalBonus), 0)
+    const total = mtStats.reduce((s, e) => s + ((mtBaremEnabled && isBaremFailed(e.employee.id, e.count, e.totalVolumeUsd)) ? 0 : e.totalBonus), 0)
     const pmts = getPaymentsForDept('Marketing')
     return (
       <div className="space-y-lg">
@@ -1489,8 +1736,8 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
           onToggleSelect={toggleAutoSelect}
           onToggleSelectAll={toggleAutoSelectAll}
           baremEnabled={mtBaremEnabled}
-          baremFailedIds={baremFailedIds}
-          onToggleBarem={handleToggleBarem}
+          baremTargets={baremTargets}
+          onEditBaremTarget={setBaremTargetEmp}
         />
         <RecentPaymentsSection
           pmts={pmts}
@@ -1507,12 +1754,21 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
           onConfirm={handleSinglePayment}
           isPending={createPayment.isPending}
         />
+        <BaremTargetDialog
+          open={!!baremTargetEmp}
+          onClose={() => setBaremTargetEmp(null)}
+          employee={baremTargetEmp}
+          target={baremTargetEmp ? baremTargets.get(baremTargetEmp.id) : undefined}
+          lang={lang}
+          onSave={handleSaveBaremTarget}
+          isPending={upsertTarget.isPending}
+        />
       </div>
     )
   }
 
   if (dept === 'reattention') {
-    const total = reStats.reduce((s, e) => s + ((reBaremEnabled && baremFailedIds.has(e.employee.id)) ? 0 : e.bonus), 0)
+    const total = reStats.reduce((s, e) => s + ((reBaremEnabled && isBaremFailed(e.employee.id, 0, e.totalDepositsUsd)) ? 0 : e.bonus), 0)
     const pmts = getPaymentsForDept('Retention')
     return (
       <div className="space-y-lg">
@@ -1582,8 +1838,8 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
           onToggleSelect={toggleAutoSelect}
           onToggleSelectAll={toggleAutoSelectAll}
           baremEnabled={reBaremEnabled}
-          baremFailedIds={baremFailedIds}
-          onToggleBarem={handleToggleBarem}
+          baremTargets={baremTargets}
+          onEditBaremTarget={setBaremTargetEmp}
         />
         <RecentPaymentsSection
           pmts={pmts}
@@ -1600,13 +1856,22 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
           onConfirm={handleSinglePayment}
           isPending={createPayment.isPending}
         />
+        <BaremTargetDialog
+          open={!!baremTargetEmp}
+          onClose={() => setBaremTargetEmp(null)}
+          employee={baremTargetEmp}
+          target={baremTargetEmp ? baremTargets.get(baremTargetEmp.id) : undefined}
+          lang={lang}
+          onSave={handleSaveBaremTarget}
+          isPending={upsertTarget.isPending}
+        />
       </div>
     )
   }
 
   // Full mode (both departments + sub-tabs) — kept for backward compat
-  const mtTotalBonus = mtStats.reduce((s, e) => s + ((mtBaremEnabled && baremFailedIds.has(e.employee.id)) ? 0 : e.totalBonus), 0)
-  const reTotalBonus = reStats.reduce((s, e) => s + ((reBaremEnabled && baremFailedIds.has(e.employee.id)) ? 0 : e.bonus), 0)
+  const mtTotalBonus = mtStats.reduce((s, e) => s + ((mtBaremEnabled && isBaremFailed(e.employee.id, e.count, e.totalVolumeUsd)) ? 0 : e.totalBonus), 0)
+  const reTotalBonus = reStats.reduce((s, e) => s + ((reBaremEnabled && isBaremFailed(e.employee.id, 0, e.totalDepositsUsd)) ? 0 : e.bonus), 0)
 
   return (
     <div className="space-y-lg">
@@ -1642,7 +1907,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
             advancesByEmp={advancesByEmp}
             search=""
             baremEnabled={mtBaremEnabled}
-            baremFailedIds={baremFailedIds}
+            baremTargets={baremTargets}
           />
         </TabsContent>
         <TabsContent value="reattention" className="pt-lg">
@@ -1653,7 +1918,7 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
             advancesByEmp={advancesByEmp}
             search=""
             baremEnabled={reBaremEnabled}
-            baremFailedIds={baremFailedIds}
+            baremTargets={baremTargets}
           />
         </TabsContent>
       </Tabs>

@@ -28,6 +28,7 @@ export interface TransferRow {
   amount_try: number
   amount_usd: number
   is_first_deposit: boolean
+  employee_id: string | null
   notes: string | null
   created_by: string | null
   updated_by: string | null
@@ -38,6 +39,7 @@ export interface TransferRow {
   payment_method: { name: string } | null
   psp: { name: string; commission_rate: number } | null
   type: { name: string } | null
+  employee: { full_name: string; role: string } | null
 }
 
 export interface TransferFormData {

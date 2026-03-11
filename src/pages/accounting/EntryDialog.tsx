@@ -137,7 +137,7 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
       setValue('description', 'Prim Avans Ödemesi')
     } else if (val === 'sigortali_maas_avans') {
       setValue('advance_type', 'insured_salary')
-      setValue('description', 'Sigortalı Maaş Avans Ödeme')
+      setValue('description', 'Sigortalı Banka Ödeme')
     } else {
       setValue('advance_type', null)
       setValue('hr_employee_id', null)
@@ -172,7 +172,7 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
               <SelectContent>
                 <SelectItem value="maas_avans">Maaş Avans Ödemesi</SelectItem>
                 <SelectItem value="prim_avans">Prim Avans Ödemesi</SelectItem>
-                <SelectItem value="sigortali_maas_avans">Sigortalı Maaş Avans Ödeme</SelectItem>
+                <SelectItem value="sigortali_maas_avans">Sigortalı Banka Ödeme</SelectItem>
                 <SelectItem value="diger">{t('accounting.form.descriptionOther')}</SelectItem>
               </SelectContent>
             </Select>

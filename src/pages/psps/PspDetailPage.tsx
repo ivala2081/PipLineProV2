@@ -562,6 +562,8 @@ function LedgerTab({
 /*  Settlements Tab                                                    */
 /* ------------------------------------------------------------------ */
 
+type SettlementSortKey = 'date' | 'amount'
+
 function SettlementsTab({ pspId, isAdmin }: { pspId: string; isAdmin: boolean }) {
   const { t } = useTranslation('pages')
   const { locale } = useLocale()
@@ -582,6 +584,15 @@ function SettlementsTab({ pspId, isAdmin }: { pspId: string; isAdmin: boolean })
   const [editTarget, setEditTarget] = useState<PspSettlement | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<PspSettlement | null>(null)
 
+  // Month navigation
+  const now = new Date()
+  const [sMonth, setSMonth] = useState(now.getMonth()) // 0-based
+  const [sYear, setSYear] = useState(now.getFullYear())
+
+  // Sorting
+  const [sortBy, setSortBy] = useState<SettlementSortKey>('date')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+
   const localeTag = locale === 'tr' ? 'tr-TR' : 'en-US'
 
   const formatDate = (dateStr: string) =>
@@ -590,6 +601,26 @@ function SettlementsTab({ pspId, isAdmin }: { pspId: string; isAdmin: boolean })
       month: 'short',
       year: 'numeric',
     })
+
+  // Filter by selected month & sort
+  const filtered = useMemo(() => {
+    const monthStr = String(sMonth + 1).padStart(2, '0')
+    const prefix = `${sYear}-${monthStr}`
+    const result = settlements.filter((s) => s.settlement_date.startsWith(prefix))
+
+    result.sort((a, b) => {
+      const mul = sortDir === 'asc' ? 1 : -1
+      if (sortBy === 'date') return mul * a.settlement_date.localeCompare(b.settlement_date)
+      return mul * (Number(a.amount) - Number(b.amount))
+    })
+    return result
+  }, [settlements, sYear, sMonth, sortBy, sortDir])
+
+  // Month total
+  const monthTotal = useMemo(
+    () => filtered.reduce((sum, s) => sum + Number(s.amount), 0),
+    [filtered],
+  )
 
   const handleCreate = async (data: SettlementFormValues) => {
     try {
@@ -635,17 +666,87 @@ function SettlementsTab({ pspId, isAdmin }: { pspId: string; isAdmin: boolean })
 
   return (
     <div className="space-y-4 pt-4">
-      {/* Add button */}
-      {isAdmin && (
-        <div className="flex justify-end">
+      {/* Controls row */}
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Month navigator */}
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            className="flex size-8 items-center justify-center rounded-lg border border-black/10 bg-bg1 transition-colors hover:border-black/20 hover:bg-black/[0.02]"
+            onClick={() => {
+              if (sMonth === 0) { setSMonth(11); setSYear((y) => y - 1) }
+              else setSMonth((m) => m - 1)
+            }}
+          >
+            <CaretLeft size={14} className="text-black/50" />
+          </button>
+          <span className="min-w-[9rem] text-center text-xs font-medium capitalize">
+            {new Date(sYear, sMonth).toLocaleDateString(localeTag, { month: 'long', year: 'numeric' })}
+          </span>
+          <button
+            type="button"
+            className="flex size-8 items-center justify-center rounded-lg border border-black/10 bg-bg1 transition-colors hover:border-black/20 hover:bg-black/[0.02]"
+            onClick={() => {
+              if (sMonth === 11) { setSMonth(0); setSYear((y) => y + 1) }
+              else setSMonth((m) => m + 1)
+            }}
+          >
+            <CaretRight size={14} className="text-black/50" />
+          </button>
+        </div>
+
+        {/* Sort dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="flex h-8 min-w-0 sm:min-w-[10rem] items-center gap-2 rounded-lg border border-black/10 bg-bg1 px-3 text-left text-xs font-medium transition-colors hover:border-black/20 hover:bg-black/[0.02]"
+            >
+              <SortIcon size={14} className="text-black/40" />
+              <span className="flex-1 truncate">
+                {t('psps.ledger.sortBy', 'Sort by')}:{' '}
+                {sortBy === 'date' ? t('psps.ledger.sort.date') : t('psps.settlement.amount')}
+              </span>
+              <CaretDown size={12} className="text-black/40" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="min-w-[11rem]">
+            {(['date', 'amount'] as const).map((key) => (
+              <DropdownMenuItem
+                key={key}
+                onClick={() => {
+                  setSortBy(key)
+                  setSortDir((d) => (sortBy === key ? (d === 'asc' ? 'desc' : 'asc') : 'desc'))
+                }}
+              >
+                {key === 'date' ? t('psps.ledger.sort.date') : t('psps.settlement.amount')}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Month total */}
+        {filtered.length > 0 && (
+          <div className="ml-auto flex items-center gap-2 rounded-lg border border-black/[0.07] bg-bg1 px-3 py-1.5">
+            <span className="text-xs text-black/50">
+              {locale === 'tr' ? 'Toplam' : 'Total'}
+            </span>
+            <span className="text-sm font-bold tabular-nums text-green">
+              {formatCurrency(monthTotal)}
+            </span>
+          </div>
+        )}
+
+        {/* Add button */}
+        {isAdmin && (
           <Button size="sm" onClick={() => setFormOpen(true)}>
             <Plus size={14} weight="bold" className="mr-1" />
             {t('psps.detail.addSettlement')}
           </Button>
-        </div>
-      )}
+        )}
+      </div>
 
-      {settlements.length === 0 ? (
+      {filtered.length === 0 ? (
         <EmptyState
           icon={Receipt}
           title={t('psps.detail.noData')}
@@ -664,7 +765,7 @@ function SettlementsTab({ pspId, isAdmin }: { pspId: string; isAdmin: boolean })
               </TableRow>
             </TableHeader>
             <TableBody>
-              {settlements.map((s) => (
+              {filtered.map((s) => (
                 <TableRow key={s.id} className="hover:bg-black/[0.01]">
                   <TableCell className="text-sm" data-label={t('psps.columns.date')}>
                     {formatDate(s.settlement_date)}

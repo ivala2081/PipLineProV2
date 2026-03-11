@@ -442,7 +442,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
               />
             ) : (
               <>
-                <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
+                <div className="rounded-xl border border-black/[0.07] bg-bg1 [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
                   <Table cardOnMobile>
                     <TableHeader>
                       <TableRow>

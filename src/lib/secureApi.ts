@@ -77,6 +77,12 @@ export const tatumApi = {
 
   getBitcoinTransactions: (address: string, pageSize?: number, offset?: number) =>
     callSecureApi('tatum', 'getBitcoinTransactions', { address, pageSize, offset }),
+
+  getSolanaSignatures: (address: string, limit?: number, before?: string) =>
+    callSecureApi('tatum', 'getSolanaSignatures', { address, limit, before }),
+
+  getSolanaTransactionBatch: (signatures: string[]) =>
+    callSecureApi('tatum', 'getSolanaTransactionBatch', { signatures }),
 }
 
 export const tronGridApi = {

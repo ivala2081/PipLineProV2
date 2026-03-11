@@ -18,7 +18,7 @@ import { formatAmount, parseAmount, numberToDisplay, amountPlaceholder } from '@
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import type { TransferRow } from '@/hooks/useTransfers'
 import type { useLookupQueries } from '@/hooks/queries/useLookupQueries'
-import type { useTransfersQuery } from '@/hooks/queries/useTransfersQuery'
+import type { TransferMutations } from '@/hooks/queries/useTransfersQuery'
 import { useExchangeRateQuery } from '@/hooks/queries/useExchangeRateQuery'
 import { useHrEmployeesQuery } from '@/hooks/queries/useHrQuery'
 import { useToast } from '@/hooks/useToast'
@@ -37,7 +37,6 @@ import {
   PopoverContent,
   Select,
   SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
 } from '@ds'
@@ -49,7 +48,7 @@ import { CURRENCIES } from '@/lib/currencies'
 export interface TransferFormContentProps {
   transfer: TransferRow | null
   lookupData: ReturnType<typeof useLookupQueries>
-  onSubmit: ReturnType<typeof useTransfersQuery>
+  onSubmit: TransferMutations
   onDone: () => void
 }
 
@@ -61,9 +60,9 @@ type RememberedTransferFields = Pick<
 >
 
 const TRANSFER_PREFS_KEY = 'piplinepro:transfer-form-prefs'
-const AUTO_BONUS_ROLES = ['Marketing', 'Retention', 'Sales'] as const
-const FTD_ROLES: string[] = ['Marketing', 'Sales']
-const STD_ROLES: string[] = ['Retention']
+const AUTO_BONUS_ROLES = ['Marketing', 'Marketing Manager', 'Retention', 'Retention Manager', 'Sales'] as const
+const FTD_ROLES: string[] = ['Marketing', 'Marketing Manager', 'Sales']
+const STD_ROLES: string[] = ['Retention', 'Retention Manager']
 
 /* ── Pure helpers ─────────────────────────────────────────────────── */
 
@@ -182,6 +181,8 @@ function SearchableSelectField({
     return options.filter((o) => (o.searchText ?? o.label).toLowerCase().includes(n))
   }, [options, query])
 
+  const selectedLabel = options.find((o) => o.value === value)?.label
+
   return (
     <Select
       value={value}
@@ -194,7 +195,9 @@ function SearchableSelectField({
       }}
     >
       <SelectTrigger>
-        <SelectValue placeholder={placeholder} />
+        <span className={cn('truncate', !selectedLabel && 'text-black/45')}>
+          {selectedLabel || placeholder}
+        </span>
       </SelectTrigger>
       <SelectContent>
         <div className="px-2 pb-1">
@@ -243,7 +246,15 @@ export function TransferFormContent({
   const [manualRate, setManualRate] = useState(false)
   const manualFtdRef = useRef(false)
   const mountedRef = useRef(false)
-  const [amountDisplay, setAmountDisplay] = useState('')
+  // Track original edit-mode values to prevent auto-clear on lookup data load
+  const originalEditValuesRef = useRef({
+    paymentMethodId: transfer?.payment_method_id ?? '',
+    pspId: transfer?.psp_id ?? '',
+    isFirstDeposit: transfer?.is_first_deposit ?? null as boolean | null,
+  })
+  const [amountDisplay, setAmountDisplay] = useState(
+    transfer ? numberToDisplay(Math.abs(transfer.amount), lang) : '',
+  )
   const [rateConfirmed, setRateConfirmed] = useState(false)
   const [pendingSubmit, setPendingSubmit] = useState<{ mode: 'close' | 'new' } | null>(null)
   const [moreOpen, setMoreOpen] = useState(false)
@@ -257,7 +268,26 @@ export function TransferFormContent({
 
   const form = useForm<TransferFormValues>({
     resolver: zodResolver(transferFormSchema),
-    defaultValues: getDefaultFormValues(),
+    defaultValues: transfer
+      ? {
+          full_name: transfer.full_name,
+          payment_method_id: transfer.payment_method_id,
+          psp_id: transfer.psp_id,
+          transfer_date: transfer.transfer_date
+            ? getLocalDatetimeString(new Date(transfer.transfer_date))
+            : '',
+          category_id: transfer.category_id,
+          raw_amount: Math.abs(transfer.amount),
+          currency: transfer.currency,
+          type_id: transfer.type_id,
+          exchange_rate: transfer.exchange_rate ?? 1,
+          crm_id: transfer.crm_id ?? '',
+          meta_id: transfer.meta_id ?? '',
+          employee_id: transfer.employee_id ?? '',
+          is_first_deposit: transfer.is_first_deposit ?? false,
+          notes: transfer.notes ?? '',
+        }
+      : getDefaultFormValues(),
   })
 
   // Re-format amount display when locale changes
@@ -313,6 +343,11 @@ export function TransferFormContent({
     setManualRate(false)
     manualFtdRef.current = false
     if (transfer) {
+      originalEditValuesRef.current = {
+        paymentMethodId: transfer.payment_method_id,
+        pspId: transfer.psp_id,
+        isFirstDeposit: transfer.is_first_deposit ?? false,
+      }
       form.reset({
         full_name: transfer.full_name,
         payment_method_id: transfer.payment_method_id,
@@ -327,9 +362,9 @@ export function TransferFormContent({
         exchange_rate: normalizedFetchedRate ?? transfer.exchange_rate ?? 1,
         crm_id: transfer.crm_id ?? '',
         meta_id: transfer.meta_id ?? '',
-        employee_id: (transfer as TransferRow & { employee_id?: string }).employee_id ?? '',
+        employee_id: transfer.employee_id ?? '',
         is_first_deposit:
-          (transfer as TransferRow & { is_first_deposit?: boolean }).is_first_deposit ?? false,
+          transfer.is_first_deposit ?? false,
         notes: transfer.notes ?? '',
       })
       setAmountDisplay(numberToDisplay(Math.abs(transfer.amount), lang))
@@ -387,17 +422,21 @@ export function TransferFormContent({
   /* ── Tether auto-select: kasa → Tether (currency set by PSP effect) ── */
   useEffect(() => {
     if (!mountedRef.current) return
+    // In edit mode, skip when only lookupData loaded (PM didn't change from original)
+    if (isEdit && paymentMethodId === originalEditValuesRef.current.paymentMethodId) return
     if (paymentMethodId === 'tether') {
       const tetherPsp = lookupData.psps.find(
         (p) => p.is_active && p.name.toLowerCase().includes('tether'),
       )
       if (tetherPsp) form.setValue('psp_id', tetherPsp.id)
     }
-  }, [paymentMethodId, lookupData.psps, form])
+  }, [paymentMethodId, lookupData.psps, form, isEdit])
 
   /* ── Clear PSP when payment method changes and selected PSP no longer matches ── */
   useEffect(() => {
     if (!mountedRef.current) return
+    // In edit mode, skip when only lookupData loaded (PM didn't change from original)
+    if (isEdit && paymentMethodId === originalEditValuesRef.current.paymentMethodId) return
     if (!pspId) return
     const psp = lookupData.psps.find((p) => p.id === pspId)
     if (!psp) return
@@ -406,7 +445,7 @@ export function TransferFormContent({
     if (paymentMethodId && !accepted.includes(paymentMethodId)) {
       form.setValue('psp_id', '')
     }
-  }, [paymentMethodId, pspId, lookupData.psps, form])
+  }, [paymentMethodId, pspId, lookupData.psps, form, isEdit])
 
   /* ── Rate confirmation reset: any change to rate or currency requires re-confirm ── */
   useEffect(() => {
@@ -416,12 +455,14 @@ export function TransferFormContent({
   /* ── PSP currency auto-select: set currency from PSP's configured currency ── */
   useEffect(() => {
     if (!mountedRef.current) return
+    // In edit mode, skip when only lookupData loaded (PSP didn't change from original)
+    if (isEdit && pspId === originalEditValuesRef.current.pspId) return
     if (!pspId) return
     const psp = lookupData.psps.find((p) => p.id === pspId)
     if (psp?.currency) {
       form.setValue('currency', psp.currency)
     }
-  }, [pspId, lookupData.psps, form])
+  }, [pspId, lookupData.psps, form, isEdit])
 
   const rawAmount = Number(watchedRawAmount) || 0
   const exchangeRateValue = Number(watchedExchangeRate) || 0
@@ -495,28 +536,40 @@ export function TransferFormContent({
         : isFirstDeposit === false
           ? STD_ROLES
           : (AUTO_BONUS_ROLES as readonly string[])
-    return employees
+    const filtered = employees
       .filter((e) => e.is_active && allowedRoles.includes(e.role))
       .map((e) => ({ value: e.id, label: `${e.full_name} · ${e.role}` }))
-  }, [employees, isFirstDeposit])
+    // Edit mode: include currently-selected employee even if role doesn't match filter
+    if (isEdit && employeeId && !filtered.some((o) => o.value === employeeId)) {
+      const emp = employees.find((e) => e.id === employeeId)
+      if (emp) filtered.unshift({ value: emp.id, label: `${emp.full_name} · ${emp.role}` })
+    }
+    return filtered
+  }, [employees, isFirstDeposit, isEdit, employeeId])
 
   /* ── Reset employee when FTD/STD changes and selected employee no longer matches ── */
   useEffect(() => {
     if (!mountedRef.current) return
+    // In edit mode, skip when only employee data loaded (FTD didn't change from original)
+    if (isEdit && isFirstDeposit === originalEditValuesRef.current.isFirstDeposit) return
     if (!employeeId) return
     const stillValid = employeeOptions.some((o) => o.value === employeeId)
     if (!stillValid) form.setValue('employee_id', '')
-  }, [isFirstDeposit, employeeOptions, employeeId, form])
+  }, [isFirstDeposit, employeeOptions, employeeId, form, isEdit])
 
   const selectedCategory = useMemo(
     () => lookupData.categories.find((c) => c.id === categoryId),
     [lookupData.categories, categoryId],
   )
 
-  const paymentMethodOptions = useMemo<SelectOption[]>(
-    () => lookupData.paymentMethods.map((pm) => ({ value: pm.id, label: pm.name })),
-    [lookupData.paymentMethods],
-  )
+  const paymentMethodOptions = useMemo<SelectOption[]>(() => {
+    const opts = lookupData.paymentMethods.map((pm) => ({ value: pm.id, label: pm.name }))
+    // Edit mode: include currently-selected method even if not in lookup data
+    if (isEdit && paymentMethodId && !opts.some((o) => o.value === paymentMethodId)) {
+      opts.unshift({ value: paymentMethodId, label: paymentMethodId })
+    }
+    return opts
+  }, [lookupData.paymentMethods, isEdit, paymentMethodId])
   const categoryOptions = useMemo(
     () =>
       lookupData.categories.map((cat) => ({
@@ -530,19 +583,23 @@ export function TransferFormContent({
     () => lookupData.transferTypes.map((tt) => ({ value: tt.id, label: tt.name })),
     [lookupData.transferTypes],
   )
-  const pspOptions = useMemo<SelectOption[]>(
-    () =>
-      lookupData.psps
-        .filter((p) => p.is_active)
-        .filter((p) => {
-          const accepted = p.accepted_payment_method_ids
-          if (!accepted || accepted.length === 0) return true // no filter = show for all
-          if (!paymentMethodId) return true
-          return accepted.includes(paymentMethodId)
-        })
-        .map((p) => ({ value: p.id, label: p.name })),
-    [lookupData.psps, paymentMethodId],
-  )
+  const pspOptions = useMemo<SelectOption[]>(() => {
+    const filtered = lookupData.psps
+      .filter((p) => p.is_active)
+      .filter((p) => {
+        const accepted = p.accepted_payment_method_ids
+        if (!accepted || accepted.length === 0) return true // no filter = show for all
+        if (!paymentMethodId) return true
+        return accepted.includes(paymentMethodId)
+      })
+      .map((p) => ({ value: p.id, label: p.name }))
+    // Edit mode: include currently-selected PSP even if inactive or filtered
+    if (isEdit && pspId && !filtered.some((o) => o.value === pspId)) {
+      const psp = lookupData.psps.find((p) => p.id === pspId)
+      if (psp) filtered.unshift({ value: psp.id, label: psp.name })
+    }
+    return filtered
+  }, [lookupData.psps, paymentMethodId, isEdit, pspId])
 
   const selectedPsp = useMemo(
     () => lookupData.psps.find((p) => p.id === pspId),

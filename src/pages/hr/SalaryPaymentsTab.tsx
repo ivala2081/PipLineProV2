@@ -233,7 +233,7 @@ export function SalaryPaymentsTab({ employees, canManage, lang }: SalaryPayments
           }
         />
       ) : (
-        <div className="rounded-xl border border-black/[0.07] bg-bg1">
+        <div className="rounded-xl border border-black/[0.07] bg-bg1 [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
           <Table cardOnMobile>
             <TableHeader>
               <TableRow className="border-b border-black/[0.07]">

@@ -137,8 +137,10 @@ export const HR_DOCUMENT_TYPES: { type: HrDocumentType; labelTr: string; labelEn
 export const HR_EMPLOYEE_ROLES: HrEmployeeRole[] = [
   'Manager',
   'Marketing',
+  'Marketing Manager',
   'Operation',
   'Retention',
+  'Retention Manager',
   'Project Management',
   'Social Media',
   'Sales Development',
@@ -206,8 +208,10 @@ export const DEFAULT_HR_SETTINGS: HrSettings = {
   roles: [
     'Manager',
     'Marketing',
+    'Marketing Manager',
     'Operation',
     'Retention',
+    'Retention Manager',
     'Project Management',
     'Social Media',
     'Sales Development',
@@ -1968,6 +1972,91 @@ export function useBaremFailureMutation() {
   })
 
   return { toggleBarem: toggle }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Barem Targets (auto-calculated thresholds)                          */
+/* ------------------------------------------------------------------ */
+
+export interface BaremTarget {
+  id: string
+  employee_id: string
+  period: string
+  count_target: number | null
+  volume_target: number | null
+}
+
+export function useBaremTargetsQuery(period: string) {
+  const { currentOrg } = useOrganization()
+  const orgId = currentOrg?.id ?? ''
+
+  return useQuery({
+    queryKey: queryKeys.hr.baremTargets(orgId, period),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('hr_barem_targets')
+        .select('id, employee_id, period, count_target, volume_target')
+        .eq('organization_id', orgId)
+        .eq('period', period)
+      if (error) throw error
+      const map = new Map<string, BaremTarget>()
+      for (const row of data ?? []) {
+        map.set(row.employee_id, row as BaremTarget)
+      }
+      return map
+    },
+    enabled: !!orgId && !!period,
+    staleTime: 5 * 60_000,
+  })
+}
+
+export function useBaremTargetMutation() {
+  const { currentOrg } = useOrganization()
+  const queryClient = useQueryClient()
+  const orgId = currentOrg?.id ?? ''
+
+  const upsert = useMutation({
+    mutationFn: async ({
+      employeeId,
+      period,
+      countTarget,
+      volumeTarget,
+    }: {
+      employeeId: string
+      period: string
+      countTarget: number | null
+      volumeTarget: number | null
+    }) => {
+      // If both null, delete
+      if (countTarget == null && volumeTarget == null) {
+        const { error } = await supabase
+          .from('hr_barem_targets')
+          .delete()
+          .eq('organization_id', orgId)
+          .eq('employee_id', employeeId)
+          .eq('period', period)
+        if (error) throw error
+        return
+      }
+      const { error } = await supabase.from('hr_barem_targets').upsert(
+        {
+          organization_id: orgId,
+          employee_id: employeeId,
+          period,
+          count_target: countTarget,
+          volume_target: volumeTarget,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'organization_id,employee_id,period' },
+      )
+      if (error) throw error
+    },
+    onSuccess: (_data, vars) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.baremTargets(orgId, vars.period) })
+    },
+  })
+
+  return { upsertTarget: upsert }
 }
 
 /* ------------------------------------------------------------------ */

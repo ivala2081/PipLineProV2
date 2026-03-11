@@ -194,5 +194,7 @@ export const queryKeys = {
       ['hr', orgId, 'bulk-payment', id] as const,
     baremFailures: (orgId: string, period: string) =>
       ['hr', orgId, 'barem-failures', period] as const,
+    baremTargets: (orgId: string, period: string) =>
+      ['hr', orgId, 'barem-targets', period] as const,
   },
 } as const

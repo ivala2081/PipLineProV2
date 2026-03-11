@@ -191,6 +191,14 @@ export function TransferDetailSheet({ row, onClose }: TransferDetailSheetProps) 
                   ? t(`transfers.typeValues.${row.type.name}`, { defaultValue: row.type.name })
                   : '—'}
               </DetailRow>
+              {row.employee && (
+                <DetailRow label={lang === 'tr' ? 'Çalışan' : 'Employee'}>
+                  <span className="flex flex-col items-end gap-0.5">
+                    <span className="font-medium">{row.employee.full_name}</span>
+                    <span className="text-[11px] text-black/40">{row.employee.role}</span>
+                  </span>
+                </DetailRow>
+              )}
             </div>
 
             {/* ── IDs ───────────────────────────────────────── */}

@@ -105,7 +105,10 @@ const EVM_KNOWN_TOKENS: Record<string, Record<string, string>> = {
     '0x1af3f329e8be154074d8769d1ffa4ee058b1dbc3': 'DAI',
     '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c': 'WBNB',
   },
-  solana: {},
+  solana: {
+    EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v: 'USDC',
+    Es9vMFrzaCERmKfrGW1BjZFRR1PqW9ey7Jgfb2MQ6aB: 'USDT',
+  },
   polygon: {
     '0xc2132d05d31c914a87c6611c10748aeb04b58e8f': 'USDT',
     '0x2791bca1f2de4661ed88a30c99a7a9449aa84174': 'USDC',
@@ -157,6 +160,9 @@ const TRC20_KNOWN: Record<string, { symbol: string; name: string; decimals: numb
   TUpMhErZL2fhh4sVNULAbNKLokS4GjC1F4: { symbol: 'TUSD', name: 'TrueUSD', decimals: 18 },
   TKkeiboTkxXKJpbmVFbv4a8ov5rAfRDMf9: { symbol: 'SUNDOG', name: 'Sundog', decimals: 18 },
 }
+
+// Balances above 1 billion are almost certainly API glitches (e.g. uint256 max)
+const MAX_SANE_BALANCE = 1_000_000_000
 
 function formatTrc20Balance(rawBalance: string, decimals: number): string {
   if (decimals === 0) return rawBalance
@@ -254,10 +260,12 @@ async function fetchTronBalance(address: string): Promise<PortfolioAsset[]> {
       for (const [tokenAddress, rawBalance] of Object.entries(tokenObj)) {
         const known = TRC20_KNOWN[tokenAddress]
         const decimals = known?.decimals ?? 0
+        const balance = formatTrc20Balance(rawBalance, decimals)
+        if (Math.abs(parseFloat(balance)) > MAX_SANE_BALANCE) continue
         assets.push({
           chain: 'tron',
           address,
-          balance: formatTrc20Balance(rawBalance, decimals),
+          balance,
           decimals,
           type: 'fungible',
           symbol: known?.symbol,
@@ -348,6 +356,184 @@ function normalizeV4Transfers(v4Txs: TatumTransaction[], chain: string): Normali
   })
 }
 
+/* ── Solana RPC types ──────────────────────────────────────────── */
+
+const SOL_KNOWN_TOKENS: Record<string, string> = {
+  EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v: 'USDC',
+  Es9vMFrzaCERmKfrGW1BjZFRR1PqW9ey7Jgfb2MQ6aB: 'USDT',
+}
+
+interface SolSignatureInfo {
+  signature: string
+  slot: number
+  err: unknown
+  memo: string | null
+  blockTime: number | null
+}
+
+interface SolTokenBalance {
+  accountIndex: number
+  mint: string
+  owner: string
+  uiTokenAmount: {
+    amount: string
+    decimals: number
+    uiAmount: number | null
+    uiAmountString: string
+  }
+}
+
+interface SolParsedTransaction {
+  blockTime: number | null
+  slot: number
+  meta: {
+    fee: number
+    err: unknown
+    preBalances: number[]
+    postBalances: number[]
+    preTokenBalances: SolTokenBalance[]
+    postTokenBalances: SolTokenBalance[]
+  }
+  transaction: {
+    message: {
+      accountKeys: Array<string | { pubkey: string }>
+    }
+  }
+}
+
+async function fetchSolanaTransfers(
+  address: string,
+  pageSize: number,
+  cursor?: string,
+): Promise<TransferHistoryResult> {
+  // 1. Get transaction signatures
+  const sigRes = (await tatumApi.getSolanaSignatures(address, pageSize, cursor)) as {
+    result?: SolSignatureInfo[]
+  }
+  const signatures = sigRes?.result ?? []
+
+  if (!signatures.length) return { transfers: [], hasMore: false }
+
+  // 2. Batch fetch parsed transactions
+  const sigs = signatures.map((s) => s.signature)
+  const batchRes = (await tatumApi.getSolanaTransactionBatch(sigs)) as Array<{
+    id: number
+    result?: SolParsedTransaction
+  }>
+
+  // Index batch results by id
+  const txMap = new Map<number, SolParsedTransaction>()
+  if (Array.isArray(batchRes)) {
+    for (const item of batchRes) {
+      if (item.result) txMap.set(item.id, item.result)
+    }
+  }
+
+  // 3. Parse each transaction
+  const transfers: NormalizedTransfer[] = []
+
+  for (let i = 0; i < signatures.length; i++) {
+    const sigInfo = signatures[i]
+    if (sigInfo.err) continue
+
+    const tx = txMap.get(i)
+    if (!tx?.meta) continue
+
+    const accountKeys = tx.transaction.message.accountKeys.map((k) =>
+      typeof k === 'string' ? k : k.pubkey,
+    )
+    const walletIdx = accountKeys.indexOf(address)
+    if (walletIdx === -1) continue
+
+    const timestamp = (sigInfo.blockTime ?? 0) * 1000
+
+    // --- SOL balance change ---
+    const preSol = tx.meta.preBalances[walletIdx] ?? 0
+    const postSol = tx.meta.postBalances[walletIdx] ?? 0
+    const fee = walletIdx === 0 ? tx.meta.fee : 0
+    const solChange = postSol - preSol + fee
+    const solAmount = Math.abs(solChange) / 1e9
+
+    if (solAmount > 0.000001 && solAmount < MAX_SANE_BALANCE) {
+      transfers.push({
+        hash: sigInfo.signature,
+        chain: 'solana',
+        timestamp,
+        direction: solChange > 0 ? 'in' : 'out',
+        amount: solAmount.toString(),
+        symbol: 'SOL',
+      })
+    }
+
+    // --- SPL token balance changes ---
+    const preTokens = tx.meta.preTokenBalances ?? []
+    const postTokens = tx.meta.postTokenBalances ?? []
+
+    const preMap = new Map<string, number>()
+    for (const tb of preTokens) {
+      if (tb.owner === address) {
+        preMap.set(tb.mint, parseFloat(tb.uiTokenAmount.uiAmountString ?? '0'))
+      }
+    }
+
+    const processedMints = new Set<string>()
+    for (const tb of postTokens) {
+      if (tb.owner !== address) continue
+      const mint = tb.mint
+      processedMints.add(mint)
+      const pre = preMap.get(mint) ?? 0
+      const post = parseFloat(tb.uiTokenAmount.uiAmountString ?? '0')
+      const change = post - pre
+
+      if (Math.abs(change) < 0.000001 || Math.abs(change) > MAX_SANE_BALANCE) continue
+
+      const symbol =
+        SOL_KNOWN_TOKENS[mint] ??
+        resolveTokenSymbol('solana', mint) ??
+        `${mint.slice(0, 4)}…${mint.slice(-4)}`
+
+      transfers.push({
+        hash: sigInfo.signature,
+        chain: 'solana',
+        timestamp,
+        direction: change > 0 ? 'in' : 'out',
+        amount: Math.abs(change).toString(),
+        symbol,
+        tokenAddress: mint,
+      })
+    }
+
+    // Tokens fully sent away (in pre but not in post)
+    for (const tb of preTokens) {
+      if (tb.owner !== address || processedMints.has(tb.mint)) continue
+      const pre = parseFloat(tb.uiTokenAmount.uiAmountString ?? '0')
+      if (pre < 0.000001 || pre > MAX_SANE_BALANCE) continue
+
+      const symbol =
+        SOL_KNOWN_TOKENS[tb.mint] ??
+        resolveTokenSymbol('solana', tb.mint) ??
+        `${tb.mint.slice(0, 4)}…${tb.mint.slice(-4)}`
+
+      transfers.push({
+        hash: sigInfo.signature,
+        chain: 'solana',
+        timestamp,
+        direction: 'out',
+        amount: pre.toString(),
+        symbol,
+        tokenAddress: tb.mint,
+      })
+    }
+  }
+
+  const lastSig = signatures[signatures.length - 1]?.signature
+  return {
+    transfers,
+    nextCursor: signatures.length === pageSize ? lastSig : undefined,
+    hasMore: signatures.length === pageSize,
+  }
+}
+
 export async function getTransferHistory(
   chain: string,
   address: string,
@@ -410,6 +596,11 @@ export async function getTransferHistory(
     }
   }
 
+  // Handle Solana via RPC
+  if (chain === 'solana') {
+    return fetchSolanaTransfers(address, pageSize, cursor)
+  }
+
   // Handle Tron (v4 data/transactions doesn't support tron)
   if (chain === 'tron') {
     interface TronGridTrc20Tx {
@@ -447,6 +638,8 @@ export async function getTransferHistory(
         const fracStr = frac.toString().padStart(decimals, '0').replace(/0+$/, '')
         amount = `${whole}.${fracStr}`
       }
+
+      if (Math.abs(parseFloat(amount)) > MAX_SANE_BALANCE) continue
 
       const direction: 'in' | 'out' = tx.to.toLowerCase() === address.toLowerCase() ? 'in' : 'out'
       const symbol = tx.token_info?.symbol
