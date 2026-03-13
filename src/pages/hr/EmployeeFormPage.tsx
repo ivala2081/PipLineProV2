@@ -59,6 +59,7 @@ function buildEmployeeSchema(roles: string[]) {
     bank_salary_tl: z.coerce.number().min(0).optional(),
     is_active: z.boolean(),
     hire_date: z.string().optional(),
+    exit_date: z.string().optional(),
     notes: z.string().optional(),
   })
 }
@@ -162,6 +163,7 @@ export function EmployeeFormPage() {
       bank_salary_tl: 0,
       is_active: true,
       hire_date: '',
+      exit_date: '',
       notes: '',
     },
   })
@@ -182,6 +184,7 @@ export function EmployeeFormPage() {
         bank_salary_tl: employee.bank_salary_tl ?? 0,
         is_active: employee.is_active,
         hire_date: employee.hire_date ?? '',
+        exit_date: employee.exit_date ?? '',
         notes: employee.notes ?? '',
       })
       setSalaryDisplay(numberToDisplay(employee.salary_tl ?? 0, lang))
@@ -203,6 +206,7 @@ export function EmployeeFormPage() {
           data.is_insured && data.use_custom_bank_salary ? (data.bank_salary_tl ?? null) : null,
         is_active: data.is_active,
         hire_date: data.hire_date || null,
+        exit_date: data.is_active ? null : (data.exit_date || null),
         notes: data.notes?.trim() || null,
       }
 
@@ -399,6 +403,17 @@ export function EmployeeFormPage() {
                     </ToggleButton>
                   </div>
                 </div>
+
+                {/* Exit Date — only shown when Pasif */}
+                {!form.watch('is_active') && (
+                  <div>
+                    <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
+                      <CalendarBlank size={12} className="mr-1 inline text-black/30" />
+                      {lang === 'tr' ? 'Çıkış Tarihi' : 'Exit Date'}
+                    </Label>
+                    <Input type="date" {...form.register('exit_date')} />
+                  </div>
+                )}
               </div>
             </FormSection>
 

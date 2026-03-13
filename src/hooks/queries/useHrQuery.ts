@@ -30,6 +30,7 @@ export type HrEmployee = {
   bank_salary_tl: number | null
   is_active: boolean
   hire_date: string | null
+  exit_date: string | null
   notes: string | null
   created_by: string | null
   created_at: string
@@ -60,6 +61,7 @@ export type HrEmployeeInsert = {
   bank_salary_tl?: number | null
   is_active?: boolean
   hire_date?: string | null
+  exit_date?: string | null
   notes?: string | null
 }
 
@@ -1014,7 +1016,42 @@ export function useHrAttendanceMutations() {
     },
   })
 
-  return { upsertAttendance, deleteAttendance }
+  const bulkUpsertAttendance = useMutation({
+    mutationFn: async (payloads: {
+      employee_id: string
+      date: string
+      status: HrAttendanceStatus
+      check_in?: string | null
+      check_out?: string | null
+      absent_hours?: number | null
+      deduction_exempt?: boolean
+      notes?: string | null
+    }[]) => {
+      const rows = payloads.map((p) => ({
+        ...p,
+        organization_id: orgId,
+        recorded_by: user?.id ?? null,
+      }))
+      const { data, error } = await supabase
+        .from('hr_attendance')
+        .upsert(rows, { onConflict: 'employee_id,date' })
+        .select()
+      if (error) throw error
+      return data as HrAttendance[]
+    },
+    onSuccess: (data) => {
+      if (data.length > 0) {
+        const date = data[0].date
+        void queryClient.invalidateQueries({ queryKey: queryKeys.hr.attendance(orgId, date) })
+        const d = new Date(date)
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.hr.attendanceMonth(orgId, d.getFullYear(), d.getMonth() + 1),
+        })
+      }
+    },
+  })
+
+  return { upsertAttendance, deleteAttendance, bulkUpsertAttendance }
 }
 
 /* ------------------------------------------------------------------ */

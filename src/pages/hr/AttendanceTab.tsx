@@ -10,6 +10,9 @@ import {
   Briefcase,
   ProhibitInset,
   TreePalm,
+  CheckFat,
+  Clock,
+  XCircle,
 } from '@phosphor-icons/react'
 import {
   Button,
@@ -29,8 +32,10 @@ import {
   TabsTrigger,
   TabsContent,
 } from '@ds'
+import { useToast } from '@/hooks/useToast'
 import {
   useHrAttendanceQuery,
+  useHrAttendanceMutations,
   useHrLeavesForDateQuery,
   useHrSettingsQuery,
   DEFAULT_HR_SETTINGS,
@@ -38,6 +43,7 @@ import {
   type HrAttendance,
   type HrLeave,
 } from '@/hooks/queries/useHrQuery'
+import type { HrAttendanceStatus } from '@/lib/database.types'
 import type { HrLeaveType } from '@/lib/database.types'
 import { todayString, isWeekendDate } from './utils/attendanceHelpers'
 import { MONTH_NAMES_TR, MONTH_NAMES_EN } from './utils/hrConstants'
@@ -120,14 +126,21 @@ function AttendanceOnLeaveRow({
   employee,
   leave,
   lang,
+  canManage,
 }: {
   employee: HrEmployee
   leave: HrLeave
   lang: 'tr' | 'en'
+  canManage: boolean
 }) {
   const cfg = getLeaveTagConfig(leave.leave_type, lang)
   return (
     <TableRow className="opacity-60">
+      {canManage && (
+        <TableCell>
+          <span className="text-xs text-black/15">—</span>
+        </TableCell>
+      )}
       <TableCell data-label="Employee">
         <span className="text-sm font-medium text-black">{employee.full_name}</span>
       </TableCell>
@@ -181,8 +194,12 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
   const [selectedDate, setSelectedDate] = useState(todayString())
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkSaving, setBulkSaving] = useState(false)
   const { data: hrSettings } = useHrSettingsQuery()
   const settings = hrSettings ?? DEFAULT_HR_SETTINGS
+  const { toast } = useToast()
+  const { bulkUpsertAttendance } = useHrAttendanceMutations()
 
   // Absence dialog state
   const [absenceTarget, setAbsenceTarget] = useState<HrEmployee | null>(null)
@@ -213,6 +230,7 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- pagination reset on filter change
     setPage(1)
+    setSelectedIds(new Set())
   }, [search, selectedDate])
 
   const { data: dayRecords = [], isLoading } = useHrAttendanceQuery(selectedDate)
@@ -222,6 +240,62 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
     dayRecords.forEach((r) => m.set(r.employee_id, r))
     return m
   }, [dayRecords])
+
+  /* ── Selection helpers ── */
+  // Selectable employees: not on leave and not weekend-off
+  const isWeekend = settings.weekend_off && isWeekendDate(selectedDate)
+  const selectableEmployees = useMemo(() => {
+    if (isWeekend) return []
+    return filteredEmployees.filter((e) => !onLeaveMap.has(e.id))
+  }, [filteredEmployees, onLeaveMap, isWeekend])
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+  const toggleSelectAll = () => {
+    if (selectedIds.size === selectableEmployees.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(selectableEmployees.map((e) => e.id)))
+    }
+  }
+  const allSelected = selectableEmployees.length > 0 && selectedIds.size === selectableEmployees.length
+  const hasSelection = selectedIds.size > 0
+
+  const handleBulkStatus = async (status: HrAttendanceStatus) => {
+    if (!hasSelection) return
+    setBulkSaving(true)
+    try {
+      const payloads = Array.from(selectedIds).map((empId) => ({
+        employee_id: empId,
+        date: selectedDate,
+        status,
+        check_in: status === 'present' ? settings.standard_check_in : null,
+        check_out: settings.standard_check_out,
+        absent_hours: null as number | null,
+      }))
+      await bulkUpsertAttendance.mutateAsync(payloads)
+      toast({
+        title: lang === 'tr'
+          ? `${selectedIds.size} çalışan toplu işaretlendi`
+          : `${selectedIds.size} employees bulk marked`,
+        variant: 'success',
+      })
+      setSelectedIds(new Set())
+    } catch {
+      toast({
+        title: lang === 'tr' ? 'Bir hata oluştu' : 'Something went wrong',
+        variant: 'error',
+      })
+    } finally {
+      setBulkSaving(false)
+    }
+  }
 
   // Summary nav
   const today = new Date()
@@ -271,22 +345,67 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
               }}
               minWidth="9rem"
             />
-            <div className="relative w-full sm:min-w-48">
+            <div className="relative w-full sm:w-32">
               <MagnifyingGlass
                 size={15}
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30"
               />
               <Input
                 className="pl-9"
-                placeholder={lang === 'tr' ? 'Çalışan ara...' : 'Search employee...'}
+                placeholder={lang === 'tr' ? 'Ara...' : 'Search...'}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
+
+            {/* Bulk action buttons */}
+            {canManage && hasSelection && !isWeekend && (
+              <div className="flex items-center gap-1.5 ml-auto">
+                <span className="text-xs text-black/50 mr-1">
+                  {selectedIds.size} {lang === 'tr' ? 'seçili' : 'selected'}
+                </span>
+                <Button
+                  variant="filled"
+                  size="sm"
+                  disabled={bulkSaving}
+                  onClick={() => void handleBulkStatus('present')}
+                >
+                  <CheckFat size={13} weight="fill" />
+                  {lang === 'tr' ? 'Geldi' : 'Present'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={bulkSaving}
+                  onClick={() => void handleBulkStatus('late')}
+                >
+                  <Clock size={13} weight="fill" />
+                  {lang === 'tr' ? 'Geç' : 'Late'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={bulkSaving}
+                  onClick={() => void handleBulkStatus('half_day')}
+                >
+                  {lang === 'tr' ? 'Yarım' : 'Half'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-red border-red/30 hover:bg-red/5"
+                  disabled={bulkSaving}
+                  onClick={() => void handleBulkStatus('absent')}
+                >
+                  <XCircle size={13} weight="fill" />
+                  {lang === 'tr' ? 'Gelmedi' : 'Absent'}
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Weekend OFF banner */}
-          {settings.weekend_off && isWeekendDate(selectedDate) && (
+          {isWeekend && (
             <div className="flex items-center gap-2 rounded-xl border border-cyan/30 bg-cyan/5 px-4 py-3">
               <SunHorizon size={18} weight="duotone" className="shrink-0 text-cyan" />
               <p className="text-sm text-black/60">
@@ -308,7 +427,7 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
                   : 'Add active employees to track attendance.'
               }
             />
-          ) : isLoading && !(settings.weekend_off && isWeekendDate(selectedDate)) ? (
+          ) : isLoading && !isWeekend ? (
             <div className="space-y-2 rounded-xl border border-black/[0.07] p-4">
               {Array.from({ length: 4 }).map((_, i) => (
                 <Skeleton key={i} className="h-12 w-full rounded-lg" />
@@ -319,6 +438,7 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
               <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
                 <Table cardOnMobile className="table-fixed">
                   <colgroup>
+                    {canManage && !isWeekend && <col className="w-10" />}
                     <col className="w-[22%]" /> {/* Çalışan */}
                     <col className="w-[12%]" /> {/* Eksik Saat */}
                     <col className="w-[13%]" /> {/* Giriş */}
@@ -329,6 +449,16 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
                   </colgroup>
                   <TableHeader>
                     <TableRow>
+                      {canManage && !isWeekend && (
+                        <TableHead className="w-10">
+                          <input
+                            type="checkbox"
+                            className="size-3.5 cursor-pointer rounded border-black/20 accent-brand"
+                            checked={allSelected}
+                            onChange={toggleSelectAll}
+                          />
+                        </TableHead>
+                      )}
                       <TableHead>{lang === 'tr' ? 'Çalışan' : 'Employee'}</TableHead>
                       <TableHead>{lang === 'tr' ? 'Eksik Saat' : 'Missing Hrs'}</TableHead>
                       <TableHead>{lang === 'tr' ? 'Giriş' : 'Check-in'}</TableHead>
@@ -341,7 +471,7 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {settings.weekend_off && isWeekendDate(selectedDate)
+                    {isWeekend
                       ? paginatedEmployees.map((emp) => (
                           <AttendanceOffRow key={emp.id} employee={emp} lang={lang} />
                         ))
@@ -354,6 +484,7 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
                                 employee={emp}
                                 leave={leave}
                                 lang={lang}
+                                canManage={canManage}
                               />
                             )
                           }
@@ -367,6 +498,8 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
                               lang={lang}
                               settings={settings}
                               onAbsentSelected={(e) => setAbsenceTarget(e)}
+                              selected={selectedIds.has(emp.id)}
+                              onToggleSelect={() => toggleSelect(emp.id)}
                             />
                           )
                         })}
@@ -414,11 +547,11 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
       <TabsContent value="summary">
         <div className="space-y-lg pt-lg">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-sm">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 rounded-lg border border-black/[0.07] bg-bg1 px-1 py-1">
               <Button variant="ghost" size="icon-sm" onClick={prevMonth}>
                 <CaretLeft size={14} />
               </Button>
-              <span className="min-w-[120px] text-center text-sm font-medium text-black">
+              <span className="min-w-24 sm:min-w-32 text-center text-sm font-semibold text-black">
                 {(lang === 'tr' ? MONTH_NAMES_TR : MONTH_NAMES_EN)[summaryMonth - 1]} {summaryYear}
               </span>
               <Button variant="ghost" size="icon-sm" onClick={nextMonth}>

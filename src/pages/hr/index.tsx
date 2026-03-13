@@ -89,6 +89,7 @@ function EmployeeRow({
   emp,
   canManage,
   lang,
+  showExitDate,
   onEdit,
   onDelete,
   onDocs,
@@ -96,6 +97,7 @@ function EmployeeRow({
   emp: HrEmployee
   canManage: boolean
   lang: 'tr' | 'en'
+  showExitDate?: boolean
   onEdit: () => void
   onDelete: () => void
   onDocs: () => void
@@ -113,8 +115,9 @@ function EmployeeRow({
         }).format(emp.salary_tl)
       : '—'
 
-  const formattedDate = emp.hire_date
-    ? new Date(emp.hire_date).toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', {
+  const dateValue = showExitDate ? emp.exit_date : emp.hire_date
+  const formattedDate = dateValue
+    ? new Date(dateValue).toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
@@ -177,10 +180,10 @@ function EmployeeRow({
         )}
       </TableCell>
 
-      {/* Hire Date */}
+      {/* Hire Date / Exit Date */}
       <TableCell
         className="py-3 tabular-nums text-xs text-black/60"
-        data-label={lang === 'tr' ? 'İşe Giriş' : 'Hire Date'}
+        data-label={showExitDate ? (lang === 'tr' ? 'Çıkış Tarihi' : 'Exit Date') : (lang === 'tr' ? 'İşe Giriş' : 'Hire Date')}
       >
         {formattedDate}
       </TableCell>
@@ -270,6 +273,7 @@ export function HrPage() {
   const navigate = useNavigate()
 
   const [activeTab, setActiveTab] = useState('employees')
+  const [employeeSubTab, setEmployeeSubTab] = useState<'active' | 'passive'>('active')
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState<string>('all')
   const [deleteTarget, setDeleteTarget] = useState<HrEmployee | null>(null)
@@ -277,8 +281,11 @@ export function HrPage() {
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 15
 
+  const activeEmps = useMemo(() => employees.filter((e) => e.is_active), [employees])
+  const passiveEmps = useMemo(() => employees.filter((e) => !e.is_active), [employees])
+
   const filtered = useMemo(() => {
-    let list = employees
+    let list = employeeSubTab === 'active' ? activeEmps : passiveEmps
     if (roleFilter !== 'all') list = list.filter((e) => e.role === roleFilter)
     if (search.trim()) {
       const q = search.toLowerCase()
@@ -287,7 +294,7 @@ export function HrPage() {
       )
     }
     return list
-  }, [employees, search, roleFilter])
+  }, [activeEmps, passiveEmps, employeeSubTab, search, roleFilter])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const paginatedFiltered = useMemo(
@@ -297,7 +304,7 @@ export function HrPage() {
 
   useEffect(() => {
     setPage(1) // eslint-disable-line react-hooks/set-state-in-effect -- pagination reset on filter change
-  }, [search, roleFilter])
+  }, [search, roleFilter, employeeSubTab])
 
   const stats = useMemo(() => {
     const active = employees.filter((e) => e.is_active).length
@@ -451,6 +458,26 @@ export function HrPage() {
               </div>
             )}
 
+            {/* Active / Passive sub-tabs */}
+            <Tabs value={employeeSubTab} onValueChange={(v) => setEmployeeSubTab(v as 'active' | 'passive')}>
+              <TabsList>
+                <TabsTrigger value="active">
+                  <CheckCircle size={13} weight="fill" className="mr-1 text-green" />
+                  {lang === 'tr' ? 'Aktif' : 'Active'}
+                  <span className="ml-1.5 rounded-full bg-green/15 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none text-green">
+                    {activeEmps.length}
+                  </span>
+                </TabsTrigger>
+                <TabsTrigger value="passive">
+                  <XCircle size={13} weight="fill" className="mr-1 text-black/30" />
+                  {lang === 'tr' ? 'Pasif' : 'Inactive'}
+                  <span className="ml-1.5 rounded-full bg-black/10 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none">
+                    {passiveEmps.length}
+                  </span>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+
             {/* Filters */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-sm">
               <div className="relative w-full sm:min-w-48 flex-1">
@@ -585,7 +612,9 @@ export function HrPage() {
                         {lang === 'tr' ? 'Durum' : 'Status'}
                       </TableHead>
                       <TableHead className="text-xs font-medium text-black/40">
-                        {lang === 'tr' ? 'İşe Giriş' : 'Hire Date'}
+                        {employeeSubTab === 'passive'
+                          ? (lang === 'tr' ? 'Çıkış Tarihi' : 'Exit Date')
+                          : (lang === 'tr' ? 'İşe Giriş' : 'Hire Date')}
                       </TableHead>
                       {canManage && <TableHead />}
                     </TableRow>
@@ -597,6 +626,7 @@ export function HrPage() {
                         emp={emp}
                         canManage={canManage}
                         lang={lang}
+                        showExitDate={employeeSubTab === 'passive'}
                         onEdit={() => handleEdit(emp)}
                         onDelete={() => setDeleteTarget(emp)}
                         onDocs={() => setDocsEmployee(emp)}

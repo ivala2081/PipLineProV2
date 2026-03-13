@@ -798,6 +798,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           email: string
+          exit_date: string | null
           full_name: string
           hire_date: string | null
           id: string
@@ -817,6 +818,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           email: string
+          exit_date?: string | null
           full_name: string
           hire_date?: string | null
           id?: string
@@ -835,6 +837,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           email?: string
+          exit_date?: string | null
           full_name?: string
           hire_date?: string | null
           id?: string

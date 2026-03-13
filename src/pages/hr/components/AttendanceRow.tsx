@@ -37,6 +37,8 @@ export interface AttendanceRowProps {
   lang: 'tr' | 'en'
   settings: HrSettings
   onAbsentSelected: (employee: HrEmployee) => void
+  selected?: boolean
+  onToggleSelect?: () => void
 }
 
 /* ------------------------------------------------------------------ */
@@ -51,6 +53,8 @@ export function AttendanceRow({
   lang,
   settings,
   onAbsentSelected,
+  selected,
+  onToggleSelect,
 }: AttendanceRowProps) {
   const { toast } = useToast()
   const { upsertAttendance } = useHrAttendanceMutations()
@@ -130,7 +134,18 @@ export function AttendanceRow({
   const showExemptBtn = canManage && localStatus && hasDeduction
 
   return (
-    <TableRow>
+    <TableRow className={selected ? 'bg-brand/[0.03]' : ''}>
+      {/* Checkbox */}
+      {canManage && (
+        <TableCell>
+          <input
+            type="checkbox"
+            className="size-3.5 cursor-pointer rounded border-black/20 accent-brand"
+            checked={selected ?? false}
+            onChange={onToggleSelect}
+          />
+        </TableCell>
+      )}
       {/* Employee */}
       <TableCell data-label="Employee">
         <span className="text-sm font-medium text-black">{employee.full_name}</span>
