@@ -1508,6 +1508,7 @@ export type BulkSalaryPayoutItem = {
   supplement_tl: number
   supplement_currency: 'TL' | 'USD'
   bank_deposit_tl: number
+  advance_tl: number
   attendance_deduction_tl: number
   unpaid_leave_deduction_tl: number
   period: string
@@ -1559,6 +1560,7 @@ export function useBulkSalaryPayoutMutation() {
         amount_tl: Math.max(
           0,
           item.amount_tl -
+            (item.advance_tl ?? 0) -
             item.attendance_deduction_tl -
             item.unpaid_leave_deduction_tl -
             (item.bank_deposit_tl ?? 0),
@@ -1584,6 +1586,7 @@ export function useBulkSalaryPayoutMutation() {
         Math.max(
           0,
           item.amount_tl -
+            (item.advance_tl ?? 0) -
             item.attendance_deduction_tl -
             item.unpaid_leave_deduction_tl -
             (item.bank_deposit_tl ?? 0),

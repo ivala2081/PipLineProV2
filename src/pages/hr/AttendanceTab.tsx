@@ -204,7 +204,16 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
   // Absence dialog state
   const [absenceTarget, setAbsenceTarget] = useState<HrEmployee | null>(null)
 
-  const activeEmployees = useMemo(() => employees.filter((e) => e.is_active), [employees])
+  const activeEmployees = useMemo(
+    () =>
+      employees.filter((e) => {
+        // No exit date → still active
+        if (!e.exit_date) return true
+        // Show employee on exit date and all days before it
+        return selectedDate <= e.exit_date
+      }),
+    [employees, selectedDate],
+  )
 
   // Leaves for selected date (to show on-leave rows)
   const { data: dayLeaves = [] } = useHrLeavesForDateQuery(selectedDate)

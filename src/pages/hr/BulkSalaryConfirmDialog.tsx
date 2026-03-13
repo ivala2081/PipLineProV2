@@ -120,6 +120,9 @@ export function BulkSalaryConfirmDialog({
                         {lang === 'tr' ? 'Banka Ödeme' : 'Bank Deposit'}
                       </TableHead>
                       <TableHead className="text-right">
+                        {lang === 'tr' ? 'Avans' : 'Advance'}
+                      </TableHead>
+                      <TableHead className="text-right">
                         {lang === 'tr' ? 'Devam Kesintisi' : 'Absence Ded.'}
                       </TableHead>
                       <TableHead className="text-right">
@@ -175,6 +178,18 @@ export function BulkSalaryConfirmDialog({
                           )}
                         </TableCell>
                         <TableCell
+                          data-label={lang === 'tr' ? 'Avans' : 'Advance'}
+                          className="text-right"
+                        >
+                          {(item.advance_tl ?? 0) > 0 ? (
+                            <span className="tabular-nums text-sm font-semibold text-orange">
+                              -{fmtAmount(item.advance_tl, item.salary_currency ?? 'TL')}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-black/25">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell
                           data-label={lang === 'tr' ? 'Devam Kesintisi' : 'Absence Ded.'}
                           className="text-right"
                         >
@@ -211,7 +226,7 @@ export function BulkSalaryConfirmDialog({
                     {/* Total row */}
                     <TableRow className="bg-black/[0.02]">
                       <TableCell
-                        colSpan={6}
+                        colSpan={7}
                         className="text-right text-xs font-semibold text-black/50"
                       >
                         {lang === 'tr' ? 'Toplam' : 'Total'}
@@ -227,6 +242,7 @@ export function BulkSalaryConfirmDialog({
                                   tlItems.reduce(
                                     (s, i) =>
                                       s +
+                                      (i.advance_tl ?? 0) +
                                       (i.attendance_deduction_tl ?? 0) +
                                       (i.unpaid_leave_deduction_tl ?? 0),
                                     0,
@@ -242,6 +258,7 @@ export function BulkSalaryConfirmDialog({
                                   usdItems.reduce(
                                     (s, i) =>
                                       s +
+                                      (i.advance_tl ?? 0) +
                                       (i.attendance_deduction_tl ?? 0) +
                                       (i.unpaid_leave_deduction_tl ?? 0),
                                     0,

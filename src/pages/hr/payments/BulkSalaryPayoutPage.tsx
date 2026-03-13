@@ -80,6 +80,7 @@ function Content({
   const totalSalaryUsd = usdItems.reduce((s, i) => s + i.amount_tl, 0)
   const totalSupplement = activeItems.reduce((s, i) => s + (i.supplement_tl ?? 0), 0)
   const totalBankDeposit = activeItems.reduce((s, i) => s + (i.bank_deposit_tl ?? 0), 0)
+  const totalAdvance = activeItems.reduce((s, i) => s + (i.advance_tl ?? 0), 0)
   const totalAttDed = activeItems.reduce((s, i) => s + (i.attendance_deduction_tl ?? 0), 0)
   const totalLeaveDed = activeItems.reduce((s, i) => s + (i.unpaid_leave_deduction_tl ?? 0), 0)
   const hasMixed = totalSalaryTl > 0 && totalSalaryUsd > 0
@@ -89,13 +90,13 @@ function Content({
     totalSupplement -
     totalBankDeposit -
     tlItems.reduce(
-      (s, i) => s + (i.attendance_deduction_tl ?? 0) + (i.unpaid_leave_deduction_tl ?? 0),
+      (s, i) => s + (i.advance_tl ?? 0) + (i.attendance_deduction_tl ?? 0) + (i.unpaid_leave_deduction_tl ?? 0),
       0,
     )
   const netTotalUsd =
     totalSalaryUsd -
     usdItems.reduce(
-      (s, i) => s + (i.attendance_deduction_tl ?? 0) + (i.unpaid_leave_deduction_tl ?? 0),
+      (s, i) => s + (i.advance_tl ?? 0) + (i.attendance_deduction_tl ?? 0) + (i.unpaid_leave_deduction_tl ?? 0),
       0,
     )
 
@@ -202,6 +203,7 @@ function Content({
                   <TableHead className="text-right">{t ? 'Maaş' : 'Salary'}</TableHead>
                   <TableHead className="text-right">{t ? 'Sigorta Elden' : 'Supplement'}</TableHead>
                   <TableHead className="text-right">{t ? 'Banka' : 'Bank'}</TableHead>
+                  <TableHead className="text-right">{t ? 'Avans' : 'Advance'}</TableHead>
                   <TableHead className="text-right">{t ? 'Devam Kes.' : 'Abs. Ded.'}</TableHead>
                   <TableHead className="text-right">{t ? 'İzin Kes.' : 'Leave Ded.'}</TableHead>
                   <TableHead className="text-right">Net</TableHead>
@@ -216,6 +218,7 @@ function Content({
                     item.amount_tl +
                     (item.supplement_tl ?? 0) -
                     (item.bank_deposit_tl ?? 0) -
+                    (item.advance_tl ?? 0) -
                     (item.attendance_deduction_tl ?? 0) -
                     (item.unpaid_leave_deduction_tl ?? 0)
                   return (
@@ -260,6 +263,15 @@ function Content({
                         {(item.bank_deposit_tl ?? 0) > 0 ? (
                           <span className="tabular-nums text-sm font-medium text-blue">
                             -{fmtAmount(item.bank_deposit_tl, 'TL')}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-black/25">&mdash;</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {(item.advance_tl ?? 0) > 0 ? (
+                          <span className="tabular-nums text-sm font-medium text-orange">
+                            -{fmtAmount(item.advance_tl, cur)}
                           </span>
                         ) : (
                           <span className="text-xs text-black/25">&mdash;</span>
@@ -334,6 +346,13 @@ function Content({
                     {totalBankDeposit > 0 && (
                       <span className="tabular-nums text-sm font-bold text-blue">
                         -{fmtAmount(totalBankDeposit, 'TL')}
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {totalAdvance > 0 && (
+                      <span className="tabular-nums text-sm font-bold text-orange">
+                        -{fmtAmount(totalAdvance, 'TL')}
                       </span>
                     )}
                   </TableCell>
