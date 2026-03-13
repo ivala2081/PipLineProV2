@@ -5,19 +5,12 @@ import { BrowserRouter } from 'react-router-dom'
 import '@/lib/i18n'
 import '@/styles/index.css'
 import { App } from '@/app/App'
-import { pwaUpdateController } from '@/lib/pwaUpdateController'
-
-// Register PWA service worker
+// Register PWA service worker with auto-update (checks every 15s)
 if ('serviceWorker' in navigator) {
   import('virtual:pwa-register').then(({ registerSW }) => {
-    const updateSW = registerSW({
-      onNeedRefresh() {
-        pwaUpdateController.setUpdateReady(updateSW)
-      },
-      onOfflineReady() {
-        // App is ready for offline use
-      },
-    })
+    registerSW({ immediate: true, onRegisteredSW(_url, r) {
+      if (r) setInterval(() => r.update(), 15_000)
+    }})
   })
 }
 

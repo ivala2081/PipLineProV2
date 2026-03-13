@@ -1,11 +1,12 @@
 /**
  * Prorated salary calculation for passive (exited) employees.
  *
- * Rules:
- * - Only business days count (weekends excluded when weekendOff=true)
- * - If attendance records exist → count days with status present/late/half_day
- * - If NO attendance records → assume every weekday from start to exit_date was worked
- * - Formula: (workedDays / totalBusinessDays) × monthlySalary
+ * Turkish labour law: monthly salary is divided by 30 (fixed SGK standard),
+ * then multiplied by the number of actual business days worked (weekends excluded).
+ * Formula: (businessDaysWorked / 30) × monthlySalary
+ *
+ * Attendance records (absent / unpaid_leave) reduce the worked day count.
+ * Days without an attendance record are assumed as worked.
  */
 
 export interface ProratedSalaryInput {
@@ -20,7 +21,7 @@ export interface ProratedSalaryInput {
 
 export interface ProratedSalaryResult {
   workedDays: number
-  totalBusinessDays: number
+  totalDays: number // always 30 per Turkish labour law
   proratedSalary: number
   usedAttendance: boolean
 }
@@ -31,37 +32,19 @@ function isBusinessDay(date: Date): boolean {
   return day !== 0 && day !== 6
 }
 
-/** Count business days between two dates (inclusive). */
-function countBusinessDays(start: Date, end: Date): number {
-  let count = 0
-  const current = new Date(start)
-  while (current <= end) {
-    if (isBusinessDay(current)) count++
-    current.setDate(current.getDate() + 1)
-  }
-  return count
-}
-
 /** Parse YYYY-MM-DD to a local Date (avoids timezone shift). */
 function parseDate(str: string): Date {
   return new Date(str + 'T00:00:00')
 }
 
 export function calculateProratedSalary(input: ProratedSalaryInput): ProratedSalaryResult {
-  const { monthlySalary, exitDate, hireDate, year, month, attendanceRecords, weekendOff } = input
+  const { monthlySalary, exitDate, hireDate, year, month, attendanceRecords } = input
+
+  const LEGAL_MONTH_DAYS = 30 // Turkish labour law fixed divisor
 
   // Full month boundaries
   const monthStart = new Date(year, month - 1, 1)
   const monthEnd = new Date(year, month, 0) // last day of month
-
-  // Total business days in the full month
-  const totalBusinessDays = weekendOff
-    ? countBusinessDays(monthStart, monthEnd)
-    : Math.round((monthEnd.getDate() * 5) / 7) // fallback: all days if weekendOff=false — but realistically count all
-
-  if (totalBusinessDays === 0) {
-    return { workedDays: 0, totalBusinessDays: 0, proratedSalary: 0, usedAttendance: false }
-  }
 
   // Effective start: max(monthStart, hireDate)
   let effectiveStart = monthStart
@@ -77,38 +60,45 @@ export function calculateProratedSalary(input: ProratedSalaryInput): ProratedSal
   // Clamp exit to month boundary
   const effectiveEnd = exit < monthEnd ? exit : monthEnd
 
-  // Check if attendance records exist for this month
-  const hasAttendance = attendanceRecords.length > 0
-
-  let workedDays: number
-
-  if (hasAttendance) {
-    // Use attendance: count present, late, half_day (half_day counts as 0.5)
-    const workStatuses = new Set(['present', 'late', 'half_day'])
-    workedDays = 0
-    for (const record of attendanceRecords) {
-      const recordDate = parseDate(record.date)
-      // Only count records within the effective range
-      if (recordDate < effectiveStart || recordDate > effectiveEnd) continue
-      // Skip weekends if weekendOff
-      if (weekendOff && !isBusinessDay(recordDate)) continue
-      if (workStatuses.has(record.status)) {
-        workedDays += record.status === 'half_day' ? 0.5 : 1
-      }
-    }
-  } else {
-    // No attendance: assume every business day from effectiveStart to effectiveEnd was worked
-    workedDays = weekendOff
-      ? countBusinessDays(effectiveStart, effectiveEnd)
-      : Math.max(0, Math.floor((effectiveEnd.getTime() - effectiveStart.getTime()) / 86400000) + 1)
+  // Build attendance map for quick lookup
+  const attendanceMap = new Map<string, string>()
+  for (const record of attendanceRecords) {
+    attendanceMap.set(record.date, record.status)
   }
 
-  const proratedSalary = Math.round((workedDays / totalBusinessDays) * monthlySalary)
+  const absentStatuses = new Set(['absent', 'unpaid_leave'])
+  let workedDays = 0
+
+  // Walk through every day in the effective range, count only business days
+  const current = new Date(effectiveStart)
+  while (current <= effectiveEnd) {
+    if (isBusinessDay(current)) {
+      const dateStr = current.toISOString().slice(0, 10)
+      const status = attendanceMap.get(dateStr)
+
+      if (status) {
+        // Explicit attendance record exists
+        if (absentStatuses.has(status)) {
+          // absent / unpaid_leave → don't count
+        } else if (status === 'half_day') {
+          workedDays += 0.5
+        } else {
+          workedDays += 1
+        }
+      } else {
+        // No record for this business day → assume worked
+        workedDays += 1
+      }
+    }
+    current.setDate(current.getDate() + 1)
+  }
+
+  const proratedSalary = Math.round((workedDays / LEGAL_MONTH_DAYS) * monthlySalary)
 
   return {
     workedDays,
-    totalBusinessDays,
+    totalDays: LEGAL_MONTH_DAYS,
     proratedSalary,
-    usedAttendance: hasAttendance,
+    usedAttendance: attendanceMap.size > 0,
   }
 }

@@ -8,15 +8,13 @@ import { registerRoute, NavigationRoute } from 'workbox-routing'
 import { StaleWhileRevalidate, CacheFirst, NetworkFirst } from 'workbox-strategies'
 import { CacheableResponsePlugin } from 'workbox-cacheable-response'
 import { ExpirationPlugin } from 'workbox-expiration'
+import { clientsClaim } from 'workbox-core'
 
 declare let self: ServiceWorkerGlobalScope
 
-// Allow the main thread (vite-plugin-pwa) to activate the waiting SW on demand
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting()
-  }
-})
+// Auto-activate new service worker and take control of open tabs immediately
+self.skipWaiting()
+clientsClaim()
 
 // Guard: stop Workbox from touching non-HTTP requests (e.g. chrome-extension://).
 // This listener is registered first; stopImmediatePropagation() prevents

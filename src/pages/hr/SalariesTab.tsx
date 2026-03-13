@@ -287,8 +287,8 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
           description:
             prorated
               ? lang === 'tr'
-                ? `${e.full_name} — ${periodLabel} Hakediş (${prorated.workedDays}/${prorated.totalBusinessDays} iş günü)`
-                : `${e.full_name} — ${periodLabel} Prorated Salary (${prorated.workedDays}/${prorated.totalBusinessDays} days)`
+                ? `${e.full_name} — ${periodLabel} Hakediş (${prorated.workedDays}/${prorated.totalDays} gün)`
+                : `${e.full_name} — ${periodLabel} Prorated Salary (${prorated.workedDays}/${prorated.totalDays} days)`
               : lang === 'tr'
                 ? `${e.full_name} — ${periodLabel} Maaş Ödemesi`
                 : `${e.full_name} — ${periodLabel} Salary Payment`,
@@ -689,7 +689,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                                 </span>
                                 {prorated && (
                                   <span className="text-[10px] text-black/40">
-                                    {prorated.workedDays}/{prorated.totalBusinessDays} {lang === 'tr' ? 'iş günü' : 'days'}
+                                    {prorated.workedDays}/{prorated.totalDays} {lang === 'tr' ? 'gün' : 'days'}
                                   </span>
                                 )}
                               </div>

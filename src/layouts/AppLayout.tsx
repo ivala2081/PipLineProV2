@@ -66,7 +66,6 @@ import { OnlineCount } from '@/components/OnlineCount'
 import { NotificationBell } from '@/components/NotificationBell'
 import { CommandPalette } from '@/components/CommandPalette/CommandPalette'
 import { BottomNav } from '@/components/BottomNav'
-import { PwaUpdatePrompt } from '@/components/PwaUpdatePrompt'
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar Brand (logo + org name)                                    */
@@ -605,7 +604,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </div>
       </SidebarInset>
       <BottomNav />
-      <PwaUpdatePrompt />
       <CommandPalette />
     </SidebarProvider>
   )
