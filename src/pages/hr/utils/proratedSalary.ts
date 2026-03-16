@@ -54,6 +54,11 @@ export function calculateProratedSalary(input: ProratedSalaryInput): ProratedSal
   // Clamp exit to month boundary
   const effectiveEnd = exit < monthEnd ? exit : monthEnd
 
+  // Guard: if effective start is after effective end (data error), return zero
+  if (effectiveStart > effectiveEnd) {
+    return { workedDays: 0, totalDays: LEGAL_MONTH_DAYS, proratedSalary: 0, usedAttendance: false }
+  }
+
   // Count calendar days (weekends included)
   let workedDays = 0
   const current = new Date(effectiveStart)

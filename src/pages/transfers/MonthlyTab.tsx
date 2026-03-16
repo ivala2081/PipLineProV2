@@ -406,7 +406,7 @@ export function MonthlyTab() {
                   ref={rateInputRef}
                   type="number"
                   step="0.01"
-                  defaultValue="43.60"
+                  defaultValue={data?.kpis?.avg_rate?.toFixed(2) ?? ''}
                   className="h-7 w-24 rounded-lg border border-black/10 bg-white px-2 text-right font-mono text-sm font-bold tabular-nums text-black/70 outline-none focus:border-black/25"
                   autoFocus
                   onKeyDown={(e) => {

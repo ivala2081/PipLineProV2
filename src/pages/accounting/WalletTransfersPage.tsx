@@ -374,7 +374,7 @@ export function WalletTransfersPage() {
         </>
       ) : (
         <WalletDailyClosing
-          transfers={txQuery.transfers}
+          transfers={filteredTransfers}
           isLoading={txQuery.isLoading && txQuery.transfers.length === 0}
           currentBalances={currentBalances}
         />

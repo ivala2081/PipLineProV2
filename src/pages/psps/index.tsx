@@ -181,8 +181,9 @@ export function PspsPage() {
 
   const handleAddPsp = async () => {
     if (!newScope) return
+    const parsedRate = parseFloat(newRate)
     if (newScope === 'local') {
-      if (!newName.trim() || !newRate) return
+      if (!newName.trim() || !newRate || isNaN(parsedRate) || parsedRate < 0) return
     } else {
       if (!newName.trim() || !newProvider || !newAppId.trim()) return
     }
@@ -195,7 +196,7 @@ export function PspsPage() {
       }
 
       if (newScope === 'local') {
-        data.commission_rate = Number(newRate) / 100
+        data.commission_rate = parsedRate / 100
         if (newAcceptedMethods.length > 0) {
           data.accepted_payment_method_ids = newAcceptedMethods
         }

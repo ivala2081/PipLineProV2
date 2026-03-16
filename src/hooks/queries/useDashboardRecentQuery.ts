@@ -55,6 +55,7 @@ export function useDashboardRecentQuery() {
         .from('transfers')
         .select(TRANSFER_SELECT)
         .eq('organization_id', currentOrg.id)
+        .is('deleted_at', null)
         .order('transfer_date', { ascending: false })
         .limit(10)
 

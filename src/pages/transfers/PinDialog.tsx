@@ -7,9 +7,11 @@ interface PinDialogProps {
   open: boolean
   onClose: () => void
   onVerified: () => void
+  title?: string
+  description?: string
 }
 
-export function PinDialog({ open, onClose, onVerified }: PinDialogProps) {
+export function PinDialog({ open, onClose, onVerified, title, description }: PinDialogProps) {
   const { t } = useTranslation('pages')
   const [pinInput, setPinInput] = useState('')
   const [pinError, setPinError] = useState('')
@@ -59,9 +61,13 @@ export function PinDialog({ open, onClose, onVerified }: PinDialogProps) {
       <DialogContent size="sm" className="p-0" aria-describedby={undefined}>
         <div className="px-6 pt-6 pb-5">
           <DialogHeader>
-            <DialogTitle className="text-sm font-semibold">{t('transfers.pin.title')}</DialogTitle>
+            <DialogTitle className="text-sm font-semibold">
+              {title ?? t('transfers.pin.title')}
+            </DialogTitle>
           </DialogHeader>
-          <p className="mt-1 text-[12px] text-black/60">{t('transfers.pin.description')}</p>
+          <p className="mt-1 text-[12px] text-black/60">
+            {description ?? t('transfers.pin.description')}
+          </p>
 
           <div className="mt-4">
             <input

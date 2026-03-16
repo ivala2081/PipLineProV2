@@ -29,7 +29,6 @@ export function usePresenceSubscription() {
           event: 'UPDATE',
           schema: 'public',
           table: 'profiles',
-          filter: `id=in.(${currentOrg.id})`, // Will be filtered by RLS
         },
         (payload) => {
           console.log('Presence update:', payload)

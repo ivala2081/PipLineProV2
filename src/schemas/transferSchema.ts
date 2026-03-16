@@ -9,7 +9,11 @@ export const transferFormSchema = z.object({
   raw_amount: z.coerce.number().positive('Amount must be positive'),
   currency: z.string().min(1, 'Currency is required'),
   type_id: z.string().min(1, 'Type is required'),
-  exchange_rate: z.coerce.number().positive().max(200, 'Exchange rate seems too high').default(1),
+  exchange_rate: z.coerce
+    .number()
+    .positive()
+    .max(100000, 'Exchange rate seems too high')
+    .default(1),
   crm_id: z.string().optional(),
   meta_id: z.string().optional(),
   employee_id: z.string().optional(),

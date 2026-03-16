@@ -37,7 +37,7 @@ export function calculateLateHours(checkInTime: string, standardCheckIn: string)
   const ciMinutes = ciH * 60 + ciM
   const stdMinutes = stdH * 60 + stdM
   if (ciMinutes <= stdMinutes) return 0
-  return Math.ceil((ciMinutes - stdMinutes) / 60)
+  return Math.round(((ciMinutes - stdMinutes) / 60) * 100) / 100
 }
 
 /* ------------------------------------------------------------------ */

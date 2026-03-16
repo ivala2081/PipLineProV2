@@ -19,6 +19,7 @@ import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { queryKeys } from '@/lib/queryKeys'
 import { localDayStart, localDayEnd } from '@/lib/date'
 import { formatAmount, parseAmount, amountPlaceholder } from '@/lib/formatAmount'
+import { useToast } from '@/hooks/useToast'
 import type { TransferRow } from '@/hooks/useTransfers'
 import { TransferAuditDialog } from './TransferAuditDialog'
 import { TransferRowItem } from './TransferRowItem'
@@ -224,6 +225,7 @@ export function TransfersTable({
   const { currentOrg } = useOrganization()
   const baseCurrency = currentOrg?.base_currency ?? 'TRY'
   const queryClient = useQueryClient()
+  const { toast } = useToast()
   const [state, dispatch] = useReducer(reducer, initialState)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [selectionMode, setSelectionMode] = useState(false)
@@ -428,7 +430,12 @@ export function TransfersTable({
       t.category?.is_deposit
         ? String(Math.round(Math.abs(t.amount) * (t.psp?.commission_rate ?? 0) * 100) / 100)
         : '0',
-      String(t.amount),
+      t.category?.is_deposit
+        ? String(
+            Math.abs(t.amount) -
+              Math.round(Math.abs(t.amount) * (t.psp?.commission_rate ?? 0) * 100) / 100,
+          )
+        : String(Math.abs(t.amount)),
       t.psp?.name ?? '',
       t.type?.name ?? '',
       t.crm_id ?? '',
@@ -451,10 +458,14 @@ export function TransfersTable({
     if (bulkPspId) updates.psp_id = bulkPspId
     if (bulkTypeId) updates.type_id = bulkTypeId
     if (Object.keys(updates).length === 0) return
-    await supabase
+    const { error } = await supabase
       .from('transfers')
       .update(updates as never)
       .in('id', [...selectedIds])
+    if (error) {
+      toast({ title: t('transfers.toast.error', 'Error'), variant: 'error' })
+      return
+    }
     queryClient.invalidateQueries({ queryKey: queryKeys.transfers.lists() })
     setShowBulkEdit(false)
     setSelectedIds(new Set())

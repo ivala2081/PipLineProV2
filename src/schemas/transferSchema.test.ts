@@ -67,13 +67,13 @@ describe('transferFormSchema', () => {
     if (result.success) expect(result.data.raw_amount).toBe(150)
   })
 
-  it('rejects exchange_rate above 200', () => {
-    const result = transferFormSchema.safeParse({ ...validInput(), exchange_rate: 201 })
+  it('rejects exchange_rate above 100000', () => {
+    const result = transferFormSchema.safeParse({ ...validInput(), exchange_rate: 100001 })
     expect(result.success).toBe(false)
   })
 
-  it('accepts exchange_rate at 200', () => {
-    const result = transferFormSchema.safeParse({ ...validInput(), exchange_rate: 200 })
+  it('accepts exchange_rate at 100000', () => {
+    const result = transferFormSchema.safeParse({ ...validInput(), exchange_rate: 100000 })
     expect(result.success).toBe(true)
   })
 

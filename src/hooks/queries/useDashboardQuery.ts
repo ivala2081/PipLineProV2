@@ -261,6 +261,7 @@ async function fetchKpis(
     .from('transfers')
     .select(COLUMNS)
     .eq('organization_id', orgId)
+    .is('deleted_at', null)
     .gte('transfer_date', from)
     .lte('transfer_date', to)
 

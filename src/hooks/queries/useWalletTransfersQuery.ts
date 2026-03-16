@@ -50,11 +50,11 @@ export function useWalletTransfersQuery(
     if (page === 0) {
       setAllTxs(nonZero)
     } else {
-      const seen = new Set(allTxs.map((tx) => tx.hash))
-      const fresh = nonZero.filter((tx) => !seen.has(tx.hash))
-      if (fresh.length > 0) {
-        setAllTxs([...allTxs, ...fresh])
-      }
+      setAllTxs((prev) => {
+        const seen = new Set(prev.map((tx) => tx.hash))
+        const fresh = nonZero.filter((tx) => !seen.has(tx.hash))
+        return fresh.length > 0 ? [...prev, ...fresh] : prev
+      })
     }
     setNextCursor(data.nextCursor)
     setHasMore(data.hasMore)

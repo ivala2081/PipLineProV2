@@ -111,6 +111,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   USDT: '$',
   USD: '$',
   TL: '₺',
+  TRY: '₺',
 }
 
 const REGISTER_CONFIG: Record<

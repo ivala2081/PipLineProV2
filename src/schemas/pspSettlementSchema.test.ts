@@ -4,7 +4,7 @@ function validInput() {
   return {
     settlement_date: '2024-01-15',
     amount: 100,
-    currency: 'TL' as const,
+    currency: 'TRY' as const,
   }
 }
 
@@ -35,8 +35,8 @@ describe('settlementFormSchema', () => {
     if (result.success) expect(result.data.amount).toBe(200)
   })
 
-  it('accepts TL currency', () => {
-    const result = settlementFormSchema.safeParse({ ...validInput(), currency: 'TL' })
+  it('accepts TRY currency', () => {
+    const result = settlementFormSchema.safeParse({ ...validInput(), currency: 'TRY' })
     expect(result.success).toBe(true)
   })
 
