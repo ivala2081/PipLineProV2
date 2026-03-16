@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { DotsThree, PencilSimple, Trash, Eye, ClockCounterClockwise } from '@phosphor-icons/react'
 import type { TransferRow } from '@/hooks/useTransfers'
-import { formatNumber } from './transfersTableUtils'
+import { formatNumber, isPaymentType } from './transfersTableUtils'
 import {
   TableRow,
   TableCell,
@@ -45,6 +45,7 @@ export const TransferRowItem = React.memo(function TransferRowItem({
 
   const typeName = row.type?.name?.toLowerCase() ?? ''
   const isBlocked = typeName.includes('bloke') || typeName.includes('blocked')
+  const isPayment = isPaymentType(typeName)
 
   return (
     <TableRow className={`hover:bg-black/[0.015] ${isBlocked ? 'opacity-60' : ''}`}>
@@ -151,6 +152,11 @@ export const TransferRowItem = React.memo(function TransferRowItem({
         {isBlocked && (
           <Tag variant="default" className="ml-1.5 text-[9px] opacity-60">
             {t('transfers.table.blocked', 'BLOCKED')}
+          </Tag>
+        )}
+        {isPayment && (
+          <Tag variant="blue" className="ml-1.5 text-[9px]">
+            {t('transfers.table.payment', 'PAYMENT')}
           </Tag>
         )}
       </TableCell>

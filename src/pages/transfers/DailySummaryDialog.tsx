@@ -14,6 +14,7 @@ import {
   TrendDown,
   CalendarBlank,
   ChartBar,
+  Wallet,
 } from '@phosphor-icons/react'
 import type { TransferRow } from '@/hooks/useTransfers'
 import {
@@ -122,6 +123,8 @@ export function DailySummaryDialog({
                       <h2 className="text-sm font-semibold text-black/80">{group.label}</h2>
                       <p className="text-[11px] text-black/35">
                         {t('transfers.summary.count', { count: s.count })}
+                        {s.payment.count > 0 &&
+                          ` · ${s.payment.count} ${t('transfers.summary.paymentLabel', 'payments')}`}
                         {' · '}
                         {s.depositCount} {t('transfers.summary.deposits').toLowerCase()}
                         {', '}
@@ -302,6 +305,56 @@ export function DailySummaryDialog({
                   </div>
                 </div>
               </div>
+
+              {/* ── Payment Transfers section ── */}
+              {s.payment.count > 0 && (
+                <div className="border-t border-black/[0.06] px-6 py-3">
+                  <div className="mb-2 flex items-center gap-1.5">
+                    <Wallet size={12} weight="bold" className="text-blue/50" />
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-blue/50">
+                      {t('transfers.summary.paymentSection', 'Payment Transfers')}
+                    </span>
+                    <span className="rounded-full bg-blue/10 px-2 py-0.5 text-[10px] font-semibold text-blue">
+                      {s.payment.count}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {/* Payment Deposits */}
+                    <div className="rounded-lg border border-blue/10 bg-blue/[0.03] px-2.5 py-2">
+                      <p className="text-[10px] text-blue/50">{t('transfers.summary.deposits')}</p>
+                      <p className="mt-1 font-mono text-xs font-bold tabular-nums text-black/70">
+                        {formatNumber(s.payment.totalDeposits, lang)}
+                        <span className="ml-0.5 text-[10px] opacity-30">₺</span>
+                      </p>
+                      <p className="mt-0.5 text-[10px] text-black/25">{s.payment.depositCount}</p>
+                    </div>
+                    {/* Payment Withdrawals */}
+                    <div className="rounded-lg border border-blue/10 bg-blue/[0.03] px-2.5 py-2">
+                      <p className="text-[10px] text-blue/50">
+                        {t('transfers.summary.withdrawals')}
+                      </p>
+                      <p className="mt-1 font-mono text-xs font-bold tabular-nums text-black/70">
+                        {formatNumber(s.payment.totalWithdrawals, lang)}
+                        <span className="ml-0.5 text-[10px] opacity-30">₺</span>
+                      </p>
+                      <p className="mt-0.5 text-[10px] text-black/25">
+                        {s.payment.withdrawalCount}
+                      </p>
+                    </div>
+                    {/* Payment Net */}
+                    <div className="rounded-lg border border-blue/10 bg-blue/[0.03] px-2.5 py-2">
+                      <p className="text-[10px] text-blue/50">{t('transfers.summary.net')}</p>
+                      <p
+                        className={`mt-1 font-mono text-xs font-bold tabular-nums ${s.payment.net >= 0 ? 'text-blue' : 'text-red'}`}
+                      >
+                        {s.payment.net >= 0 ? '+' : '−'}
+                        {formatNumber(Math.abs(s.payment.net), lang)}
+                        <span className="ml-0.5 text-[10px] opacity-30">₺</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* ── USD Conversion section ── */}
               <div className="border-t border-black/[0.06] bg-black/[0.015] px-6 py-3">

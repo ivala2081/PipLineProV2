@@ -9,6 +9,16 @@ export interface DateGroup {
   transfers: TransferRow[]
 }
 
+export interface PaymentSummary {
+  count: number
+  totalTry: number
+  depositCount: number
+  withdrawalCount: number
+  totalDeposits: number
+  totalWithdrawals: number
+  net: number
+}
+
 export interface DaySummary {
   deposits: number
   withdrawals: number
@@ -24,6 +34,19 @@ export interface DaySummary {
   netWithCommUsd: number
   netWithoutCommUsd: number
   dayRate: number
+  payment: PaymentSummary
+}
+
+/* ── Type detection helpers ─────────────────────────── */
+
+export function isBlockedType(typeName: string): boolean {
+  const n = typeName.toLowerCase()
+  return n.includes('blocked') || n.includes('bloke')
+}
+
+export function isPaymentType(typeName: string): boolean {
+  const n = typeName.toLowerCase()
+  return n.includes('payment') || n.includes('ödeme') || n.includes('odeme')
 }
 
 /* ── Locale helpers ─────────────────────────────────── */
@@ -91,19 +114,28 @@ export function countUsdTransfers(transfers: TransferRow[]): number {
   return transfers.filter((t) => {
     if (t.currency !== 'USDT') return false
     const typeName = t.type?.name?.toLowerCase() ?? ''
-    return !typeName.includes('blocked') && !typeName.includes('bloke')
+    return !isBlockedType(typeName) && !isPaymentType(typeName)
   }).length
 }
 
 /* ── Day Summary ────────────────────────────────────── */
 
 export function computeDaySummary(transfers: TransferRow[]): DaySummary {
-  // Exclude blocked/bloke transfers from all calculations (mirrors SQL is_excluded flag)
-  const active = transfers.filter((t) => {
+  // Exclude blocked transfers from all calculations (mirrors SQL is_excluded flag)
+  const nonBlocked = transfers.filter((t) => {
     const typeName = t.type?.name?.toLowerCase() ?? ''
-    return !typeName.includes('blocked') && !typeName.includes('bloke')
+    return !isBlockedType(typeName)
   })
 
+  // Split into client and payment transfers
+  const clientTransfers = nonBlocked.filter(
+    (t) => !isPaymentType(t.type?.name?.toLowerCase() ?? ''),
+  )
+  const paymentTransfers = nonBlocked.filter((t) =>
+    isPaymentType(t.type?.name?.toLowerCase() ?? ''),
+  )
+
+  // ── Client transfer aggregation (drives net cash / revenue) ──
   let deposits = 0
   let withdrawals = 0
   let totalCommission = 0
@@ -117,7 +149,7 @@ export function computeDaySummary(transfers: TransferRow[]): DaySummary {
   let rateSum = 0
   let rateCount = 0
 
-  for (const t of active) {
+  for (const t of clientTransfers) {
     const tryAmount = Math.abs(t.amount_try ?? 0)
     const rate = t.exchange_rate ?? 1
     // Commission only applies to deposits
@@ -153,13 +185,33 @@ export function computeDaySummary(transfers: TransferRow[]): DaySummary {
     }
   }
 
+  // ── Payment transfer aggregation (separate section) ──
+  let pmtDeposits = 0
+  let pmtWithdrawals = 0
+  let pmtDepositCount = 0
+  let pmtWithdrawalCount = 0
+  let pmtTotalTry = 0
+
+  for (const t of paymentTransfers) {
+    const tryAmount = Math.abs(t.amount_try ?? 0)
+    const isDeposit = t.category?.is_deposit ?? false
+    pmtTotalTry += tryAmount
+    if (isDeposit) {
+      pmtDeposits += tryAmount
+      pmtDepositCount++
+    } else {
+      pmtWithdrawals += tryAmount
+      pmtWithdrawalCount++
+    }
+  }
+
   return {
     deposits,
     withdrawals,
     net: deposits - withdrawals,
     commission: totalCommission,
     commissionUsd: totalCommissionUsd,
-    count: active.length,
+    count: clientTransfers.length,
     depositCount,
     withdrawalCount,
     totalBank,
@@ -168,5 +220,14 @@ export function computeDaySummary(transfers: TransferRow[]): DaySummary {
     netWithoutCommUsd,
     netWithCommUsd: netWithoutCommUsd - totalCommissionUsd,
     dayRate: rateCount > 0 ? rateSum / rateCount : 0,
+    payment: {
+      count: paymentTransfers.length,
+      totalTry: pmtTotalTry,
+      depositCount: pmtDepositCount,
+      withdrawalCount: pmtWithdrawalCount,
+      totalDeposits: pmtDeposits,
+      totalWithdrawals: pmtWithdrawals,
+      net: pmtDeposits - pmtWithdrawals,
+    },
   }
 }

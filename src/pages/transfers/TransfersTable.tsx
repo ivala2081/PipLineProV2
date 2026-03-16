@@ -24,7 +24,7 @@ import { TransferAuditDialog } from './TransferAuditDialog'
 import { TransferRowItem } from './TransferRowItem'
 import { TransferDetailSheet } from './TransferDetailSheet'
 import { DailySummaryDialog } from './DailySummaryDialog'
-import { groupByDate, type DateGroup } from './transfersTableUtils'
+import { groupByDate, isBlockedType, isPaymentType, type DateGroup } from './transfersTableUtils'
 import {
   Table,
   TableHeader,
@@ -844,7 +844,7 @@ export function TransfersTable({
             {groups.map((group) => {
               const groupNet = group.transfers.reduce((sum, t) => {
                 const typN = t.type?.name?.toLowerCase() ?? ''
-                if (typN.includes('blok') || typN.includes('blocked')) return sum
+                if (isBlockedType(typN) || isPaymentType(typN)) return sum
                 return sum + (t.amount_try ?? t.amount ?? 0)
               }, 0)
 

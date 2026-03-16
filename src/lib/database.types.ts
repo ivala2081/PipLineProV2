@@ -1756,6 +1756,7 @@ export type Database = {
         Row: {
           aliases: string[]
           created_at: string
+          exclude_from_net: boolean
           id: string
           is_excluded: boolean
           is_system: boolean
@@ -1765,6 +1766,7 @@ export type Database = {
         Insert: {
           aliases?: string[]
           created_at?: string
+          exclude_from_net?: boolean
           id: string
           is_excluded?: boolean
           is_system?: boolean
@@ -1774,6 +1776,7 @@ export type Database = {
         Update: {
           aliases?: string[]
           created_at?: string
+          exclude_from_net?: boolean
           id?: string
           is_excluded?: boolean
           is_system?: boolean

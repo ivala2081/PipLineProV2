@@ -222,7 +222,9 @@
       "original": "avg",
       "usdTransferCount": "{{count}} USDT",
       "applyingRate": "Applying...",
-      "breakdown": "Breakdown"
+      "breakdown": "Breakdown",
+      "paymentSection": "Payment Transfers",
+      "paymentLabel": "payments"
     },
     "typeValues": {
       "Client": "Client",
@@ -359,6 +361,7 @@
     "table": {
       "netUsd": "Net USD",
       "blocked": "BLOCKED",
+      "payment": "PAYMENT",
       "commissionWithdrawalTooltip": "Withdrawals are not charged commission"
     },
     "bulk": {

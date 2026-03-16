@@ -33,8 +33,17 @@ nul
 *.csv
 *.sql.bak
 
-# Temp files
+# Coverage
+coverage/
+
+# Temp/data files
 supabase/.temp/
+*.json.bak
+lasttransferdata.json
+tmp_*.json
 
 # One-off scripts
 *.cjs
+
+# Workspace files
+*.code-workspace
