@@ -159,6 +159,11 @@ export const queryKeys = {
     all: ['apiKeys'] as const,
     list: (orgId: string) => ['apiKeys', 'list', orgId] as const,
   },
+  ozet: {
+    all: ['ozet'] as const,
+    summary: (orgId: string, year: number, month: number) =>
+      ['ozet', 'summary', orgId, year, month] as const,
+  },
   hr: {
     root: ['hr'] as const,
     all: (orgId: string) => ['hr', orgId] as const,
@@ -190,8 +195,7 @@ export const queryKeys = {
     advances: (orgId: string, year: number, month: number) =>
       ['hr', orgId, 'advances', year, month] as const,
     bulkPayments: (orgId: string) => ['hr', orgId, 'bulk-payments'] as const,
-    bulkPaymentDetail: (orgId: string, id: string) =>
-      ['hr', orgId, 'bulk-payment', id] as const,
+    bulkPaymentDetail: (orgId: string, id: string) => ['hr', orgId, 'bulk-payment', id] as const,
     baremFailures: (orgId: string, period: string) =>
       ['hr', orgId, 'barem-failures', period] as const,
     baremTargets: (orgId: string, period: string) =>

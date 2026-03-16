@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import { CreditCard, Plus, Clock, CaretRight, Globe, MapPin } from '@phosphor-icons/react'
+import { CreditCard, Plus, Clock, CaretRight, Globe, MapPin, Table } from '@phosphor-icons/react'
 import {
   Card,
   Button,
@@ -32,6 +32,7 @@ import { useLookupMutation } from '@/hooks/queries/useLookupMutation'
 import { useLookupQueries } from '@/hooks/queries/useLookupQueries'
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import { queryKeys } from '@/lib/queryKeys'
+import { SummaryTab } from './PspSummaryTab'
 
 function formatCurrency(value: number): string {
   return value.toLocaleString('en-US', {
@@ -156,7 +157,7 @@ export function PspsPage() {
 
   useRealtimeSubscription('psps', [queryKeys.pspDashboard.all])
 
-  const [scopeTab, setScopeTab] = useState<'local' | 'global'>('local')
+  const [scopeTab, setScopeTab] = useState<'local' | 'global' | 'summary'>('local')
   const [addDialogOpen, setAddDialogOpen] = useState(false)
 
   // Add dialog state
@@ -281,7 +282,7 @@ export function PspsPage() {
         title={t('psps.title')}
         subtitle={t('psps.subtitle')}
         actions={
-          isAdmin ? (
+          scopeTab !== 'summary' && isAdmin ? (
             <Button
               variant="filled"
               onClick={() => {
@@ -296,8 +297,11 @@ export function PspsPage() {
         }
       />
 
-      {/* Local / Global Tabs */}
-      <Tabs value={scopeTab} onValueChange={(v) => setScopeTab(v as 'local' | 'global')}>
+      {/* Local / Global / Summary Tabs */}
+      <Tabs
+        value={scopeTab}
+        onValueChange={(v) => setScopeTab(v as 'local' | 'global' | 'summary')}
+      >
         <TabsList>
           <TabsTrigger value="local">
             <MapPin size={14} className="mr-1" />
@@ -313,6 +317,10 @@ export function PspsPage() {
               <span className="ml-1.5 text-[10px] text-black/40">({globalPsps.length})</span>
             )}
           </TabsTrigger>
+          <TabsTrigger value="summary">
+            <Table size={14} className="mr-1" />
+            {t('psps.tabs.summary')}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="local" className="pt-lg">
@@ -321,6 +329,10 @@ export function PspsPage() {
 
         <TabsContent value="global" className="pt-lg">
           {renderCards(globalPsps)}
+        </TabsContent>
+
+        <TabsContent value="summary" className="pt-lg">
+          <SummaryTab />
         </TabsContent>
       </Tabs>
 

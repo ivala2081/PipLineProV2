@@ -878,8 +878,19 @@
     "noPsps": "Henüz kasa yok",
     "noPspsDesc": "Başlamak için bir ödeme hizmet sağlayıcısı ekleyin.",
     "tabs": {
+      "summary": "Özet",
       "local": "Yerel",
       "global": "Global"
+    },
+    "summary": {
+      "date": "Tarih",
+      "total": "Toplam",
+      "grandTotal": "Genel Toplam",
+      "days": "gün",
+      "empty": "Kasa verisi yok",
+      "emptyDescription": "Bu ay için işlem yapılmış aktif kasa bulunamadı.",
+      "showAll": "Tüm kasaları göster",
+      "hideEmpty": "Boş kasaları gizle"
     },
     "addDialog": {
       "scopeLabel": "Kasa Tipi",

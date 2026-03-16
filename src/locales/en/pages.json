@@ -878,8 +878,19 @@
     "noPsps": "No PSPs yet",
     "noPspsDesc": "Add a payment service provider to get started.",
     "tabs": {
+      "summary": "Summary",
       "local": "Local",
       "global": "Global"
+    },
+    "summary": {
+      "date": "Date",
+      "total": "Total",
+      "grandTotal": "Grand Total",
+      "days": "days",
+      "empty": "No PSP data",
+      "emptyDescription": "No active PSPs with transactions found for this month.",
+      "showAll": "Show all PSPs",
+      "hideEmpty": "Hide empty PSPs"
     },
     "addDialog": {
       "scopeLabel": "PSP Type",
