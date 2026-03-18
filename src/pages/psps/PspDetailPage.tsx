@@ -674,21 +674,28 @@ function SettlementsTab({ pspId, isAdmin }: { pspId: string; isAdmin: boolean })
             type="button"
             className="flex size-8 items-center justify-center rounded-lg border border-black/10 bg-bg1 transition-colors hover:border-black/20 hover:bg-black/[0.02]"
             onClick={() => {
-              if (sMonth === 0) { setSMonth(11); setSYear((y) => y - 1) }
-              else setSMonth((m) => m - 1)
+              if (sMonth === 0) {
+                setSMonth(11)
+                setSYear((y) => y - 1)
+              } else setSMonth((m) => m - 1)
             }}
           >
             <CaretLeft size={14} className="text-black/50" />
           </button>
           <span className="min-w-[9rem] text-center text-xs font-medium capitalize">
-            {new Date(sYear, sMonth).toLocaleDateString(localeTag, { month: 'long', year: 'numeric' })}
+            {new Date(sYear, sMonth).toLocaleDateString(localeTag, {
+              month: 'long',
+              year: 'numeric',
+            })}
           </span>
           <button
             type="button"
             className="flex size-8 items-center justify-center rounded-lg border border-black/10 bg-bg1 transition-colors hover:border-black/20 hover:bg-black/[0.02]"
             onClick={() => {
-              if (sMonth === 11) { setSMonth(0); setSYear((y) => y + 1) }
-              else setSMonth((m) => m + 1)
+              if (sMonth === 11) {
+                setSMonth(0)
+                setSYear((y) => y + 1)
+              } else setSMonth((m) => m + 1)
             }}
           >
             <CaretRight size={14} className="text-black/50" />
@@ -728,9 +735,7 @@ function SettlementsTab({ pspId, isAdmin }: { pspId: string; isAdmin: boolean })
         {/* Month total */}
         {filtered.length > 0 && (
           <div className="ml-auto flex items-center gap-2 rounded-lg border border-black/[0.07] bg-bg1 px-3 py-1.5">
-            <span className="text-xs text-black/50">
-              {locale === 'tr' ? 'Toplam' : 'Total'}
-            </span>
+            <span className="text-xs text-black/50">{locale === 'tr' ? 'Toplam' : 'Total'}</span>
             <span className="text-sm font-bold tabular-nums text-green">
               {formatCurrency(monthTotal)}
             </span>
@@ -1035,7 +1040,15 @@ function SettingsTab({
 
   // Initial balance
   const [initialBalanceInput, setInitialBalanceInput] = useState('')
+  const [initialBalanceNote, setInitialBalanceNote] = useState(
+    currentPsp?.initial_balance_note ?? '',
+  )
   const [balanceSaving, setBalanceSaving] = useState(false)
+  const [noteSaving, setNoteSaving] = useState(false)
+
+  useEffect(() => {
+    if (currentPsp) setInitialBalanceNote(currentPsp.initial_balance_note ?? '')
+  }, [currentPsp])
 
   const handleInitialBalanceSave = async () => {
     const parsed = parseFloat(initialBalanceInput.replace(/[.,]/g, (m) => (m === ',' ? '.' : '')))
@@ -1049,6 +1062,18 @@ function SettingsTab({
       toast({ title: (error as Error).message || t('transfers.toast.error'), variant: 'error' })
     } finally {
       setBalanceSaving(false)
+    }
+  }
+
+  const handleNoteSave = async () => {
+    setNoteSaving(true)
+    try {
+      await pspMutation.updateItem(pspId, { initial_balance_note: initialBalanceNote })
+      toast({ title: t('transfers.toast.lookupUpdated'), variant: 'success' })
+    } catch (error) {
+      toast({ title: (error as Error).message || t('transfers.toast.error'), variant: 'error' })
+    } finally {
+      setNoteSaving(false)
     }
   }
 
@@ -1319,6 +1344,25 @@ function SettingsTab({
                 {t('psps.settings.updateRate')}
               </Button>
             </div>
+          </div>
+          {/* Note */}
+          <div className="space-y-2 border-t border-black/5 pt-3">
+            <label className="text-xs font-medium text-black/50">
+              {t('psps.settings.initialBalanceNote')}
+            </label>
+            <textarea
+              className="w-full resize-none rounded-lg border border-black/10 bg-transparent px-3 py-2 text-xs leading-relaxed placeholder:text-black/30 focus:border-black/20 focus:outline-none"
+              rows={2}
+              placeholder={t('psps.settings.initialBalanceNotePlaceholder')}
+              value={initialBalanceNote}
+              onChange={(e) => setInitialBalanceNote(e.target.value)}
+            />
+            {initialBalanceNote !== (currentPsp?.initial_balance_note ?? '') && (
+              <Button size="sm" variant="ghost" onClick={handleNoteSave} disabled={noteSaving}>
+                {noteSaving ? <SpinnerGap size={14} className="animate-spin" /> : null}
+                {t('psps.settings.saveNote')}
+              </Button>
+            )}
           </div>
         </div>
       </Card>

@@ -1142,6 +1142,9 @@
       "receivingMethodsSave": "Save",
       "initialBalance": "Initial Balance (Carry-over)",
       "initialBalanceDesc": "The opening carry-over balance for the first day of the ledger. Enter any balance remaining from before the system started tracking.",
+      "initialBalanceNote": "Note",
+      "initialBalanceNotePlaceholder": "e.g. Adjusted +1,051,200 for pre-system carry-over from Excel reconciliation",
+      "saveNote": "Save Note",
       "dangerZone": "Danger Zone",
       "dangerZoneDesc": "Permanent actions that cannot be undone.",
       "deletePsp": "Delete PSP"

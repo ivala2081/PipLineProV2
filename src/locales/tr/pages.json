@@ -1142,6 +1142,9 @@
       "receivingMethodsSave": "Kaydet",
       "initialBalance": "Başlangıç Bakiyesi (Devir)",
       "initialBalanceDesc": "Hesap defterinde ilk günün devir bakiyesi. Sistem öncesi döneme ait kalan bakiye varsa buraya girin.",
+      "initialBalanceNote": "Not",
+      "initialBalanceNotePlaceholder": "ör. Excel mutabakatından +1.051.200 sistem öncesi devir düzeltmesi",
+      "saveNote": "Notu Kaydet",
       "dangerZone": "Tehlikeli Bölge",
       "dangerZoneDesc": "Geri alınamayan kalıcı işlemler.",
       "deletePsp": "Kasayı Sil"
