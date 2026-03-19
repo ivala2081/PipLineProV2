@@ -22,6 +22,7 @@ import { useAuth } from '@/app/providers/AuthProvider'
 import { supabase } from '@/lib/supabase'
 import { PageHeader, Tag, Skeleton, Tabs, TabsList, TabsTrigger, TabsContent } from '@ds'
 import { TrashTab } from '@/pages/transfers/TrashTab'
+import { TransferFixTab } from '@/pages/transfer-fix'
 import { TransferDetailSheet } from '@/pages/transfers/TransferDetailSheet'
 import type { TransferRow } from '@/hooks/useTransfers'
 
@@ -480,6 +481,7 @@ export function AuditLogPage() {
         <TabsList>
           <TabsTrigger value="log">{t('audit.tabs.log', 'Audit Log')}</TabsTrigger>
           {isAdmin && <TabsTrigger value="trash">{t('audit.tabs.trash', 'Trash')}</TabsTrigger>}
+          {isGod && <TabsTrigger value="transfer-fix">Transfer Fix</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="log" className="space-y-4">
@@ -575,6 +577,12 @@ export function AuditLogPage() {
         {isAdmin && (
           <TabsContent value="trash">
             <TrashTab />
+          </TabsContent>
+        )}
+
+        {isGod && (
+          <TabsContent value="transfer-fix">
+            <TransferFixTab />
           </TabsContent>
         )}
       </Tabs>

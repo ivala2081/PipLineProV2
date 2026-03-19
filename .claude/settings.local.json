@@ -133,7 +133,8 @@
       "mcp__2e25e339-6af0-4fc7-afd7-678bc6d60500__list_extensions",
       "WebSearch",
       "WebFetch(domain:tatum.io)",
-      "WebFetch(domain:solana.com)"
+      "WebFetch(domain:solana.com)",
+      "Bash(node -e \":*)"
     ]
   }
 }
