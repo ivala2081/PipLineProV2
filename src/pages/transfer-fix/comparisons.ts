@@ -122,7 +122,7 @@ function getKasaAmountUsd(row: KasaRow): number {
 
 function getKasaAmountTl(row: KasaRow): number {
   const currency = row.currency.toUpperCase().trim()
-  if (currency === 'TL') {
+  if (currency === 'TL' || currency === 'TRY') {
     return Math.abs(parseTurkishDecimal(row.amountRaw))
   }
   return 0
@@ -174,7 +174,15 @@ function groupAmountsMatch(
   const usdMatch = kasaUsdTotal > 0 && csvUsd > 0 && Math.abs(kasaUsdTotal - csvUsd) < 2
   // Either currency match is sufficient — handles mixed-currency deposits
   // (e.g. KASA has both TL + USDT rows for same customer on same day)
-  return tlMatch || usdMatch
+  if (tlMatch || usdMatch) return true
+
+  // Cross-currency fallback: KASA has one currency, CSV has the other filled.
+  // Compare raw KASA total against whichever CSV amount is non-zero.
+  const kasaTotal = kasaTlTotal + kasaUsdTotal // only one will be >0
+  const csvTotal = csvTl || csvUsd
+  if (kasaTotal > 0 && csvTotal > 0 && Math.abs(kasaTotal - csvTotal) < 2) return true
+
+  return false
 }
 
 /**
@@ -281,12 +289,57 @@ function matchSalesCsvToKasa<T>(
         continue
       }
 
-      // Amount mismatch at exact date — mark as mismatch but consume KASA rows
+      // --- 2a-bis. Before reporting amount mismatch, try combining nearby dates (±1 day) ---
+      // A single CSV row may represent the sum of multiple KASA rows on slightly different dates
+      const metaForCombine = normalizeMeta(getMeta(firstRow))
+      const dateForCombine = normalizeDate(getDate(firstRow))
+      const metaEntriesForCombine = kasaByMeta.get(metaForCombine) ?? []
+
+      const combinedCandidates: Array<{ mapKey: string; row: KasaRow }> = []
+      for (const entry of metaEntriesForCombine) {
+        const entryDate = entry.mapKey.split('|')[1]
+        if (!datesWithinRange(dateForCombine, entryDate, 1)) continue
+        for (const r of entry.rows) {
+          if (!matchedKasaKeys.has(`${entry.mapKey}|${r.rowIndex}`)) {
+            combinedCandidates.push({ mapKey: entry.mapKey, row: r })
+          }
+        }
+      }
+
+      const combinedRows = combinedCandidates.map((c) => c.row)
+      if (combinedRows.length > candidates.length && groupAmountsMatch(combinedRows, csvTl, csvUsd)) {
+        // Combined nearby-date rows match the CSV total — consume all
+        const combinedDates = [...new Set(combinedCandidates.map((c) => c.mapKey.split('|')[1]))]
+        const fieldNotes: CsvFieldNote[] = [
+          { field: 'Tarih', kasaValue: combinedDates.join(', '), csvValue: dateForCombine },
+        ]
+        const pmNote = comparePaymentMethods(combinedRows, paymentType)
+        if (pmNote) fieldNotes.push(pmNote)
+
+        amountMismatch.push({
+          type: 'date-mismatch',
+          csvSource,
+          kasaRow: combinedRows[0],
+          csvRow: firstRow as never,
+          kasaAmount: combinedRows.reduce((s, r) => s + getKasaAmountTl(r), 0) ||
+            combinedRows.reduce((s, r) => s + getKasaAmountUsd(r), 0),
+          csvAmount: csvTl || csvUsd,
+          employeeName: employee,
+          managerName: manager,
+          fieldNotes,
+        })
+        for (const c of combinedCandidates) {
+          matchedKasaKeys.add(`${c.mapKey}|${c.row.rowIndex}`)
+        }
+        continue
+      }
+
+      // Amount mismatch — no nearby-date combination helps
       const kasaTlTotal = candidates.reduce((sum, r) => sum + getKasaAmountTl(r), 0)
       const kasaUsdTotal = candidates.reduce((sum, r) => sum + getKasaAmountUsd(r), 0)
-      const fieldNotes: CsvFieldNote[] = []
-      const pmNote = comparePaymentMethods(candidates, paymentType)
-      if (pmNote) fieldNotes.push(pmNote)
+      const fieldNotes2: CsvFieldNote[] = []
+      const pmNote2 = comparePaymentMethods(candidates, paymentType)
+      if (pmNote2) fieldNotes2.push(pmNote2)
 
       amountMismatch.push({
         type: 'amount-mismatch',
@@ -297,7 +350,7 @@ function matchSalesCsvToKasa<T>(
         csvAmount: csvTl || csvUsd,
         employeeName: employee,
         managerName: manager,
-        fieldNotes: fieldNotes.length > 0 ? fieldNotes : undefined,
+        fieldNotes: fieldNotes2.length > 0 ? fieldNotes2 : undefined,
       })
       for (const r of candidates) {
         matchedKasaKeys.add(`${key}|${r.rowIndex}`)
@@ -305,15 +358,16 @@ function matchSalesCsvToKasa<T>(
       continue
     }
 
-    // --- 2b. Date-tolerant fallback: same meta, nearby date (±5 days) ---
+    // --- 2b. Date-tolerant fallback: same meta, nearby date (±1 day) ---
     const normalizedMeta = normalizeMeta(getMeta(firstRow))
     const csvIsoDate = normalizeDate(getDate(firstRow))
     const metaEntries = kasaByMeta.get(normalizedMeta) ?? []
     let nearbyMatch = false
 
+    // First try individual date entries
     for (const entry of metaEntries) {
       const entryDate = entry.mapKey.split('|')[1]
-      if (!datesWithinRange(csvIsoDate, entryDate, 5)) continue
+      if (!datesWithinRange(csvIsoDate, entryDate, 1)) continue
 
       const nearCandidates = entry.rows.filter(
         (r) => !matchedKasaKeys.has(`${entry.mapKey}|${r.rowIndex}`),
@@ -347,6 +401,47 @@ function matchSalesCsvToKasa<T>(
       }
     }
 
+    // Then try combining all nearby-date entries for the same meta
+    if (!nearbyMatch) {
+      const allNearby: Array<{ mapKey: string; row: KasaRow }> = []
+      for (const entry of metaEntries) {
+        const entryDate = entry.mapKey.split('|')[1]
+        if (!datesWithinRange(csvIsoDate, entryDate, 1)) continue
+        for (const r of entry.rows) {
+          if (!matchedKasaKeys.has(`${entry.mapKey}|${r.rowIndex}`)) {
+            allNearby.push({ mapKey: entry.mapKey, row: r })
+          }
+        }
+      }
+
+      const nearbyRows = allNearby.map((c) => c.row)
+      if (nearbyRows.length > 1 && groupAmountsMatch(nearbyRows, csvTl, csvUsd)) {
+        const nearbyDates = [...new Set(allNearby.map((c) => c.mapKey.split('|')[1]))]
+        const fieldNotes: CsvFieldNote[] = [
+          { field: 'Tarih', kasaValue: nearbyDates.join(', '), csvValue: csvIsoDate },
+        ]
+        const pmNote = comparePaymentMethods(nearbyRows, paymentType)
+        if (pmNote) fieldNotes.push(pmNote)
+
+        amountMismatch.push({
+          type: 'date-mismatch',
+          csvSource,
+          kasaRow: nearbyRows[0],
+          csvRow: firstRow as never,
+          kasaAmount: nearbyRows.reduce((s, r) => s + getKasaAmountTl(r), 0) ||
+            nearbyRows.reduce((s, r) => s + getKasaAmountUsd(r), 0),
+          csvAmount: csvTl || csvUsd,
+          employeeName: employee,
+          managerName: manager,
+          fieldNotes,
+        })
+        for (const c of allNearby) {
+          matchedKasaKeys.add(`${c.mapKey}|${c.row.rowIndex}`)
+        }
+        nearbyMatch = true
+      }
+    }
+
     if (nearbyMatch) continue
 
     // --- 2c. Name-based fallback: META ID might be empty in KASA ---
@@ -355,7 +450,7 @@ function matchSalesCsvToKasa<T>(
       const nameEntries = kasaByName.get(csvName) ?? []
       for (const entry of nameEntries) {
         const entryDate = entry.mapKey.split('|')[1]
-        if (!datesWithinRange(csvIsoDate, entryDate, 5)) continue
+        if (!datesWithinRange(csvIsoDate, entryDate, 1)) continue
 
         const nameCandidates = entry.rows.filter(
           (r) => !matchedKasaKeys.has(`${entry.mapKey}|${r.rowIndex}`),
@@ -431,6 +526,182 @@ function matchSalesCsvToKasa<T>(
 }
 
 /* ------------------------------------------------------------------ */
+/*  Reverse matching: KASA → CSV for unmatched deposits                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * For each unmatched KASA deposit, try to find a matching sales CSV row
+ * by meta+date tolerance or name+date tolerance (±1 day, amount must match).
+ * If found, upgrade from 'missing-in-csv' to 'date-mismatch' with CSV enrichment.
+ */
+function reverseMatchUnmatchedDeposits(
+  unmatchedDeposits: CsvDiscrepancy[],
+  orderSatisRows: OrderSatisRow[],
+  ordRetRows: OrdRetDepositRow[],
+  period: { year: number; month: number },
+): CsvDiscrepancy[] {
+  interface SalesCsvEntry {
+    meta: string
+    isoDate: string
+    tutarTl: number
+    tutarUsd: number
+    employeeName: string
+    managerName: string
+    paymentType: string
+    customerName: string
+    csvSource: CsvSource
+    csvRow: OrderSatisRow | OrdRetDepositRow
+  }
+
+  const salesByMeta = new Map<string, SalesCsvEntry[]>()
+  const salesByName = new Map<string, SalesCsvEntry[]>()
+
+  function addEntry(entry: SalesCsvEntry) {
+    const meta = normalizeMeta(entry.meta)
+    if (meta) {
+      if (!salesByMeta.has(meta)) salesByMeta.set(meta, [])
+      salesByMeta.get(meta)!.push(entry)
+    }
+    const name = entry.customerName.toUpperCase().trim()
+    if (name) {
+      if (!salesByName.has(name)) salesByName.set(name, [])
+      salesByName.get(name)!.push(entry)
+    }
+  }
+
+  for (const r of orderSatisRows) {
+    addEntry({
+      meta: r.meta,
+      isoDate: normalizeDate(r.tarih),
+      tutarTl: Math.abs(r.tutarTl),
+      tutarUsd: Math.abs(r.tutarUsd),
+      employeeName: r.mt,
+      managerName: r.ekipLideri,
+      paymentType: r.odemeTuru,
+      customerName: r.musteriAdSoyad,
+      csvSource: 'order-satis',
+      csvRow: r,
+    })
+  }
+
+  for (const r of ordRetRows) {
+    addEntry({
+      meta: r.metaId,
+      isoDate: normalizeDate(r.tarih),
+      tutarTl: Math.abs(r.tutarTl),
+      tutarUsd: Math.abs(r.tutarUsd),
+      employeeName: r.ret,
+      managerName: r.ekipLideri,
+      paymentType: r.odemeTuru,
+      customerName: r.musteriAdSoyad,
+      csvSource: 'ord-ret-deposit',
+      csvRow: r,
+    })
+  }
+
+  // Period bounds — date tolerance must not cross month boundary
+  const periodStart = `${period.year}-${String(period.month).padStart(2, '0')}-01`
+  const lastDay = new Date(period.year, period.month, 0).getDate()
+  const periodEnd = `${period.year}-${String(period.month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+
+  function isWithinPeriod(isoDate: string): boolean {
+    return isoDate >= periodStart && isoDate <= periodEnd
+  }
+
+  const usedCsvRowIndices = new Set<number>()
+
+  function amountMatches(kasaTl: number, kasaUsd: number, entry: SalesCsvEntry): boolean {
+    // Same-currency match
+    if (kasaTl > 0 && entry.tutarTl > 0 && Math.abs(kasaTl - entry.tutarTl) < 2) return true
+    if (kasaUsd > 0 && entry.tutarUsd > 0 && Math.abs(kasaUsd - entry.tutarUsd) < 2) return true
+    // Cross-currency fallback
+    const kasaTotal = kasaTl + kasaUsd
+    const csvTotal = entry.tutarTl || entry.tutarUsd
+    if (kasaTotal > 0 && csvTotal > 0 && Math.abs(kasaTotal - csvTotal) < 2) return true
+    return false
+  }
+
+  return unmatchedDeposits.map((disc) => {
+    const kasaRow = disc.kasaRow
+    if (!kasaRow) return disc
+
+    const kasaMeta = normalizeMeta(kasaRow.metaId)
+    const kasaIsoDate = normalizeDate(kasaRow.dateRaw)
+    const kasaTl = getKasaAmountTl(kasaRow)
+    const kasaUsd = getKasaAmountUsd(kasaRow)
+    const kasaAmount = kasaTl || kasaUsd
+
+    // --- Try 1: Meta-based match with ±1 day tolerance ---
+    if (kasaMeta) {
+      const entries = salesByMeta.get(kasaMeta) ?? []
+      for (const entry of entries) {
+        if (usedCsvRowIndices.has(entry.csvRow.rowIndex)) continue
+        if (!datesWithinRange(kasaIsoDate, entry.isoDate, 1)) continue
+        if (!isWithinPeriod(entry.isoDate)) continue
+        if (!amountMatches(kasaTl, kasaUsd, entry)) continue
+
+        usedCsvRowIndices.add(entry.csvRow.rowIndex)
+        const fieldNotes: CsvFieldNote[] = []
+        if (kasaIsoDate !== entry.isoDate) {
+          fieldNotes.push({ field: 'Tarih', kasaValue: kasaIsoDate, csvValue: entry.isoDate })
+        }
+        const pmNote = comparePaymentMethods([kasaRow], entry.paymentType)
+        if (pmNote) fieldNotes.push(pmNote)
+
+        return {
+          type: 'date-mismatch' as const,
+          csvSource: entry.csvSource,
+          kasaRow,
+          csvRow: entry.csvRow as never,
+          kasaAmount,
+          csvAmount: entry.tutarTl || entry.tutarUsd,
+          employeeName: entry.employeeName,
+          managerName: entry.managerName,
+          fieldNotes: fieldNotes.length > 0 ? fieldNotes : undefined,
+        }
+      }
+    }
+
+    // --- Try 2: Name-based match with ±1 day tolerance ---
+    const kasaName = kasaRow.fullName.toUpperCase().trim()
+    if (kasaName) {
+      const entries = salesByName.get(kasaName) ?? []
+      for (const entry of entries) {
+        if (usedCsvRowIndices.has(entry.csvRow.rowIndex)) continue
+        if (!datesWithinRange(kasaIsoDate, entry.isoDate, 1)) continue
+        if (!isWithinPeriod(entry.isoDate)) continue
+        if (!amountMatches(kasaTl, kasaUsd, entry)) continue
+
+        usedCsvRowIndices.add(entry.csvRow.rowIndex)
+        const fieldNotes: CsvFieldNote[] = [
+          { field: 'META ID', kasaValue: kasaMeta || '(boş)', csvValue: normalizeMeta(entry.meta) },
+        ]
+        if (kasaIsoDate !== entry.isoDate) {
+          fieldNotes.push({ field: 'Tarih', kasaValue: kasaIsoDate, csvValue: entry.isoDate })
+        }
+        const pmNote = comparePaymentMethods([kasaRow], entry.paymentType)
+        if (pmNote) fieldNotes.push(pmNote)
+
+        return {
+          type: 'date-mismatch' as const,
+          csvSource: entry.csvSource,
+          kasaRow,
+          csvRow: entry.csvRow as never,
+          kasaAmount,
+          csvAmount: entry.tutarTl || entry.tutarUsd,
+          employeeName: entry.employeeName,
+          managerName: entry.managerName,
+          fieldNotes: fieldNotes.length > 0 ? fieldNotes : undefined,
+        }
+      }
+    }
+
+    // No reverse match found — keep as missing-in-csv
+    return disc
+  })
+}
+
+/* ------------------------------------------------------------------ */
 /*  Run all CSV comparisons                                            */
 /* ------------------------------------------------------------------ */
 
@@ -451,6 +722,7 @@ export function runAllCsvComparisons(
   orderSatisRows: OrderSatisRow[],
   ordRetRows: OrdRetDepositRow[],
   ordWdRows: OrdWithdrawalRow[],
+  period: { year: number; month: number },
 ): AllCsvCompareResults {
   // Count KASA breakdown
   const kasaClientDeposits = kasaRows.filter((r) => isKasaClient(r) && isKasaDeposit(r)).length
@@ -534,6 +806,14 @@ export function runAllCsvComparisons(
     }
   }
 
+  // Step 6: Reverse match — try to find CSV matches for remaining unmatched KASA deposits
+  const resolvedKasaDeposits = reverseMatchUnmatchedDeposits(
+    unmatchedKasaDeposits,
+    orderSatisRows,
+    ordRetRows,
+    period,
+  )
+
   // Clean up ORDER SATIS missingInCsv — remove items that were matched by RET DEPOSIT
   const orderSatisResult: CsvCompareResult = {
     ...orderSatisMatch.result,
@@ -551,7 +831,7 @@ export function runAllCsvComparisons(
     orderSatis: orderSatisResult,
     ordRetDeposit: ordRetResult,
     ordWithdrawal: ordWdMatch.result,
-    unmatchedKasaDeposits,
+    unmatchedKasaDeposits: resolvedKasaDeposits,
     kasaClientDeposits,
     kasaClientWithdrawals,
     kasaNonClient,

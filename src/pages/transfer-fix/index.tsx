@@ -29,6 +29,7 @@ export function TransferFixTab() {
       data.orderSatis,
       data.ordRetDeposit,
       data.ordWithdrawal,
+      data.period,
     )
     setCsvCompareResults(results)
     setStep('csv-compare')
