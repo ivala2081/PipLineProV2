@@ -1,9 +1,5 @@
 /// <reference lib="webworker" />
-import {
-  precacheAndRoute,
-  cleanupOutdatedCaches,
-  createHandlerBoundToURL,
-} from 'workbox-precaching'
+import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching'
 import { registerRoute, NavigationRoute } from 'workbox-routing'
 import { StaleWhileRevalidate, CacheFirst, NetworkFirst } from 'workbox-strategies'
 import { CacheableResponsePlugin } from 'workbox-cacheable-response'
@@ -29,11 +25,18 @@ self.addEventListener('fetch', (event) => {
 precacheAndRoute(self.__WB_MANIFEST)
 cleanupOutdatedCaches()
 
-// SPA navigation fallback — serve cached index.html for all navigation requests
+// SPA navigation — fetch index.html from network first (prevents stale HTML
+// referencing JS assets that no longer exist after a new deploy).
+// Falls back to the last cached HTML when offline.
 registerRoute(
-  new NavigationRoute(createHandlerBoundToURL('/index.html'), {
-    denylist: [/^\/api/, /^\/functions/],
-  }),
+  new NavigationRoute(
+    new NetworkFirst({
+      cacheName: 'html-cache',
+      networkTimeoutSeconds: 5,
+      plugins: [new CacheableResponsePlugin({ statuses: [0, 200] })],
+    }),
+    { denylist: [/^\/api/, /^\/functions/] },
+  ),
 )
 
 // Google Fonts stylesheet
