@@ -134,7 +134,8 @@
       "WebSearch",
       "WebFetch(domain:tatum.io)",
       "WebFetch(domain:solana.com)",
-      "Bash(node -e \":*)"
+      "Bash(node -e \":*)",
+      "Bash(grep -oP '\"\"[^\"\"]*index\\\\.html[^\"\"]*\"\"' dist/sw.js)"
     ]
   }
 }
