@@ -20,6 +20,8 @@ const PAGE_DEFAULTS: Record<string, string[]> = {
   members: ['admin', 'manager', 'operation', 'ik'],
   ai: ['admin', 'manager', 'operation', 'ik'],
   transfers: ['admin', 'manager', 'operation', 'ik'],
+  'transfer-fix': ['admin', 'manager'],
+  trash: ['admin', 'manager'],
   accounting: ['admin', 'manager', 'ik'],
   psps: ['admin'],
   hr: ['admin', 'ik'],

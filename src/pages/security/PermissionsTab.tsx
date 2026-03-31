@@ -47,7 +47,8 @@ interface ResourceGroup {
 
 const PAGE_TABLES = new Set([
   'page:dashboard', 'page:members', 'page:ai',
-  'page:transfers', 'page:accounting', 'page:psps',
+  'page:transfers', 'page:transfer-fix', 'page:trash',
+  'page:accounting', 'page:psps',
   'page:hr', 'page:organizations', 'page:security', 'page:audit',
 ])
 
@@ -57,7 +58,8 @@ const RESOURCE_GROUPS: ResourceGroup[] = [
     labelKey: 'security.permissions.groups.pages',
     tables: [
       'page:dashboard', 'page:members', 'page:ai',
-      'page:transfers', 'page:accounting', 'page:psps',
+      'page:transfers', 'page:transfer-fix', 'page:trash',
+      'page:accounting', 'page:psps',
       'page:hr', 'page:organizations', 'page:security', 'page:audit',
     ],
   },
@@ -110,6 +112,8 @@ const TABLE_DISPLAY: Record<string, string> = {
   'page:organizations': 'Organizations',
   'page:security': 'Security',
   'page:audit': 'Audit Log',
+  'page:transfer-fix': 'Transfer Fix',
+  'page:trash': 'Trash',
   transfers: 'Transfers',
   transfer_audit_log: 'Transfer Audit Log',
   psps: 'PSPs',

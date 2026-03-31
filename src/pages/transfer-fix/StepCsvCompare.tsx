@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
-import { CheckCircle, Warning } from '@phosphor-icons/react'
+import { useState } from 'react'
+import { CheckCircle, Warning, Check, EyeSlash, Eye } from '@phosphor-icons/react'
 import {
   Tabs,
   TabsList,
@@ -14,6 +14,12 @@ import {
   Tag,
   Button,
   EmptyState,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from '@ds'
 import { parseTurkishDate, parseTurkishDecimal } from '@/lib/csvImport/parseCsv'
 import type { AllCsvCompareResults, CsvCompareResult } from './comparisons'
@@ -23,11 +29,15 @@ import { getSalesRowMeta, getSalesRowDate, getSalesRowName, getSalesRowAmountUsd
 interface StepCsvCompareProps {
   results: AllCsvCompareResults
   data: ParsedCsvData
+  resolved: Set<string>
+  onToggleResolved: (key: string) => void
   onNext: () => void
   onBack: () => void
 }
 
-export function StepCsvCompare({ results, data, onNext, onBack }: StepCsvCompareProps) {
+export function StepCsvCompare({ results, data, resolved, onToggleResolved, onNext, onBack }: StepCsvCompareProps) {
+  const [hideResolved, setHideResolved] = useState(false)
+
   const totalIssues =
     results.orderSatis.missingInKasa.length +
     results.orderSatis.amountMismatch.length +
@@ -37,6 +47,8 @@ export function StepCsvCompare({ results, data, onNext, onBack }: StepCsvCompare
     results.ordWithdrawal.missingInKasa.length +
     results.ordWithdrawal.amountMismatch.length +
     results.unmatchedKasaDeposits.length
+
+  const resolvedCount = resolved.size
 
   return (
     <div className="space-y-lg">
@@ -57,6 +69,34 @@ export function StepCsvCompare({ results, data, onNext, onBack }: StepCsvCompare
         <SummaryCard title="ORD RET DEPOSIT (Tekrar)" result={results.ordRetDeposit} />
         <SummaryCard title="ORD WITHDRAWAL (Çekim)" result={results.ordWithdrawal} />
       </div>
+
+      {/* Resolved summary + hide toggle */}
+      {totalIssues > 0 && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {resolvedCount > 0 && (
+              <Tag variant="green">
+                {resolvedCount} / {totalIssues} düzeltildi
+              </Tag>
+            )}
+            {resolvedCount > 0 && resolvedCount === totalIssues && (
+              <span className="text-xs text-green-600 font-medium">Tüm hatalar düzeltildi olarak işaretlendi</span>
+            )}
+          </div>
+          {resolvedCount > 0 && (
+            <Button
+              variant="ghost"
+              onClick={() => setHideResolved((h) => !h)}
+            >
+              {hideResolved ? (
+                <><Eye className="h-4 w-4" /> Düzeltilenleri Göster</>
+              ) : (
+                <><EyeSlash className="h-4 w-4" /> Düzeltilenleri Gizle</>
+              )}
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Unmatched KASA deposits warning */}
       {results.unmatchedKasaDeposits.length > 0 && (
@@ -86,49 +126,129 @@ export function StepCsvCompare({ results, data, onNext, onBack }: StepCsvCompare
             {results.unmatchedKasaDeposits.length > 0 && (
               <TabsTrigger value="unmatched">
                 Eşleşmeyen Yatırımlar
-                <BadgeCount count={results.unmatchedKasaDeposits.length} />
+                <BadgeCount
+                  count={results.unmatchedKasaDeposits.length}
+                  resolvedCount={countResolvedInList(resolved, 'unmatched', results.unmatchedKasaDeposits.length)}
+                />
               </TabsTrigger>
             )}
             <TabsTrigger value="order-satis">
               ORDER SATIS
-              <BadgeCount count={getIssueCount(results.orderSatis)} />
+              <BadgeCount
+                count={getIssueCount(results.orderSatis)}
+                resolvedCount={countResolvedInList(resolved, 'order-satis', getIssueCount(results.orderSatis))}
+              />
             </TabsTrigger>
             <TabsTrigger value="ord-ret-deposit">
               ORD RET DEPOSIT
-              <BadgeCount count={getIssueCount(results.ordRetDeposit)} />
+              <BadgeCount
+                count={getIssueCount(results.ordRetDeposit)}
+                resolvedCount={countResolvedInList(resolved, 'ord-ret-deposit', getIssueCount(results.ordRetDeposit))}
+              />
             </TabsTrigger>
             <TabsTrigger value="ord-withdrawal">
               ORD WITHDRAWAL
-              <BadgeCount count={getIssueCount(results.ordWithdrawal)} />
+              <BadgeCount
+                count={getIssueCount(results.ordWithdrawal)}
+                resolvedCount={countResolvedInList(resolved, 'ord-withdrawal', getIssueCount(results.ordWithdrawal))}
+              />
             </TabsTrigger>
           </TabsList>
 
           {results.unmatchedKasaDeposits.length > 0 && (
             <TabsContent value="unmatched">
-              <DiscrepancyTable discrepancies={results.unmatchedKasaDeposits} />
+              <DiscrepancyTable
+                tabKey="unmatched"
+                discrepancies={results.unmatchedKasaDeposits}
+                resolved={resolved}
+                hideResolved={hideResolved}
+                onToggleResolved={onToggleResolved}
+              />
             </TabsContent>
           )}
           <TabsContent value="order-satis">
-            <DiscrepancyTable discrepancies={getAllDiscrepancies(results.orderSatis)} />
+            <DiscrepancyTable
+              tabKey="order-satis"
+              discrepancies={getAllDiscrepancies(results.orderSatis)}
+              resolved={resolved}
+              hideResolved={hideResolved}
+              onToggleResolved={onToggleResolved}
+            />
           </TabsContent>
           <TabsContent value="ord-ret-deposit">
-            <DiscrepancyTable discrepancies={getAllDiscrepancies(results.ordRetDeposit)} />
+            <DiscrepancyTable
+              tabKey="ord-ret-deposit"
+              discrepancies={getAllDiscrepancies(results.ordRetDeposit)}
+              resolved={resolved}
+              hideResolved={hideResolved}
+              onToggleResolved={onToggleResolved}
+            />
           </TabsContent>
           <TabsContent value="ord-withdrawal">
-            <DiscrepancyTable discrepancies={getAllDiscrepancies(results.ordWithdrawal)} />
+            <DiscrepancyTable
+              tabKey="ord-withdrawal"
+              discrepancies={getAllDiscrepancies(results.ordWithdrawal)}
+              resolved={resolved}
+              hideResolved={hideResolved}
+              onToggleResolved={onToggleResolved}
+            />
           </TabsContent>
         </Tabs>
       )}
 
       <div className="flex justify-between">
-        <Button variant="gray" onClick={onBack}>
-          Geri
-        </Button>
+        {resolvedCount > 0 ? (
+          <BackConfirmButton resolvedCount={resolvedCount} onConfirm={onBack} />
+        ) : (
+          <Button variant="gray" onClick={onBack}>
+            Geri
+          </Button>
+        )}
         <Button variant="filled" onClick={onNext}>
           Sistem Karşılaştırması
         </Button>
       </div>
     </div>
+  )
+}
+
+/** Count how many resolved keys exist for a given tab */
+function countResolvedInList(resolved: Set<string>, tabKey: string, total: number): number {
+  let count = 0
+  for (let i = 0; i < total; i++) {
+    if (resolved.has(`${tabKey}-${i}`)) count++
+  }
+  return count
+}
+
+function BackConfirmButton({ resolvedCount, onConfirm }: { resolvedCount: number; onConfirm: () => void }) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <>
+      <Button variant="gray" onClick={() => setOpen(true)}>
+        Geri
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent size="sm" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>Geri dönmek istediğinize emin misiniz?</DialogTitle>
+            <DialogDescription>
+              <b>{resolvedCount}</b> adet düzeltildi olarak işaretlediğiniz kayıt var.
+              Geri dönerseniz yeni CSV yüklediğinizde bu işaretler sıfırlanacaktır.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="gray" onClick={() => setOpen(false)}>
+              İptal
+            </Button>
+            <Button variant="filled" onClick={() => { setOpen(false); onConfirm() }}>
+              Geri Dön
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 
@@ -172,16 +292,33 @@ function SummaryCard({ title, result }: { title: string; result: CsvCompareResul
   )
 }
 
-function BadgeCount({ count }: { count: number }) {
+function BadgeCount({ count, resolvedCount = 0 }: { count: number; resolvedCount?: number }) {
   if (count === 0) return null
+  const allResolved = resolvedCount > 0 && resolvedCount >= count
   return (
-    <span className="ml-1 inline-flex items-center justify-center rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
-      {count}
+    <span className={`ml-1 inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+      allResolved
+        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+        : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+    }`}>
+      {resolvedCount > 0 ? `${count - resolvedCount}/${count}` : count}
     </span>
   )
 }
 
-function DiscrepancyTable({ discrepancies }: { discrepancies: CsvDiscrepancy[] }) {
+function DiscrepancyTable({
+  tabKey,
+  discrepancies,
+  resolved,
+  hideResolved,
+  onToggleResolved,
+}: {
+  tabKey: string
+  discrepancies: CsvDiscrepancy[]
+  resolved: Set<string>
+  hideResolved: boolean
+  onToggleResolved: (key: string) => void
+}) {
   if (discrepancies.length === 0) {
     return (
       <EmptyState
@@ -192,11 +329,26 @@ function DiscrepancyTable({ discrepancies }: { discrepancies: CsvDiscrepancy[] }
     )
   }
 
+  const visibleDiscrepancies = discrepancies
+    .map((d, i) => ({ discrepancy: d, index: i, key: `${tabKey}-${i}` }))
+    .filter(({ key }) => !hideResolved || !resolved.has(key))
+
+  if (visibleDiscrepancies.length === 0) {
+    return (
+      <EmptyState
+        icon={CheckCircle}
+        title="Tümü Düzeltildi"
+        description="Bu sekmedeki tüm hatalar düzeltildi olarak işaretlendi."
+      />
+    )
+  }
+
   return (
     <div className="rounded-xl border bg-bg1 overflow-auto max-h-[500px]">
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-[100px]">Düzeltildi</TableHead>
             <TableHead className="w-[140px]">Durum</TableHead>
             <TableHead>META ID</TableHead>
             <TableHead>Ad Soyad</TableHead>
@@ -210,8 +362,13 @@ function DiscrepancyTable({ discrepancies }: { discrepancies: CsvDiscrepancy[] }
           </TableRow>
         </TableHeader>
         <TableBody>
-          {discrepancies.map((d, i) => (
-            <DiscrepancyRow key={i} discrepancy={d} />
+          {visibleDiscrepancies.map(({ discrepancy, key }) => (
+            <DiscrepancyRow
+              key={key}
+              discrepancy={discrepancy}
+              isResolved={resolved.has(key)}
+              onToggleResolved={() => onToggleResolved(key)}
+            />
           ))}
         </TableBody>
       </Table>
@@ -219,7 +376,15 @@ function DiscrepancyTable({ discrepancies }: { discrepancies: CsvDiscrepancy[] }
   )
 }
 
-function DiscrepancyRow({ discrepancy: d }: { discrepancy: CsvDiscrepancy }) {
+function DiscrepancyRow({
+  discrepancy: d,
+  isResolved,
+  onToggleResolved,
+}: {
+  discrepancy: CsvDiscrepancy
+  isResolved: boolean
+  onToggleResolved: () => void
+}) {
   const metaId = d.kasaRow?.metaId || (d.csvRow ? getSalesRowMeta(d.csvRow) : '-')
   const name = d.kasaRow?.fullName || (d.csvRow ? getSalesRowName(d.csvRow) : '-')
   const date = d.kasaRow
@@ -232,12 +397,26 @@ function DiscrepancyRow({ discrepancy: d }: { discrepancy: CsvDiscrepancy }) {
   const csvAmt = d.csvAmount != null ? Math.abs(d.csvAmount) : null
 
   return (
-    <TableRow>
+    <TableRow className={isResolved ? 'opacity-50 bg-green-50/50 dark:bg-green-900/5' : ''}>
       <TableCell>
-        {d.type === 'missing-in-csv' && <Tag variant="orange">Eksik CSV'de</Tag>}
-        {d.type === 'missing-in-kasa' && <Tag variant="red">Eksik KASA'da</Tag>}
-        {d.type === 'amount-mismatch' && <Tag variant="yellow">Tutar Farkı</Tag>}
-        {d.type === 'date-mismatch' && <Tag variant="blue">Tarih Farkı</Tag>}
+        <button
+          type="button"
+          onClick={onToggleResolved}
+          className={`inline-flex items-center justify-center rounded-lg border px-2 py-1 text-xs font-medium transition-colors ${
+            isResolved
+              ? 'border-green-300 bg-green-100 text-green-700 dark:border-green-700 dark:bg-green-900/30 dark:text-green-400'
+              : 'border-gray-300 bg-bg1 text-muted hover:border-green-300 hover:text-green-600 dark:border-gray-600'
+          }`}
+        >
+          <Check className="h-3.5 w-3.5 mr-1" weight={isResolved ? 'bold' : 'regular'} />
+          {isResolved ? 'Düzeltildi' : 'Düzelt'}
+        </button>
+      </TableCell>
+      <TableCell>
+        {d.type === 'missing-in-csv' && <Tag variant={isResolved ? 'green' : 'orange'}>Eksik CSV'de</Tag>}
+        {d.type === 'missing-in-kasa' && <Tag variant={isResolved ? 'green' : 'red'}>Eksik KASA'da</Tag>}
+        {d.type === 'amount-mismatch' && <Tag variant={isResolved ? 'green' : 'yellow'}>Tutar Farkı</Tag>}
+        {d.type === 'date-mismatch' && <Tag variant={isResolved ? 'green' : 'blue'}>Tarih Farkı</Tag>}
       </TableCell>
       <TableCell className="font-mono text-xs">{metaId}</TableCell>
       <TableCell className="text-sm">{name}</TableCell>

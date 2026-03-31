@@ -18,7 +18,7 @@ import {
 } from '@/hooks/queries/useOrgAuditLogQuery'
 import { useOrgMembersQuery } from '@/hooks/queries/useOrgMembersQuery'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
-import { useAuth } from '@/app/providers/AuthProvider'
+import { usePagePermissions } from '@/hooks/usePagePermission'
 import { supabase } from '@/lib/supabase'
 import { PageHeader, Tag, Skeleton, Tabs, TabsList, TabsTrigger, TabsContent } from '@ds'
 import { TrashTab } from '@/pages/transfers/TrashTab'
@@ -404,8 +404,9 @@ function AuditRow({
 export function AuditLogPage() {
   const { t } = useTranslation('pages')
   const { currentOrg, membership } = useOrganization()
-  const { isGod } = useAuth()
-  const isAdmin = isGod || membership?.role === 'admin'
+  const { canAccessPage } = usePagePermissions()
+  const canTrash = canAccessPage('trash') ?? false
+  const canTransferFix = canAccessPage('transfer-fix') ?? false
 
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState<OrgAuditFilters>({
@@ -480,8 +481,8 @@ export function AuditLogPage() {
       <Tabs defaultValue="log">
         <TabsList>
           <TabsTrigger value="log">{t('audit.tabs.log', 'Audit Log')}</TabsTrigger>
-          {isAdmin && <TabsTrigger value="trash">{t('audit.tabs.trash', 'Trash')}</TabsTrigger>}
-          {isGod && <TabsTrigger value="transfer-fix">Transfer Fix</TabsTrigger>}
+          {canTrash && <TabsTrigger value="trash">{t('audit.tabs.trash', 'Trash')}</TabsTrigger>}
+          {canTransferFix && <TabsTrigger value="transfer-fix">Transfer Fix</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="log" className="space-y-4">
@@ -574,13 +575,13 @@ export function AuditLogPage() {
           )}
         </TabsContent>
 
-        {isAdmin && (
+        {canTrash && (
           <TabsContent value="trash">
             <TrashTab />
           </TabsContent>
         )}
 
-        {isGod && (
+        {canTransferFix && (
           <TabsContent value="transfer-fix">
             <TransferFixTab />
           </TabsContent>
