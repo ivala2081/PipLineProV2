@@ -92,6 +92,7 @@ const SettingsPage = lazy(() =>
   import('@/pages/settings').then((m) => ({ default: m.SettingsPage })),
 )
 const AuditLogPage = lazy(() => import('@/pages/audit').then((m) => ({ default: m.AuditLogPage })))
+const IBPage = lazy(() => import('@/pages/ib').then((m) => ({ default: m.IBPage })))
 
 /* ------------------------------------------------------------------ */
 /*  Route guards                                                       */
@@ -398,6 +399,26 @@ export function App() {
                               <PageSuspense>
                                 <SettingsPage />
                               </PageSuspense>
+                            }
+                          />
+                          <Route
+                            path="/ib"
+                            element={
+                              <PageGuard page="ib">
+                                <PageSuspense>
+                                  <IBPage />
+                                </PageSuspense>
+                              </PageGuard>
+                            }
+                          />
+                          <Route
+                            path="/ib/:partnerId"
+                            element={
+                              <PageGuard page="ib">
+                                <PageSuspense>
+                                  <IBPage />
+                                </PageSuspense>
+                              </PageGuard>
                             }
                           />
                           <Route

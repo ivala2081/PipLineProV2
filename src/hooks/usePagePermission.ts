@@ -28,6 +28,7 @@ const PAGE_DEFAULTS: Record<string, string[]> = {
   organizations: ['admin'],
   security: ['admin', 'manager'],
   audit: ['admin', 'manager'],
+  ib: ['admin', 'manager', 'operation', 'ik'],
 }
 
 /**

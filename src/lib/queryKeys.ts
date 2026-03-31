@@ -201,4 +201,12 @@ export const queryKeys = {
     baremTargets: (orgId: string, period: string) =>
       ['hr', orgId, 'barem-targets', period] as const,
   },
+  ib: {
+    all: ['ib'] as const,
+    partners: (orgId: string) => ['ib', orgId, 'partners'] as const,
+    partner: (orgId: string, id: string) => ['ib', orgId, 'partner', id] as const,
+    referrals: (orgId: string) => ['ib', orgId, 'referrals'] as const,
+    commissions: (orgId: string) => ['ib', orgId, 'commissions'] as const,
+    payments: (orgId: string) => ['ib', orgId, 'payments'] as const,
+  },
 } as const

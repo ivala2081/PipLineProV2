@@ -8,7 +8,7 @@ import {
   Info,
   SpinnerGap,
 } from '@phosphor-icons/react'
-import { Tag, Card, Button, Skeleton, EmptyState } from '@ds'
+import { Tag, Button, Skeleton, EmptyState } from '@ds'
 import {
   useRolePermissionsQuery,
   useUpsertRolePermissions,
@@ -23,14 +23,43 @@ const ACTIONS = ['select', 'insert', 'update', 'delete'] as const
 
 type Action = (typeof ACTIONS)[number]
 
-const ACTION_CONFIG: Record<Action, { labelKey: string; variant: TagVariant; activeVariant: TagVariant }> = {
-  select: { labelKey: 'security.permissions.actions.select', variant: 'default', activeVariant: 'blue' },
-  insert: { labelKey: 'security.permissions.actions.insert', variant: 'default', activeVariant: 'green' },
-  update: { labelKey: 'security.permissions.actions.update', variant: 'default', activeVariant: 'yellow' },
-  delete: { labelKey: 'security.permissions.actions.delete', variant: 'default', activeVariant: 'red' },
+const ACTION_CONFIG: Record<
+  Action,
+  { labelKey: string; variant: TagVariant; activeVariant: TagVariant }
+> = {
+  select: {
+    labelKey: 'security.permissions.actions.select',
+    variant: 'default',
+    activeVariant: 'blue',
+  },
+  insert: {
+    labelKey: 'security.permissions.actions.insert',
+    variant: 'default',
+    activeVariant: 'green',
+  },
+  update: {
+    labelKey: 'security.permissions.actions.update',
+    variant: 'default',
+    activeVariant: 'yellow',
+  },
+  delete: {
+    labelKey: 'security.permissions.actions.delete',
+    variant: 'default',
+    activeVariant: 'red',
+  },
 }
 
-type TagVariant = 'default' | 'blue' | 'green' | 'yellow' | 'red' | 'purple' | 'orange' | 'cyan' | 'mint' | 'indigo'
+type TagVariant =
+  | 'default'
+  | 'blue'
+  | 'green'
+  | 'yellow'
+  | 'red'
+  | 'purple'
+  | 'orange'
+  | 'cyan'
+  | 'mint'
+  | 'indigo'
 
 const ROLE_LABELS: Record<string, { labelKey: string; variant: TagVariant }> = {
   admin: { labelKey: 'memberProfile.roles.admin', variant: 'green' },
@@ -46,10 +75,19 @@ interface ResourceGroup {
 }
 
 const PAGE_TABLES = new Set([
-  'page:dashboard', 'page:members', 'page:ai',
-  'page:transfers', 'page:transfer-fix', 'page:trash',
-  'page:accounting', 'page:psps',
-  'page:hr', 'page:organizations', 'page:security', 'page:audit',
+  'page:dashboard',
+  'page:members',
+  'page:ai',
+  'page:transfers',
+  'page:transfer-fix',
+  'page:trash',
+  'page:accounting',
+  'page:psps',
+  'page:hr',
+  'page:organizations',
+  'page:security',
+  'page:audit',
+  'page:ib',
 ])
 
 const RESOURCE_GROUPS: ResourceGroup[] = [
@@ -57,10 +95,19 @@ const RESOURCE_GROUPS: ResourceGroup[] = [
     key: 'pages',
     labelKey: 'security.permissions.groups.pages',
     tables: [
-      'page:dashboard', 'page:members', 'page:ai',
-      'page:transfers', 'page:transfer-fix', 'page:trash',
-      'page:accounting', 'page:psps',
-      'page:hr', 'page:organizations', 'page:security', 'page:audit',
+      'page:dashboard',
+      'page:members',
+      'page:ai',
+      'page:transfers',
+      'page:transfer-fix',
+      'page:trash',
+      'page:accounting',
+      'page:psps',
+      'page:hr',
+      'page:organizations',
+      'page:security',
+      'page:audit',
+      'page:ib',
     ],
   },
   {
@@ -99,6 +146,11 @@ const RESOURCE_GROUPS: ResourceGroup[] = [
       'hr_re_config',
     ],
   },
+  {
+    key: 'ib',
+    labelKey: 'security.permissions.groups.ib',
+    tables: ['ib_partners', 'ib_referrals', 'ib_commissions', 'ib_payments'],
+  },
 ]
 
 const TABLE_DISPLAY: Record<string, string> = {
@@ -114,6 +166,7 @@ const TABLE_DISPLAY: Record<string, string> = {
   'page:audit': 'Audit Log',
   'page:transfer-fix': 'Transfer Fix',
   'page:trash': 'Trash',
+  'page:ib': 'IB Management',
   transfers: 'Transfers',
   transfer_audit_log: 'Transfer Audit Log',
   psps: 'PSPs',
@@ -131,6 +184,10 @@ const TABLE_DISPLAY: Record<string, string> = {
   hr_leaves: 'Leaves',
   hr_mt_config: 'MT Config',
   hr_re_config: 'RE Config',
+  ib_partners: 'IB Partners',
+  ib_referrals: 'IB Referrals',
+  ib_commissions: 'IB Commissions',
+  ib_payments: 'IB Payments',
   organizations: 'Organizations',
   organization_members: 'Org Members',
   organization_invitations: 'Org Invitations',
@@ -218,7 +275,10 @@ export function PermissionsTab() {
     let count = 0
     for (const [key, edit] of edits) {
       const server = serverMap.get(key)
-      if (!server) { count++; continue }
+      if (!server) {
+        count++
+        continue
+      }
       if (
         edit.can_select !== server.can_select ||
         edit.can_insert !== server.can_insert ||
@@ -281,18 +341,11 @@ export function PermissionsTab() {
 
   /* ── Error ── */
   if (isError || !permissions) {
-    return (
-      <EmptyState
-        icon={Info}
-        title={t('security.permissions.error')}
-      />
-    )
+    return <EmptyState icon={Info} title={t('security.permissions.error')} />
   }
 
   return (
     <div className="space-y-md">
-
-
       {/* Role column headers */}
       <div className="overflow-x-auto">
         <div className="min-w-[700px]">
@@ -303,9 +356,7 @@ export function PermissionsTab() {
             </div>
             {ROLES.map((role) => (
               <div key={role} className="flex-1 text-center">
-                <Tag variant={ROLE_LABELS[role].variant}>
-                  {t(ROLE_LABELS[role].labelKey)}
-                </Tag>
+                <Tag variant={ROLE_LABELS[role].variant}>{t(ROLE_LABELS[role].labelKey)}</Tag>
               </div>
             ))}
           </div>
@@ -335,10 +386,7 @@ export function PermissionsTab() {
                 {expanded && (
                   <div className="divide-y divide-black/[0.04] bg-bg1">
                     {group.tables.map((table) => (
-                      <div
-                        key={table}
-                        className="flex items-center gap-2 px-4 py-2.5"
-                      >
+                      <div key={table} className="flex items-center gap-2 px-4 py-2.5">
                         {/* Table name */}
                         <div className="w-[204px] shrink-0 truncate text-sm text-black/60">
                           {TABLE_DISPLAY[table] ?? table}
@@ -354,37 +402,50 @@ export function PermissionsTab() {
                               key={role}
                               className="flex flex-1 items-center justify-center gap-1"
                             >
-                              {(PAGE_TABLES.has(table) ? (['select'] as Action[]) : ACTIONS).map((action) => {
-                                const field = `can_${action}` as keyof Pick<
-                                  RolePermission,
-                                  'can_select' | 'can_insert' | 'can_update' | 'can_delete'
-                                >
-                                const active = perm[field]
-                                const cfg = ACTION_CONFIG[action]
-                                // Prevent admin from losing access to critical pages
-                                const locked =
-                                  (table === 'page:security' && role === 'admin') ||
-                                  (table === 'page:dashboard' && role === 'admin')
-
-                                return (
-                                  <button
-                                    key={action}
-                                    type="button"
-                                    onClick={() => !locked && toggleAction(table, role, action)}
-                                    title={locked ? t('security.permissions.lockedSecurity', 'Admin her zaman güvenlik sayfasına erişebilir') : t(cfg.labelKey)}
-                                    className={locked ? 'cursor-not-allowed opacity-50' : 'cursor-pointer transition-transform hover:scale-110 active:scale-95'}
+                              {(PAGE_TABLES.has(table) ? (['select'] as Action[]) : ACTIONS).map(
+                                (action) => {
+                                  const field = `can_${action}` as keyof Pick<
+                                    RolePermission,
+                                    'can_select' | 'can_insert' | 'can_update' | 'can_delete'
                                   >
-                                    <Tag
-                                      variant={active ? cfg.activeVariant : 'default'}
-                                      className={`min-w-[24px] justify-center select-none ${!active ? 'opacity-20' : ''}`}
+                                  const active = perm[field]
+                                  const cfg = ACTION_CONFIG[action]
+                                  // Prevent admin from losing access to critical pages
+                                  const locked =
+                                    (table === 'page:security' && role === 'admin') ||
+                                    (table === 'page:dashboard' && role === 'admin')
+
+                                  return (
+                                    <button
+                                      key={action}
+                                      type="button"
+                                      onClick={() => !locked && toggleAction(table, role, action)}
+                                      title={
+                                        locked
+                                          ? t(
+                                              'security.permissions.lockedSecurity',
+                                              'Admin her zaman güvenlik sayfasına erişebilir',
+                                            )
+                                          : t(cfg.labelKey)
+                                      }
+                                      className={
+                                        locked
+                                          ? 'cursor-not-allowed opacity-50'
+                                          : 'cursor-pointer transition-transform hover:scale-110 active:scale-95'
+                                      }
                                     >
-                                      {PAGE_TABLES.has(table)
-                                        ? t('security.permissions.actions.access')
-                                        : t(cfg.labelKey)}
-                                    </Tag>
-                                  </button>
-                                )
-                              })}
+                                      <Tag
+                                        variant={active ? cfg.activeVariant : 'default'}
+                                        className={`min-w-[24px] justify-center select-none ${!active ? 'opacity-20' : ''}`}
+                                      >
+                                        {PAGE_TABLES.has(table)
+                                          ? t('security.permissions.actions.access')
+                                          : t(cfg.labelKey)}
+                                      </Tag>
+                                    </button>
+                                  )
+                                },
+                              )}
                             </div>
                           )
                         })}
@@ -414,11 +475,7 @@ export function PermissionsTab() {
               <ArrowCounterClockwise size={14} />
               {t('security.permissions.resetToDefault')}
             </Button>
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={upsertMutation.isPending}
-            >
+            <Button size="sm" onClick={handleSave} disabled={upsertMutation.isPending}>
               {upsertMutation.isPending ? (
                 <SpinnerGap size={14} className="animate-spin" />
               ) : (

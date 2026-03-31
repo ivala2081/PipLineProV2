@@ -11,6 +11,7 @@ import {
   Shield,
   IdentificationCard,
   ClipboardText,
+  Handshake,
 } from '@phosphor-icons/react'
 
 export type NavItem = {
@@ -42,6 +43,10 @@ export const navGroups: NavGroup[] = [
         page: 'accounting',
       },
     ],
+  },
+  {
+    titleKey: 'nav.groups.partners',
+    items: [{ titleKey: 'nav.ib', href: '/ib', icon: Handshake, page: 'ib' }],
   },
   {
     titleKey: 'nav.groups.management',

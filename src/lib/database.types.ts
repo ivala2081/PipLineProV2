@@ -28,6 +28,7 @@ export type Database = {
           payment_period: string | null
           register: string
           hr_bulk_payment_id: string | null
+          ib_payment_id: string | null
           updated_at: string
         }
         Insert: {
@@ -45,6 +46,7 @@ export type Database = {
           hr_employee_id?: string | null
           hr_payment_id?: string | null
           hr_payment_type?: string | null
+          ib_payment_id?: string | null
           id?: string
           organization_id: string
           payment_period?: string | null
@@ -66,6 +68,7 @@ export type Database = {
           hr_employee_id?: string | null
           hr_payment_id?: string | null
           hr_payment_type?: string | null
+          ib_payment_id?: string | null
           id?: string
           organization_id?: string
           payment_period?: string | null
@@ -1200,6 +1203,284 @@ export type Database = {
             columns: ['organization_id']
             isOneToOne: true
             referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ib_partners: {
+        Row: {
+          id: string
+          organization_id: string
+          name: string
+          contact_email: string | null
+          contact_phone: string | null
+          referral_code: string
+          agreement_type: string
+          agreement_details: Json
+          status: string
+          notes: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          name: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          referral_code: string
+          agreement_type: string
+          agreement_details?: Json
+          status?: string
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          name?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          referral_code?: string
+          agreement_type?: string
+          agreement_details?: Json
+          status?: string
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ib_partners_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ib_partners_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ib_referrals: {
+        Row: {
+          id: string
+          organization_id: string
+          ib_partner_id: string
+          client_name: string
+          ftd_date: string | null
+          ftd_amount: number | null
+          is_ftd: boolean
+          lots_traded: number
+          status: string
+          notes: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          ib_partner_id: string
+          client_name: string
+          ftd_date?: string | null
+          ftd_amount?: number | null
+          is_ftd?: boolean
+          lots_traded?: number
+          status?: string
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          ib_partner_id?: string
+          client_name?: string
+          ftd_date?: string | null
+          ftd_amount?: number | null
+          is_ftd?: boolean
+          lots_traded?: number
+          status?: string
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ib_referrals_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ib_referrals_ib_partner_id_fkey'
+            columns: ['ib_partner_id']
+            isOneToOne: false
+            referencedRelation: 'ib_partners'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ib_commissions: {
+        Row: {
+          id: string
+          organization_id: string
+          ib_partner_id: string
+          period_start: string
+          period_end: string
+          agreement_type: string
+          calculated_amount: number
+          override_amount: number | null
+          override_reason: string | null
+          final_amount: number
+          currency: string
+          breakdown: Json
+          status: string
+          confirmed_at: string | null
+          confirmed_by: string | null
+          notes: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          ib_partner_id: string
+          period_start: string
+          period_end: string
+          agreement_type: string
+          calculated_amount?: number
+          override_amount?: number | null
+          override_reason?: string | null
+          currency?: string
+          breakdown?: Json
+          status?: string
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          ib_partner_id?: string
+          period_start?: string
+          period_end?: string
+          agreement_type?: string
+          calculated_amount?: number
+          override_amount?: number | null
+          override_reason?: string | null
+          currency?: string
+          breakdown?: Json
+          status?: string
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ib_commissions_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ib_commissions_ib_partner_id_fkey'
+            columns: ['ib_partner_id']
+            isOneToOne: false
+            referencedRelation: 'ib_partners'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ib_payments: {
+        Row: {
+          id: string
+          organization_id: string
+          ib_partner_id: string
+          ib_commission_id: string | null
+          amount: number
+          currency: string
+          register: string
+          payment_method: string | null
+          reference: string | null
+          payment_date: string
+          description: string | null
+          notes: string | null
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          ib_partner_id: string
+          ib_commission_id?: string | null
+          amount: number
+          currency?: string
+          register: string
+          payment_method?: string | null
+          reference?: string | null
+          payment_date?: string
+          description?: string | null
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          ib_partner_id?: string
+          ib_commission_id?: string | null
+          amount?: number
+          currency?: string
+          register?: string
+          payment_method?: string | null
+          reference?: string | null
+          payment_date?: string
+          description?: string | null
+          notes?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ib_payments_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ib_payments_ib_partner_id_fkey'
+            columns: ['ib_partner_id']
+            isOneToOne: false
+            referencedRelation: 'ib_partners'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ib_payments_ib_commission_id_fkey'
+            columns: ['ib_commission_id']
+            isOneToOne: false
+            referencedRelation: 'ib_commissions'
             referencedColumns: ['id']
           },
         ]
@@ -2386,6 +2667,14 @@ export type CompositeTypes<
 export type AccountingEntry = Database['public']['Tables']['accounting_entries']['Row']
 export type HrBulkPayment = Database['public']['Tables']['hr_bulk_payments']['Row']
 export type HrBulkPaymentItem = Database['public']['Tables']['hr_bulk_payment_items']['Row']
+
+export type IBPartner = Database['public']['Tables']['ib_partners']['Row']
+export type IBPartnerInsert = Database['public']['Tables']['ib_partners']['Insert']
+export type IBReferral = Database['public']['Tables']['ib_referrals']['Row']
+export type IBReferralInsert = Database['public']['Tables']['ib_referrals']['Insert']
+export type IBCommission = Database['public']['Tables']['ib_commissions']['Row']
+export type IBPayment = Database['public']['Tables']['ib_payments']['Row']
+export type IBPaymentInsert = Database['public']['Tables']['ib_payments']['Insert']
 
 export type OrgMemberRole = 'admin' | 'manager' | 'operation' | 'ik'
 export type SystemRole = 'god' | 'user'
