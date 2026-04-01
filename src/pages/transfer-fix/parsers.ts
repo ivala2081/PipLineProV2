@@ -255,49 +255,79 @@ export function getSalesRowPaymentType(
  * ORDER SATIS donem: "MRT26", ORD RET/WITHDRAWAL ay: "MART 26" or "MRT26"
  */
 const TURKISH_MONTH_ABBRS: Record<number, string[]> = {
-  1: ['OCA', 'OCAK', 'JAN'],
-  2: ['ŞUB', 'SUB', 'ŞUBAT', 'SUBAT', 'FEB'],
+  1: ['OCA', 'OCK', 'OCAK', 'JAN'],
+  2: ['ŞUB', 'ŞBT', 'SUB', 'SBT', 'ŞUBAT', 'SUBAT', 'FEB'],
   3: ['MRT', 'MART', 'MAR'],
-  4: ['NİS', 'NIS', 'NİSAN', 'NISAN', 'APR'],
-  5: ['MAY', 'MAYIS'],
-  6: ['HAZ', 'HAZİRAN', 'HAZIRAN', 'JUN'],
-  7: ['TEM', 'TEMMUZ', 'JUL'],
-  8: ['AĞU', 'AGU', 'AĞUSTOS', 'AGUSTOS', 'AUG'],
-  9: ['EYL', 'EYLÜL', 'EYLUL', 'SEP'],
-  10: ['EKİ', 'EKI', 'EKİM', 'EKIM', 'OCT'],
-  11: ['KAS', 'KASIM', 'NOV'],
-  12: ['ARA', 'ARALIK', 'DEC'],
+  4: ['NİS', 'NSN', 'NIS', 'NİSAN', 'NISAN', 'APR'],
+  5: ['MAY', 'MYS', 'MAYIS'],
+  6: ['HAZ', 'HZRN', 'HAZİRAN', 'HAZIRAN', 'JUN'],
+  7: ['TEM', 'TMMZ', 'TEMMUZ', 'JUL'],
+  8: ['AĞU', 'AGSTS', 'AGU', 'AĞUSTOS', 'AGUSTOS', 'AUG'],
+  9: ['EYL', 'EYLL', 'EYLÜL', 'EYLUL', 'SEP'],
+  10: ['EKİ', 'EKM', 'EKI', 'EKİM', 'EKIM', 'OCT'],
+  11: ['KAS', 'KSM', 'KASIM', 'NOV'],
+  12: ['ARA', 'ARLK', 'ARALIK', 'DEC'],
 }
 
 /**
  * Check if a donem/ay string matches the given period.
- * Supports formats: "MRT26", "MART 26", "MART26", "MRT 26", "03/2026", "2026-03"
+ * Supports formats: "MRT26", "MART 26", "MART26", "MRT 26", "MART2026",
+ * "03/2026", "3/26", "2026-03", "03.2026"
  */
 function donemMatchesPeriod(donem: string, period: Period): boolean {
   if (!donem) return false
   const upper = donem.toUpperCase().replace(/\s+/g, '').trim()
-  const yearSuffix = String(period.year % 100) // "26" for 2026
+  const yearSuffix2 = String(period.year % 100) // "26"
+  const yearFull = String(period.year) // "2026"
+  const monthPad = String(period.month).padStart(2, '0') // "03"
+  const monthRaw = String(period.month) // "3"
 
   const abbrs = TURKISH_MONTH_ABBRS[period.month]
   if (!abbrs) return false
 
-  // Check "MRT26", "MART26" etc. — year suffix is REQUIRED
+  // Turkish abbreviation + year: "MRT26", "MART26", "MRT2026", "MART2026"
   for (const abbr of abbrs) {
-    if (upper === abbr + yearSuffix) return true
+    if (upper === abbr + yearSuffix2) return true
+    if (upper === abbr + yearFull) return true
   }
+
+  // Numeric formats: "03/2026", "3/2026", "03/26", "3/26"
+  if (upper === monthPad + '/' + yearFull || upper === monthRaw + '/' + yearFull) return true
+  if (upper === monthPad + '/' + yearSuffix2 || upper === monthRaw + '/' + yearSuffix2) return true
+  // "2026-03"
+  if (upper === yearFull + '-' + monthPad) return true
+  // "03.2026"
+  if (upper === monthPad + '.' + yearFull || upper === monthRaw + '.' + yearFull) return true
 
   return false
 }
 
 /**
- * Fallback: check if ISO date falls within the exact month (no buffer).
- * Used when donem/ay column is empty or doesn't match any known format.
+ * Fallback: check if a date string falls within the exact month.
+ * Handles ISO (YYYY-MM-DD), Turkish (DD.MM.YYYY), slash (DD/MM/YYYY).
  */
-function isInExactMonth(isoDate: string, period: Period): boolean {
-  if (!isoDate || isoDate.length < 10) return false
-  const date = new Date(isoDate + 'T00:00:00')
-  if (isNaN(date.getTime())) return false
-  return date.getFullYear() === period.year && date.getMonth() + 1 === period.month
+function isInExactMonth(dateStr: string, period: Period): boolean {
+  if (!dateStr) return false
+
+  // ISO: YYYY-MM-DD
+  const isoMatch = dateStr.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)
+  if (isoMatch) {
+    return Number(isoMatch[1]) === period.year && Number(isoMatch[2]) === period.month
+  }
+
+  // Turkish dot: DD.MM.YYYY
+  const dotMatch = dateStr.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/)
+  if (dotMatch) {
+    return Number(dotMatch[3]) === period.year && Number(dotMatch[2]) === period.month
+  }
+
+  // Slash: DD/MM/YYYY
+  const slashMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/)
+  if (slashMatch) {
+    return Number(slashMatch[3]) === period.year && Number(slashMatch[2]) === period.month
+  }
+
+  return false
 }
 
 export function filterOrderSatisByPeriod(rows: OrderSatisRow[], period: Period): OrderSatisRow[] {
@@ -311,3 +341,4 @@ export function filterOrdRetDepositByPeriod(rows: OrdRetDepositRow[], period: Pe
 export function filterOrdWithdrawalByPeriod(rows: OrdWithdrawalRow[], period: Period): OrdWithdrawalRow[] {
   return rows.filter((r) => donemMatchesPeriod(r.ay, period) || isInExactMonth(r.tarih, period))
 }
+

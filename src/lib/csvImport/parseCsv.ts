@@ -75,12 +75,12 @@ export function parseCsvFile(csvText: string): {
 
   const dataRows = allRows.slice(headerRowIndex + 1)
 
-  // Extract exchange rates from daily summary section
+  // Extract exchange rates from daily summary section (col 18 = date, col 26 = rate)
   const exchangeRates = new Map<string, number>()
   for (const row of dataRows) {
-    if (row.length <= 23) continue
-    const dateCell = (row[15] ?? '').trim()
-    const rateCell = (row[23] ?? '').trim()
+    if (row.length <= 26) continue
+    const dateCell = (row[18] ?? '').trim()
+    const rateCell = (row[26] ?? '').trim()
     if (!isTurkishDate(dateCell)) continue
     if (!isPureTurkishDecimal(rateCell)) continue
     const rate = parseTurkishDecimal(rateCell)
