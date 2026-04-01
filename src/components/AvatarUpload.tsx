@@ -22,6 +22,9 @@ interface AvatarUploadProps {
   onRemoveSuccess: () => void
   size?: 'sm' | 'md' | 'lg' | 'xl'
   editable?: boolean
+  bucket?: string
+  shape?: 'circle' | 'square'
+  skipProfileUpdate?: boolean
 }
 
 const sizeClasses = {
@@ -39,8 +42,12 @@ export function AvatarUpload({
   onRemoveSuccess,
   size = 'lg',
   editable = true,
+  bucket = 'avatars',
+  shape = 'circle',
+  skipProfileUpdate = false,
 }: AvatarUploadProps) {
   const Icon = getRoleIcon(role)
+  const shapeClass = shape === 'square' ? 'rounded-xl' : 'rounded-3xl'
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [isRemoving, setIsRemoving] = useState(false)
@@ -104,16 +111,16 @@ export function AvatarUpload({
 
       // Delete old avatar if exists
       if (currentAvatarUrl) {
-        const oldPath = currentAvatarUrl.split('/avatars/')[1]
+        const oldPath = currentAvatarUrl.split(`/${bucket}/`)[1]
         if (oldPath) {
           // Ignore errors when deleting old avatar
-          await supabase.storage.from('avatars').remove([oldPath])
+          await supabase.storage.from(bucket).remove([oldPath])
         }
       }
 
       // Upload new avatar (using cropped blob)
       const { error: uploadError } = await supabase.storage
-        .from('avatars')
+        .from(bucket)
         .upload(fileName, croppedBlob, {
           cacheControl: '3600',
           upsert: false,
@@ -138,25 +145,27 @@ export function AvatarUpload({
       // Get public URL with cache busting
       const {
         data: { publicUrl },
-      } = supabase.storage.from('avatars').getPublicUrl(fileName)
+      } = supabase.storage.from(bucket).getPublicUrl(fileName)
 
       // Add timestamp to prevent caching
       const publicUrlWithTimestamp = `${publicUrl}?t=${Date.now()}`
 
-      // Update profile
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl })
-        .eq('id', userId)
+      // Update profile (skip for non-user entities like IB partners)
+      if (!skipProfileUpdate) {
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ avatar_url: publicUrl })
+          .eq('id', userId)
 
-      if (updateError) {
-        console.error('Profile update error:', updateError)
-        throw updateError
+        if (updateError) {
+          console.error('Profile update error:', updateError)
+          throw updateError
+        }
       }
 
       toast({
         title: 'Success',
-        description: 'Profile picture updated successfully',
+        description: 'Photo updated successfully',
         variant: 'success',
       })
 
@@ -202,22 +211,24 @@ export function AvatarUpload({
 
     try {
       // Delete from storage
-      const path = currentAvatarUrl.split('/avatars/')[1]
+      const path = currentAvatarUrl.split(`/${bucket}/`)[1]
       if (path) {
-        await supabase.storage.from('avatars').remove([path])
+        await supabase.storage.from(bucket).remove([path])
       }
 
-      // Update profile
-      const { error } = await supabase
-        .from('profiles')
-        .update({ avatar_url: null })
-        .eq('id', userId)
+      // Update profile (skip for non-user entities)
+      if (!skipProfileUpdate) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ avatar_url: null })
+          .eq('id', userId)
 
-      if (error) throw error
+        if (error) throw error
+      }
 
       toast({
         title: 'Success',
-        description: 'Profile picture removed',
+        description: 'Photo removed',
         variant: 'success',
       })
 
@@ -238,10 +249,10 @@ export function AvatarUpload({
   return (
     <div className="relative inline-block">
       <Avatar
-        className={`${sizeClasses[size]} rounded-3xl border-[6px] border-bg1 bg-white shadow-xl`}
+        className={`${sizeClasses[size]} ${shapeClass} border-[6px] border-bg1 bg-white shadow-xl`}
       >
-        {currentAvatarUrl && <AvatarImage src={currentAvatarUrl} className="rounded-3xl" />}
-        <AvatarFallback className="rounded-3xl bg-gradient-to-br from-black/5 to-black/10">
+        {currentAvatarUrl && <AvatarImage src={currentAvatarUrl} className={shapeClass} />}
+        <AvatarFallback className={`${shapeClass} bg-gradient-to-br from-black/5 to-black/10`}>
           <Icon size={uploadIconSizes[size]} weight="fill" className="text-black/35" />
         </AvatarFallback>
       </Avatar>

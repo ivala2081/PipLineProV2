@@ -20,7 +20,8 @@
     "settings": "Ayarlar",
     "more": "Daha Fazla",
     "audit": "Denetim",
-    "ib": "IB Ortakları"
+    "ib": "IB Ortakları",
+    "wallets": "Cüzdanlar"
   },
   "layout": {
     "noOrganization": "Organizasyon Yok",
@@ -590,9 +591,13 @@
       }
     }
   },
+  "wallets": {
+    "title": "Cüzdanlar",
+    "subtitle": "Zincirlerdeki kripto cüzdanları yönetin ve izleyin"
+  },
   "accounting": {
     "title": "Muhasebe",
-    "subtitle": "Şirket rezervlerini, giderleri ve kripto cüzdanları yönetin.",
+    "subtitle": "Şirket rezervlerini ve giderleri yönetin.",
     "addEntry": "Kayıt Ekle",
     "editEntry": "Kayıt Düzenle",
     "addWallet": "Cüzdan Ekle",

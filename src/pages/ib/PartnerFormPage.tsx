@@ -9,6 +9,7 @@ import {
   Globe,
   Handshake,
   Wallet,
+  Bank,
   NoteBlank,
   FloppyDisk,
   TelegramLogo,
@@ -43,7 +44,7 @@ import {
 import { AvatarUpload } from '@/components/AvatarUpload'
 
 /* ------------------------------------------------------------------ */
-/*  Agreement detail types (reused from PartnerDialog)                  */
+/*  Agreement detail types                                             */
 /* ------------------------------------------------------------------ */
 
 interface SalaryDetails {
@@ -77,6 +78,20 @@ const DEFAULT_CPA: CpaDetails = { cpa_amount: '', currency: 'USD', min_ftd_amoun
 const DEFAULT_LOT_REBATE: LotRebateDetails = { rebate_per_lot: '', currency: 'USD' }
 const DEFAULT_REVENUE_SHARE: RevenueShareDetails = { revshare_pct: '', source: 'spread' }
 const DEFAULT_HYBRID: HybridDetails = { json: '{}' }
+
+/* ------------------------------------------------------------------ */
+/*  Social platforms config                                            */
+/* ------------------------------------------------------------------ */
+
+const SOCIAL_PLATFORMS = [
+  { key: 'telegram' as const, icon: TelegramLogo, placeholder: '@username or t.me/username' },
+  { key: 'whatsapp' as const, icon: WhatsappLogo, placeholder: '+90 555 123 4567' },
+  { key: 'instagram' as const, icon: InstagramLogo, placeholder: '@username' },
+  { key: 'twitter' as const, icon: TwitterLogo, placeholder: '@username' },
+  { key: 'linkedin' as const, icon: LinkedinLogo, placeholder: 'linkedin.com/in/username' },
+]
+
+type SocialKey = (typeof SOCIAL_PLATFORMS)[number]['key']
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -170,7 +185,7 @@ function buildAgreementDetails(
 }
 
 /* ------------------------------------------------------------------ */
-/*  Section wrapper (same pattern as EmployeeFormPage)                  */
+/*  Section wrapper                                                    */
 /* ------------------------------------------------------------------ */
 
 function FormSection({
@@ -190,6 +205,37 @@ function FormSection({
       </div>
       <div className="p-5">{children}</div>
     </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/*  Toggle pill                                                        */
+/* ------------------------------------------------------------------ */
+
+function TogglePill({
+  active,
+  onClick,
+  icon: Icon,
+  label,
+}: {
+  active: boolean
+  onClick: () => void
+  icon: React.ComponentType<{ size?: number; weight?: string; className?: string }>
+  label: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
+        active
+          ? 'border-brand/40 bg-brand/5 text-black'
+          : 'border-black/[0.09] bg-bg2 text-black/50 hover:border-black/15 hover:bg-bg1'
+      }`}
+    >
+      <Icon size={13} weight={active ? 'fill' : 'regular'} className={active ? 'text-brand' : ''} />
+      {label}
+    </button>
   )
 }
 
@@ -241,10 +287,10 @@ export function PartnerFormPage() {
 
   const watchedAgreementType = useWatch({ control: form.control, name: 'agreement_type' })
   const watchedPaymentMethod = useWatch({ control: form.control, name: 'preferred_payment_method' })
-  const watchedStatus = useWatch({ control: form.control, name: 'status' })
   const watchedCryptoNetwork = useWatch({ control: form.control, name: 'crypto_network' })
+  const watchedLogoUrl = useWatch({ control: form.control, name: 'logo_url' })
 
-  /* ---- Agreement detail state (outside Zod schema) ---- */
+  /* ---- Agreement detail state ---- */
 
   const [salary, setSalary] = useState<SalaryDetails>({ ...DEFAULT_SALARY })
   const [cpa, setCpa] = useState<CpaDetails>({ ...DEFAULT_CPA })
@@ -254,9 +300,23 @@ export function PartnerFormPage() {
   })
   const [hybrid, setHybrid] = useState<HybridDetails>({ ...DEFAULT_HYBRID })
   const [detailErrors, setDetailErrors] = useState<Record<string, string>>({})
-  const watchedLogoUrl = useWatch({ control: form.control, name: 'logo_url' })
 
-  /* ---- Populate form when editing ---- */
+  /* ---- Social media toggle state ---- */
+
+  const [activeSocials, setActiveSocials] = useState<Set<SocialKey>>(() => new Set())
+
+  const toggleSocial = (key: SocialKey) => {
+    setActiveSocials((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) {
+        next.delete(key)
+        form.setValue(key, '')
+      } else {
+        next.add(key)
+      }
+      return next
+    })
+  }
 
   /* ---- Populate form when partner data loads (adjust state during render) ---- */
 
@@ -296,6 +356,15 @@ export function PartnerFormPage() {
     setLotRebate('lotRebate' in parsed ? parsed.lotRebate : { ...DEFAULT_LOT_REBATE })
     setRevenueShare('revenueShare' in parsed ? parsed.revenueShare : { ...DEFAULT_REVENUE_SHARE })
     setHybrid('hybrid' in parsed ? parsed.hybrid : { ...DEFAULT_HYBRID })
+
+    // Auto-activate social pills for non-empty fields
+    const socials = new Set<SocialKey>()
+    if (partner.telegram) socials.add('telegram')
+    if (partner.whatsapp) socials.add('whatsapp')
+    if (partner.instagram) socials.add('instagram')
+    if (partner.twitter) socials.add('twitter')
+    if (partner.linkedin) socials.add('linkedin')
+    setActiveSocials(socials)
   }
 
   /* ---- Submit ---- */
@@ -425,58 +494,65 @@ export function PartnerFormPage() {
                     currentAvatarUrl={watchedLogoUrl || null}
                     size="lg"
                     editable
+                    shape="square"
+                    skipProfileUpdate
                     onUploadSuccess={(url) => form.setValue('logo_url', url)}
                     onRemoveSuccess={() => form.setValue('logo_url', '')}
                   />
                 </div>
 
-                <div>
-                  <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
-                    {t('ib.partners.name')} *
-                  </Label>
-                  <Input
-                    {...form.register('name')}
-                    placeholder={t('ib.partners.namePlaceholder')}
-                  />
-                  {form.formState.errors.name && (
-                    <p className={compactError}>{form.formState.errors.name.message}</p>
-                  )}
+                {/* Name + Company (2-col) */}
+                <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
+                  <div>
+                    <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
+                      {t('ib.partners.name')} *
+                    </Label>
+                    <Input
+                      {...form.register('name')}
+                      placeholder={t('ib.partners.namePlaceholder')}
+                    />
+                    {form.formState.errors.name && (
+                      <p className={compactError}>{form.formState.errors.name.message}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
+                      {t('ib.partnerForm.companyName')}
+                    </Label>
+                    <Input
+                      {...form.register('company_name')}
+                      placeholder={t('ib.partnerForm.companyName')}
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
-                    {t('ib.partnerForm.companyName')}
-                  </Label>
-                  <Input
-                    {...form.register('company_name')}
-                    placeholder={t('ib.partnerForm.companyName')}
-                  />
+                {/* Email + Phone (2-col) */}
+                <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
+                  <div>
+                    <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
+                      {t('ib.partners.contactEmail')}
+                    </Label>
+                    <Input
+                      type="email"
+                      {...form.register('contact_email')}
+                      placeholder={t('ib.partners.contactEmailPlaceholder')}
+                    />
+                    {form.formState.errors.contact_email && (
+                      <p className={compactError}>{form.formState.errors.contact_email.message}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
+                      {t('ib.partners.contactPhone')}
+                    </Label>
+                    <Input
+                      {...form.register('contact_phone')}
+                      placeholder={t('ib.partners.contactPhonePlaceholder')}
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
-                    {t('ib.partners.contactEmail')}
-                  </Label>
-                  <Input
-                    type="email"
-                    {...form.register('contact_email')}
-                    placeholder={t('ib.partners.contactEmailPlaceholder')}
-                  />
-                  {form.formState.errors.contact_email && (
-                    <p className={compactError}>{form.formState.errors.contact_email.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
-                    {t('ib.partners.contactPhone')}
-                  </Label>
-                  <Input
-                    {...form.register('contact_phone')}
-                    placeholder={t('ib.partners.contactPhonePlaceholder')}
-                  />
-                </div>
-
+                {/* Referral Code */}
                 <div>
                   <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
                     {t('ib.partners.referralCode')} *
@@ -489,12 +565,33 @@ export function PartnerFormPage() {
                     <p className={compactError}>{form.formState.errors.referral_code.message}</p>
                   )}
                 </div>
+
+                {/* Status (edit only — pills) */}
+                {isEdit && (
+                  <div>
+                    <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
+                      {t('ib.partners.status')}
+                    </Label>
+                    <div className="flex gap-2">
+                      {(['active', 'paused', 'terminated'] as const).map((s) => (
+                        <TogglePill
+                          key={s}
+                          active={form.getValues('status') === s}
+                          onClick={() => form.setValue('status', s)}
+                          icon={Handshake}
+                          label={t(`ib.partners.statuses.${s}`)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </FormSection>
 
-            {/* Social Media & Web */}
+            {/* Social & Web */}
             <FormSection icon={Globe} title={t('ib.partnerForm.sections.social')}>
               <div className="space-y-md">
+                {/* Website — always visible */}
                 <div>
                   <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
                     <Globe size={12} className="mr-1 inline text-black/30" />
@@ -503,60 +600,29 @@ export function PartnerFormPage() {
                   <Input {...form.register('website')} placeholder="https://example.com" />
                 </div>
 
-                <div>
-                  <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
-                    <TelegramLogo size={12} className="mr-1 inline text-black/30" />
-                    {t('ib.partnerForm.telegram')}
-                  </Label>
-                  <Input {...form.register('telegram')} placeholder="@username or t.me/username" />
+                {/* Social platform pills */}
+                <div className="flex flex-wrap gap-2">
+                  {SOCIAL_PLATFORMS.map((p) => (
+                    <TogglePill
+                      key={p.key}
+                      active={activeSocials.has(p.key)}
+                      onClick={() => toggleSocial(p.key)}
+                      icon={p.icon}
+                      label={t(`ib.partnerForm.${p.key}`)}
+                    />
+                  ))}
                 </div>
 
-                <div>
-                  <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
-                    <WhatsappLogo size={12} className="mr-1 inline text-black/30" />
-                    {t('ib.partnerForm.whatsapp')}
-                  </Label>
-                  <Input {...form.register('whatsapp')} placeholder="+90 555 123 4567" />
-                </div>
-
-                <div>
-                  <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
-                    <InstagramLogo size={12} className="mr-1 inline text-black/30" />
-                    {t('ib.partnerForm.instagram')}
-                  </Label>
-                  <Input {...form.register('instagram')} placeholder="@username" />
-                </div>
-
-                <div>
-                  <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
-                    <TwitterLogo size={12} className="mr-1 inline text-black/30" />
-                    {t('ib.partnerForm.twitter')}
-                  </Label>
-                  <Input {...form.register('twitter')} placeholder="@username" />
-                </div>
-
-                <div>
-                  <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
-                    <LinkedinLogo size={12} className="mr-1 inline text-black/30" />
-                    {t('ib.partnerForm.linkedin')}
-                  </Label>
-                  <Input
-                    {...form.register('linkedin')}
-                    placeholder="https://linkedin.com/in/username"
-                  />
-                </div>
-              </div>
-            </FormSection>
-
-            {/* Notes */}
-            <FormSection icon={NoteBlank} title={t('ib.partnerForm.sections.notes')}>
-              <div>
-                <textarea
-                  {...form.register('notes')}
-                  rows={3}
-                  placeholder={t('ib.partners.notesPlaceholder')}
-                  className="w-full resize-none rounded-lg border border-black/[0.12] bg-bg2 px-3.5 py-2.5 text-sm text-black placeholder:text-black/30 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/10 dark:border-white/10 dark:bg-bg2 dark:text-white"
-                />
+                {/* Active social inputs */}
+                {SOCIAL_PLATFORMS.filter((p) => activeSocials.has(p.key)).map((p) => (
+                  <div key={p.key}>
+                    <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
+                      <p.icon size={12} className="mr-1 inline text-brand" />
+                      {t(`ib.partnerForm.${p.key}`)}
+                    </Label>
+                    <Input {...form.register(p.key)} placeholder={p.placeholder} />
+                  </div>
+                ))}
               </div>
             </FormSection>
           </div>
@@ -628,56 +694,44 @@ export function PartnerFormPage() {
                     </p>
                   </div>
                 </div>
-
-                {/* Status (edit only) */}
-                {isEdit && (
-                  <div>
-                    <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
-                      {t('ib.partners.status')}
-                    </Label>
-                    <Select
-                      value={watchedStatus}
-                      onValueChange={(v) =>
-                        form.setValue('status', v as 'active' | 'paused' | 'terminated')
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">{t('ib.partners.statuses.active')}</SelectItem>
-                        <SelectItem value="paused">{t('ib.partners.statuses.paused')}</SelectItem>
-                        <SelectItem value="terminated">
-                          {t('ib.partners.statuses.terminated')}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
               </div>
             </FormSection>
 
             {/* Payment Preference */}
             <FormSection icon={Wallet} title={t('ib.partnerForm.sections.payment')}>
               <div className="space-y-md">
-                <div>
-                  <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
-                    {t('ib.partnerForm.preferredPayment')}
-                  </Label>
-                  <Select
-                    value={watchedPaymentMethod || ''}
-                    onValueChange={(v) =>
-                      form.setValue('preferred_payment_method', v as 'crypto' | 'iban')
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('ib.partners.optional')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="crypto">{t('ib.partnerForm.crypto')}</SelectItem>
-                      <SelectItem value="iban">{t('ib.partnerForm.iban')}</SelectItem>
-                    </SelectContent>
-                  </Select>
+                {/* Payment method pills */}
+                <div className="flex gap-2">
+                  <TogglePill
+                    active={watchedPaymentMethod === 'crypto'}
+                    onClick={() => {
+                      if (watchedPaymentMethod === 'crypto') {
+                        form.setValue('preferred_payment_method', '')
+                        form.setValue('crypto_wallet_address', '')
+                        form.setValue('crypto_network', '')
+                      } else {
+                        form.setValue('preferred_payment_method', 'crypto')
+                        form.setValue('iban', '')
+                      }
+                    }}
+                    icon={Wallet}
+                    label={t('ib.partnerForm.crypto')}
+                  />
+                  <TogglePill
+                    active={watchedPaymentMethod === 'iban'}
+                    onClick={() => {
+                      if (watchedPaymentMethod === 'iban') {
+                        form.setValue('preferred_payment_method', '')
+                        form.setValue('iban', '')
+                      } else {
+                        form.setValue('preferred_payment_method', 'iban')
+                        form.setValue('crypto_wallet_address', '')
+                        form.setValue('crypto_network', '')
+                      }
+                    }}
+                    icon={Bank}
+                    label={t('ib.partnerForm.iban')}
+                  />
                 </div>
 
                 {/* Crypto fields */}
@@ -732,6 +786,18 @@ export function PartnerFormPage() {
                     )}
                   </div>
                 )}
+              </div>
+            </FormSection>
+
+            {/* Notes */}
+            <FormSection icon={NoteBlank} title={t('ib.partnerForm.sections.notes')}>
+              <div>
+                <textarea
+                  {...form.register('notes')}
+                  rows={3}
+                  placeholder={t('ib.partners.notesPlaceholder')}
+                  className="w-full resize-none rounded-lg border border-black/[0.12] bg-bg2 px-3.5 py-2.5 text-sm text-black placeholder:text-black/30 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/10 dark:border-white/10 dark:bg-bg2 dark:text-white"
+                />
               </div>
             </FormSection>
           </div>
@@ -797,8 +863,10 @@ function AgreementDetailsSection({
   switch (agreementType) {
     case 'salary':
       return (
-        <fieldset className="space-y-sm rounded-md border border-border p-md">
-          <legend className="text-sm font-medium px-1">{t('ib.partners.salaryTitle')}</legend>
+        <fieldset className="space-y-sm rounded-lg border border-black/[0.07] bg-bg2/50 p-4">
+          <legend className="text-xs font-semibold text-black/70 px-1.5">
+            {t('ib.partners.salaryTitle')}
+          </legend>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-sm">
             <div className="space-y-1">
               <Label htmlFor="salary-amount">{t('ib.partners.salary.amount')}</Label>
@@ -857,8 +925,10 @@ function AgreementDetailsSection({
 
     case 'cpa':
       return (
-        <fieldset className="space-y-sm rounded-md border border-border p-md">
-          <legend className="text-sm font-medium px-1">{t('ib.partners.cpaTitle')}</legend>
+        <fieldset className="space-y-sm rounded-lg border border-black/[0.07] bg-bg2/50 p-4">
+          <legend className="text-xs font-semibold text-black/70 px-1.5">
+            {t('ib.partners.cpaTitle')}
+          </legend>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-sm">
             <div className="space-y-1">
               <Label htmlFor="cpa-amount">{t('ib.partners.cpa.cpaAmount')}</Label>
@@ -922,8 +992,10 @@ function AgreementDetailsSection({
 
     case 'lot_rebate':
       return (
-        <fieldset className="space-y-sm rounded-md border border-border p-md">
-          <legend className="text-sm font-medium px-1">{t('ib.partners.lotRebateTitle')}</legend>
+        <fieldset className="space-y-sm rounded-lg border border-black/[0.07] bg-bg2/50 p-4">
+          <legend className="text-xs font-semibold text-black/70 px-1.5">
+            {t('ib.partners.lotRebateTitle')}
+          </legend>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-sm">
             <div className="space-y-1">
               <Label htmlFor="rebate-per-lot">{t('ib.partners.lotRebate.rebatePerLot')}</Label>
@@ -969,8 +1041,10 @@ function AgreementDetailsSection({
 
     case 'revenue_share':
       return (
-        <fieldset className="space-y-sm rounded-md border border-border p-md">
-          <legend className="text-sm font-medium px-1">{t('ib.partners.revenueShareTitle')}</legend>
+        <fieldset className="space-y-sm rounded-lg border border-black/[0.07] bg-bg2/50 p-4">
+          <legend className="text-xs font-semibold text-black/70 px-1.5">
+            {t('ib.partners.revenueShareTitle')}
+          </legend>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-sm">
             <div className="space-y-1">
               <Label htmlFor="revshare-pct">{t('ib.partners.revenueShare.revSharePct')}</Label>
@@ -1017,13 +1091,15 @@ function AgreementDetailsSection({
 
     case 'hybrid':
       return (
-        <fieldset className="space-y-sm rounded-md border border-border p-md">
-          <legend className="text-sm font-medium px-1">{t('ib.partners.hybridTitle')}</legend>
+        <fieldset className="space-y-sm rounded-lg border border-black/[0.07] bg-bg2/50 p-4">
+          <legend className="text-xs font-semibold text-black/70 px-1.5">
+            {t('ib.partners.hybridTitle')}
+          </legend>
           <div className="space-y-1">
             <Label htmlFor="hybrid-json">{t('ib.partners.hybridJson')}</Label>
             <textarea
               id="hybrid-json"
-              className="flex min-h-[100px] w-full rounded-md border border-border bg-surface px-3 py-2 text-sm ring-offset-surface placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex min-h-[100px] w-full rounded-md border border-black/[0.12] bg-bg2 px-3 py-2 text-sm placeholder:text-black/30 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/10"
               value={hybrid.json}
               onChange={(e) => onHybridChange({ json: e.target.value })}
               placeholder='{ "components": [{ "type": "salary", "amount": 500 }] }'

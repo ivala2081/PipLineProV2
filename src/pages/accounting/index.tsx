@@ -14,7 +14,6 @@ import { useAccountingQuery } from '@/hooks/queries/useAccountingQuery'
 import { SectionErrorBoundary } from '@/components/ErrorBoundary'
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import { queryKeys } from '@/lib/queryKeys'
-import { useWalletsQuery } from '@/hooks/queries/useWalletsQuery'
 import type { AccountingEntry } from '@/lib/database.types'
 import {
   Button,
@@ -29,10 +28,8 @@ import {
   DropdownMenuItem,
 } from '@ds'
 import { LedgerTable } from './LedgerTable'
-import { WalletsTab } from './WalletsTab'
 import { EntryDialog } from './EntryDialog'
 import { DeleteEntryDialog } from './DeleteEntryDialog'
-import { WalletDialog } from './WalletDialog'
 import { LedgerImportDialog } from './LedgerImportDialog'
 import { ReconciliationTab } from './ReconciliationTab'
 import { exportLedgerCsv, downloadCsv } from '@/lib/csvExport/exportLedgerCsv'
@@ -43,7 +40,6 @@ import { exportLedgerXlsx } from '@/lib/csvExport/exportLedgerXlsx'
 export function AccountingPage() {
   const { t } = useTranslation('pages')
   const accounting = useAccountingQuery()
-  const wallets = useWalletsQuery()
 
   useRealtimeSubscription('accounting_entries', [queryKeys.accounting.all])
 
@@ -51,7 +47,6 @@ export function AccountingPage() {
   const [entryDialogOpen, setEntryDialogOpen] = useState(false)
   const [editingEntry, setEditingEntry] = useState<AccountingEntry | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<AccountingEntry | null>(null)
-  const [walletDialogOpen, setWalletDialogOpen] = useState(false)
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const navigate = useNavigate()
@@ -150,11 +145,6 @@ export function AccountingPage() {
                 {t('accounting.addEntry')}
               </Button>
             </>
-          ) : activeTab === 'wallets' ? (
-            <Button variant="filled" onClick={() => setWalletDialogOpen(true)}>
-              <Plus size={16} weight="bold" />
-              {t('accounting.addWallet')}
-            </Button>
           ) : undefined
         }
       />
@@ -163,7 +153,6 @@ export function AccountingPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="ledger">{t('accounting.tabs.ledger')}</TabsTrigger>
-          <TabsTrigger value="wallets">{t('accounting.tabs.wallets')}</TabsTrigger>
           <TabsTrigger value="reconciliation">{t('accounting.tabs.reconciliation')}</TabsTrigger>
         </TabsList>
         <TabsContent value="ledger">
@@ -183,11 +172,6 @@ export function AccountingPage() {
               onClearFilters={accounting.clearFilters}
               hasActiveFilters={accounting.hasActiveFilters}
             />
-          </SectionErrorBoundary>
-        </TabsContent>
-        <TabsContent value="wallets">
-          <SectionErrorBoundary sectionName="Accounting Wallets">
-            <WalletsTab wallets={wallets} />
           </SectionErrorBoundary>
         </TabsContent>
         <TabsContent value="reconciliation">
@@ -228,16 +212,6 @@ export function AccountingPage() {
       />
 
       <LedgerImportDialog open={importDialogOpen} onClose={() => setImportDialogOpen(false)} />
-
-      <WalletDialog
-        open={walletDialogOpen}
-        onClose={() => setWalletDialogOpen(false)}
-        onSubmit={async (data) => {
-          await wallets.createWallet(data)
-          setWalletDialogOpen(false)
-        }}
-        isSubmitting={wallets.isCreating}
-      />
     </div>
   )
 }

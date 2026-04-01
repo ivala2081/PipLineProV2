@@ -12,6 +12,7 @@ import {
   IdentificationCard,
   ClipboardText,
   Handshake,
+  Wallet,
 } from '@phosphor-icons/react'
 
 export type NavItem = {
@@ -41,6 +42,11 @@ export const navGroups: NavGroup[] = [
         href: '/accounting',
         icon: BookOpen,
         page: 'accounting',
+      },
+      {
+        titleKey: 'nav.wallets',
+        href: '/wallets',
+        icon: Wallet,
       },
     ],
   },

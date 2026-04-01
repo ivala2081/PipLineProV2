@@ -20,7 +20,8 @@
     "settings": "Settings",
     "more": "More",
     "audit": "Audits",
-    "ib": "IB Partners"
+    "ib": "IB Partners",
+    "wallets": "Wallets"
   },
   "layout": {
     "noOrganization": "No Organization",
@@ -590,9 +591,13 @@
       }
     }
   },
+  "wallets": {
+    "title": "Wallets",
+    "subtitle": "Manage and monitor crypto wallets across chains"
+  },
   "accounting": {
     "title": "Accounting",
-    "subtitle": "Manage company reserves, expenses, and crypto wallets.",
+    "subtitle": "Manage company reserves and expenses.",
     "addEntry": "Add Entry",
     "editEntry": "Edit Entry",
     "addWallet": "Add Wallet",

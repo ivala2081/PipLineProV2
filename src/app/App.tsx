@@ -92,6 +92,7 @@ const SettingsPage = lazy(() =>
   import('@/pages/settings').then((m) => ({ default: m.SettingsPage })),
 )
 const AuditLogPage = lazy(() => import('@/pages/audit').then((m) => ({ default: m.AuditLogPage })))
+const WalletsPage = lazy(() => import('@/pages/wallets').then((m) => ({ default: m.WalletsPage })))
 const IBPage = lazy(() => import('@/pages/ib').then((m) => ({ default: m.IBPage })))
 const PartnerFormPage = lazy(() =>
   import('@/pages/ib/PartnerFormPage').then((m) => ({ default: m.PartnerFormPage })),
@@ -254,6 +255,14 @@ export function App({ sessionPromise }: { sessionPromise?: SessionPromise }) {
                                   <WalletTransfersPage />
                                 </PageSuspense>
                               </PageGuard>
+                            }
+                          />
+                          <Route
+                            path="/wallets"
+                            element={
+                              <PageSuspense>
+                                <WalletsPage />
+                              </PageSuspense>
                             }
                           />
                           <Route
