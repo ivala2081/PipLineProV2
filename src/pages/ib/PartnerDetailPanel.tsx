@@ -1,6 +1,17 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CaretLeft, Handshake } from '@phosphor-icons/react'
+import { useNavigate } from 'react-router-dom'
+import {
+  CaretLeft,
+  Handshake,
+  PencilSimple,
+  Globe,
+  TelegramLogo,
+  WhatsappLogo,
+  InstagramLogo,
+  TwitterLogo,
+  LinkedinLogo,
+} from '@phosphor-icons/react'
 import {
   PageHeader,
   Button,
@@ -15,6 +26,9 @@ import {
   TableHead,
   TableCell,
   EmptyState,
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
 } from '@ds'
 import { useIBPartnersQuery } from '@/hooks/queries/useIBPartnersQuery'
 import { useIBReferralsQuery } from '@/hooks/queries/useIBReferralsQuery'
@@ -28,8 +42,9 @@ interface PartnerDetailPanelProps {
   onBack: () => void
 }
 
-export function PartnerDetailPanel({ partnerId, onBack }: PartnerDetailPanelProps) {
+export function PartnerDetailPanel({ partnerId, isAdmin, onBack }: PartnerDetailPanelProps) {
   const { t } = useTranslation('pages')
+  const navigate = useNavigate()
   const { partners, isLoading: partnersLoading } = useIBPartnersQuery()
   const { referrals } = useIBReferralsQuery()
   const { commissions } = useIBCommissionsQuery()
@@ -116,10 +131,28 @@ export function PartnerDetailPanel({ partnerId, onBack }: PartnerDetailPanelProp
       </Button>
 
       <PageHeader
-        title={partner.name}
-        subtitle={`${t('ib.partners.referralCode')}: ${partner.referral_code}`}
+        title={
+          <div className="flex items-center gap-3">
+            {partner.logo_url && (
+              <Avatar className="size-10 rounded-xl">
+                <AvatarImage src={partner.logo_url} className="rounded-xl" />
+                <AvatarFallback className="rounded-xl bg-black/5">
+                  <Handshake size={20} className="text-black/30" />
+                </AvatarFallback>
+              </Avatar>
+            )}
+            <span>{partner.name}</span>
+          </div>
+        }
+        subtitle={`${t('ib.partners.referralCode')}: ${partner.referral_code}${partner.company_name ? ` · ${partner.company_name}` : ''}`}
         actions={
           <div className="flex items-center gap-2">
+            {isAdmin && (
+              <Button variant="outline" size="sm" onClick={() => navigate(`/ib/${partnerId}/edit`)}>
+                <PencilSimple size={14} weight="bold" />
+                {t('ib.partners.edit')}
+              </Button>
+            )}
             <Tag
               variant={
                 partner.status === 'active'
@@ -166,6 +199,157 @@ export function PartnerDetailPanel({ partnerId, onBack }: PartnerDetailPanelProp
             </p>
           </div>
         </div>
+
+        {/* Contract dates */}
+        {(partner.contract_start_date || partner.contract_end_date) && (
+          <div className="mt-sm grid grid-cols-2 gap-sm sm:grid-cols-4">
+            <div>
+              <p className="text-xs text-black/50">{t('ib.partnerForm.contractStart')}</p>
+              <p className="text-sm font-medium">
+                {partner.contract_start_date ? fmtDate(partner.contract_start_date) : '—'}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-black/50">{t('ib.partnerForm.contractEnd')}</p>
+              <p className="text-sm font-medium">
+                {partner.contract_end_date
+                  ? fmtDate(partner.contract_end_date)
+                  : t('ib.partnerForm.contractEndHint')}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Payment preference */}
+        {partner.preferred_payment_method && (
+          <div className="mt-sm grid grid-cols-2 gap-sm sm:grid-cols-4">
+            <div>
+              <p className="text-xs text-black/50">{t('ib.partnerForm.preferredPayment')}</p>
+              <p className="text-sm font-medium">
+                {partner.preferred_payment_method === 'crypto'
+                  ? t('ib.partnerForm.crypto')
+                  : t('ib.partnerForm.iban')}
+              </p>
+            </div>
+            {partner.preferred_payment_method === 'iban' && partner.iban && (
+              <div>
+                <p className="text-xs text-black/50">{t('ib.partnerForm.iban')}</p>
+                <p className="text-sm font-medium font-mono">{partner.iban}</p>
+              </div>
+            )}
+            {partner.preferred_payment_method === 'crypto' && (
+              <>
+                {partner.crypto_wallet_address && (
+                  <div className="col-span-2">
+                    <p className="text-xs text-black/50">{t('ib.partnerForm.walletAddress')}</p>
+                    <p className="text-sm font-medium font-mono truncate">
+                      {partner.crypto_wallet_address}
+                    </p>
+                  </div>
+                )}
+                {partner.crypto_network && (
+                  <div>
+                    <p className="text-xs text-black/50">{t('ib.partnerForm.cryptoNetwork')}</p>
+                    <p className="text-sm font-medium">{partner.crypto_network}</p>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Social media links */}
+        {(partner.website ||
+          partner.telegram ||
+          partner.whatsapp ||
+          partner.instagram ||
+          partner.twitter ||
+          partner.linkedin) && (
+          <div className="mt-sm flex flex-wrap items-center gap-2">
+            {partner.website && (
+              <a
+                href={partner.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 rounded-lg border border-black/[0.08] px-2.5 py-1.5 text-xs text-black/60 transition-colors hover:bg-black/[0.03] hover:text-black/80"
+              >
+                <Globe size={14} />
+                <span>{t('ib.partnerForm.website')}</span>
+              </a>
+            )}
+            {partner.telegram && (
+              <a
+                href={
+                  partner.telegram.startsWith('http')
+                    ? partner.telegram
+                    : `https://t.me/${partner.telegram.replace('@', '')}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 rounded-lg border border-black/[0.08] px-2.5 py-1.5 text-xs text-black/60 transition-colors hover:bg-black/[0.03] hover:text-black/80"
+              >
+                <TelegramLogo size={14} />
+                <span>{partner.telegram}</span>
+              </a>
+            )}
+            {partner.whatsapp && (
+              <a
+                href={`https://wa.me/${partner.whatsapp.replace(/[^0-9]/g, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 rounded-lg border border-black/[0.08] px-2.5 py-1.5 text-xs text-black/60 transition-colors hover:bg-black/[0.03] hover:text-black/80"
+              >
+                <WhatsappLogo size={14} />
+                <span>{partner.whatsapp}</span>
+              </a>
+            )}
+            {partner.instagram && (
+              <a
+                href={
+                  partner.instagram.startsWith('http')
+                    ? partner.instagram
+                    : `https://instagram.com/${partner.instagram.replace('@', '')}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 rounded-lg border border-black/[0.08] px-2.5 py-1.5 text-xs text-black/60 transition-colors hover:bg-black/[0.03] hover:text-black/80"
+              >
+                <InstagramLogo size={14} />
+                <span>{partner.instagram}</span>
+              </a>
+            )}
+            {partner.twitter && (
+              <a
+                href={
+                  partner.twitter.startsWith('http')
+                    ? partner.twitter
+                    : `https://x.com/${partner.twitter.replace('@', '')}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 rounded-lg border border-black/[0.08] px-2.5 py-1.5 text-xs text-black/60 transition-colors hover:bg-black/[0.03] hover:text-black/80"
+              >
+                <TwitterLogo size={14} />
+                <span>{partner.twitter}</span>
+              </a>
+            )}
+            {partner.linkedin && (
+              <a
+                href={
+                  partner.linkedin.startsWith('http')
+                    ? partner.linkedin
+                    : `https://linkedin.com/in/${partner.linkedin}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 rounded-lg border border-black/[0.08] px-2.5 py-1.5 text-xs text-black/60 transition-colors hover:bg-black/[0.03] hover:text-black/80"
+              >
+                <LinkedinLogo size={14} />
+                <span>{t('ib.partnerForm.linkedin')}</span>
+              </a>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Performance metrics */}

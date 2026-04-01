@@ -74,21 +74,55 @@ export function validateAgreementDetails(
   return { success: false, errors }
 }
 
+export const CRYPTO_NETWORKS = ['TRC20', 'ERC20', 'BEP20', 'SOL', 'BTC'] as const
+export const PAYMENT_METHODS = ['crypto', 'iban'] as const
+
 /* ── Partner form schema (base fields — details validated separately) ── */
 
-export const ibPartnerSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters').trim(),
-  contact_email: z.string().email('Invalid email').optional().or(z.literal('')),
-  contact_phone: z.string().optional().or(z.literal('')),
-  referral_code: z
-    .string()
-    .min(3, 'Referral code must be at least 3 characters')
-    .regex(/^[A-Za-z0-9_-]+$/, 'Only letters, numbers, hyphens, and underscores'),
-  agreement_type: z.enum(AGREEMENT_TYPES),
-  agreement_details: z.record(z.unknown()).default({}),
-  status: z.enum(IB_STATUSES).default('active'),
-  notes: z.string().optional().or(z.literal('')),
-})
+export const ibPartnerSchema = z
+  .object({
+    name: z.string().min(2, 'Name must be at least 2 characters').trim(),
+    contact_email: z.string().email('Invalid email').optional().or(z.literal('')),
+    contact_phone: z.string().optional().or(z.literal('')),
+    referral_code: z
+      .string()
+      .min(3, 'Referral code must be at least 3 characters')
+      .regex(/^[A-Za-z0-9_-]+$/, 'Only letters, numbers, hyphens, and underscores'),
+    agreement_type: z.enum(AGREEMENT_TYPES),
+    agreement_details: z.record(z.unknown()).default({}),
+    status: z.enum(IB_STATUSES).default('active'),
+    notes: z.string().optional().or(z.literal('')),
+    company_name: z.string().optional().or(z.literal('')),
+    website: z.string().optional().or(z.literal('')),
+    telegram: z.string().optional().or(z.literal('')),
+    whatsapp: z.string().optional().or(z.literal('')),
+    instagram: z.string().optional().or(z.literal('')),
+    twitter: z.string().optional().or(z.literal('')),
+    linkedin: z.string().optional().or(z.literal('')),
+    preferred_payment_method: z.enum(PAYMENT_METHODS).optional().or(z.literal('')),
+    iban: z.string().optional().or(z.literal('')),
+    crypto_wallet_address: z.string().optional().or(z.literal('')),
+    crypto_network: z.string().optional().or(z.literal('')),
+    contract_start_date: z.string().optional().or(z.literal('')),
+    contract_end_date: z.string().optional().or(z.literal('')),
+    logo_url: z.string().optional().or(z.literal('')),
+  })
+  .superRefine((data, ctx) => {
+    if (data.preferred_payment_method === 'iban' && !data.iban?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'IBAN is required when payment method is IBAN',
+        path: ['iban'],
+      })
+    }
+    if (data.preferred_payment_method === 'crypto' && !data.crypto_wallet_address?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Wallet address is required when payment method is Crypto',
+        path: ['crypto_wallet_address'],
+      })
+    }
+  })
 
 export type IBPartnerFormValues = z.infer<typeof ibPartnerSchema>
 

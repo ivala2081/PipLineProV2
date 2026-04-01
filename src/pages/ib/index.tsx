@@ -25,7 +25,6 @@ export function IBPage() {
   const isAdmin = isGod || membership?.role === 'admin'
 
   const [activeTab, setActiveTab] = useState<IBTab>('partners')
-  const [showPartnerDialog, setShowPartnerDialog] = useState(false)
   const [showReferralDialog, setShowReferralDialog] = useState(false)
   const [showCalculateDialog, setShowCalculateDialog] = useState(false)
   const [showPaymentDialog, setShowPaymentDialog] = useState(false)
@@ -46,7 +45,7 @@ export function IBPage() {
   const headerAction = isAdmin ? (
     <>
       {activeTab === 'partners' && (
-        <Button variant="filled" size="sm" onClick={() => setShowPartnerDialog(true)}>
+        <Button variant="filled" size="sm" onClick={() => navigate('/ib/new')}>
           <Plus size={14} weight="bold" />
           {t('ib.partners.add')}
         </Button>
@@ -85,11 +84,7 @@ export function IBPage() {
 
         <TabsContent value="partners">
           <SectionErrorBoundary sectionName="IB Partners">
-            <PartnersTab
-              isAdmin={isAdmin}
-              showDialog={showPartnerDialog}
-              onShowDialog={setShowPartnerDialog}
-            />
+            <PartnersTab isAdmin={isAdmin} />
           </SectionErrorBoundary>
         </TabsContent>
 

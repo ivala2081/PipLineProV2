@@ -35,7 +35,6 @@ import { useIBPartnersQuery, useIBPartnerMutations } from '@/hooks/queries/useIB
 import { useIBReferralsQuery } from '@/hooks/queries/useIBReferralsQuery'
 import { useToast } from '@/hooks/useToast'
 import { getIBTier, getTierVariant } from './utils/ibTiers'
-import { PartnerDialog } from './PartnerDialog'
 import type { IBPartner } from '@/lib/database.types'
 
 /* ------------------------------------------------------------------ */
@@ -44,8 +43,6 @@ import type { IBPartner } from '@/lib/database.types'
 
 interface PartnersTabProps {
   isAdmin: boolean
-  showDialog: boolean
-  onShowDialog: (show: boolean) => void
 }
 
 /* ------------------------------------------------------------------ */
@@ -69,7 +66,7 @@ function getStatusVariant(status: string): 'green' | 'yellow' | 'red' | 'default
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export function PartnersTab({ isAdmin, showDialog, onShowDialog }: PartnersTabProps) {
+export function PartnersTab({ isAdmin }: PartnersTabProps) {
   const { t } = useTranslation('pages')
   const navigate = useNavigate()
   const { toast } = useToast()
@@ -79,7 +76,6 @@ export function PartnersTab({ isAdmin, showDialog, onShowDialog }: PartnersTabPr
   const { referrals } = useIBReferralsQuery()
 
   const [search, setSearch] = useState('')
-  const [editingPartner, setEditingPartner] = useState<IBPartner | null>(null)
   const [deletingPartner, setDeletingPartner] = useState<IBPartner | null>(null)
 
   /* ---- Derived data ---- */
@@ -114,7 +110,7 @@ export function PartnersTab({ isAdmin, showDialog, onShowDialog }: PartnersTabPr
 
   const handleEdit = (e: React.MouseEvent, partner: IBPartner) => {
     e.stopPropagation()
-    setEditingPartner(partner)
+    navigate(`/ib/${partner.id}/edit`)
   }
 
   const handleDeleteClick = (e: React.MouseEvent, partner: IBPartner) => {
@@ -133,15 +129,6 @@ export function PartnersTab({ isAdmin, showDialog, onShowDialog }: PartnersTabPr
       setDeletingPartner(null)
     }
   }
-
-  const handleDialogClose = () => {
-    setEditingPartner(null)
-    onShowDialog(false)
-  }
-
-  /* ---- Dialog open state ---- */
-
-  const dialogOpen = showDialog || editingPartner !== null
 
   /* ---- Render ---- */
 
@@ -262,9 +249,6 @@ export function PartnersTab({ isAdmin, showDialog, onShowDialog }: PartnersTabPr
           </TableBody>
         </Table>
       )}
-
-      {/* Partner Create/Edit Dialog */}
-      <PartnerDialog open={dialogOpen} onClose={handleDialogClose} partner={editingPartner} />
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deletingPartner} onOpenChange={() => setDeletingPartner(null)}>

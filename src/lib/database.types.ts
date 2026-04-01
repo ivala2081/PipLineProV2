@@ -1219,6 +1219,20 @@ export type Database = {
           agreement_details: Json
           status: string
           notes: string | null
+          company_name: string | null
+          website: string | null
+          telegram: string | null
+          whatsapp: string | null
+          instagram: string | null
+          twitter: string | null
+          linkedin: string | null
+          preferred_payment_method: string | null
+          iban: string | null
+          crypto_wallet_address: string | null
+          crypto_network: string | null
+          contract_start_date: string | null
+          contract_end_date: string | null
+          logo_url: string | null
           created_by: string | null
           created_at: string
           updated_at: string
@@ -1234,6 +1248,20 @@ export type Database = {
           agreement_details?: Json
           status?: string
           notes?: string | null
+          company_name?: string | null
+          website?: string | null
+          telegram?: string | null
+          whatsapp?: string | null
+          instagram?: string | null
+          twitter?: string | null
+          linkedin?: string | null
+          preferred_payment_method?: string | null
+          iban?: string | null
+          crypto_wallet_address?: string | null
+          crypto_network?: string | null
+          contract_start_date?: string | null
+          contract_end_date?: string | null
+          logo_url?: string | null
           created_by?: string | null
           created_at?: string
           updated_at?: string
@@ -1249,6 +1277,20 @@ export type Database = {
           agreement_details?: Json
           status?: string
           notes?: string | null
+          company_name?: string | null
+          website?: string | null
+          telegram?: string | null
+          whatsapp?: string | null
+          instagram?: string | null
+          twitter?: string | null
+          linkedin?: string | null
+          preferred_payment_method?: string | null
+          iban?: string | null
+          crypto_wallet_address?: string | null
+          crypto_network?: string | null
+          contract_start_date?: string | null
+          contract_end_date?: string | null
+          logo_url?: string | null
           created_by?: string | null
           created_at?: string
           updated_at?: string
