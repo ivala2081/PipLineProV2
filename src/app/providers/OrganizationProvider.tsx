@@ -8,6 +8,8 @@ import {
   type ReactNode,
 } from 'react'
 import { supabase } from '@/lib/supabase'
+import { queryClient } from '@/lib/queryClient'
+import { onOrgSwitch, getSavedOrgId, saveOrgId } from '@/lib/appEffects'
 import { useAuth } from '@/app/providers/AuthProvider'
 import type { Organization, OrganizationMember } from '@/lib/database.types'
 
@@ -28,12 +30,6 @@ interface OrganizationActionsContextValue {
   selectOrg: (orgId: string) => void
   refreshOrgs: () => Promise<void>
 }
-
-/* ------------------------------------------------------------------ */
-/*  Constants                                                          */
-/* ------------------------------------------------------------------ */
-
-const STORAGE_KEY = 'piplinepro-org'
 
 /* ------------------------------------------------------------------ */
 /*  Contexts                                                           */
@@ -116,8 +112,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     if (fetchIdRef.current !== currentFetchId) return
 
     // Restore previously selected org from localStorage
-    const savedOrgId = localStorage.getItem(STORAGE_KEY)
-    const savedOrg = orgs.find((o) => o.id === savedOrgId)
+    const savedOrg = orgs.find((o) => o.id === getSavedOrgId())
     const currentOrg = savedOrg ?? orgs[0] ?? null
 
     // Fetch membership for selected org (null for gods without membership)
@@ -153,7 +148,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     if (fetchIdRef.current !== currentFetchId) return
 
     if (currentOrg) {
-      localStorage.setItem(STORAGE_KEY, currentOrg.id)
+      saveOrgId(currentOrg.id)
     }
 
     setState({ currentOrg, organizations: orgs, membership, isLoading: false })
@@ -185,7 +180,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       const org = orgsRef.current.find((o) => o.id === orgId)
       if (!org) return
 
-      localStorage.setItem(STORAGE_KEY, orgId)
+      onOrgSwitch(queryClient, orgId)
 
       const currentUser = userRef.current
       const currentIsGod = isGodRef.current

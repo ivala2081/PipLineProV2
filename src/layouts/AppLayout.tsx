@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { useState, useCallback, type FormEvent, type ReactNode } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -66,6 +66,7 @@ import { OnlineCount } from '@/components/OnlineCount'
 import { NotificationBell } from '@/components/NotificationBell'
 import { CommandPalette } from '@/components/CommandPalette/CommandPalette'
 import { BottomNav } from '@/components/BottomNav'
+import { useGlobalShortcuts } from '@/hooks/useGlobalShortcuts'
 
 /* ------------------------------------------------------------------ */
 /*  Sidebar Brand (logo + org name)                                    */
@@ -503,9 +504,7 @@ function HeaderBar() {
     <header className="relative z-20 flex h-12 shrink-0 items-center gap-2 border-b border-black/15 bg-bg1 px-3 md:h-14 md:px-4">
       <SidebarTrigger className="-ml-1" />
       <button
-        onClick={() =>
-          window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))
-        }
+        onClick={() => window.dispatchEvent(new CustomEvent('shortcut:toggle-palette'))}
         className="flex size-9 items-center justify-center rounded-md text-black/50 hover:bg-black/8 hover:text-black md:hidden"
         aria-label="Search"
       >
@@ -530,9 +529,7 @@ function HeaderBar() {
       <div className="ml-auto flex items-center gap-1">
         {/* Cmd+K search trigger — hidden on mobile */}
         <button
-          onClick={() =>
-            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))
-          }
+          onClick={() => window.dispatchEvent(new CustomEvent('shortcut:toggle-palette'))}
           className="hidden h-8 items-center gap-2 rounded-md border border-black/10 bg-black/[0.02] px-2.5 text-xs text-black/50 hover:bg-black/8 hover:text-black/70 md:flex"
         >
           <MagnifyingGlass size={14} />
@@ -583,6 +580,11 @@ function HeaderBar() {
 /* ------------------------------------------------------------------ */
 
 export function AppLayout({ children }: { children: ReactNode }) {
+  const [paletteOpen, setPaletteOpen] = useState(false)
+  const handlePaletteChange = useCallback((v: boolean) => setPaletteOpen(v), [])
+
+  useGlobalShortcuts(paletteOpen)
+
   return (
     <SidebarProvider defaultOpen={true}>
       <Sidebar variant="sidebar" collapsible="icon">
@@ -604,7 +606,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </div>
       </SidebarInset>
       <BottomNav />
-      <CommandPalette />
+      <CommandPalette open={paletteOpen} onOpenChange={handlePaletteChange} />
     </SidebarProvider>
   )
 }

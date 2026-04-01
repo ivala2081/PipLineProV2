@@ -94,6 +94,13 @@
   --color-bg3: #e6f1fd;
   --color-bg4: #edeefc;
 
+  /* ---- Domain-specific semantic colors (chart & status contexts) ---- */
+  --color-deposit: #22c55e;
+  --color-withdrawal: #ef4444;
+  --color-net-line: #18181b;
+  --color-commission-chart: #f97316;
+  --color-settlement: #f59e0b;
+
   /* ---- Animations ---- */
   --animate-accordion-down: accordion-down 200ms ease-out;
   --animate-accordion-up: accordion-up 200ms ease-out;
@@ -290,6 +297,7 @@
     --color-bg2: #141b26;
     --color-bg5: #1b2533;
     --color-green: #94e9b8;
+    --color-net-line: #94e9b8;
     color-scheme: dark;
   }
 
@@ -307,6 +315,7 @@
       --color-bg2: #141b26;
       --color-bg5: #1b2533;
       --color-green: #94e9b8;
+      --color-net-line: #94e9b8;
       color-scheme: dark;
     }
   }

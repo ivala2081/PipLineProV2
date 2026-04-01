@@ -58,12 +58,12 @@ const fmtNumber = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
 })
 
-function getStatusVariant(status: string): 'default' | 'info' | 'success' {
+function getStatusVariant(status: string): 'blue' | 'green' | 'default' {
   switch (status) {
     case 'confirmed':
-      return 'info'
+      return 'blue'
     case 'paid':
-      return 'success'
+      return 'green'
     default:
       return 'default'
   }

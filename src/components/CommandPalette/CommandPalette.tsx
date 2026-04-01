@@ -4,21 +4,25 @@ import { useTranslation } from 'react-i18next'
 import { Command } from 'cmdk'
 import {
   MagnifyingGlass,
-  House,
   ArrowsLeftRight,
-  BookOpen,
   CreditCard,
   Users,
-  Buildings,
-  Shield,
   IdentificationCard,
-  Gear,
-  Brain,
+  Handshake,
   CircleNotch,
   ArrowRight,
+  Plus,
+  Moon,
+  Globe,
 } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
+import { navGroups, type NavItem } from '@/layouts/nav-config'
+import { usePagePermissions } from '@/hooks/usePagePermission'
+import { useTheme } from '@ds/hooks'
+import { useLocale } from '@ds/hooks'
+import { SHORTCUT_EVENTS_INTERNAL } from '@/hooks/useGlobalShortcuts'
+import { ShortcutHint } from '@/components/ShortcutHint'
 
 interface SearchResult {
   id: string
@@ -28,28 +32,46 @@ interface SearchResult {
   group: string
 }
 
-const NAV_ITEMS = [
-  { label: 'Dashboard', href: '/', icon: House },
-  { label: 'Transfers', href: '/transfers', icon: ArrowsLeftRight },
-  { label: 'Accounting', href: '/accounting', icon: BookOpen },
-  { label: 'PSPs', href: '/psps', icon: CreditCard },
-  { label: 'Members', href: '/members', icon: Users },
-  { label: 'Organizations', href: '/organizations', icon: Buildings },
-  { label: 'Security', href: '/security', icon: Shield },
-  { label: 'HR', href: '/hr', icon: IdentificationCard },
-  { label: 'Settings', href: '/settings', icon: Gear },
-  { label: 'AI Assistant', href: '/ai', icon: Brain },
-]
+// Derive nav items from the single source of truth (nav-config.ts)
+const NAV_ITEMS: NavItem[] = navGroups.flatMap((g) => g.items)
 
 const GROUP_ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
   Transfers: ArrowsLeftRight,
   PSPs: CreditCard,
   Members: Users,
   Employees: IdentificationCard,
+  'IB Partners': Handshake,
 }
 
-export function CommandPalette() {
-  const [open, setOpen] = useState(false)
+interface ActionCommand {
+  id: string
+  labelKey: string
+  icon: React.ComponentType<{ size?: number; className?: string }>
+  shortcut?: string
+}
+
+const ACTION_COMMANDS: ActionCommand[] = [
+  {
+    id: 'action-new-transfer',
+    labelKey: 'commandPalette.actions.newTransfer',
+    icon: Plus,
+    shortcut: 'Ctrl+N',
+  },
+  {
+    id: 'action-toggle-theme',
+    labelKey: 'layout.toggleTheme',
+    icon: Moon,
+    shortcut: 'Ctrl+Shift+T',
+  },
+  { id: 'action-toggle-language', labelKey: 'layout.changeLanguage', icon: Globe },
+]
+
+interface CommandPaletteProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [searching, setSearching] = useState(false)
@@ -57,18 +79,16 @@ export function CommandPalette() {
   const { t } = useTranslation('pages')
   const { currentOrg } = useOrganization()
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null)
+  const { toggleTheme } = useTheme()
+  const { locale, changeLocale } = useLocale()
+  const { canAccessPage } = usePagePermissions()
 
-  // Keyboard shortcut: Ctrl+K / Cmd+K
+  // Listen for toggle event from useGlobalShortcuts
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault()
-        setOpen((prev) => !prev)
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
+    const handler = () => onOpenChange(!open)
+    window.addEventListener(SHORTCUT_EVENTS_INTERNAL.TOGGLE_PALETTE, handler)
+    return () => window.removeEventListener(SHORTCUT_EVENTS_INTERNAL.TOGGLE_PALETTE, handler)
+  }, [open, onOpenChange])
 
   const runSearch = useCallback(
     async (q: string) => {
@@ -136,8 +156,6 @@ export function CommandPalette() {
       }
 
       // 3. Members — two-step: get org member IDs, then search profiles.
-      //    profiles.id → auth.users.id ← organization_members.user_id (no direct FK),
-      //    so we can't use PostgREST !inner join from profiles side.
       if (currentOrg?.id) {
         promises.push(
           (async () => {
@@ -193,20 +211,40 @@ export function CommandPalette() {
         )
       }
 
+      // 5. IB Partners — org-scoped, search by name or referral_code
+      if (currentOrg?.id) {
+        promises.push(
+          (async () => {
+            const { data } = await supabase
+              .from('ib_partners')
+              .select('id, name, referral_code, status')
+              .eq('organization_id', currentOrg.id)
+              .or(`name.ilike.${term},referral_code.ilike.${term}`)
+              .limit(5)
+            if (data) {
+              for (const row of data) {
+                items.push({
+                  id: `ib-${row.id}`,
+                  label: row.name,
+                  description: `${row.referral_code} · ${row.status}`,
+                  href: '/ib',
+                  group: 'IB Partners',
+                })
+              }
+            }
+          })(),
+        )
+      }
+
       await Promise.allSettled(promises)
       setResults(items)
       setSearching(false)
     },
-    // React Compiler infers `currentOrg` (the object); optional-chaining in the
-    // dep array is less specific and triggers preserve-manual-memoization.
-    // Using the full object is safe — runSearch only reads currentOrg.id.
     [currentOrg],
   )
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    // Avoid synchronous setState inside effect body (react-hooks/set-state-in-effect).
-    // Use a 0 ms timeout for the clear path so the setState is always async.
     debounceRef.current = setTimeout(
       () => {
         if (!query.trim()) {
@@ -223,16 +261,44 @@ export function CommandPalette() {
   }, [query, runSearch])
 
   const handleSelect = (href: string) => {
-    setOpen(false)
+    onOpenChange(false)
     setQuery('')
     setResults([])
     navigate(href)
   }
 
-  // Filter nav items client-side
-  const filteredNav = query.trim()
-    ? NAV_ITEMS.filter((item) => item.label.toLowerCase().includes(query.toLowerCase()))
-    : NAV_ITEMS
+  const handleAction = useCallback(
+    (actionId: string) => {
+      onOpenChange(false)
+      setQuery('')
+      setResults([])
+      switch (actionId) {
+        case 'action-new-transfer':
+          navigate('/transfers/new')
+          break
+        case 'action-toggle-theme':
+          toggleTheme()
+          break
+        case 'action-toggle-language':
+          changeLocale(locale === 'en' ? 'tr' : 'en')
+          break
+      }
+    },
+    [onOpenChange, navigate, toggleTheme, changeLocale, locale],
+  )
+
+  // Filter nav items client-side — permission-aware + i18n
+  const filteredNav = NAV_ITEMS.filter((item) => {
+    if (item.page && canAccessPage(item.page) === false) return false
+    if (query.trim()) return t(item.titleKey).toLowerCase().includes(query.toLowerCase())
+    return true
+  })
+
+  // Filter action commands client-side
+  const filteredActions = ACTION_COMMANDS.filter((action) => {
+    if (query.trim()) return t(action.labelKey).toLowerCase().includes(query.toLowerCase())
+    return true
+  })
 
   // Group DB results by entity type
   const groups = new Map<string, SearchResult[]>()
@@ -249,13 +315,13 @@ export function CommandPalette() {
     // We handle all filtering ourselves (nav: client-side, data: via Supabase).
     <Command.Dialog
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={onOpenChange}
       shouldFilter={false}
       label={t('search.title', 'Search')}
       className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] md:pt-[20vh]"
     >
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/50" onClick={() => setOpen(false)} />
+      <div className="fixed inset-0 bg-black/50" onClick={() => onOpenChange(false)} />
 
       {/* Dialog */}
       <div className="relative z-10 w-full max-w-lg overflow-hidden rounded-xl border border-black/10 bg-bg1 shadow-2xl">
@@ -269,7 +335,10 @@ export function CommandPalette() {
           <Command.Input
             value={query}
             onValueChange={setQuery}
-            placeholder={t('search.placeholder', 'Search transfers, PSPs, members, employees...')}
+            placeholder={t(
+              'commandPalette.placeholder',
+              'Search transfers, PSPs, members, partners...',
+            )}
             className="h-12 w-full bg-transparent text-sm text-black outline-none placeholder:text-black/30"
           />
           <kbd className="hidden shrink-0 rounded border border-black/10 bg-black/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-black/30 sm:block">
@@ -291,18 +360,46 @@ export function CommandPalette() {
               heading={t('search.navigation', 'Navigation')}
               className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-black/30"
             >
-              {filteredNav.map((item) => (
-                <Command.Item
-                  key={item.href}
-                  value={`nav-${item.label}`}
-                  onSelect={() => handleSelect(item.href)}
-                  className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm text-black/70 transition-colors data-[selected=true]:bg-black/[0.06] data-[selected=true]:text-black"
-                >
-                  <item.icon size={16} className="shrink-0 text-black/30" />
-                  <span>{item.label}</span>
-                  <ArrowRight size={13} className="ml-auto shrink-0 text-black/20" />
-                </Command.Item>
-              ))}
+              {filteredNav.map((item) => {
+                const Icon = item.icon
+                const label = t(item.titleKey)
+                return (
+                  <Command.Item
+                    key={item.href}
+                    value={`nav-${item.titleKey}`}
+                    onSelect={() => handleSelect(item.href)}
+                    className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm text-black/70 transition-colors data-[selected=true]:bg-black/[0.06] data-[selected=true]:text-black"
+                  >
+                    <Icon size={16} className="shrink-0 text-black/30" />
+                    <span>{label}</span>
+                    <ArrowRight size={13} className="ml-auto shrink-0 text-black/20" />
+                  </Command.Item>
+                )
+              })}
+            </Command.Group>
+          )}
+
+          {/* Actions group */}
+          {filteredActions.length > 0 && (
+            <Command.Group
+              heading={t('commandPalette.actions.heading', 'Actions')}
+              className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-black/30"
+            >
+              {filteredActions.map((action) => {
+                const Icon = action.icon
+                return (
+                  <Command.Item
+                    key={action.id}
+                    value={action.id}
+                    onSelect={() => handleAction(action.id)}
+                    className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm text-black/70 transition-colors data-[selected=true]:bg-black/[0.06] data-[selected=true]:text-black"
+                  >
+                    <Icon size={16} className="shrink-0 text-black/30" />
+                    <span>{t(action.labelKey)}</span>
+                    {action.shortcut && <ShortcutHint keys={action.shortcut} />}
+                  </Command.Item>
+                )
+              })}
             </Command.Group>
           )}
 

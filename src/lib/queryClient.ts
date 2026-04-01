@@ -47,7 +47,7 @@ export const queryClient = new QueryClient({
     queries: {
       staleTime: 1000 * 60 * 2, // 2 minutes – sensible default; hooks override per data-volatility
       gcTime: 1000 * 60 * 10, // 10 minutes (formerly cacheTime)
-      retry: 1,
+      retry: false, // Retries handled by withRetry/supabaseQueryFn per-hook
       refetchOnWindowFocus: false,
       refetchOnReconnect: true,
     },

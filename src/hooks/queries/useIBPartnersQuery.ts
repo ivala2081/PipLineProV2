@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { supabaseQueryFn } from '@/lib/supabaseRetry'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { queryKeys } from '@/lib/queryKeys'
@@ -12,16 +13,9 @@ export function useIBPartnersQuery() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.ib.partners(orgId),
-    queryFn: async () => {
-      if (!currentOrg) throw new Error('No organization selected')
-      const { data, error } = await supabase
-        .from('ib_partners')
-        .select('*')
-        .eq('organization_id', currentOrg.id)
-        .order('name')
-      if (error) throw error
-      return (data as IBPartner[]) ?? []
-    },
+    queryFn: supabaseQueryFn<IBPartner[]>(() =>
+      supabase.from('ib_partners').select('*').eq('organization_id', currentOrg!.id).order('name'),
+    ),
     enabled: !!currentOrg,
     staleTime: 5 * 60_000,
     gcTime: 10 * 60_000,

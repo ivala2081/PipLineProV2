@@ -5,6 +5,7 @@ import { Plus } from '@phosphor-icons/react'
 import { PageHeader, Button, Tabs, TabsList, TabsTrigger, TabsContent } from '@ds'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { useAuth } from '@/app/providers/AuthProvider'
+import { SectionErrorBoundary } from '@/components/ErrorBoundary'
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import { queryKeys } from '@/lib/queryKeys'
 import { PartnersTab } from './PartnersTab'
@@ -83,35 +84,43 @@ export function IBPage() {
         </TabsList>
 
         <TabsContent value="partners">
-          <PartnersTab
-            isAdmin={isAdmin}
-            showDialog={showPartnerDialog}
-            onShowDialog={setShowPartnerDialog}
-          />
+          <SectionErrorBoundary sectionName="IB Partners">
+            <PartnersTab
+              isAdmin={isAdmin}
+              showDialog={showPartnerDialog}
+              onShowDialog={setShowPartnerDialog}
+            />
+          </SectionErrorBoundary>
         </TabsContent>
 
         <TabsContent value="referrals">
-          <ReferralsTab
-            isAdmin={isAdmin}
-            showDialog={showReferralDialog}
-            onShowDialog={setShowReferralDialog}
-          />
+          <SectionErrorBoundary sectionName="IB Referrals">
+            <ReferralsTab
+              isAdmin={isAdmin}
+              showDialog={showReferralDialog}
+              onShowDialog={setShowReferralDialog}
+            />
+          </SectionErrorBoundary>
         </TabsContent>
 
         <TabsContent value="commissions">
-          <CommissionsTab
-            isAdmin={isAdmin}
-            showCalculateDialog={showCalculateDialog}
-            onShowCalculateDialog={setShowCalculateDialog}
-          />
+          <SectionErrorBoundary sectionName="IB Commissions">
+            <CommissionsTab
+              isAdmin={isAdmin}
+              showCalculateDialog={showCalculateDialog}
+              onShowCalculateDialog={setShowCalculateDialog}
+            />
+          </SectionErrorBoundary>
         </TabsContent>
 
         <TabsContent value="payments">
-          <PaymentsTab
-            isAdmin={isAdmin}
-            showDialog={showPaymentDialog}
-            onShowDialog={setShowPaymentDialog}
-          />
+          <SectionErrorBoundary sectionName="IB Payments">
+            <PaymentsTab
+              isAdmin={isAdmin}
+              showDialog={showPaymentDialog}
+              onShowDialog={setShowPaymentDialog}
+            />
+          </SectionErrorBoundary>
         </TabsContent>
       </Tabs>
     </div>

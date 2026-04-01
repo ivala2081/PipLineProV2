@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { supabaseQueryFn } from '@/lib/supabaseRetry'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { queryKeys } from '@/lib/queryKeys'
 
@@ -108,18 +109,13 @@ export function useMonthlyAnalysisQuery(year: number, month: number) {
 
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.transfers.monthlySummary(currentOrg?.id ?? '', year, month),
-    queryFn: async () => {
-      if (!currentOrg) throw new Error('No organization selected')
-
-      const { data, error } = await supabase.rpc('get_monthly_summary', {
-        _org_id: currentOrg.id,
+    queryFn: supabaseQueryFn<MonthlySummaryData>(() =>
+      supabase.rpc('get_monthly_summary', {
+        _org_id: currentOrg!.id,
         _year: year,
         _month: month,
-      })
-
-      if (error) throw error
-      return data as unknown as MonthlySummaryData
-    },
+      }),
+    ),
     enabled: !!currentOrg,
     staleTime: 5 * 60_000, // 5 min – monthly analysis is historical-ish
     gcTime: 10 * 60_000,

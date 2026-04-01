@@ -145,6 +145,8 @@ export const queryKeys = {
       ['audit', 'list', orgId, filters] as const,
     count: (orgId: string, filters: Record<string, unknown>) =>
       ['audit', 'count', orgId, filters] as const,
+    activity: (orgId: string, filters: Record<string, unknown>) =>
+      ['audit', 'activity', orgId, filters] as const,
   },
   alerts: {
     all: ['alerts'] as const,

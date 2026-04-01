@@ -1685,7 +1685,33 @@
     },
     "empty": "Denetim kaydı bulunamadı.",
     "noChanges": "Alan değişikliği kaydedilmedi.",
-    "fields": "alan değişti"
+    "fields": "alan değişti",
+    "tabs": {
+      "log": "Transfer Kaydı",
+      "activity": "Org Aktivite",
+      "trash": "Çöp Kutusu"
+    },
+    "activity": {
+      "title": "Organizasyon Aktivitesi",
+      "subtitle": "IB, muhasebe ve izin değişiklikleri.",
+      "empty": "Aktivite kaydı bulunamadı.",
+      "emptyHint": "IB ortakları, muhasebe ve izin değişiklikleri burada görünecek.",
+      "allTables": "Tüm tablolar",
+      "tables": {
+        "ib_partners": "IB Ortakları",
+        "ib_commissions": "IB Komisyonları",
+        "ib_payments": "IB Ödemeleri",
+        "accounting_entries": "Muhasebe",
+        "role_permissions": "İzinler"
+      },
+      "overrideChange": "Komisyon geçersiz kılma",
+      "calculated": "Hesaplanan",
+      "override": "Geçersiz kılma",
+      "reason": "Sebep",
+      "permRole": "Rol",
+      "permTable": "Tablo",
+      "recordId": "Kayıt"
+    }
   },
   "settings": {
     "title": "Ayarlar",
@@ -2053,6 +2079,13 @@
         "selectPartner": "Ortak Seçin",
         "selectCommission": "Komisyona Bağla (opsiyonel)"
       }
+    }
+  },
+  "commandPalette": {
+    "placeholder": "Transfer, PSP, üye, ortak ara...",
+    "actions": {
+      "heading": "Eylemler",
+      "newTransfer": "Yeni Transfer"
     }
   }
 }

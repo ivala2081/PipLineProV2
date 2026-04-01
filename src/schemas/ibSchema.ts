@@ -7,6 +7,75 @@ export const IB_STATUSES = ['active', 'paused', 'terminated'] as const
 export const REFERRAL_STATUSES = ['registered', 'ftd', 'active', 'churned'] as const
 export const COMMISSION_STATUSES = ['draft', 'confirmed', 'paid'] as const
 
+/* ── Per-type agreement detail schemas ──────────────────────────── */
+
+export const salaryDetailsSchema = z.object({
+  amount: z.coerce.number().min(0, 'Amount must be non-negative'),
+  currency: z.enum(['USD', 'TRY', 'EUR']).default('USD'),
+  period: z.enum(['weekly', 'monthly']).default('monthly'),
+})
+
+export const cpaDetailsSchema = z.object({
+  cpa_amount: z.coerce.number().min(0, 'CPA amount must be non-negative'),
+  currency: z.enum(['USD', 'TRY', 'EUR']).default('USD'),
+  min_ftd_amount: z.coerce.number().min(0, 'Min FTD must be non-negative').optional(),
+})
+
+export const lotRebateDetailsSchema = z.object({
+  rebate_per_lot: z.coerce.number().min(0, 'Rebate must be non-negative'),
+  currency: z.enum(['USD', 'TRY', 'EUR']).default('USD'),
+})
+
+export const revenueShareDetailsSchema = z.object({
+  revshare_pct: z.coerce
+    .number()
+    .min(0, 'Percentage must be non-negative')
+    .max(100, 'Percentage must be 0-100'),
+  source: z.enum(['spread', 'commission', 'net_revenue']).default('spread'),
+})
+
+const hybridComponentSchema = z
+  .object({ type: z.enum(['salary', 'cpa', 'lot_rebate', 'revenue_share']) })
+  .passthrough()
+
+export const hybridDetailsSchema = z
+  .object({
+    components: z.array(hybridComponentSchema).min(1, 'At least one component required'),
+  })
+  .passthrough()
+
+const detailSchemaMap = {
+  salary: salaryDetailsSchema,
+  cpa: cpaDetailsSchema,
+  lot_rebate: lotRebateDetailsSchema,
+  revenue_share: revenueShareDetailsSchema,
+  hybrid: hybridDetailsSchema,
+} as const
+
+/** Validate agreement_details against the correct schema for the given type. */
+export function validateAgreementDetails(
+  agreementType: AgreementType,
+  details: Record<string, unknown>,
+):
+  | { success: true; data: Record<string, unknown> }
+  | { success: false; errors: Record<string, string> } {
+  const schema = detailSchemaMap[agreementType]
+  const result = schema.safeParse(details)
+
+  if (result.success) {
+    return { success: true, data: result.data as Record<string, unknown> }
+  }
+
+  const errors: Record<string, string> = {}
+  for (const issue of result.error.issues) {
+    const key = issue.path.join('.') || '_root'
+    if (!errors[key]) errors[key] = issue.message
+  }
+  return { success: false, errors }
+}
+
+/* ── Partner form schema (base fields — details validated separately) ── */
+
 export const ibPartnerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').trim(),
   contact_email: z.string().email('Invalid email').optional().or(z.literal('')),

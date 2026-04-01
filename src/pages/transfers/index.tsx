@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Plus, UploadSimple, DownloadSimple } from '@phosphor-icons/react'
@@ -29,6 +29,13 @@ export function TransfersPage() {
   const [deleteTarget, setDeleteTarget] = useState<TransferRow | null>(null)
   const [importOpen, setImportOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
+
+  // Listen for global Ctrl+E shortcut
+  useEffect(() => {
+    const handler = () => setExportOpen(true)
+    window.addEventListener('shortcut:export', handler)
+    return () => window.removeEventListener('shortcut:export', handler)
+  }, [])
 
   const handleAdd = () => navigate('/transfers/new')
 

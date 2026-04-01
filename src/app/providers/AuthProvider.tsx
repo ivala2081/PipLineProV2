@@ -12,10 +12,14 @@ import { supabase } from '@/lib/supabase'
 import type { Profile } from '@/lib/database.types'
 import { getDeviceId } from '@/lib/deviceFingerprinting'
 import { queryClient } from '@/lib/queryClient'
+import { onSignedOut, clearSavedOrg } from '@/lib/appEffects'
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
+
+/** Pre-fetched session promise — kicked off in main.tsx before React renders. */
+export type SessionPromise = Promise<{ data: { session: Session | null } }>
 
 interface AuthState {
   user: User | null
@@ -48,7 +52,13 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 /*  Provider                                                           */
 /* ------------------------------------------------------------------ */
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({
+  children,
+  sessionPromise,
+}: {
+  children: ReactNode
+  sessionPromise?: SessionPromise
+}) {
   const [state, setState] = useState<AuthState>({
     user: null,
     session: null,
@@ -69,6 +79,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true
 
+    // Fast-track: use pre-fetched session to exit loading before the
+    // onAuthStateChange listener fires its INITIAL_SESSION event.
+    // Overlaps session check with React mount/render time.
+    if (sessionPromise) {
+      sessionPromise.then(({ data: { session } }) => {
+        if (!mounted) return
+        setState((prev) => {
+          // Skip if already initialized (onAuthStateChange fired first)
+          if (!prev.isLoading) return prev
+          return {
+            user: session?.user ?? null,
+            session,
+            profile: null,
+            isLoading: false,
+          }
+        })
+      })
+    }
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
@@ -84,13 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // On sign-out: clear all cached data and redirect to login
       if (event === 'SIGNED_OUT') {
         setState({ user: null, session: null, profile: null, isLoading: false })
-        queryClient.clear()
-        try {
-          localStorage.removeItem('piplinepro-org')
-        } catch {
-          /* ignore */
-        }
-        window.location.replace('/login')
+        onSignedOut(queryClient)
         return
       }
 
@@ -124,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted = false
       subscription.unsubscribe()
     }
-  }, [])
+  }, [sessionPromise])
 
   /* ---- 2. Fetch profile when user.id changes (decoupled) ---------- */
   useEffect(() => {
@@ -248,11 +271,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     // Best-effort: clear org selection (avoid cross-user leakage)
-    try {
-      localStorage.removeItem('piplinepro-org')
-    } catch {
-      // ignore
-    }
+    clearSavedOrg()
 
     // Prefer local sign-out (reliable offline / avoids global revoke surprises)
     const { error } = await supabase.auth.signOut({ scope: 'local' })

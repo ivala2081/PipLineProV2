@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { WarningCircle, ArrowClockwise } from '@phosphor-icons/react'
 import { Sentry } from '@/lib/sentry'
 
 interface Props {
@@ -79,4 +80,57 @@ export function PageErrorBoundary({ children }: { children: ReactNode }) {
       {children}
     </ErrorBoundary>
   )
+}
+
+interface SectionErrorBoundaryProps {
+  children: ReactNode
+  fallbackHeight?: string
+  sectionName?: string
+}
+
+export class SectionErrorBoundary extends Component<SectionErrorBoundaryProps, State> {
+  constructor(props: SectionErrorBoundaryProps) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    const label = this.props.sectionName ?? 'Unknown section'
+    console.error(`[SectionErrorBoundary: ${label}]`, error, info.componentStack)
+    Sentry.captureException(error, {
+      extra: { componentStack: info.componentStack, sectionName: label },
+    })
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div
+          className={`flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-black/10 bg-bg1 ${this.props.fallbackHeight ?? 'min-h-[200px]'}`}
+        >
+          <div className="flex size-12 items-center justify-center rounded-full bg-orange/10">
+            <WarningCircle size={20} weight="duotone" className="text-orange" />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-medium text-black/60">This section encountered an error</p>
+            {this.props.sectionName && (
+              <p className="mt-0.5 text-xs text-black/40">{this.props.sectionName}</p>
+            )}
+          </div>
+          <button
+            className="mt-1 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-black/50 transition-colors hover:bg-black/[0.04] hover:text-black/70"
+            onClick={() => this.setState({ hasError: false, error: null })}
+          >
+            <ArrowClockwise size={12} />
+            Retry
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
 }

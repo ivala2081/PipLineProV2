@@ -84,14 +84,14 @@ function useChartTheme() {
         border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.08)',
         boxShadow: isDark ? '0 2px 8px rgba(0,0,0,0.4)' : '0 2px 8px rgba(0,0,0,0.06)',
       },
-      lineColor: isDark ? '#94e9b8' : '#18181b',
+      lineColor: 'var(--color-net-line)',
     }),
     [isDark],
   )
 }
 
-const CHART_GREEN = '#22c55e'
-const CHART_RED = '#ef4444'
+const DEPOSIT_COLOR = 'var(--color-deposit)'
+const WITHDRAWAL_COLOR = 'var(--color-withdrawal)'
 
 function formatDay(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00')
@@ -772,8 +772,13 @@ export function MonthlyCharts({ data, lang }: { data: MonthlySummaryData; lang: 
                   labelFormatter={(label) => formatDay(String(label))}
                   contentStyle={ct.tooltipStyle}
                 />
-                <Bar dataKey="deposits" fill={CHART_GREEN} radius={[2, 2, 0, 0]} stackId="v" />
-                <Bar dataKey="withdrawals" fill={CHART_RED} radius={[2, 2, 0, 0]} stackId="v" />
+                <Bar dataKey="deposits" fill={DEPOSIT_COLOR} radius={[2, 2, 0, 0]} stackId="v" />
+                <Bar
+                  dataKey="withdrawals"
+                  fill={WITHDRAWAL_COLOR}
+                  radius={[2, 2, 0, 0]}
+                  stackId="v"
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>

@@ -52,14 +52,14 @@ interface PartnersTabProps {
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-function getStatusVariant(status: string): 'success' | 'warning' | 'error' | 'default' {
+function getStatusVariant(status: string): 'green' | 'yellow' | 'red' | 'default' {
   switch (status) {
     case 'active':
-      return 'success'
+      return 'green'
     case 'paused':
-      return 'warning'
+      return 'yellow'
     case 'terminated':
-      return 'error'
+      return 'red'
     default:
       return 'default'
   }

@@ -22,6 +22,7 @@ import { useIBPartnerMutations } from '@/hooks/queries/useIBPartnersQuery'
 import { useToast } from '@/hooks/useToast'
 import {
   ibPartnerSchema,
+  validateAgreementDetails,
   AGREEMENT_TYPES,
   type IBPartnerFormValues,
   type AgreementType,
@@ -202,6 +203,12 @@ export function PartnerDialog({ open, onClose, partner }: PartnerDialogProps) {
     ...DEFAULT_REVENUE_SHARE,
   })
   const [hybrid, setHybrid] = useState<HybridDetails>({ ...DEFAULT_HYBRID })
+  const [detailErrors, setDetailErrors] = useState<Record<string, string>>({})
+
+  // Clear detail errors when agreement type changes
+  useEffect(() => {
+    setDetailErrors({})
+  }, [watchedAgreementType])
 
   /* ---- Reset on open / partner change ---- */
 
@@ -259,9 +266,17 @@ export function PartnerDialog({ open, onClose, partner }: PartnerDialogProps) {
       hybrid,
     )
 
+    // Validate agreement details against type-specific schema
+    const validation = validateAgreementDetails(values.agreement_type, agreementDetails)
+    if (!validation.success) {
+      setDetailErrors(validation.errors)
+      return
+    }
+    setDetailErrors({})
+
     const payload: IBPartnerFormValues = {
       ...values,
-      agreement_details: agreementDetails,
+      agreement_details: validation.data,
     }
 
     try {
@@ -381,6 +396,7 @@ export function PartnerDialog({ open, onClose, partner }: PartnerDialogProps) {
             onRevenueShareChange={setRevenueShare}
             hybrid={hybrid}
             onHybridChange={setHybrid}
+            errors={detailErrors}
             t={t}
           />
 
@@ -451,6 +467,7 @@ interface AgreementDetailsSectionProps {
   onRevenueShareChange: (v: RevenueShareDetails) => void
   hybrid: HybridDetails
   onHybridChange: (v: HybridDetails) => void
+  errors?: Record<string, string>
   t: (key: string) => string
 }
 
@@ -466,6 +483,7 @@ function AgreementDetailsSection({
   onRevenueShareChange,
   hybrid,
   onHybridChange,
+  errors,
   t,
 }: AgreementDetailsSectionProps) {
   const CURRENCIES = ['USD', 'TRY', 'EUR']
@@ -492,6 +510,7 @@ function AgreementDetailsSection({
                 }
                 placeholder="0.00"
               />
+              {errors?.amount && <p className="text-xs text-error">{errors.amount}</p>}
             </div>
             <div className="space-y-1">
               <Label>{t('ib.partners.currency')}</Label>
@@ -551,6 +570,7 @@ function AgreementDetailsSection({
                 }
                 placeholder="0.00"
               />
+              {errors?.cpa_amount && <p className="text-xs text-error">{errors.cpa_amount}</p>}
             </div>
             <div className="space-y-1">
               <Label>{t('ib.partners.currency')}</Label>
@@ -586,6 +606,9 @@ function AgreementDetailsSection({
                 }
                 placeholder={t('ib.partners.optional')}
               />
+              {errors?.min_ftd_amount && (
+                <p className="text-xs text-error">{errors.min_ftd_amount}</p>
+              )}
             </div>
           </div>
         </fieldset>
@@ -612,6 +635,9 @@ function AgreementDetailsSection({
                 }
                 placeholder="0.00"
               />
+              {errors?.rebate_per_lot && (
+                <p className="text-xs text-error">{errors.rebate_per_lot}</p>
+              )}
             </div>
             <div className="space-y-1">
               <Label>{t('ib.partners.currency')}</Label>
@@ -657,6 +683,7 @@ function AgreementDetailsSection({
                 }
                 placeholder="0"
               />
+              {errors?.revshare_pct && <p className="text-xs text-error">{errors.revshare_pct}</p>}
             </div>
             <div className="space-y-1">
               <Label>{t('ib.partners.revenueShare.source')}</Label>
@@ -693,8 +720,10 @@ function AgreementDetailsSection({
               className="flex min-h-[100px] w-full rounded-md border border-border bg-surface px-3 py-2 text-sm ring-offset-surface placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               value={hybrid.json}
               onChange={(e) => onHybridChange({ json: e.target.value })}
-              placeholder='{ "key": "value" }'
+              placeholder='{ "components": [{ "type": "salary", "amount": 500 }] }'
             />
+            {errors?.components && <p className="text-xs text-error">{errors.components}</p>}
+            {errors?._root && <p className="text-xs text-error">{errors._root}</p>}
           </div>
         </fieldset>
       )

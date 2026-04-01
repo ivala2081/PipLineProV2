@@ -1685,7 +1685,33 @@
     },
     "empty": "No audit log entries found.",
     "noChanges": "No field changes recorded.",
-    "fields": "fields changed"
+    "fields": "fields changed",
+    "tabs": {
+      "log": "Transfer Log",
+      "activity": "Org Activity",
+      "trash": "Trash"
+    },
+    "activity": {
+      "title": "Organization Activity",
+      "subtitle": "IB, accounting, and permission changes across your organization.",
+      "empty": "No activity entries found.",
+      "emptyHint": "Changes to IB partners, accounting, and permissions will appear here.",
+      "allTables": "All tables",
+      "tables": {
+        "ib_partners": "IB Partners",
+        "ib_commissions": "IB Commissions",
+        "ib_payments": "IB Payments",
+        "accounting_entries": "Accounting",
+        "role_permissions": "Permissions"
+      },
+      "overrideChange": "Commission override",
+      "calculated": "Calculated",
+      "override": "Override",
+      "reason": "Reason",
+      "permRole": "Role",
+      "permTable": "Table",
+      "recordId": "Record"
+    }
   },
   "settings": {
     "webhooks": {
@@ -2054,6 +2080,13 @@
         "selectPartner": "Select Partner",
         "selectCommission": "Link to Commission (optional)"
       }
+    }
+  },
+  "commandPalette": {
+    "placeholder": "Search transfers, PSPs, members, partners...",
+    "actions": {
+      "heading": "Actions",
+      "newTransfer": "New Transfer"
     }
   }
 }

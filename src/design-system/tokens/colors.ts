@@ -87,4 +87,19 @@ export const semanticColors = {
   neutral: staticColors.cyan,
 } as const
 
+/* ------------------------------------------------------------------ */
+/*  Domain-specific chart / status colours                             */
+/*  Mirrors CSS custom properties (--color-deposit, etc.).             */
+/*  For Recharts/SVG, prefer var(--color-deposit) directly.            */
+/*  Use these when a resolved hex value is required.                   */
+/* ------------------------------------------------------------------ */
+
+export const domainColors = {
+  deposit: { light: '#22c55e', dark: '#22c55e' },
+  withdrawal: { light: '#ef4444', dark: '#ef4444' },
+  netLine: { light: '#18181b', dark: '#94e9b8' },
+  commissionChart: { light: '#f97316', dark: '#f97316' },
+  settlement: { light: '#f59e0b', dark: '#f59e0b' },
+} as const
+
 export type ThemeMode = keyof typeof themeColors

@@ -54,6 +54,7 @@ import { useDashboardRecentQuery } from '@/hooks/queries/useDashboardRecentQuery
 import type { RecentTransfer } from '@/hooks/queries/useDashboardRecentQuery'
 import type { BreakdownItem } from '@/hooks/queries/useMonthlyAnalysisQuery'
 import { Tag, Tabs, TabsList, TabsTrigger, Skeleton, Grid, EmptyState } from '@ds'
+import { SectionErrorBoundary } from '@/components/ErrorBoundary'
 import { UserAvatar } from '@/components/UserAvatar'
 import { useTheme } from '@ds'
 import { cn } from '@ds/utils'
@@ -64,8 +65,8 @@ import type { IconProps } from '@phosphor-icons/react'
 /*  Constants & Helpers                                                */
 /* ================================================================== */
 
-const GREEN = '#22c55e'
-const RED = '#ef4444'
+const DEPOSIT_COLOR = 'var(--color-deposit)'
+const WITHDRAWAL_COLOR = 'var(--color-withdrawal)'
 
 const DONUT_COLORS = [
   '#6366f1', // indigo-500
@@ -142,7 +143,7 @@ function useChartTheme() {
         border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.06)',
         boxShadow: isDark ? '0 4px 16px rgba(0,0,0,0.3)' : '0 4px 16px rgba(0,0,0,0.06)',
       },
-      lineColor: isDark ? '#94e9b8' : '#18181b',
+      lineColor: 'var(--color-net-line)',
       zeroLineStroke: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
       cursorStroke: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)',
     }),
@@ -268,6 +269,7 @@ function HeroKpiCard({
 
 function ChartCard({
   title,
+  subtitle,
   icon: Icon,
   iconColor,
   children,
@@ -275,6 +277,7 @@ function ChartCard({
   className,
 }: {
   title: string
+  subtitle?: string | null
   icon: ComponentType<IconProps>
   iconColor: string
   children: React.ReactNode
@@ -293,6 +296,11 @@ function ChartCard({
         <div className="flex items-center gap-2">
           <Icon size={16} className={iconColor} weight="duotone" />
           <h3 className="text-sm font-semibold text-black/60">{title}</h3>
+          {subtitle && (
+            <span className="rounded-md bg-black/[0.04] px-1.5 py-0.5 text-[10px] font-medium text-black/40">
+              {subtitle}
+            </span>
+          )}
         </div>
         {headerRight}
       </div>
@@ -593,6 +601,21 @@ export function DashboardPage() {
     prevMonthDate.getFullYear(),
     prevMonthDate.getMonth() + 1,
   )
+  // Fallback: if current month has no chart data, use previous month
+  const currentMonthHasData = !!(
+    monthlyData?.daily_volume?.length ||
+    monthlyData?.payment_method_breakdown?.length ||
+    monthlyData?.daily_net?.length
+  )
+  const chartMonthlyData = currentMonthHasData ? monthlyData : prevMonthlyData
+  const isChartFallback = !currentMonthHasData && !!prevMonthlyData?.daily_volume?.length
+  const chartFallbackLabel = isChartFallback
+    ? new Date(prevMonthDate.getFullYear(), prevMonthDate.getMonth()).toLocaleDateString(
+        lang === 'tr' ? 'tr-TR' : 'en-US',
+        { year: 'numeric', month: 'long' },
+      )
+    : null
+
   const { recentTransfers, isTransfersLoading } = useDashboardRecentQuery()
 
   const filteredRecentTransfers = useMemo(
@@ -727,11 +750,11 @@ export function DashboardPage() {
 
   const paymentMethods = useMemo(() => {
     const factor = showUsd && usdToBaseRate ? 1 / usdToBaseRate : 1
-    return (monthlyData?.payment_method_breakdown ?? [])
+    return (chartMonthlyData?.payment_method_breakdown ?? [])
       .filter((pm) => (pmView === 'volume' ? pm.volume > 0 : pm.count > 0))
       .sort((a, b) => (pmView === 'volume' ? b.volume - a.volume : b.count - a.count))
       .map((pm) => ({ ...pm, volume: pm.volume * factor }))
-  }, [monthlyData?.payment_method_breakdown, pmView, showUsd, usdToBaseRate])
+  }, [chartMonthlyData?.payment_method_breakdown, pmView, showUsd, usdToBaseRate])
 
   const pmTotal = useMemo(
     () => paymentMethods.reduce((s, pm) => s + (pmView === 'volume' ? pm.volume : pm.count), 0),
@@ -749,20 +772,20 @@ export function DashboardPage() {
   const chartUsdFactor = isUSD && usdToBaseRate ? 1 / usdToBaseRate : null
 
   const chartDailyVolume = useMemo(() => {
-    const src = monthlyData?.daily_volume ?? []
+    const src = chartMonthlyData?.daily_volume ?? []
     if (!chartUsdFactor) return src
     return src.map((p) => ({
       day: p.day,
       deposits: p.deposits * chartUsdFactor,
       withdrawals: p.withdrawals * chartUsdFactor,
     }))
-  }, [monthlyData?.daily_volume, chartUsdFactor])
+  }, [chartMonthlyData?.daily_volume, chartUsdFactor])
 
   const chartDailyNet = useMemo(() => {
-    const src = monthlyData?.daily_net ?? []
+    const src = chartMonthlyData?.daily_net ?? []
     if (!chartUsdFactor) return src
     return src.map((p) => ({ day: p.day, net: p.net * chartUsdFactor }))
-  }, [monthlyData?.daily_net, chartUsdFactor])
+  }, [chartMonthlyData?.daily_net, chartUsdFactor])
 
   const prevChartDailyVolume = useMemo(() => {
     const src = prevMonthlyData?.daily_volume ?? []
@@ -949,101 +972,430 @@ export function DashboardPage() {
       </div>
 
       {/* ── KPI Hero Row ────────────────────────────── */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        <HeroKpiCard
-          icon={ArrowCircleDown}
-          iconBg="bg-green/10"
-          iconColor="text-green"
-          label={t('dashboard.kpi.deposits')}
-          value={depositMainValue}
-          isLoading={isLoading}
-          trend={<TrendBadge {...depositTrend} />}
-          splitLeft={depositSecondary}
-          className={cardCls('deposits')}
-          onClick={() => setActiveFilter((f) => (f === 'deposits' ? null : 'deposits'))}
-        />
-        <HeroKpiCard
-          icon={ArrowCircleUp}
-          iconBg="bg-red/10"
-          iconColor="text-red"
-          label={t('dashboard.kpi.withdrawals')}
-          value={withdrawalMainValue}
-          isLoading={isLoading}
-          trend={<TrendBadge {...withdrawalTrend} />}
-          splitLeft={withdrawalSecondary}
-          className={cardCls('withdrawals')}
-          onClick={() => setActiveFilter((f) => (f === 'withdrawals' ? null : 'withdrawals'))}
-        />
-        <HeroKpiCard
-          icon={Wallet}
-          iconBg="bg-indigo/10"
-          iconColor="text-indigo"
-          label={t('dashboard.kpi.netCash')}
-          value={netMainValue}
-          isLoading={isLoading}
-          trend={<TrendBadge {...netTrend} />}
-          splitLeft={netSecondary}
-          className={neutralCardCls}
-          onClick={() => setActiveFilter(null)}
-        />
-        <HeroKpiCard
-          icon={Percent}
-          iconBg="bg-orange/10"
-          iconColor="text-orange"
-          label={t('dashboard.kpi.commission')}
-          value={fmtMoney(kpis?.totalCommission ?? 0, lang)}
-          isLoading={isLoading}
-          trend={
-            <TrendBadge current={kpis?.totalCommission ?? 0} previous={prevKpis?.totalCommission} />
-          }
-          className={cardCls('commission')}
-          onClick={() => setActiveFilter((f) => (f === 'commission' ? null : 'commission'))}
-        />
-        <HeroKpiCard
-          icon={Hash}
-          iconBg="bg-purple/10"
-          iconColor="text-purple"
-          label={t('dashboard.kpi.transactions', 'Transactions')}
-          value={fmtCount(kpis?.transactionCount ?? 0, lang)}
-          isLoading={isLoading}
-          trend={
-            <TrendBadge
-              current={kpis?.transactionCount ?? 0}
-              previous={prevKpis?.transactionCount}
-            />
-          }
-          splitLeft={{ label: '↓', value: fmtCount(kpis?.depositCount ?? 0, lang) }}
-          splitRight={{ label: '↑', value: fmtCount(kpis?.withdrawalCount ?? 0, lang) }}
-          className={cn('sm:col-span-2 lg:col-span-1', neutralCardCls)}
-          onClick={() => setActiveFilter(null)}
-        />
-      </div>
+      <SectionErrorBoundary sectionName="KPI Cards" fallbackHeight="min-h-[120px]">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <HeroKpiCard
+            icon={ArrowCircleDown}
+            iconBg="bg-green/10"
+            iconColor="text-green"
+            label={t('dashboard.kpi.deposits')}
+            value={depositMainValue}
+            isLoading={isLoading}
+            trend={<TrendBadge {...depositTrend} />}
+            splitLeft={depositSecondary}
+            className={cardCls('deposits')}
+            onClick={() => setActiveFilter((f) => (f === 'deposits' ? null : 'deposits'))}
+          />
+          <HeroKpiCard
+            icon={ArrowCircleUp}
+            iconBg="bg-red/10"
+            iconColor="text-red"
+            label={t('dashboard.kpi.withdrawals')}
+            value={withdrawalMainValue}
+            isLoading={isLoading}
+            trend={<TrendBadge {...withdrawalTrend} />}
+            splitLeft={withdrawalSecondary}
+            className={cardCls('withdrawals')}
+            onClick={() => setActiveFilter((f) => (f === 'withdrawals' ? null : 'withdrawals'))}
+          />
+          <HeroKpiCard
+            icon={Wallet}
+            iconBg="bg-indigo/10"
+            iconColor="text-indigo"
+            label={t('dashboard.kpi.netCash')}
+            value={netMainValue}
+            isLoading={isLoading}
+            trend={<TrendBadge {...netTrend} />}
+            splitLeft={netSecondary}
+            className={neutralCardCls}
+            onClick={() => setActiveFilter(null)}
+          />
+          <HeroKpiCard
+            icon={Percent}
+            iconBg="bg-orange/10"
+            iconColor="text-orange"
+            label={t('dashboard.kpi.commission')}
+            value={fmtMoney(kpis?.totalCommission ?? 0, lang)}
+            isLoading={isLoading}
+            trend={
+              <TrendBadge
+                current={kpis?.totalCommission ?? 0}
+                previous={prevKpis?.totalCommission}
+              />
+            }
+            className={cardCls('commission')}
+            onClick={() => setActiveFilter((f) => (f === 'commission' ? null : 'commission'))}
+          />
+          <HeroKpiCard
+            icon={Hash}
+            iconBg="bg-purple/10"
+            iconColor="text-purple"
+            label={t('dashboard.kpi.transactions', 'Transactions')}
+            value={fmtCount(kpis?.transactionCount ?? 0, lang)}
+            isLoading={isLoading}
+            trend={
+              <TrendBadge
+                current={kpis?.transactionCount ?? 0}
+                previous={prevKpis?.transactionCount}
+              />
+            }
+            splitLeft={{ label: '↓', value: fmtCount(kpis?.depositCount ?? 0, lang) }}
+            splitRight={{ label: '↑', value: fmtCount(kpis?.withdrawalCount ?? 0, lang) }}
+            className={cn('sm:col-span-2 lg:col-span-1', neutralCardCls)}
+            onClick={() => setActiveFilter(null)}
+          />
+        </div>
+      </SectionErrorBoundary>
 
       {/* ── Charts Section (2x2 grid) ────────────────── */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* ─ Daily Volume Trend (AreaChart) ─────────── */}
-        <ChartCard
-          title={t('dashboard.charts.dailyVolume')}
-          icon={ChartLine}
-          iconColor="text-indigo"
-        >
-          {isMonthlyLoading ? (
-            <ChartSkeleton />
-          ) : !monthlyData?.daily_volume?.length ? (
-            <ChartEmpty message={t('dashboard.charts.noData')} />
-          ) : (
-            <>
+        <SectionErrorBoundary sectionName="Daily Volume Chart" fallbackHeight="min-h-[350px]">
+          <ChartCard
+            title={t('dashboard.charts.dailyVolume')}
+            subtitle={chartFallbackLabel}
+            icon={ChartLine}
+            iconColor="text-indigo"
+          >
+            {isMonthlyLoading || isPrevMonthlyLoading ? (
+              <ChartSkeleton />
+            ) : !chartMonthlyData?.daily_volume?.length ? (
+              <ChartEmpty message={t('dashboard.charts.noData')} />
+            ) : (
+              <>
+                <div className="min-h-[250px] md:min-h-[350px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartDailyVolume}>
+                      <defs>
+                        <linearGradient id="gradDep" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={DEPOSIT_COLOR} stopOpacity={0.2} />
+                          <stop offset="100%" stopColor={DEPOSIT_COLOR} stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="gradWd" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={WITHDRAWAL_COLOR} stopOpacity={0.15} />
+                          <stop offset="100%" stopColor={WITHDRAWAL_COLOR} stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke={ct.gridStroke}
+                        vertical={false}
+                      />
+                      <XAxis
+                        dataKey="day"
+                        tickFormatter={fmtDay}
+                        tick={ct.axisTick}
+                        axisLine={ct.axisLine}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        tickFormatter={fmtCompact}
+                        tick={ct.axisTick}
+                        axisLine={false}
+                        tickLine={false}
+                        width={50}
+                      />
+                      <Tooltip
+                        formatter={(value: number, name: string) => [
+                          chartMoneyFmt(value),
+                          name === 'deposits'
+                            ? t('dashboard.charts.deposits')
+                            : t('dashboard.charts.withdrawals'),
+                        ]}
+                        labelFormatter={fmtDay}
+                        contentStyle={ct.tooltipStyle}
+                        cursor={{ strokeDasharray: '4 4', stroke: ct.cursorStroke }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="deposits"
+                        stroke={DEPOSIT_COLOR}
+                        strokeWidth={2}
+                        fill="url(#gradDep)"
+                        opacity={activeFilter === 'withdrawals' ? 0.12 : 1}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="withdrawals"
+                        stroke={WITHDRAWAL_COLOR}
+                        strokeWidth={2}
+                        fill="url(#gradWd)"
+                        opacity={activeFilter === 'deposits' ? 0.12 : 1}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+                {/* Legend */}
+                <div className="mt-3 flex items-center justify-center gap-6">
+                  <div className="flex items-center gap-1.5">
+                    <div className="size-2 rounded-full bg-green" />
+                    <span className="text-xs text-black/40">{t('dashboard.charts.deposits')}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="size-2 rounded-full bg-red" />
+                    <span className="text-xs text-black/40">
+                      {t('dashboard.charts.withdrawals')}
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
+          </ChartCard>
+        </SectionErrorBoundary>
+
+        {/* ─ Payment Methods (Donut with side legend) ─ */}
+        <SectionErrorBoundary sectionName="Payment Methods Chart" fallbackHeight="min-h-[350px]">
+          <ChartCard
+            title={t('dashboard.charts.paymentMethods')}
+            subtitle={chartFallbackLabel}
+            icon={ChartPie}
+            iconColor="text-purple"
+            headerRight={
+              !isMonthlyLoading && paymentMethods.length > 0 ? (
+                <Tabs value={pmView} onValueChange={(v) => setPmView(v as 'volume' | 'count')}>
+                  <TabsList className="h-7 p-0.5">
+                    <TabsTrigger value="volume" className="px-2 py-1 text-xs">
+                      {t('dashboard.charts.volume')}
+                    </TabsTrigger>
+                    <TabsTrigger value="count" className="px-2 py-1 text-xs">
+                      {t('dashboard.charts.count')}
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              ) : null
+            }
+          >
+            {isMonthlyLoading || isPrevMonthlyLoading ? (
+              <ChartSkeleton />
+            ) : !paymentMethods.length ? (
+              <ChartEmpty message={t('dashboard.charts.noData')} />
+            ) : (
+              <div className="flex flex-1 items-center justify-center">
+                <div className="flex w-full flex-col items-center gap-4 sm:flex-row sm:items-center">
+                  {/* Donut */}
+                  <div className="relative h-[200px] w-[200px] shrink-0">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={paymentMethods}
+                          dataKey={pmView === 'volume' ? 'volume' : 'count'}
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={58}
+                          outerRadius={92}
+                          paddingAngle={2}
+                          stroke={ct.isDark ? '#0f172a' : '#ffffff'}
+                          strokeWidth={2}
+                          animationBegin={0}
+                          animationDuration={800}
+                        >
+                          {paymentMethods.map((_, i) => (
+                            <Cell
+                              key={i}
+                              fill={DONUT_COLORS[i % DONUT_COLORS.length]}
+                              className="transition-opacity hover:opacity-80"
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(value: number) =>
+                            pmView === 'volume' ? fmtMoney(value, lang) : fmtCount(value, lang)
+                          }
+                          contentStyle={ct.tooltipStyle}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    {/* Center label */}
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                      <div className="text-center">
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-black/25">
+                          {pmView === 'volume'
+                            ? t('dashboard.charts.total')
+                            : t('dashboard.charts.totalCount')}
+                        </p>
+                        <p className="mt-0.5 font-mono text-lg font-black tabular-nums text-black/70">
+                          {pmView === 'volume' ? fmtCompact(pmTotal) : pmTotal}
+                          {pmView === 'volume' && (
+                            <span className="ml-0.5 text-sm font-medium">
+                              {isUSD ? '$' : baseCurrencySymbol}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Side Legend */}
+                  <div className="min-w-0 flex-1 space-y-1">
+                    {paymentMethods.map((pm, i) => {
+                      const val = pmView === 'volume' ? pm.volume : pm.count
+                      const pct = pmTotal > 0 ? ((val / pmTotal) * 100).toFixed(1) : '0'
+                      const prevPm = prevMonthlyData?.payment_method_breakdown?.find(
+                        (p) => p.name === pm.name,
+                      )
+                      const prevVal = prevPm
+                        ? pmView === 'volume'
+                          ? prevPm.volume
+                          : prevPm.count
+                        : 0
+                      const diff = prevVal > 0 ? ((val - prevVal) / prevVal) * 100 : 0
+
+                      return (
+                        <div
+                          key={pm.name}
+                          className="flex items-center justify-between rounded-lg px-2 py-1.5 transition-colors hover:bg-black/[0.02]"
+                        >
+                          <div className="flex min-w-0 items-center gap-2">
+                            <div
+                              className="size-2.5 shrink-0 rounded-full"
+                              style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }}
+                            />
+                            <span className="truncate text-xs font-medium text-black/60">
+                              {pm.name}
+                            </span>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <span className="font-mono text-xs font-bold tabular-nums text-black/60">
+                              {pmView === 'volume' ? fmtCompact(pm.volume) : pm.count}
+                            </span>
+                            <span className="text-[10px] font-semibold text-black/20">{pct}%</span>
+                            {diff !== 0 && (
+                              <span
+                                className={cn(
+                                  'text-[10px] font-semibold',
+                                  diff > 0 ? 'text-green' : 'text-red',
+                                )}
+                              >
+                                {diff > 0 ? '↑' : '↓'}
+                                {Math.abs(diff).toFixed(0)}%
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </ChartCard>
+        </SectionErrorBoundary>
+
+        {/* ─ Commission by PSP (Top 3) ────────────────── */}
+        <SectionErrorBoundary sectionName="Commission by PSP" fallbackHeight="min-h-[250px]">
+          <ChartCard
+            title={t('dashboard.charts.pspCommission')}
+            icon={Coins}
+            iconColor="text-orange"
+            className={
+              activeFilter === 'commission' ? 'ring-2 ring-orange/40 border-orange/20' : ''
+            }
+          >
+            {isCommissionLoading || !pspCommissionData ? (
+              <ChartSkeleton />
+            ) : !pspCommissionData.length ? (
+              <ChartEmpty message={t('dashboard.charts.noData')} />
+            ) : (
+              <div className="space-y-0.5">
+                {(() => {
+                  const maxCommission = pspCommissionData[0].commission
+                  const rankBadge = [
+                    'bg-yellow/20 text-yellow',
+                    'bg-black/[0.07] text-black/40',
+                    'bg-orange/15 text-orange',
+                  ]
+                  return pspCommissionData.map((psp, i) => {
+                    const widthPct = maxCommission > 0 ? (psp.commission / maxCommission) * 100 : 0
+                    const prevCommission = prevPspCommissionMap?.get(psp.name) ?? null
+                    const diff =
+                      prevCommission != null && prevCommission > 0
+                        ? ((psp.commission - prevCommission) / prevCommission) * 100
+                        : null
+
+                    return (
+                      <div
+                        key={psp.name}
+                        className="rounded-xl px-2 py-2 transition-colors hover:bg-black/[0.025]"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span
+                            className={cn(
+                              'flex size-6 shrink-0 items-center justify-center rounded-lg font-mono text-[10px] font-black',
+                              rankBadge[i] ?? 'bg-black/[0.04] text-black/25',
+                            )}
+                          >
+                            {i + 1}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex min-w-0 items-center gap-1.5">
+                                <span className="truncate text-sm font-semibold text-black/60">
+                                  {psp.name}
+                                </span>
+                                {psp.commission_rate > 0 && (
+                                  <span className="shrink-0 rounded-full bg-orange/10 px-1.5 py-0.5 text-[9px] font-bold text-orange">
+                                    {(psp.commission_rate * 100).toFixed(1)}%
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex shrink-0 items-center gap-2">
+                                {diff !== null && (
+                                  <span
+                                    className={cn(
+                                      'text-[10px] font-bold',
+                                      diff >= 0 ? 'text-green' : 'text-red',
+                                    )}
+                                  >
+                                    {diff >= 0 ? '↑' : '↓'}
+                                    {Math.abs(diff).toFixed(0)}%
+                                  </span>
+                                )}
+                                <span className="font-mono text-xs font-bold tabular-nums text-black/60">
+                                  {fmtMoney(psp.commission, lang)}
+                                </span>
+                                <span className="rounded-full bg-black/[0.04] px-1.5 py-0.5 text-[10px] font-bold text-black/25">
+                                  {psp.count}x
+                                </span>
+                              </div>
+                            </div>
+                            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-black/[0.04]">
+                              <div
+                                className="h-full rounded-full bg-[#f97316]/60 transition-all duration-700"
+                                style={{ width: `${widthPct}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })
+                })()}
+              </div>
+            )}
+          </ChartCard>
+        </SectionErrorBoundary>
+
+        {/* ─ Daily Net Flow (Area with zero-line) ───── */}
+        <SectionErrorBoundary sectionName="Daily Net Flow" fallbackHeight="min-h-[350px]">
+          <ChartCard
+            title={t('dashboard.charts.dailyNet')}
+            subtitle={chartFallbackLabel}
+            icon={Pulse}
+            iconColor="text-green"
+          >
+            {isMonthlyLoading || isPrevMonthlyLoading ? (
+              <ChartSkeleton />
+            ) : !chartMonthlyData?.daily_net?.length ? (
+              <ChartEmpty message={t('dashboard.charts.noData')} />
+            ) : (
               <div className="min-h-[250px] md:min-h-[350px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartDailyVolume}>
+                  <AreaChart data={chartDailyNet}>
                     <defs>
-                      <linearGradient id="gradDep" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={GREEN} stopOpacity={0.2} />
-                        <stop offset="100%" stopColor={GREEN} stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="gradWd" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={RED} stopOpacity={0.15} />
-                        <stop offset="100%" stopColor={RED} stopOpacity={0} />
+                      <linearGradient id="gradNet" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={ct.lineColor} stopOpacity={0.12} />
+                        <stop offset="100%" stopColor={ct.lineColor} stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke={ct.gridStroke} vertical={false} />
@@ -1061,12 +1413,11 @@ export function DashboardPage() {
                       tickLine={false}
                       width={50}
                     />
+                    <ReferenceLine y={0} stroke={ct.zeroLineStroke} strokeDasharray="4 4" />
                     <Tooltip
-                      formatter={(value: number, name: string) => [
+                      formatter={(value: number) => [
                         chartMoneyFmt(value),
-                        name === 'deposits'
-                          ? t('dashboard.charts.deposits')
-                          : t('dashboard.charts.withdrawals'),
+                        t('dashboard.charts.net'),
                       ]}
                       labelFormatter={fmtDay}
                       contentStyle={ct.tooltipStyle}
@@ -1074,740 +1425,464 @@ export function DashboardPage() {
                     />
                     <Area
                       type="monotone"
-                      dataKey="deposits"
-                      stroke={GREEN}
+                      dataKey="net"
+                      stroke={ct.lineColor}
                       strokeWidth={2}
-                      fill="url(#gradDep)"
-                      opacity={activeFilter === 'withdrawals' ? 0.12 : 1}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="withdrawals"
-                      stroke={RED}
-                      strokeWidth={2}
-                      fill="url(#gradWd)"
-                      opacity={activeFilter === 'deposits' ? 0.12 : 1}
+                      fill="url(#gradNet)"
+                      dot={{ r: 2, fill: ct.lineColor, strokeWidth: 0 }}
+                      activeDot={{ r: 4, strokeWidth: 0 }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
-              {/* Legend */}
-              <div className="mt-3 flex items-center justify-center gap-6">
-                <div className="flex items-center gap-1.5">
-                  <div className="size-2 rounded-full bg-green" />
-                  <span className="text-xs text-black/40">{t('dashboard.charts.deposits')}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="size-2 rounded-full bg-red" />
-                  <span className="text-xs text-black/40">{t('dashboard.charts.withdrawals')}</span>
-                </div>
-              </div>
-            </>
-          )}
-        </ChartCard>
-
-        {/* ─ Payment Methods (Donut with side legend) ─ */}
-        <ChartCard
-          title={t('dashboard.charts.paymentMethods')}
-          icon={ChartPie}
-          iconColor="text-purple"
-          headerRight={
-            !isMonthlyLoading && paymentMethods.length > 0 ? (
-              <Tabs value={pmView} onValueChange={(v) => setPmView(v as 'volume' | 'count')}>
-                <TabsList className="h-7 p-0.5">
-                  <TabsTrigger value="volume" className="px-2 py-1 text-xs">
-                    {t('dashboard.charts.volume')}
-                  </TabsTrigger>
-                  <TabsTrigger value="count" className="px-2 py-1 text-xs">
-                    {t('dashboard.charts.count')}
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            ) : null
-          }
-        >
-          {isMonthlyLoading ? (
-            <ChartSkeleton />
-          ) : !paymentMethods.length ? (
-            <ChartEmpty message={t('dashboard.charts.noData')} />
-          ) : (
-            <div className="flex flex-1 items-center justify-center">
-              <div className="flex w-full flex-col items-center gap-4 sm:flex-row sm:items-center">
-                {/* Donut */}
-                <div className="relative h-[200px] w-[200px] shrink-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={paymentMethods}
-                        dataKey={pmView === 'volume' ? 'volume' : 'count'}
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={58}
-                        outerRadius={92}
-                        paddingAngle={2}
-                        stroke={ct.isDark ? '#0f172a' : '#ffffff'}
-                        strokeWidth={2}
-                        animationBegin={0}
-                        animationDuration={800}
-                      >
-                        {paymentMethods.map((_, i) => (
-                          <Cell
-                            key={i}
-                            fill={DONUT_COLORS[i % DONUT_COLORS.length]}
-                            className="transition-opacity hover:opacity-80"
-                          />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        formatter={(value: number) =>
-                          pmView === 'volume' ? fmtMoney(value, lang) : fmtCount(value, lang)
-                        }
-                        contentStyle={ct.tooltipStyle}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  {/* Center label */}
-                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                    <div className="text-center">
-                      <p className="text-[9px] font-bold uppercase tracking-widest text-black/25">
-                        {pmView === 'volume'
-                          ? t('dashboard.charts.total')
-                          : t('dashboard.charts.totalCount')}
-                      </p>
-                      <p className="mt-0.5 font-mono text-lg font-black tabular-nums text-black/70">
-                        {pmView === 'volume' ? fmtCompact(pmTotal) : pmTotal}
-                        {pmView === 'volume' && (
-                          <span className="ml-0.5 text-sm font-medium">
-                            {isUSD ? '$' : baseCurrencySymbol}
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Side Legend */}
-                <div className="min-w-0 flex-1 space-y-1">
-                  {paymentMethods.map((pm, i) => {
-                    const val = pmView === 'volume' ? pm.volume : pm.count
-                    const pct = pmTotal > 0 ? ((val / pmTotal) * 100).toFixed(1) : '0'
-                    const prevPm = prevMonthlyData?.payment_method_breakdown?.find(
-                      (p) => p.name === pm.name,
-                    )
-                    const prevVal = prevPm
-                      ? pmView === 'volume'
-                        ? prevPm.volume
-                        : prevPm.count
-                      : 0
-                    const diff = prevVal > 0 ? ((val - prevVal) / prevVal) * 100 : 0
-
-                    return (
-                      <div
-                        key={pm.name}
-                        className="flex items-center justify-between rounded-lg px-2 py-1.5 transition-colors hover:bg-black/[0.02]"
-                      >
-                        <div className="flex min-w-0 items-center gap-2">
-                          <div
-                            className="size-2.5 shrink-0 rounded-full"
-                            style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }}
-                          />
-                          <span className="truncate text-xs font-medium text-black/60">
-                            {pm.name}
-                          </span>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          <span className="font-mono text-xs font-bold tabular-nums text-black/60">
-                            {pmView === 'volume' ? fmtCompact(pm.volume) : pm.count}
-                          </span>
-                          <span className="text-[10px] font-semibold text-black/20">{pct}%</span>
-                          {diff !== 0 && (
-                            <span
-                              className={cn(
-                                'text-[10px] font-semibold',
-                                diff > 0 ? 'text-green' : 'text-red',
-                              )}
-                            >
-                              {diff > 0 ? '↑' : '↓'}
-                              {Math.abs(diff).toFixed(0)}%
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
-        </ChartCard>
-
-        {/* ─ Commission by PSP (Top 3) ────────────────── */}
-        <ChartCard
-          title={t('dashboard.charts.pspCommission')}
-          icon={Coins}
-          iconColor="text-orange"
-          className={activeFilter === 'commission' ? 'ring-2 ring-orange/40 border-orange/20' : ''}
-        >
-          {isCommissionLoading || !pspCommissionData ? (
-            <ChartSkeleton />
-          ) : !pspCommissionData.length ? (
-            <ChartEmpty message={t('dashboard.charts.noData')} />
-          ) : (
-            <div className="space-y-0.5">
-              {(() => {
-                const maxCommission = pspCommissionData[0].commission
-                const rankBadge = [
-                  'bg-yellow/20 text-yellow',
-                  'bg-black/[0.07] text-black/40',
-                  'bg-orange/15 text-orange',
-                ]
-                return pspCommissionData.map((psp, i) => {
-                  const widthPct = maxCommission > 0 ? (psp.commission / maxCommission) * 100 : 0
-                  const prevCommission = prevPspCommissionMap?.get(psp.name) ?? null
-                  const diff =
-                    prevCommission != null && prevCommission > 0
-                      ? ((psp.commission - prevCommission) / prevCommission) * 100
-                      : null
-
-                  return (
-                    <div
-                      key={psp.name}
-                      className="rounded-xl px-2 py-2 transition-colors hover:bg-black/[0.025]"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span
-                          className={cn(
-                            'flex size-6 shrink-0 items-center justify-center rounded-lg font-mono text-[10px] font-black',
-                            rankBadge[i] ?? 'bg-black/[0.04] text-black/25',
-                          )}
-                        >
-                          {i + 1}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex min-w-0 items-center gap-1.5">
-                              <span className="truncate text-sm font-semibold text-black/60">
-                                {psp.name}
-                              </span>
-                              {psp.commission_rate > 0 && (
-                                <span className="shrink-0 rounded-full bg-orange/10 px-1.5 py-0.5 text-[9px] font-bold text-orange">
-                                  {(psp.commission_rate * 100).toFixed(1)}%
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex shrink-0 items-center gap-2">
-                              {diff !== null && (
-                                <span
-                                  className={cn(
-                                    'text-[10px] font-bold',
-                                    diff >= 0 ? 'text-green' : 'text-red',
-                                  )}
-                                >
-                                  {diff >= 0 ? '↑' : '↓'}
-                                  {Math.abs(diff).toFixed(0)}%
-                                </span>
-                              )}
-                              <span className="font-mono text-xs font-bold tabular-nums text-black/60">
-                                {fmtMoney(psp.commission, lang)}
-                              </span>
-                              <span className="rounded-full bg-black/[0.04] px-1.5 py-0.5 text-[10px] font-bold text-black/25">
-                                {psp.count}x
-                              </span>
-                            </div>
-                          </div>
-                          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-black/[0.04]">
-                            <div
-                              className="h-full rounded-full bg-[#f97316]/60 transition-all duration-700"
-                              style={{ width: `${widthPct}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })
-              })()}
-            </div>
-          )}
-        </ChartCard>
-
-        {/* ─ Daily Net Flow (Area with zero-line) ───── */}
-        <ChartCard title={t('dashboard.charts.dailyNet')} icon={Pulse} iconColor="text-green">
-          {isMonthlyLoading ? (
-            <ChartSkeleton />
-          ) : !monthlyData?.daily_net?.length ? (
-            <ChartEmpty message={t('dashboard.charts.noData')} />
-          ) : (
-            <div className="min-h-[250px] md:min-h-[350px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartDailyNet}>
-                  <defs>
-                    <linearGradient id="gradNet" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={ct.lineColor} stopOpacity={0.12} />
-                      <stop offset="100%" stopColor={ct.lineColor} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke={ct.gridStroke} vertical={false} />
-                  <XAxis
-                    dataKey="day"
-                    tickFormatter={fmtDay}
-                    tick={ct.axisTick}
-                    axisLine={ct.axisLine}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    tickFormatter={fmtCompact}
-                    tick={ct.axisTick}
-                    axisLine={false}
-                    tickLine={false}
-                    width={50}
-                  />
-                  <ReferenceLine y={0} stroke={ct.zeroLineStroke} strokeDasharray="4 4" />
-                  <Tooltip
-                    formatter={(value: number) => [chartMoneyFmt(value), t('dashboard.charts.net')]}
-                    labelFormatter={fmtDay}
-                    contentStyle={ct.tooltipStyle}
-                    cursor={{ strokeDasharray: '4 4', stroke: ct.cursorStroke }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="net"
-                    stroke={ct.lineColor}
-                    strokeWidth={2}
-                    fill="url(#gradNet)"
-                    dot={{ r: 2, fill: ct.lineColor, strokeWidth: 0 }}
-                    activeDot={{ r: 4, strokeWidth: 0 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </ChartCard>
+            )}
+          </ChartCard>
+        </SectionErrorBoundary>
       </div>
 
       {/* ── Bottom: Transfers + Customers side-by-side  */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
         {/* Recent Transfers */}
         <div className="rounded-2xl border border-black/[0.06] bg-bg1 p-3 md:p-5 xl:col-span-3">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ListBullets size={16} className="text-black/35" weight="duotone" />
-              <h2 className="text-sm font-semibold text-black/60">
-                {t('dashboard.tables.recentTransfers')}
-              </h2>
+          <SectionErrorBoundary sectionName="Recent Transfers" fallbackHeight="min-h-[250px]">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ListBullets size={16} className="text-black/35" weight="duotone" />
+                <h2 className="text-sm font-semibold text-black/60">
+                  {t('dashboard.tables.recentTransfers')}
+                </h2>
+              </div>
+              <Link
+                to="/transfers"
+                className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-black/40 transition-colors hover:bg-black/[0.03] hover:text-black/60"
+              >
+                {t('dashboard.tables.viewAll')}
+                <ArrowRight size={12} />
+              </Link>
             </div>
-            <Link
-              to="/transfers"
-              className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-black/40 transition-colors hover:bg-black/[0.03] hover:text-black/60"
-            >
-              {t('dashboard.tables.viewAll')}
-              <ArrowRight size={12} />
-            </Link>
-          </div>
-          <RecentTransfersTable
-            transfers={filteredRecentTransfers.slice(0, 5)}
-            isLoading={isTransfersLoading}
-            lang={lang}
-            t={t as (key: string) => string}
-          />
+            <RecentTransfersTable
+              transfers={filteredRecentTransfers.slice(0, 5)}
+              isLoading={isTransfersLoading}
+              lang={lang}
+              t={t as (key: string) => string}
+            />
+          </SectionErrorBoundary>
         </div>
 
         {/* Top Customers */}
         <div className="rounded-2xl border border-black/[0.06] bg-bg1 p-3 md:p-5 xl:col-span-2">
-          <div className="mb-4 flex items-center gap-2">
-            <Trophy size={16} className="text-yellow" weight="duotone" />
-            <h2 className="text-[13px] font-semibold text-black/50">
-              {t('dashboard.tables.topCustomers')}
-            </h2>
-          </div>
-          <TopCustomersList
-            customers={monthlyData?.top_customers ?? []}
-            prevCustomers={prevMonthlyData?.top_customers}
-            isLoading={isMonthlyLoading}
-            lang={lang}
-            t={t as (key: string) => string}
-          />
+          <SectionErrorBoundary sectionName="Top Customers" fallbackHeight="min-h-[200px]">
+            <div className="mb-4 flex items-center gap-2">
+              <Trophy size={16} className="text-yellow" weight="duotone" />
+              <h2 className="text-[13px] font-semibold text-black/50">
+                {t('dashboard.tables.topCustomers')}
+              </h2>
+              {chartFallbackLabel && (
+                <span className="rounded-md bg-black/[0.04] px-1.5 py-0.5 text-[10px] font-medium text-black/40">
+                  {chartFallbackLabel}
+                </span>
+              )}
+            </div>
+            <TopCustomersList
+              customers={chartMonthlyData?.top_customers ?? []}
+              prevCustomers={prevMonthlyData?.top_customers}
+              isLoading={isMonthlyLoading || isPrevMonthlyLoading}
+              lang={lang}
+              t={t as (key: string) => string}
+            />
+          </SectionErrorBoundary>
         </div>
       </div>
 
       {/* ── Monthly Insights ────────────────────────── */}
-      {monthlyData?.insights && (
-        <Grid cols={4}>
-          <InsightCard
-            icon={CalendarStar}
-            iconBg="bg-yellow/10"
-            iconColor="text-yellow"
-            label={t('dashboard.insights.peakDay')}
-            value={
-              monthlyData.insights.peak_day
-                ? `${fmtDate(monthlyData.insights.peak_day, lang)} — ${fmtCompact(monthlyData.insights.peak_day_volume)} ₺`
-                : '—'
-            }
-          />
-          <InsightCard
-            icon={CalendarCheck}
-            iconBg="bg-green/10"
-            iconColor="text-green"
-            label={t('dashboard.insights.activeDays')}
-            value={`${monthlyData.insights.active_days} ${t('dashboard.insights.days')}`}
-          />
-          <InsightCard
-            icon={Fire}
-            iconBg="bg-orange/10"
-            iconColor="text-orange"
-            label={t('dashboard.insights.avgDailyVolume')}
-            value={fmtMoney(monthlyData.insights.avg_daily_volume, lang)}
-          />
-          <InsightCard
-            icon={Receipt}
-            iconBg="bg-blue/10"
-            iconColor="text-blue"
-            label={t('dashboard.insights.avgPerTransfer')}
-            value={fmtMoney(monthlyData.insights.avg_per_transfer, lang)}
-          />
-        </Grid>
+      {chartMonthlyData?.insights && (
+        <SectionErrorBoundary sectionName="Monthly Insights" fallbackHeight="min-h-[100px]">
+          <Grid cols={4}>
+            <InsightCard
+              icon={CalendarStar}
+              iconBg="bg-yellow/10"
+              iconColor="text-yellow"
+              label={t('dashboard.insights.peakDay')}
+              value={
+                chartMonthlyData.insights.peak_day
+                  ? `${fmtDate(chartMonthlyData.insights.peak_day, lang)} — ${fmtCompact(chartMonthlyData.insights.peak_day_volume)} ₺`
+                  : '—'
+              }
+            />
+            <InsightCard
+              icon={CalendarCheck}
+              iconBg="bg-green/10"
+              iconColor="text-green"
+              label={t('dashboard.insights.activeDays')}
+              value={`${chartMonthlyData.insights.active_days} ${t('dashboard.insights.days')}`}
+            />
+            <InsightCard
+              icon={Fire}
+              iconBg="bg-orange/10"
+              iconColor="text-orange"
+              label={t('dashboard.insights.avgDailyVolume')}
+              value={fmtMoney(chartMonthlyData.insights.avg_daily_volume, lang)}
+            />
+            <InsightCard
+              icon={Receipt}
+              iconBg="bg-blue/10"
+              iconColor="text-blue"
+              label={t('dashboard.insights.avgPerTransfer')}
+              value={fmtMoney(chartMonthlyData.insights.avg_per_transfer, lang)}
+            />
+          </Grid>
+        </SectionErrorBoundary>
       )}
 
       {/* ── Previous Month Overview ──────────────────── */}
       {(isPrevMonthlyLoading || prevMonthlyData) && (
-        <div className="rounded-2xl border border-dashed border-black/[0.08] p-1">
-          <div className="rounded-xl bg-black/[0.015] px-4 py-5 md:px-5">
-            {/* Header */}
-            <div className="mb-5 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="flex size-8 items-center justify-center rounded-xl bg-black/[0.05]">
-                  <CalendarBlank size={15} weight="duotone" className="text-black/35" />
+        <SectionErrorBoundary sectionName="Previous Month" fallbackHeight="min-h-[200px]">
+          <div className="rounded-2xl border border-dashed border-black/[0.08] p-1">
+            <div className="rounded-xl bg-black/[0.015] px-4 py-5 md:px-5">
+              {/* Header */}
+              <div className="mb-5 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex size-8 items-center justify-center rounded-xl bg-black/[0.05]">
+                    <CalendarBlank size={15} weight="duotone" className="text-black/35" />
+                  </div>
+                  <div>
+                    {isPrevMonthlyLoading ? (
+                      <Skeleton className="h-4 w-36 rounded-md" />
+                    ) : (
+                      <>
+                        <h2 className="text-sm font-semibold text-black/60">
+                          {t('dashboard.prevMonth.title')}
+                        </h2>
+                        <p className="text-xs text-black/40">
+                          {prevMonthDate.toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', {
+                            month: 'long',
+                            year: 'numeric',
+                          })}
+                        </p>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  {isPrevMonthlyLoading ? (
-                    <Skeleton className="h-4 w-36 rounded-md" />
-                  ) : (
-                    <>
-                      <h2 className="text-sm font-semibold text-black/60">
-                        {t('dashboard.prevMonth.title')}
-                      </h2>
-                      <p className="text-xs text-black/40">
-                        {prevMonthDate.toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', {
-                          month: 'long',
-                          year: 'numeric',
-                        })}
-                      </p>
-                    </>
-                  )}
-                </div>
+                <span className="rounded-full border border-black/[0.06] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-black/25">
+                  {t('dashboard.prevMonth.historical')}
+                </span>
               </div>
-              <span className="rounded-full border border-black/[0.06] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-black/25">
-                {t('dashboard.prevMonth.historical')}
-              </span>
-            </div>
 
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-              {isPrevMonthlyLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <Skeleton key={i} className="h-24 w-full rounded-2xl" />
-                ))
-              ) : prevMonthlyData ? (
-                <>
-                  {/* Deposits */}
-                  <HeroKpiCard
-                    icon={ArrowCircleDown}
-                    iconBg="bg-green/[0.07]"
-                    iconColor="text-green"
-                    label={t('dashboard.kpi.deposits')}
-                    value={
-                      isUSD
-                        ? fmtMoney(
-                            isNet
-                              ? prevMonthlyData.kpis.total_deposits_usd -
-                                  prevMonthlyData.kpis.commission_usd
-                              : prevMonthlyData.kpis.total_deposits_usd,
-                            lang,
-                            '$',
-                          )
-                        : fmtMoney(
-                            isNet
-                              ? prevMonthlyData.kpis.total_deposits_try -
-                                  prevMonthlyData.kpis.total_commission_try
-                              : prevMonthlyData.kpis.total_deposits_try,
-                            lang,
-                          )
-                    }
-                    splitLeft={
-                      isUSD
-                        ? {
-                            label: 'TRY',
-                            value:
-                              fmtCompact(
-                                isNet
-                                  ? prevMonthlyData.kpis.total_deposits_try -
-                                      prevMonthlyData.kpis.total_commission_try
-                                  : prevMonthlyData.kpis.total_deposits_try,
-                              ) + ' ₺',
-                          }
-                        : {
-                            label: 'USD',
-                            value:
-                              fmtCompact(
-                                isNet
-                                  ? prevMonthlyData.kpis.total_deposits_usd -
-                                      prevMonthlyData.kpis.commission_usd
-                                  : prevMonthlyData.kpis.total_deposits_usd,
-                              ) + ' $',
-                          }
-                    }
-                  />
-
-                  {/* Withdrawals */}
-                  <HeroKpiCard
-                    icon={ArrowCircleUp}
-                    iconBg="bg-red/[0.07]"
-                    iconColor="text-red"
-                    label={t('dashboard.kpi.withdrawals')}
-                    value={
-                      isUSD
-                        ? fmtMoney(prevMonthlyData.kpis.total_withdrawals_usd, lang, '$')
-                        : fmtMoney(prevMonthlyData.kpis.total_withdrawals_try, lang)
-                    }
-                    splitLeft={
-                      isUSD
-                        ? {
-                            label: 'TRY',
-                            value: fmtCompact(prevMonthlyData.kpis.total_withdrawals_try) + ' ₺',
-                          }
-                        : {
-                            label: 'USD',
-                            value: fmtCompact(prevMonthlyData.kpis.total_withdrawals_usd) + ' $',
-                          }
-                    }
-                  />
-
-                  {/* Net Cash */}
-                  <HeroKpiCard
-                    icon={Wallet}
-                    iconBg="bg-indigo/[0.07]"
-                    iconColor="text-indigo"
-                    label={t('dashboard.kpi.netCash')}
-                    value={
-                      isUSD
-                        ? fmtMoney(
-                            (isNet
-                              ? prevMonthlyData.kpis.total_deposits_usd -
-                                prevMonthlyData.kpis.commission_usd
-                              : prevMonthlyData.kpis.total_deposits_usd) -
-                              prevMonthlyData.kpis.total_withdrawals_usd,
-                            lang,
-                            '$',
-                          )
-                        : fmtMoney(
-                            (isNet
-                              ? prevMonthlyData.kpis.total_deposits_try -
-                                prevMonthlyData.kpis.total_commission_try
-                              : prevMonthlyData.kpis.total_deposits_try) -
-                              prevMonthlyData.kpis.total_withdrawals_try,
-                            lang,
-                          )
-                    }
-                    splitLeft={
-                      isUSD
-                        ? {
-                            label: 'TRY',
-                            value:
-                              fmtCompact(
-                                (isNet
-                                  ? prevMonthlyData.kpis.total_deposits_try -
-                                    prevMonthlyData.kpis.total_commission_try
-                                  : prevMonthlyData.kpis.total_deposits_try) -
-                                  prevMonthlyData.kpis.total_withdrawals_try,
-                              ) + ' ₺',
-                          }
-                        : {
-                            label: 'USD',
-                            value:
-                              fmtCompact(
-                                (isNet
-                                  ? prevMonthlyData.kpis.total_deposits_usd -
+              {/* KPI Cards */}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                {isPrevMonthlyLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-24 w-full rounded-2xl" />
+                  ))
+                ) : prevMonthlyData ? (
+                  <>
+                    {/* Deposits */}
+                    <HeroKpiCard
+                      icon={ArrowCircleDown}
+                      iconBg="bg-green/[0.07]"
+                      iconColor="text-green"
+                      label={t('dashboard.kpi.deposits')}
+                      value={
+                        isUSD
+                          ? fmtMoney(
+                              isNet
+                                ? prevMonthlyData.kpis.total_deposits_usd -
                                     prevMonthlyData.kpis.commission_usd
-                                  : prevMonthlyData.kpis.total_deposits_usd) -
-                                  prevMonthlyData.kpis.total_withdrawals_usd,
-                              ) + ' $',
-                          }
-                    }
-                  />
+                                : prevMonthlyData.kpis.total_deposits_usd,
+                              lang,
+                              '$',
+                            )
+                          : fmtMoney(
+                              isNet
+                                ? prevMonthlyData.kpis.total_deposits_try -
+                                    prevMonthlyData.kpis.total_commission_try
+                                : prevMonthlyData.kpis.total_deposits_try,
+                              lang,
+                            )
+                      }
+                      splitLeft={
+                        isUSD
+                          ? {
+                              label: 'TRY',
+                              value:
+                                fmtCompact(
+                                  isNet
+                                    ? prevMonthlyData.kpis.total_deposits_try -
+                                        prevMonthlyData.kpis.total_commission_try
+                                    : prevMonthlyData.kpis.total_deposits_try,
+                                ) + ' ₺',
+                            }
+                          : {
+                              label: 'USD',
+                              value:
+                                fmtCompact(
+                                  isNet
+                                    ? prevMonthlyData.kpis.total_deposits_usd -
+                                        prevMonthlyData.kpis.commission_usd
+                                    : prevMonthlyData.kpis.total_deposits_usd,
+                                ) + ' $',
+                            }
+                      }
+                    />
 
-                  {/* Commission */}
-                  <HeroKpiCard
-                    icon={Percent}
-                    iconBg="bg-orange/[0.07]"
-                    iconColor="text-orange"
-                    label={t('dashboard.kpi.commission')}
-                    value={fmtMoney(prevMonthlyData.kpis.total_commission_try, lang)}
-                    splitLeft={{
-                      label: 'USD',
-                      value: fmtCompact(prevMonthlyData.kpis.commission_usd) + ' $',
-                    }}
-                  />
+                    {/* Withdrawals */}
+                    <HeroKpiCard
+                      icon={ArrowCircleUp}
+                      iconBg="bg-red/[0.07]"
+                      iconColor="text-red"
+                      label={t('dashboard.kpi.withdrawals')}
+                      value={
+                        isUSD
+                          ? fmtMoney(prevMonthlyData.kpis.total_withdrawals_usd, lang, '$')
+                          : fmtMoney(prevMonthlyData.kpis.total_withdrawals_try, lang)
+                      }
+                      splitLeft={
+                        isUSD
+                          ? {
+                              label: 'TRY',
+                              value: fmtCompact(prevMonthlyData.kpis.total_withdrawals_try) + ' ₺',
+                            }
+                          : {
+                              label: 'USD',
+                              value: fmtCompact(prevMonthlyData.kpis.total_withdrawals_usd) + ' $',
+                            }
+                      }
+                    />
 
-                  {/* Transactions */}
-                  <HeroKpiCard
-                    icon={Hash}
-                    iconBg="bg-purple/[0.07]"
-                    iconColor="text-purple"
-                    label={t('dashboard.kpi.transactions')}
-                    value={fmtCount(prevMonthlyData.kpis.transfer_count, lang)}
-                    splitLeft={{
-                      label: '↓',
-                      value: fmtCount(prevMonthlyData.kpis.deposit_count, lang),
-                    }}
-                    splitRight={{
-                      label: '↑',
-                      value: fmtCount(prevMonthlyData.kpis.withdrawal_count, lang),
-                    }}
-                    className="sm:col-span-2 lg:col-span-1"
-                  />
-                </>
-              ) : null}
-            </div>
+                    {/* Net Cash */}
+                    <HeroKpiCard
+                      icon={Wallet}
+                      iconBg="bg-indigo/[0.07]"
+                      iconColor="text-indigo"
+                      label={t('dashboard.kpi.netCash')}
+                      value={
+                        isUSD
+                          ? fmtMoney(
+                              (isNet
+                                ? prevMonthlyData.kpis.total_deposits_usd -
+                                  prevMonthlyData.kpis.commission_usd
+                                : prevMonthlyData.kpis.total_deposits_usd) -
+                                prevMonthlyData.kpis.total_withdrawals_usd,
+                              lang,
+                              '$',
+                            )
+                          : fmtMoney(
+                              (isNet
+                                ? prevMonthlyData.kpis.total_deposits_try -
+                                  prevMonthlyData.kpis.total_commission_try
+                                : prevMonthlyData.kpis.total_deposits_try) -
+                                prevMonthlyData.kpis.total_withdrawals_try,
+                              lang,
+                            )
+                      }
+                      splitLeft={
+                        isUSD
+                          ? {
+                              label: 'TRY',
+                              value:
+                                fmtCompact(
+                                  (isNet
+                                    ? prevMonthlyData.kpis.total_deposits_try -
+                                      prevMonthlyData.kpis.total_commission_try
+                                    : prevMonthlyData.kpis.total_deposits_try) -
+                                    prevMonthlyData.kpis.total_withdrawals_try,
+                                ) + ' ₺',
+                            }
+                          : {
+                              label: 'USD',
+                              value:
+                                fmtCompact(
+                                  (isNet
+                                    ? prevMonthlyData.kpis.total_deposits_usd -
+                                      prevMonthlyData.kpis.commission_usd
+                                    : prevMonthlyData.kpis.total_deposits_usd) -
+                                    prevMonthlyData.kpis.total_withdrawals_usd,
+                                ) + ' $',
+                            }
+                      }
+                    />
 
-            {/* Chart + Insights row */}
-            {isPrevMonthlyLoading ? (
-              <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <Skeleton className="h-48 w-full rounded-2xl" />
-                <Skeleton className="h-48 w-full rounded-2xl" />
+                    {/* Commission */}
+                    <HeroKpiCard
+                      icon={Percent}
+                      iconBg="bg-orange/[0.07]"
+                      iconColor="text-orange"
+                      label={t('dashboard.kpi.commission')}
+                      value={fmtMoney(prevMonthlyData.kpis.total_commission_try, lang)}
+                      splitLeft={{
+                        label: 'USD',
+                        value: fmtCompact(prevMonthlyData.kpis.commission_usd) + ' $',
+                      }}
+                    />
+
+                    {/* Transactions */}
+                    <HeroKpiCard
+                      icon={Hash}
+                      iconBg="bg-purple/[0.07]"
+                      iconColor="text-purple"
+                      label={t('dashboard.kpi.transactions')}
+                      value={fmtCount(prevMonthlyData.kpis.transfer_count, lang)}
+                      splitLeft={{
+                        label: '↓',
+                        value: fmtCount(prevMonthlyData.kpis.deposit_count, lang),
+                      }}
+                      splitRight={{
+                        label: '↑',
+                        value: fmtCount(prevMonthlyData.kpis.withdrawal_count, lang),
+                      }}
+                      className="sm:col-span-2 lg:col-span-1"
+                    />
+                  </>
+                ) : null}
               </div>
-            ) : (
-              prevMonthlyData && (
-                <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-                  {/* Daily Volume Mini Chart */}
-                  {prevMonthlyData.daily_volume?.length > 0 && (
-                    <ChartCard
-                      title={t('dashboard.charts.dailyVolume')}
-                      icon={ChartLine}
-                      iconColor="text-indigo/60"
-                    >
-                      <div className="min-h-[250px] md:min-h-[350px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={prevChartDailyVolume}>
-                            <defs>
-                              <linearGradient id="gradDepPrev" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor={GREEN} stopOpacity={0.15} />
-                                <stop offset="100%" stopColor={GREEN} stopOpacity={0} />
-                              </linearGradient>
-                              <linearGradient id="gradWdPrev" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor={RED} stopOpacity={0.1} />
-                                <stop offset="100%" stopColor={RED} stopOpacity={0} />
-                              </linearGradient>
-                            </defs>
-                            <CartesianGrid
-                              strokeDasharray="3 3"
-                              stroke={ct.gridStroke}
-                              vertical={false}
-                            />
-                            <XAxis
-                              dataKey="day"
-                              tickFormatter={fmtDay}
-                              tick={ct.axisTick}
-                              axisLine={ct.axisLine}
-                              tickLine={false}
-                            />
-                            <YAxis
-                              tickFormatter={fmtCompact}
-                              tick={ct.axisTick}
-                              axisLine={false}
-                              tickLine={false}
-                              width={50}
-                            />
-                            <Tooltip
-                              formatter={(value: number, name: string) => [
-                                chartMoneyFmt(value),
-                                name === 'deposits'
-                                  ? t('dashboard.charts.deposits')
-                                  : t('dashboard.charts.withdrawals'),
-                              ]}
-                              labelFormatter={fmtDay}
-                              contentStyle={ct.tooltipStyle}
-                              cursor={{ strokeDasharray: '4 4', stroke: ct.cursorStroke }}
-                            />
-                            <Area
-                              type="monotone"
-                              dataKey="deposits"
-                              stroke={GREEN}
-                              strokeWidth={1.5}
-                              fill="url(#gradDepPrev)"
-                              strokeOpacity={0.7}
-                            />
-                            <Area
-                              type="monotone"
-                              dataKey="withdrawals"
-                              stroke={RED}
-                              strokeWidth={1.5}
-                              fill="url(#gradWdPrev)"
-                              strokeOpacity={0.7}
-                            />
-                          </AreaChart>
-                        </ResponsiveContainer>
-                      </div>
-                      {/* Legend */}
-                      <div className="mt-3 flex items-center justify-center gap-6">
-                        <div className="flex items-center gap-1.5">
-                          <div className="size-2 rounded-full bg-green opacity-70" />
-                          <span className="text-xs text-black/40">
-                            {t('dashboard.charts.deposits')}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <div className="size-2 rounded-full bg-red opacity-70" />
-                          <span className="text-xs text-black/40">
-                            {t('dashboard.charts.withdrawals')}
-                          </span>
-                        </div>
-                      </div>
-                    </ChartCard>
-                  )}
 
-                  {/* Insights 2x2 */}
-                  {prevMonthlyData.insights && (
-                    <Grid cols={2}>
-                      <InsightCard
-                        icon={CalendarStar}
-                        iconBg="bg-yellow/10"
-                        iconColor="text-yellow"
-                        label={t('dashboard.insights.peakDay')}
-                        value={
-                          prevMonthlyData.insights.peak_day
-                            ? `${fmtDate(prevMonthlyData.insights.peak_day, lang)} — ${fmtCompact(prevMonthlyData.insights.peak_day_volume)} ₺`
-                            : '—'
-                        }
-                      />
-                      <InsightCard
-                        icon={CalendarCheck}
-                        iconBg="bg-green/10"
-                        iconColor="text-green"
-                        label={t('dashboard.insights.activeDays')}
-                        value={`${prevMonthlyData.insights.active_days} ${t('dashboard.insights.days')}`}
-                      />
-                      <InsightCard
-                        icon={Fire}
-                        iconBg="bg-orange/10"
-                        iconColor="text-orange"
-                        label={t('dashboard.insights.avgDailyVolume')}
-                        value={fmtMoney(prevMonthlyData.insights.avg_daily_volume, lang)}
-                      />
-                      <InsightCard
-                        icon={Receipt}
-                        iconBg="bg-blue/10"
-                        iconColor="text-blue"
-                        label={t('dashboard.insights.avgPerTransfer')}
-                        value={fmtMoney(prevMonthlyData.insights.avg_per_transfer, lang)}
-                      />
-                    </Grid>
-                  )}
+              {/* Chart + Insights row */}
+              {isPrevMonthlyLoading ? (
+                <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  <Skeleton className="h-48 w-full rounded-2xl" />
+                  <Skeleton className="h-48 w-full rounded-2xl" />
                 </div>
-              )
-            )}
+              ) : (
+                prevMonthlyData && (
+                  <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    {/* Daily Volume Mini Chart */}
+                    {prevMonthlyData.daily_volume?.length > 0 && (
+                      <ChartCard
+                        title={t('dashboard.charts.dailyVolume')}
+                        icon={ChartLine}
+                        iconColor="text-indigo/60"
+                      >
+                        <div className="min-h-[250px] md:min-h-[350px]">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={prevChartDailyVolume}>
+                              <defs>
+                                <linearGradient id="gradDepPrev" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor={DEPOSIT_COLOR} stopOpacity={0.15} />
+                                  <stop offset="100%" stopColor={DEPOSIT_COLOR} stopOpacity={0} />
+                                </linearGradient>
+                                <linearGradient id="gradWdPrev" x1="0" y1="0" x2="0" y2="1">
+                                  <stop
+                                    offset="0%"
+                                    stopColor={WITHDRAWAL_COLOR}
+                                    stopOpacity={0.1}
+                                  />
+                                  <stop
+                                    offset="100%"
+                                    stopColor={WITHDRAWAL_COLOR}
+                                    stopOpacity={0}
+                                  />
+                                </linearGradient>
+                              </defs>
+                              <CartesianGrid
+                                strokeDasharray="3 3"
+                                stroke={ct.gridStroke}
+                                vertical={false}
+                              />
+                              <XAxis
+                                dataKey="day"
+                                tickFormatter={fmtDay}
+                                tick={ct.axisTick}
+                                axisLine={ct.axisLine}
+                                tickLine={false}
+                              />
+                              <YAxis
+                                tickFormatter={fmtCompact}
+                                tick={ct.axisTick}
+                                axisLine={false}
+                                tickLine={false}
+                                width={50}
+                              />
+                              <Tooltip
+                                formatter={(value: number, name: string) => [
+                                  chartMoneyFmt(value),
+                                  name === 'deposits'
+                                    ? t('dashboard.charts.deposits')
+                                    : t('dashboard.charts.withdrawals'),
+                                ]}
+                                labelFormatter={fmtDay}
+                                contentStyle={ct.tooltipStyle}
+                                cursor={{ strokeDasharray: '4 4', stroke: ct.cursorStroke }}
+                              />
+                              <Area
+                                type="monotone"
+                                dataKey="deposits"
+                                stroke={DEPOSIT_COLOR}
+                                strokeWidth={1.5}
+                                fill="url(#gradDepPrev)"
+                                strokeOpacity={0.7}
+                              />
+                              <Area
+                                type="monotone"
+                                dataKey="withdrawals"
+                                stroke={WITHDRAWAL_COLOR}
+                                strokeWidth={1.5}
+                                fill="url(#gradWdPrev)"
+                                strokeOpacity={0.7}
+                              />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </div>
+                        {/* Legend */}
+                        <div className="mt-3 flex items-center justify-center gap-6">
+                          <div className="flex items-center gap-1.5">
+                            <div className="size-2 rounded-full bg-green opacity-70" />
+                            <span className="text-xs text-black/40">
+                              {t('dashboard.charts.deposits')}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <div className="size-2 rounded-full bg-red opacity-70" />
+                            <span className="text-xs text-black/40">
+                              {t('dashboard.charts.withdrawals')}
+                            </span>
+                          </div>
+                        </div>
+                      </ChartCard>
+                    )}
+
+                    {/* Insights 2x2 */}
+                    {prevMonthlyData.insights && (
+                      <Grid cols={2}>
+                        <InsightCard
+                          icon={CalendarStar}
+                          iconBg="bg-yellow/10"
+                          iconColor="text-yellow"
+                          label={t('dashboard.insights.peakDay')}
+                          value={
+                            prevMonthlyData.insights.peak_day
+                              ? `${fmtDate(prevMonthlyData.insights.peak_day, lang)} — ${fmtCompact(prevMonthlyData.insights.peak_day_volume)} ₺`
+                              : '—'
+                          }
+                        />
+                        <InsightCard
+                          icon={CalendarCheck}
+                          iconBg="bg-green/10"
+                          iconColor="text-green"
+                          label={t('dashboard.insights.activeDays')}
+                          value={`${prevMonthlyData.insights.active_days} ${t('dashboard.insights.days')}`}
+                        />
+                        <InsightCard
+                          icon={Fire}
+                          iconBg="bg-orange/10"
+                          iconColor="text-orange"
+                          label={t('dashboard.insights.avgDailyVolume')}
+                          value={fmtMoney(prevMonthlyData.insights.avg_daily_volume, lang)}
+                        />
+                        <InsightCard
+                          icon={Receipt}
+                          iconBg="bg-blue/10"
+                          iconColor="text-blue"
+                          label={t('dashboard.insights.avgPerTransfer')}
+                          value={fmtMoney(prevMonthlyData.insights.avg_per_transfer, lang)}
+                        />
+                      </Grid>
+                    )}
+                  </div>
+                )
+              )}
+            </div>
           </div>
-        </div>
+        </SectionErrorBoundary>
       )}
     </div>
   )

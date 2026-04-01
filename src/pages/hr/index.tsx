@@ -50,6 +50,7 @@ import {
   TableHead,
   TableCell,
 } from '@ds'
+import { SectionErrorBoundary } from '@/components/ErrorBoundary'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useToast } from '@/hooks/useToast'
@@ -183,7 +184,15 @@ function EmployeeRow({
       {/* Hire Date / Exit Date */}
       <TableCell
         className="py-3 tabular-nums text-xs text-black/60"
-        data-label={showExitDate ? (lang === 'tr' ? 'Çıkış Tarihi' : 'Exit Date') : (lang === 'tr' ? 'İşe Giriş' : 'Hire Date')}
+        data-label={
+          showExitDate
+            ? lang === 'tr'
+              ? 'Çıkış Tarihi'
+              : 'Exit Date'
+            : lang === 'tr'
+              ? 'İşe Giriş'
+              : 'Hire Date'
+        }
       >
         {formattedDate}
       </TableCell>
@@ -255,7 +264,11 @@ export function HrPage() {
   const { toast } = useToast()
   const { membership } = useOrganization()
   const { isGod } = useAuth()
-  const canManage = isGod || membership?.role === 'admin' || membership?.role === 'manager' || membership?.role === 'ik'
+  const canManage =
+    isGod ||
+    membership?.role === 'admin' ||
+    membership?.role === 'manager' ||
+    membership?.role === 'ik'
 
   const { data: employees = [], isLoading } = useHrEmployeesQuery()
   const { deleteEmployee } = useHrMutations()
@@ -386,310 +399,327 @@ export function HrPage() {
 
         {/* ── Employees Tab ── */}
         <TabsContent value="employees">
-          <div className="space-y-lg pt-lg">
-            {/* Stats + Payment Schedule */}
-            {!isLoading && employees.length > 0 && (
-              <div className="space-y-md">
-                <Grid cols={4} gap="md">
-                  <StatCard
-                    icon={Users}
-                    iconBg="bg-black/5"
-                    iconColor="text-black/60"
-                    label={lang === 'tr' ? 'Toplam' : 'Total'}
-                    value={stats.total}
-                  />
-                  <StatCard
-                    icon={CheckCircle}
-                    iconBg="bg-green/10"
-                    iconColor="text-green"
-                    label={lang === 'tr' ? 'Aktif' : 'Active'}
-                    value={stats.active}
-                  />
-                  <StatCard
-                    icon={Shield}
-                    iconBg="bg-blue/10"
-                    iconColor="text-blue"
-                    label={lang === 'tr' ? 'Sigortalı' : 'Insured'}
-                    value={stats.insured}
-                  />
-                  {stats.uninsured > 0 && (
+          <SectionErrorBoundary sectionName="HR Employees">
+            <div className="space-y-lg pt-lg">
+              {/* Stats + Payment Schedule */}
+              {!isLoading && employees.length > 0 && (
+                <div className="space-y-md">
+                  <Grid cols={4} gap="md">
                     <StatCard
-                      icon={ShieldWarning}
-                      iconBg="bg-orange/10"
-                      iconColor="text-orange"
-                      label={lang === 'tr' ? 'Sigortasız' : 'Uninsured'}
-                      value={stats.uninsured}
+                      icon={Users}
+                      iconBg="bg-black/5"
+                      iconColor="text-black/60"
+                      label={lang === 'tr' ? 'Toplam' : 'Total'}
+                      value={stats.total}
                     />
-                  )}
-                </Grid>
-
-                {/* Payment schedule strip */}
-                <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-6 gap-y-1 rounded-xl border border-black/[0.07] bg-bg1 px-4 py-2.5">
-                  <div className="flex items-center gap-2">
-                    <Money size={14} className="shrink-0 text-green" />
-                    <span className="text-xs text-black/50">
-                      {lang === 'tr' ? 'Maaş' : 'Salary'}&nbsp;—&nbsp;
-                      <span className="font-medium text-black/70">
-                        {lang === 'tr' ? "Her ayın 5'i" : '5th'}
-                      </span>
-                    </span>
-                    <span
-                      className={`text-xs tabular-nums ${daysUntil(5) <= 3 ? 'text-orange' : 'text-black/35'}`}
-                    >
-                      · {dayLabel(daysUntil(5), lang)}
-                    </span>
-                  </div>
-                  <div className="h-3 w-px bg-black/10" />
-                  <div className="flex items-center gap-2">
-                    <CurrencyCircleDollar size={14} className="shrink-0 text-purple" />
-                    <span className="text-xs text-black/50">
-                      {lang === 'tr' ? 'Prim' : 'Bonus'}&nbsp;—&nbsp;
-                      <span className="font-medium text-black/70">
-                        {lang === 'tr' ? "Her ayın 20'si" : '20th'}
-                      </span>
-                    </span>
-                    <span
-                      className={`text-xs tabular-nums ${daysUntil(20) <= 3 ? 'text-orange' : 'text-black/35'}`}
-                    >
-                      · {dayLabel(daysUntil(20), lang)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Active / Passive sub-tabs */}
-            <Tabs value={employeeSubTab} onValueChange={(v) => setEmployeeSubTab(v as 'active' | 'passive')}>
-              <TabsList>
-                <TabsTrigger value="active">
-                  <CheckCircle size={13} weight="fill" className="mr-1 text-green" />
-                  {lang === 'tr' ? 'Aktif' : 'Active'}
-                  <span className="ml-1.5 rounded-full bg-green/15 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none text-green">
-                    {activeEmps.length}
-                  </span>
-                </TabsTrigger>
-                <TabsTrigger value="passive">
-                  <XCircle size={13} weight="fill" className="mr-1 text-black/30" />
-                  {lang === 'tr' ? 'Pasif' : 'Inactive'}
-                  <span className="ml-1.5 rounded-full bg-black/10 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none">
-                    {passiveEmps.length}
-                  </span>
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-
-            {/* Filters */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-sm">
-              <div className="relative w-full sm:min-w-48 flex-1">
-                <MagnifyingGlass
-                  size={15}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30"
-                />
-                <Input
-                  className="pl-9"
-                  placeholder={t('hr.searchPlaceholder', 'Ad veya e-posta ara...')}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-              <div className="w-full sm:w-48">
-                <Select value={roleFilter} onValueChange={setRoleFilter}>
-                  <SelectTrigger>
-                    <SelectValue
-                      placeholder={lang === 'tr' ? 'Role göre filtrele' : 'Filter by role'}
+                    <StatCard
+                      icon={CheckCircle}
+                      iconBg="bg-green/10"
+                      iconColor="text-green"
+                      label={lang === 'tr' ? 'Aktif' : 'Active'}
+                      value={stats.active}
                     />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">
-                      {lang === 'tr' ? 'Tüm Roller' : 'All Roles'}
-                    </SelectItem>
-                    {settingsRoles.map((r) => (
-                      <SelectItem key={r} value={r}>
-                        {r}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Employee table */}
-            {isLoading ? (
-              <div className="rounded-xl border border-black/[0.07] bg-bg1">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-b border-black/[0.07]">
-                      <TableHead className="text-xs font-medium text-black/40">
-                        {lang === 'tr' ? 'Çalışan' : 'Employee'}
-                      </TableHead>
-                      <TableHead className="text-xs font-medium text-black/40">
-                        {lang === 'tr' ? 'Rol' : 'Role'}
-                      </TableHead>
-                      <TableHead className="text-xs font-medium text-black/40">
-                        {lang === 'tr' ? 'Maaş' : 'Salary'}
-                      </TableHead>
-                      <TableHead className="text-xs font-medium text-black/40">
-                        {lang === 'tr' ? 'Sigorta' : 'Insurance'}
-                      </TableHead>
-                      <TableHead className="text-xs font-medium text-black/40">
-                        {lang === 'tr' ? 'Durum' : 'Status'}
-                      </TableHead>
-                      <TableHead className="text-xs font-medium text-black/40">
-                        {lang === 'tr' ? 'İşe Giriş' : 'Hire Date'}
-                      </TableHead>
-                      {canManage && <TableHead />}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {Array.from({ length: 6 }).map((_, i) => (
-                      <TableRow key={i} className="border-b border-black/[0.06] last:border-0">
-                        <TableCell className="py-3">
-                          <Skeleton className="mb-1.5 h-4 w-36 rounded" />
-                          <Skeleton className="h-3 w-48 rounded" />
-                        </TableCell>
-                        <TableCell className="py-3">
-                          <Skeleton className="h-5 w-20 rounded" />
-                        </TableCell>
-                        <TableCell className="py-3">
-                          <Skeleton className="h-4 w-24 rounded" />
-                        </TableCell>
-                        <TableCell className="py-3">
-                          <Skeleton className="h-4 w-20 rounded" />
-                        </TableCell>
-                        <TableCell className="py-3">
-                          <Skeleton className="h-4 w-16 rounded" />
-                        </TableCell>
-                        <TableCell className="py-3">
-                          <Skeleton className="h-4 w-24 rounded" />
-                        </TableCell>
-                        {canManage && <TableCell className="py-3" />}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : filtered.length === 0 ? (
-              <EmptyState
-                icon={IdentificationCard}
-                title={
-                  search || roleFilter !== 'all'
-                    ? t('hr.noResults', 'Arama ile eşleşen çalışan bulunamadı')
-                    : t('hr.empty', 'Henüz çalışan eklenmedi')
-                }
-                description={
-                  !search && roleFilter === 'all'
-                    ? t('hr.emptyDesc', 'Çalışan eklemek için "Çalışan Ekle" butonuna tıklayın.')
-                    : undefined
-                }
-                action={
-                  canManage && !search && roleFilter === 'all' ? (
-                    <Button variant="filled" onClick={handleAddNew}>
-                      <Plus size={16} weight="bold" />
-                      {t('hr.addEmployee', 'Çalışan Ekle')}
-                    </Button>
-                  ) : undefined
-                }
-              />
-            ) : (
-              <>
-              <div className="rounded-xl border border-black/[0.07] bg-bg1 [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
-                <Table cardOnMobile>
-                  <TableHeader>
-                    <TableRow className="border-b border-black/[0.07]">
-                      <TableHead className="text-xs font-medium text-black/40">
-                        {lang === 'tr' ? 'Çalışan' : 'Employee'}
-                      </TableHead>
-                      <TableHead className="text-xs font-medium text-black/40">
-                        {lang === 'tr' ? 'Rol' : 'Role'}
-                      </TableHead>
-                      <TableHead className="text-xs font-medium text-black/40">
-                        {lang === 'tr' ? 'Maaş' : 'Salary'}
-                      </TableHead>
-                      <TableHead className="text-xs font-medium text-black/40">
-                        {lang === 'tr' ? 'Sigorta' : 'Insurance'}
-                      </TableHead>
-                      <TableHead className="text-xs font-medium text-black/40">
-                        {lang === 'tr' ? 'Durum' : 'Status'}
-                      </TableHead>
-                      <TableHead className="text-xs font-medium text-black/40">
-                        {employeeSubTab === 'passive'
-                          ? (lang === 'tr' ? 'Çıkış Tarihi' : 'Exit Date')
-                          : (lang === 'tr' ? 'İşe Giriş' : 'Hire Date')}
-                      </TableHead>
-                      {canManage && <TableHead />}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedFiltered.map((emp) => (
-                      <EmployeeRow
-                        key={emp.id}
-                        emp={emp}
-                        canManage={canManage}
-                        lang={lang}
-                        showExitDate={employeeSubTab === 'passive'}
-                        onEdit={() => handleEdit(emp)}
-                        onDelete={() => setDeleteTarget(emp)}
-                        onDocs={() => setDocsEmployee(emp)}
+                    <StatCard
+                      icon={Shield}
+                      iconBg="bg-blue/10"
+                      iconColor="text-blue"
+                      label={lang === 'tr' ? 'Sigortalı' : 'Insured'}
+                      value={stats.insured}
+                    />
+                    {stats.uninsured > 0 && (
+                      <StatCard
+                        icon={ShieldWarning}
+                        iconBg="bg-orange/10"
+                        iconColor="text-orange"
+                        label={lang === 'tr' ? 'Sigortasız' : 'Uninsured'}
+                        value={stats.uninsured}
                       />
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 pt-sm">
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                  >
-                    <CaretLeft size={14} />
-                  </Button>
-                  <span className="text-xs tabular-nums text-black/50">
-                    {page} / {totalPages}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={page === totalPages}
-                  >
-                    <CaretRight size={14} />
-                  </Button>
+                    )}
+                  </Grid>
+
+                  {/* Payment schedule strip */}
+                  <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-6 gap-y-1 rounded-xl border border-black/[0.07] bg-bg1 px-4 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <Money size={14} className="shrink-0 text-green" />
+                      <span className="text-xs text-black/50">
+                        {lang === 'tr' ? 'Maaş' : 'Salary'}&nbsp;—&nbsp;
+                        <span className="font-medium text-black/70">
+                          {lang === 'tr' ? "Her ayın 5'i" : '5th'}
+                        </span>
+                      </span>
+                      <span
+                        className={`text-xs tabular-nums ${daysUntil(5) <= 3 ? 'text-orange' : 'text-black/35'}`}
+                      >
+                        · {dayLabel(daysUntil(5), lang)}
+                      </span>
+                    </div>
+                    <div className="h-3 w-px bg-black/10" />
+                    <div className="flex items-center gap-2">
+                      <CurrencyCircleDollar size={14} className="shrink-0 text-purple" />
+                      <span className="text-xs text-black/50">
+                        {lang === 'tr' ? 'Prim' : 'Bonus'}&nbsp;—&nbsp;
+                        <span className="font-medium text-black/70">
+                          {lang === 'tr' ? "Her ayın 20'si" : '20th'}
+                        </span>
+                      </span>
+                      <span
+                        className={`text-xs tabular-nums ${daysUntil(20) <= 3 ? 'text-orange' : 'text-black/35'}`}
+                      >
+                        · {dayLabel(daysUntil(20), lang)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               )}
-              </>
-            )}
-          </div>
+
+              {/* Active / Passive sub-tabs */}
+              <Tabs
+                value={employeeSubTab}
+                onValueChange={(v) => setEmployeeSubTab(v as 'active' | 'passive')}
+              >
+                <TabsList>
+                  <TabsTrigger value="active">
+                    <CheckCircle size={13} weight="fill" className="mr-1 text-green" />
+                    {lang === 'tr' ? 'Aktif' : 'Active'}
+                    <span className="ml-1.5 rounded-full bg-green/15 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none text-green">
+                      {activeEmps.length}
+                    </span>
+                  </TabsTrigger>
+                  <TabsTrigger value="passive">
+                    <XCircle size={13} weight="fill" className="mr-1 text-black/30" />
+                    {lang === 'tr' ? 'Pasif' : 'Inactive'}
+                    <span className="ml-1.5 rounded-full bg-black/10 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none">
+                      {passiveEmps.length}
+                    </span>
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+
+              {/* Filters */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-sm">
+                <div className="relative w-full sm:min-w-48 flex-1">
+                  <MagnifyingGlass
+                    size={15}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30"
+                  />
+                  <Input
+                    className="pl-9"
+                    placeholder={t('hr.searchPlaceholder', 'Ad veya e-posta ara...')}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
+                <div className="w-full sm:w-48">
+                  <Select value={roleFilter} onValueChange={setRoleFilter}>
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder={lang === 'tr' ? 'Role göre filtrele' : 'Filter by role'}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">
+                        {lang === 'tr' ? 'Tüm Roller' : 'All Roles'}
+                      </SelectItem>
+                      {settingsRoles.map((r) => (
+                        <SelectItem key={r} value={r}>
+                          {r}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Employee table */}
+              {isLoading ? (
+                <div className="rounded-xl border border-black/[0.07] bg-bg1">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-b border-black/[0.07]">
+                        <TableHead className="text-xs font-medium text-black/40">
+                          {lang === 'tr' ? 'Çalışan' : 'Employee'}
+                        </TableHead>
+                        <TableHead className="text-xs font-medium text-black/40">
+                          {lang === 'tr' ? 'Rol' : 'Role'}
+                        </TableHead>
+                        <TableHead className="text-xs font-medium text-black/40">
+                          {lang === 'tr' ? 'Maaş' : 'Salary'}
+                        </TableHead>
+                        <TableHead className="text-xs font-medium text-black/40">
+                          {lang === 'tr' ? 'Sigorta' : 'Insurance'}
+                        </TableHead>
+                        <TableHead className="text-xs font-medium text-black/40">
+                          {lang === 'tr' ? 'Durum' : 'Status'}
+                        </TableHead>
+                        <TableHead className="text-xs font-medium text-black/40">
+                          {lang === 'tr' ? 'İşe Giriş' : 'Hire Date'}
+                        </TableHead>
+                        {canManage && <TableHead />}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <TableRow key={i} className="border-b border-black/[0.06] last:border-0">
+                          <TableCell className="py-3">
+                            <Skeleton className="mb-1.5 h-4 w-36 rounded" />
+                            <Skeleton className="h-3 w-48 rounded" />
+                          </TableCell>
+                          <TableCell className="py-3">
+                            <Skeleton className="h-5 w-20 rounded" />
+                          </TableCell>
+                          <TableCell className="py-3">
+                            <Skeleton className="h-4 w-24 rounded" />
+                          </TableCell>
+                          <TableCell className="py-3">
+                            <Skeleton className="h-4 w-20 rounded" />
+                          </TableCell>
+                          <TableCell className="py-3">
+                            <Skeleton className="h-4 w-16 rounded" />
+                          </TableCell>
+                          <TableCell className="py-3">
+                            <Skeleton className="h-4 w-24 rounded" />
+                          </TableCell>
+                          {canManage && <TableCell className="py-3" />}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : filtered.length === 0 ? (
+                <EmptyState
+                  icon={IdentificationCard}
+                  title={
+                    search || roleFilter !== 'all'
+                      ? t('hr.noResults', 'Arama ile eşleşen çalışan bulunamadı')
+                      : t('hr.empty', 'Henüz çalışan eklenmedi')
+                  }
+                  description={
+                    !search && roleFilter === 'all'
+                      ? t('hr.emptyDesc', 'Çalışan eklemek için "Çalışan Ekle" butonuna tıklayın.')
+                      : undefined
+                  }
+                  action={
+                    canManage && !search && roleFilter === 'all' ? (
+                      <Button variant="filled" onClick={handleAddNew}>
+                        <Plus size={16} weight="bold" />
+                        {t('hr.addEmployee', 'Çalışan Ekle')}
+                      </Button>
+                    ) : undefined
+                  }
+                />
+              ) : (
+                <>
+                  <div className="rounded-xl border border-black/[0.07] bg-bg1 [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
+                    <Table cardOnMobile>
+                      <TableHeader>
+                        <TableRow className="border-b border-black/[0.07]">
+                          <TableHead className="text-xs font-medium text-black/40">
+                            {lang === 'tr' ? 'Çalışan' : 'Employee'}
+                          </TableHead>
+                          <TableHead className="text-xs font-medium text-black/40">
+                            {lang === 'tr' ? 'Rol' : 'Role'}
+                          </TableHead>
+                          <TableHead className="text-xs font-medium text-black/40">
+                            {lang === 'tr' ? 'Maaş' : 'Salary'}
+                          </TableHead>
+                          <TableHead className="text-xs font-medium text-black/40">
+                            {lang === 'tr' ? 'Sigorta' : 'Insurance'}
+                          </TableHead>
+                          <TableHead className="text-xs font-medium text-black/40">
+                            {lang === 'tr' ? 'Durum' : 'Status'}
+                          </TableHead>
+                          <TableHead className="text-xs font-medium text-black/40">
+                            {employeeSubTab === 'passive'
+                              ? lang === 'tr'
+                                ? 'Çıkış Tarihi'
+                                : 'Exit Date'
+                              : lang === 'tr'
+                                ? 'İşe Giriş'
+                                : 'Hire Date'}
+                          </TableHead>
+                          {canManage && <TableHead />}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {paginatedFiltered.map((emp) => (
+                          <EmployeeRow
+                            key={emp.id}
+                            emp={emp}
+                            canManage={canManage}
+                            lang={lang}
+                            showExitDate={employeeSubTab === 'passive'}
+                            onEdit={() => handleEdit(emp)}
+                            onDelete={() => setDeleteTarget(emp)}
+                            onDocs={() => setDocsEmployee(emp)}
+                          />
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-2 pt-sm">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                      >
+                        <CaretLeft size={14} />
+                      </Button>
+                      <span className="text-xs tabular-nums text-black/50">
+                        {page} / {totalPages}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={page === totalPages}
+                      >
+                        <CaretRight size={14} />
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </SectionErrorBoundary>
         </TabsContent>
 
         {/* ── Salaries Tab ── */}
         <TabsContent value="salaries">
-          <div className="pt-lg">
-            <SalariesTab employees={employees} canManage={canManage} lang={lang} />
-          </div>
+          <SectionErrorBoundary sectionName="HR Salaries">
+            <div className="pt-lg">
+              <SalariesTab employees={employees} canManage={canManage} lang={lang} />
+            </div>
+          </SectionErrorBoundary>
         </TabsContent>
 
         {/* ── Bonuses Tab ── */}
         <TabsContent value="bonuses">
-          <div className="pt-lg">
-            <BonusesTab employees={employees} canManage={canManage} lang={lang} />
-          </div>
+          <SectionErrorBoundary sectionName="HR Bonuses">
+            <div className="pt-lg">
+              <BonusesTab employees={employees} canManage={canManage} lang={lang} />
+            </div>
+          </SectionErrorBoundary>
         </TabsContent>
 
         {/* ── Attendance Tab ── */}
         <TabsContent value="attendance">
-          <div className="pt-lg">
-            <AttendanceTab employees={employees} canManage={canManage} lang={lang} />
-          </div>
+          <SectionErrorBoundary sectionName="HR Attendance">
+            <div className="pt-lg">
+              <AttendanceTab employees={employees} canManage={canManage} lang={lang} />
+            </div>
+          </SectionErrorBoundary>
         </TabsContent>
 
         {/* ── Settings Tab ── */}
         {canManage && (
           <TabsContent value="settings">
-            <div className="pt-lg">
-              <SettingsTab employees={employees} canManage={canManage} lang={lang} />
-            </div>
+            <SectionErrorBoundary sectionName="HR Settings">
+              <div className="pt-lg">
+                <SettingsTab employees={employees} canManage={canManage} lang={lang} />
+              </div>
+            </SectionErrorBoundary>
           </TabsContent>
         )}
       </Tabs>

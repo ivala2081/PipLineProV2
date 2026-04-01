@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { withRetry } from '@/lib/supabaseRetry'
 import { localYMD, localDayStart, localDayEnd } from '@/lib/date'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { queryKeys } from '@/lib/queryKeys'
@@ -256,16 +257,19 @@ async function fetchKpis(
   from: string,
   to: string,
   baseCurrency: string,
+  signal?: AbortSignal,
 ): Promise<DashboardKpis> {
-  const { data, error } = await supabase
-    .from('transfers')
-    .select(COLUMNS)
-    .eq('organization_id', orgId)
-    .is('deleted_at', null)
-    .gte('transfer_date', from)
-    .lte('transfer_date', to)
-
-  if (error) throw error
+  const data = await withRetry(
+    () =>
+      supabase
+        .from('transfers')
+        .select(COLUMNS)
+        .eq('organization_id', orgId)
+        .is('deleted_at', null)
+        .gte('transfer_date', from)
+        .lte('transfer_date', to),
+    { signal },
+  )
   return computeKpis((data ?? []) as RawTransferRow[], baseCurrency)
 }
 
@@ -278,7 +282,8 @@ export function useDashboardQuery(period: DashboardPeriod, customFrom?: string, 
 
   const currentQuery = useQuery({
     queryKey: queryKeys.dashboard.current(currentOrg?.id ?? '', period, currentRange.from),
-    queryFn: () => fetchKpis(currentOrg!.id, currentRange.from, currentRange.to, baseCurrency),
+    queryFn: ({ signal }) =>
+      fetchKpis(currentOrg!.id, currentRange.from, currentRange.to, baseCurrency, signal),
     enabled: !!currentOrg,
     staleTime: 3 * 60_000, // 3 min – dashboard KPIs change moderately
     gcTime: 10 * 60_000,
@@ -286,7 +291,8 @@ export function useDashboardQuery(period: DashboardPeriod, customFrom?: string, 
 
   const prevQuery = useQuery({
     queryKey: queryKeys.dashboard.previous(currentOrg?.id ?? '', period, prevRange.from),
-    queryFn: () => fetchKpis(currentOrg!.id, prevRange.from, prevRange.to, baseCurrency),
+    queryFn: ({ signal }) =>
+      fetchKpis(currentOrg!.id, prevRange.from, prevRange.to, baseCurrency, signal),
     enabled: !!currentOrg,
     staleTime: 5 * 60_000, // 5 min – previous period is historical
     gcTime: 10 * 60_000,

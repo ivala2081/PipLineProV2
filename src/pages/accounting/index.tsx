@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -11,6 +11,7 @@ import {
 } from '@phosphor-icons/react'
 import { localYMD } from '@/lib/date'
 import { useAccountingQuery } from '@/hooks/queries/useAccountingQuery'
+import { SectionErrorBoundary } from '@/components/ErrorBoundary'
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import { queryKeys } from '@/lib/queryKeys'
 import { useWalletsQuery } from '@/hooks/queries/useWalletsQuery'
@@ -103,6 +104,13 @@ export function AccountingPage() {
     }
   }
 
+  // Listen for global Ctrl+E shortcut
+  useEffect(() => {
+    const handler = () => void handleExportXlsx()
+    window.addEventListener('shortcut:export', handler)
+    return () => window.removeEventListener('shortcut:export', handler)
+  })
+
   return (
     <div className="space-y-lg">
       {/* Page header */}
@@ -159,27 +167,33 @@ export function AccountingPage() {
           <TabsTrigger value="reconciliation">{t('accounting.tabs.reconciliation')}</TabsTrigger>
         </TabsList>
         <TabsContent value="ledger">
-          <LedgerTable
-            entries={accounting.entries}
-            isLoading={accounting.isLoading}
-            page={accounting.page}
-            pageSize={accounting.pageSize}
-            total={accounting.total}
-            onPageChange={accounting.setPage}
-            onEdit={handleEditEntry}
-            onDelete={handleDeleteEntry}
-            fetchEntriesByDate={accounting.fetchEntriesByDate}
-            filters={accounting.filters}
-            onFilterChange={accounting.setFilter}
-            onClearFilters={accounting.clearFilters}
-            hasActiveFilters={accounting.hasActiveFilters}
-          />
+          <SectionErrorBoundary sectionName="Accounting Ledger">
+            <LedgerTable
+              entries={accounting.entries}
+              isLoading={accounting.isLoading}
+              page={accounting.page}
+              pageSize={accounting.pageSize}
+              total={accounting.total}
+              onPageChange={accounting.setPage}
+              onEdit={handleEditEntry}
+              onDelete={handleDeleteEntry}
+              fetchEntriesByDate={accounting.fetchEntriesByDate}
+              filters={accounting.filters}
+              onFilterChange={accounting.setFilter}
+              onClearFilters={accounting.clearFilters}
+              hasActiveFilters={accounting.hasActiveFilters}
+            />
+          </SectionErrorBoundary>
         </TabsContent>
         <TabsContent value="wallets">
-          <WalletsTab wallets={wallets} />
+          <SectionErrorBoundary sectionName="Accounting Wallets">
+            <WalletsTab wallets={wallets} />
+          </SectionErrorBoundary>
         </TabsContent>
         <TabsContent value="reconciliation">
-          <ReconciliationTab />
+          <SectionErrorBoundary sectionName="Reconciliation">
+            <ReconciliationTab />
+          </SectionErrorBoundary>
         </TabsContent>
       </Tabs>
 

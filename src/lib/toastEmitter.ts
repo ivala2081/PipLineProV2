@@ -13,6 +13,7 @@ export interface ToastEvent {
   title?: string
   description?: string
   variant?: ToastVariant
+  invalidates?: string
 }
 
 type ToastListener = (event: ToastEvent) => void

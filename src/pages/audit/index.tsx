@@ -16,6 +16,13 @@ import {
   type OrgAuditFilters,
   type OrgAuditEntry,
 } from '@/hooks/queries/useOrgAuditLogQuery'
+import {
+  useOrgActivityLogQuery,
+  useOrgActivityLogStats,
+  AUDITED_TABLES,
+  type OrgActivityFilters,
+  type OrgActivityEntry,
+} from '@/hooks/queries/useOrgActivityLogQuery'
 import { useOrgMembersQuery } from '@/hooks/queries/useOrgMembersQuery'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { usePagePermissions } from '@/hooks/usePagePermission'
@@ -68,10 +75,16 @@ function formatRelative(dateStr: string): string {
   return formatDateTime(dateStr).date
 }
 
-function groupByDate(entries: OrgAuditEntry[]): Array<{ date: string; entries: OrgAuditEntry[] }> {
-  const map = new Map<string, OrgAuditEntry[]>()
+function groupByDate<T extends { created_at?: string; performed_at?: string }>(
+  entries: T[],
+): Array<{ date: string; entries: T[] }> {
+  const map = new Map<string, T[]>()
   for (const entry of entries) {
-    const date = entry.created_at.slice(0, 10)
+    const ts =
+      (entry as Record<string, string>).performed_at ??
+      (entry as Record<string, string>).created_at ??
+      ''
+    const date = ts.slice(0, 10)
     if (!map.has(date)) map.set(date, [])
     map.get(date)!.push(entry)
   }
@@ -157,7 +170,7 @@ interface AuditStats {
   created: number
   updated: number
   deleted: number
-  restored: number
+  restored?: number
 }
 
 function StatsBar({ stats }: { stats: AuditStats | undefined }) {
@@ -166,7 +179,9 @@ function StatsBar({ stats }: { stats: AuditStats | undefined }) {
     { label: 'Created', value: stats.created, color: 'text-green' },
     { label: 'Updated', value: stats.updated, color: 'text-orange' },
     { label: 'Deleted', value: stats.deleted, color: 'text-red' },
-    { label: 'Restored', value: stats.restored, color: 'text-blue' },
+    ...(stats.restored != null
+      ? [{ label: 'Restored', value: stats.restored, color: 'text-blue' }]
+      : []),
   ]
   return (
     <div className="flex flex-wrap gap-2">
@@ -183,7 +198,7 @@ function StatsBar({ stats }: { stats: AuditStats | undefined }) {
   )
 }
 
-/* ── Filter bar ──────────────────────────────────────────────────── */
+/* ── Filter bar (transfer audit) ────────────────────────────────── */
 
 function FilterBar({
   filters,
@@ -289,6 +304,97 @@ function FilterBar({
   )
 }
 
+/* ── Activity Filter bar (org activity) ─────────────────────────── */
+
+function ActivityFilterBar({
+  filters,
+  onChange,
+  members,
+  t,
+}: {
+  filters: OrgActivityFilters
+  onChange: (next: OrgActivityFilters) => void
+  members: Array<{ user_id: string; label: string }>
+  t: (key: string, fallback?: string) => string
+}) {
+  const inputCls =
+    'h-8 rounded-lg border border-black/10 bg-bg1 px-2 text-xs text-black/60 focus:outline-none focus:ring-2 focus:ring-brand/20'
+
+  const hasFilters =
+    !!filters.actorId || !!filters.action || !!filters.from || !!filters.to || !!filters.tableName
+
+  return (
+    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+      {/* Table filter */}
+      <select
+        value={filters.tableName ?? ''}
+        onChange={(e) => onChange({ ...filters, tableName: e.target.value || null })}
+        className={inputCls}
+      >
+        <option value="">{t('audit.activity.allTables', 'All tables')}</option>
+        {AUDITED_TABLES.map((tbl) => (
+          <option key={tbl} value={tbl}>
+            {t(`audit.activity.tables.${tbl}`, tbl)}
+          </option>
+        ))}
+      </select>
+
+      {/* Actor */}
+      <select
+        value={filters.actorId ?? ''}
+        onChange={(e) => onChange({ ...filters, actorId: e.target.value || null })}
+        className={inputCls}
+      >
+        <option value="">{t('audit.filters.allActors', 'All actors')}</option>
+        {members.map((m) => (
+          <option key={m.user_id} value={m.user_id}>
+            {m.label}
+          </option>
+        ))}
+      </select>
+
+      {/* Action */}
+      <select
+        value={filters.action ?? ''}
+        onChange={(e) => onChange({ ...filters, action: e.target.value || null })}
+        className={inputCls}
+      >
+        <option value="">{t('audit.filters.allActions', 'All actions')}</option>
+        <option value="created">{t('audit.actions.created', 'Created')}</option>
+        <option value="updated">{t('audit.actions.updated', 'Updated')}</option>
+        <option value="deleted">{t('audit.actions.deleted', 'Deleted')}</option>
+      </select>
+
+      {/* Date range */}
+      <input
+        type="date"
+        value={filters.from ?? ''}
+        onChange={(e) => onChange({ ...filters, from: e.target.value || null })}
+        className={inputCls}
+      />
+      <input
+        type="date"
+        value={filters.to ?? ''}
+        onChange={(e) => onChange({ ...filters, to: e.target.value || null })}
+        className={inputCls}
+      />
+
+      {/* Clear */}
+      {hasFilters && (
+        <button
+          type="button"
+          onClick={() =>
+            onChange({ actorId: null, action: null, from: null, to: null, tableName: null })
+          }
+          className="h-8 rounded-lg border border-black/10 px-2.5 text-xs text-black/40 hover:border-black/20 hover:text-black/60"
+        >
+          {t('common:cancel', 'Clear')}
+        </button>
+      )}
+    </div>
+  )
+}
+
 /* ── Date Divider ────────────────────────────────────────────────── */
 
 function DateDivider({ dateStr }: { dateStr: string }) {
@@ -305,7 +411,7 @@ function DateDivider({ dateStr }: { dateStr: string }) {
   )
 }
 
-/* ── Audit Row ───────────────────────────────────────────────────── */
+/* ── Audit Row (transfer log) ──────────────────────────────────── */
 
 function AuditRow({
   entry,
@@ -399,11 +505,293 @@ function AuditRow({
   )
 }
 
+/* ── Activity Row (org activity) ───────────────────────────────── */
+
+function ActivityRow({ entry }: { entry: OrgActivityEntry }) {
+  const { t } = useTranslation('pages')
+  const [expanded, setExpanded] = useState(false)
+  const { date, time } = formatDateTime(entry.performed_at)
+  const relative = formatRelative(entry.performed_at)
+  const tableName = t(`audit.activity.tables.${entry.table_name}`, entry.table_name)
+  const meta = entry.metadata as Record<string, unknown> | null
+
+  // Count changed fields (for updates, compare old_data vs new_data keys)
+  const changedFields =
+    entry.action === 'updated' && entry.old_data && entry.new_data
+      ? Object.keys(entry.new_data).filter(
+          (k) =>
+            k !== 'updated_at' &&
+            JSON.stringify(entry.old_data![k]) !== JSON.stringify(entry.new_data![k]),
+        )
+      : []
+
+  const detailCount =
+    entry.action === 'updated'
+      ? changedFields.length
+      : Object.keys(entry.new_data ?? entry.old_data ?? {}).length > 0
+        ? 1
+        : 0
+
+  return (
+    <div className="border-b border-black/[0.06] last:border-0">
+      <div className="flex items-start gap-3 px-4 py-3">
+        <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-black/[0.04]">
+          <ActionIcon action={entry.action} />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium text-black/60">
+              {entry.performer_name ?? entry.performed_by?.slice(0, 8) ?? '—'}
+            </span>
+            <ActionTag action={entry.action} />
+            <Tag variant="outline" className="text-xs">
+              {tableName}
+            </Tag>
+            <div className="ml-auto shrink-0 text-right" title={`${date} ${time}`}>
+              <span className="font-mono text-xs text-black/40">{relative}</span>
+              <span className="ml-1 hidden font-mono text-xs text-black/40 sm:inline">
+                · {time}
+              </span>
+            </div>
+          </div>
+
+          {/* Row 2: context info */}
+          <div className="mt-0.5 flex items-center gap-2">
+            {/* Show name from new_data if available */}
+            {(entry.new_data?.name || entry.old_data?.name) && (
+              <span className="truncate text-xs text-black/50">
+                {String(entry.new_data?.name ?? entry.old_data?.name)}
+              </span>
+            )}
+
+            {/* Commission override badge */}
+            {meta?.override_change && (
+              <Tag variant="yellow" className="text-xs">
+                {t('audit.activity.overrideChange', 'Override')}
+              </Tag>
+            )}
+
+            {/* Permission context */}
+            {meta?.role && meta?.target_table && (
+              <span className="text-xs text-black/40">
+                {String(meta.role)} · {String(meta.target_table)}
+              </span>
+            )}
+
+            {detailCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setExpanded((v) => !v)}
+                className="ml-auto shrink-0 rounded-md px-2 py-0.5 text-xs font-medium text-black/40 hover:bg-black/[0.04] hover:text-black/60"
+              >
+                {expanded ? '▾' : '▸'} {t('common:edit', 'Details')}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Expanded details */}
+      {expanded && (
+        <div className="bg-black/[0.015] px-4 pb-3">
+          <div className="space-y-1 pt-1">
+            {/* Commission override detail */}
+            {meta?.override_change && (
+              <div className="rounded-md bg-bg1 px-2.5 py-1.5 text-xs">
+                <span className="font-medium text-black/50">
+                  {t('audit.activity.calculated', 'Calculated')}:
+                </span>{' '}
+                <span className="text-black/60">{String(meta.calculated_amount)}</span>
+                <span className="text-black/30">{' → '}</span>
+                <span className="font-medium text-black/50">
+                  {t('audit.activity.override', 'Override')}:
+                </span>{' '}
+                <span className="text-red/70 line-through">{String(meta.old_override ?? '—')}</span>
+                <span className="text-black/30">{' → '}</span>
+                <span className="text-green/70">{String(meta.new_override ?? '—')}</span>
+                {meta.override_reason && (
+                  <>
+                    <br />
+                    <span className="font-medium text-black/50">
+                      {t('audit.activity.reason', 'Reason')}:
+                    </span>{' '}
+                    <span className="text-black/60">{String(meta.override_reason)}</span>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Field-level diff for updates */}
+            {entry.action === 'updated' &&
+              changedFields.map((field) => (
+                <div key={field} className="rounded-md bg-bg1 px-2.5 py-1.5 text-xs">
+                  <span className="font-medium text-black/50">{field}</span>
+                  <span className="text-black/30">{' : '}</span>
+                  <span className="text-red/70 line-through">
+                    {String(entry.old_data?.[field] ?? '—')}
+                  </span>
+                  <span className="text-black/30">{' → '}</span>
+                  <span className="text-green/70">{String(entry.new_data?.[field] ?? '—')}</span>
+                </div>
+              ))}
+
+            {/* For create/delete: show key fields from data */}
+            {entry.action !== 'updated' && (
+              <div className="rounded-md bg-bg1 px-2.5 py-1.5 text-xs">
+                <pre className="max-h-40 overflow-auto whitespace-pre-wrap text-black/50">
+                  {JSON.stringify(entry.new_data ?? entry.old_data, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ── Skeleton loader ───────────────────────────────────────────── */
+
+function AuditSkeleton() {
+  return (
+    <div>
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3 border-b border-black/[0.04] px-4 py-3">
+          <Skeleton className="size-7 rounded-full" />
+          <div className="flex-1 space-y-1.5">
+            <Skeleton className="h-3 w-32 rounded" />
+            <Skeleton className="h-3 w-48 rounded" />
+          </div>
+          <Skeleton className="h-3 w-14 rounded" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/* ── Pagination ────────────────────────────────────────────────── */
+
+function Pagination({
+  page,
+  totalPages,
+  total,
+  pageSize,
+  onPageChange,
+}: {
+  page: number
+  totalPages: number
+  total: number
+  pageSize: number
+  onPageChange: (p: number) => void
+}) {
+  if (totalPages <= 1) return null
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-xs text-black/40">
+        {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} / {total}
+      </span>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => onPageChange(Math.max(1, page - 1))}
+          disabled={page <= 1}
+          aria-label="Previous page"
+          className="flex size-8 items-center justify-center rounded-md text-black/50 hover:bg-black/[0.06] disabled:pointer-events-none disabled:opacity-30"
+        >
+          <CaretLeft size={14} weight="bold" />
+        </button>
+        <span className="px-2 text-xs text-black/50">
+          {page} / {totalPages}
+        </span>
+        <button
+          onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+          disabled={page >= totalPages}
+          aria-label="Next page"
+          className="flex size-8 items-center justify-center rounded-md text-black/50 hover:bg-black/[0.06] disabled:pointer-events-none disabled:opacity-30"
+        >
+          <CaretRight size={14} weight="bold" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/* ── Activity Tab ──────────────────────────────────────────────── */
+
+function ActivityTab({ members }: { members: Array<{ user_id: string; label: string }> }) {
+  const { t } = useTranslation('pages')
+  const [page, setPage] = useState(1)
+  const [filters, setFilters] = useState<OrgActivityFilters>({
+    from: null,
+    to: null,
+    actorId: null,
+    action: null,
+    tableName: null,
+  })
+
+  const { entries, total, pageSize, isLoading, error } = useOrgActivityLogQuery(filters, page)
+  const { data: stats } = useOrgActivityLogStats(filters)
+  const totalPages = Math.ceil(total / pageSize)
+
+  const handleFiltersChange = (next: OrgActivityFilters) => {
+    setFilters(next)
+    setPage(1)
+  }
+
+  const grouped = groupByDate(entries)
+
+  return (
+    <div className="space-y-4">
+      <ActivityFilterBar filters={filters} onChange={handleFiltersChange} members={members} t={t} />
+
+      <StatsBar stats={stats ?? undefined} />
+
+      <div className="overflow-hidden rounded-xl border border-black/[0.06] bg-bg1">
+        {isLoading ? (
+          <AuditSkeleton />
+        ) : error ? (
+          <div className="py-16 text-center">
+            <p className="text-sm text-red/60">{error}</p>
+          </div>
+        ) : entries.length === 0 ? (
+          <div className="py-16 text-center">
+            <p className="text-sm font-medium text-black/40">
+              {t('audit.activity.empty', 'No activity entries found.')}
+            </p>
+            <p className="mt-1 text-xs text-black/25">
+              {t('audit.activity.emptyHint', 'Changes will appear here.')}
+            </p>
+          </div>
+        ) : (
+          <div>
+            {grouped.map(({ date, entries: dateEntries }) => (
+              <div key={date}>
+                <DateDivider dateStr={date} />
+                {dateEntries.map((entry) => (
+                  <ActivityRow key={entry.id} entry={entry} />
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        total={total}
+        pageSize={pageSize}
+        onPageChange={setPage}
+      />
+    </div>
+  )
+}
+
 /* ── Page ───────────────────────────────────────────────────────────── */
 
 export function AuditLogPage() {
   const { t } = useTranslation('pages')
-  const { currentOrg, membership } = useOrganization()
+  const { currentOrg } = useOrganization()
   const { canAccessPage } = usePagePermissions()
   const canTrash = canAccessPage('trash') ?? false
   const canTransferFix = canAccessPage('transfer-fix') ?? false
@@ -480,7 +868,8 @@ export function AuditLogPage() {
 
       <Tabs defaultValue="log">
         <TabsList>
-          <TabsTrigger value="log">{t('audit.tabs.log', 'Audit Log')}</TabsTrigger>
+          <TabsTrigger value="log">{t('audit.tabs.log', 'Transfer Log')}</TabsTrigger>
+          <TabsTrigger value="activity">{t('audit.tabs.activity', 'Org Activity')}</TabsTrigger>
           {canTrash && <TabsTrigger value="trash">{t('audit.tabs.trash', 'Trash')}</TabsTrigger>}
           {canTransferFix && <TabsTrigger value="transfer-fix">Transfer Fix</TabsTrigger>}
         </TabsList>
@@ -494,25 +883,11 @@ export function AuditLogPage() {
             exporting={exporting}
           />
 
-          <StatsBar stats={stats} />
+          <StatsBar stats={stats ? { ...stats, restored: stats.restored } : undefined} />
 
           <div className="overflow-hidden rounded-xl border border-black/[0.06] bg-bg1">
             {isLoading ? (
-              <div>
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-3 border-b border-black/[0.04] px-4 py-3"
-                  >
-                    <Skeleton className="size-7 rounded-full" />
-                    <div className="flex-1 space-y-1.5">
-                      <Skeleton className="h-3 w-32 rounded" />
-                      <Skeleton className="h-3 w-48 rounded" />
-                    </div>
-                    <Skeleton className="h-3 w-14 rounded" />
-                  </div>
-                ))}
-              </div>
+              <AuditSkeleton />
             ) : error ? (
               <div className="py-16 text-center">
                 <p className="text-sm text-red/60">{error}</p>
@@ -545,34 +920,17 @@ export function AuditLogPage() {
             )}
           </div>
 
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-black/40">
-                {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} / {total}
-              </span>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setPage(Math.max(1, page - 1))}
-                  disabled={page <= 1}
-                  aria-label="Previous page"
-                  className="flex size-8 items-center justify-center rounded-md text-black/50 hover:bg-black/[0.06] disabled:pointer-events-none disabled:opacity-30"
-                >
-                  <CaretLeft size={14} weight="bold" />
-                </button>
-                <span className="px-2 text-xs text-black/50">
-                  {page} / {totalPages}
-                </span>
-                <button
-                  onClick={() => setPage(Math.min(totalPages, page + 1))}
-                  disabled={page >= totalPages}
-                  aria-label="Next page"
-                  className="flex size-8 items-center justify-center rounded-md text-black/50 hover:bg-black/[0.06] disabled:pointer-events-none disabled:opacity-30"
-                >
-                  <CaretRight size={14} weight="bold" />
-                </button>
-              </div>
-            </div>
-          )}
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            pageSize={pageSize}
+            onPageChange={setPage}
+          />
+        </TabsContent>
+
+        <TabsContent value="activity" className="space-y-4">
+          <ActivityTab members={members} />
         </TabsContent>
 
         {canTrash && (

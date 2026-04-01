@@ -4,7 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { queryClient } from '@/lib/queryClient'
 import { ThemeProvider } from '@/app/providers/ThemeProvider'
-import { AuthProvider, useAuth } from '@/app/providers/AuthProvider'
+import { AuthProvider, useAuth, type SessionPromise } from '@/app/providers/AuthProvider'
 import { OrganizationProvider } from '@/app/providers/OrganizationProvider'
 import { AppToastProvider } from '@/hooks/useToast'
 import { usePresence } from '@/hooks/usePresence'
@@ -139,12 +139,12 @@ function PageSuspense({ children }: { children: ReactNode }) {
 /*  App                                                                */
 /* ------------------------------------------------------------------ */
 
-export function App() {
+export function App({ sessionPromise }: { sessionPromise?: SessionPromise }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="system">
         <AppToastProvider>
-          <AuthProvider>
+          <AuthProvider sessionPromise={sessionPromise}>
             <Routes>
               <Route
                 path="/login"

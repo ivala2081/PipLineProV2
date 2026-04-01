@@ -228,6 +228,14 @@ export function TransfersTable({
   const { toast } = useToast()
   const [state, dispatch] = useReducer(reducer, initialState)
   const [filtersOpen, setFiltersOpen] = useState(false)
+
+  // Listen for global Ctrl+Shift+F shortcut
+  useEffect(() => {
+    const handler = () => setFiltersOpen((prev) => !prev)
+    window.addEventListener('shortcut:toggle-filters', handler)
+    return () => window.removeEventListener('shortcut:toggle-filters', handler)
+  }, [])
+
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [showBulkEdit, setShowBulkEdit] = useState(false)
