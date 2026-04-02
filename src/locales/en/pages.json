@@ -607,7 +607,10 @@
     "tabs": {
       "ledger": "Ledger",
       "wallets": "Wallets",
-      "reconciliation": "Reconciliation"
+      "reconciliation": "Reconciliation",
+      "overview": "Overview",
+      "ibPartners": "IB Partners",
+      "settings": "Settings"
     },
     "columns": {
       "description": "Description",
@@ -617,7 +620,11 @@
       "currency": "Currency",
       "register": "Register",
       "costPeriod": "Cost Period",
-      "date": "Date"
+      "date": "Date",
+      "category": "Category",
+      "payee": "Payee",
+      "source": "Source",
+      "manual": "Manual"
     },
     "entryTypes": {
       "ODEME": "Payment",
@@ -646,7 +653,12 @@
       "paymentPeriodPlaceholder": "e.g. OCK26",
       "save": "Save",
       "saving": "Saving...",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "category": "Category",
+      "categoryPlaceholder": "Select category",
+      "noCategory": "None",
+      "payee": "Payee",
+      "payeePlaceholder": "Person or company"
     },
     "delete": {
       "title": "Delete Entry",
@@ -834,7 +846,17 @@
       "activeWallets": "Active Wallets",
       "lastSnapshot": "Last Snapshot",
       "tokenAllocation": "Token Allocation",
-      "chainAllocation": "Chain Allocation"
+      "chainAllocation": "Chain Allocation",
+      "verification": "Portfolio Verification",
+      "register": "Register",
+      "registerBalance": "Ledger Balance",
+      "currency": "Currency",
+      "status": "Status",
+      "negative": "Negative",
+      "ok": "OK",
+      "totalUsd": "Total Portfolio (USD)",
+      "empty": "No register data",
+      "emptyDesc": "Configure registers and add entries to see portfolio verification."
     },
     "dailyClosing": {
       "noData": "No daily data available",
@@ -875,6 +897,83 @@
       "snapshotTaken": "Balance snapshot saved",
       "snapshotDeleted": "Snapshot removed",
       "error": "An error occurred. Please try again."
+    },
+    "overview": {
+      "title": "Overview",
+      "period": "Period",
+      "totalPortfolio": "Total Portfolio (USD)",
+      "netPL": "Net P/L",
+      "opening": "Opening (Devir)",
+      "incoming": "Incoming (Giren)",
+      "outgoing": "Outgoing (Çıkan)",
+      "net": "Net",
+      "closing": "Closing Balance",
+      "noRegisters": "No registers configured. Seed defaults from Settings tab.",
+      "categoryBreakdown": "Category Breakdown",
+      "noCategoryData": "No expense data for this period.",
+      "entries": "entries",
+      "ofTotal": "of total"
+    },
+    "conversion": {
+      "button": "Conversion",
+      "title": "Currency Conversion",
+      "sourceRegister": "Source Register",
+      "targetRegister": "Target Register",
+      "sourceAmount": "Source Amount",
+      "exchangeRate": "Exchange Rate",
+      "targetAmount": "Target Amount (computed)",
+      "date": "Date",
+      "costPeriod": "Cost Period",
+      "notes": "Notes",
+      "submit": "Create Conversion",
+      "creating": "Creating..."
+    },
+    "ibPartners": {
+      "title": "IB Partners",
+      "partners": "partners",
+      "name": "Name",
+      "agreementType": "Agreement",
+      "status": "Status",
+      "thisMonth": "This Month",
+      "paymentHistory": "Payment History",
+      "noPayments": "No payments recorded yet.",
+      "date": "Date",
+      "amount": "Amount",
+      "register": "Register",
+      "empty": "No IB Partners",
+      "emptyDesc": "IB partners can be managed from the IB Management page."
+    },
+    "settings": {
+      "registersTitle": "Registers",
+      "addRegister": "Add Register",
+      "editRegister": "Edit Register",
+      "registerName": "Name (code)",
+      "registerLabel": "Display Label",
+      "registerCurrency": "Currency",
+      "noRegisters": "No registers configured",
+      "noRegistersDesc": "Seed default registers to get started.",
+      "seedDefaults": "Seed Default Registers",
+      "seeding": "Seeding...",
+      "name": "Name",
+      "label": "Label",
+      "currency": "Currency",
+      "status": "Status",
+      "type": "Type",
+      "icon": "Icon",
+      "system": "System",
+      "active": "Active",
+      "inactive": "Inactive",
+      "custom": "Custom",
+      "defaultCategories": "Default Categories",
+      "customCategories": "Custom Categories",
+      "addCategory": "Add Category",
+      "editCategory": "Edit Category",
+      "categoryName": "Name (code)",
+      "categoryLabel": "Display Label",
+      "categoryIcon": "Icon (Phosphor name)",
+      "noCustomCategories": "No custom categories yet.",
+      "noCategories": "No categories found.",
+      "adminOnly": "Only administrators can manage accounting settings."
     }
   },
   "psps": {

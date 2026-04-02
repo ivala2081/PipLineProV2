@@ -7,6 +7,37 @@ import { queryKeys } from '@/lib/queryKeys'
 import type { AccountingEntry } from '@/lib/database.types'
 import type { EntryFormValues } from '@/schemas/accountingSchema'
 
+/* ── Types for RPC responses ───────────────────────────── */
+
+export interface RegisterSummary {
+  id: string
+  name: string
+  label: string
+  currency: string
+  opening: number
+  incoming: number
+  outgoing: number
+  net: number
+  closing: number
+}
+
+export interface AccountingOverviewSummary {
+  registers: RegisterSummary[]
+  totals: {
+    portfolio_usd: number
+    net_pl: number
+    pl_percent: number
+  }
+}
+
+export interface CategoryBreakdownItem {
+  category_name: string
+  category_label: string
+  category_icon: string
+  total_amount: number
+  entry_count: number
+}
+
 const PAGE_SIZE = 25
 
 export interface AccountingSummary {
@@ -198,6 +229,11 @@ export function useAccountingQuery(): UseAccountingQueryReturn {
         entry_date: data.entry_date,
         payment_period: data.payment_period || null,
         register: data.register,
+        register_id: data.register_id ?? null,
+        category_id: data.category_id ?? null,
+        payee: data.payee ?? null,
+        exchange_rate_used: data.exchange_rate_used ?? null,
+        exchange_rate_override: data.exchange_rate_override ?? false,
         hr_employee_id: data.hr_employee_id ?? null,
         advance_type: data.advance_type ?? null,
         created_by: user.id,
@@ -228,6 +264,11 @@ export function useAccountingQuery(): UseAccountingQueryReturn {
           entry_date: data.entry_date,
           payment_period: data.payment_period || null,
           register: data.register,
+          register_id: data.register_id ?? null,
+          category_id: data.category_id ?? null,
+          payee: data.payee ?? null,
+          exchange_rate_used: data.exchange_rate_used ?? null,
+          exchange_rate_override: data.exchange_rate_override ?? false,
           hr_employee_id: data.hr_employee_id ?? null,
           advance_type: data.advance_type ?? null,
         } as never)
@@ -277,7 +318,10 @@ export function useAccountingQuery(): UseAccountingQueryReturn {
         }
 
         // Delete all accounting entries linked to this bulk payment
-        await supabase.from('accounting_entries').delete().eq('hr_bulk_payment_id', entry.hr_bulk_payment_id)
+        await supabase
+          .from('accounting_entries')
+          .delete()
+          .eq('hr_bulk_payment_id', entry.hr_bulk_payment_id)
 
         // Delete the bulk payment (CASCADE deletes items)
         await supabase.from('hr_bulk_payments').delete().eq('id', entry.hr_bulk_payment_id)
@@ -400,4 +444,170 @@ export function useAccountingQuery(): UseAccountingQueryReturn {
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
   }
+}
+
+/* ── Overview Summary (RPC) ────────────────────────────── */
+
+export function useAccountingOverviewSummary(period: string) {
+  const { currentOrg } = useOrganization()
+
+  return useQuery({
+    queryKey: queryKeys.accounting.overviewSummary(currentOrg?.id ?? '', period),
+    queryFn: async () => {
+      if (!currentOrg) throw new Error('No organization selected')
+      const { data, error } = await supabase.rpc('get_accounting_summary', {
+        p_org_id: currentOrg.id,
+        p_period: period,
+      })
+      if (error) throw error
+      return data as unknown as AccountingOverviewSummary
+    },
+    enabled: !!currentOrg && !!period,
+    staleTime: 2 * 60_000,
+  })
+}
+
+/* ── Category Breakdown (RPC) ──────────────────────────── */
+
+export function useCategoryBreakdown(period: string) {
+  const { currentOrg } = useOrganization()
+
+  return useQuery({
+    queryKey: queryKeys.accounting.categoryBreakdown(currentOrg?.id ?? '', period),
+    queryFn: async () => {
+      if (!currentOrg) throw new Error('No organization selected')
+      const { data, error } = await supabase.rpc('get_category_breakdown', {
+        p_org_id: currentOrg.id,
+        p_period: period,
+      })
+      if (error) throw error
+      return (data as unknown as CategoryBreakdownItem[]) ?? []
+    },
+    enabled: !!currentOrg && !!period,
+    staleTime: 2 * 60_000,
+  })
+}
+
+/* ── Recent Payees (autocomplete) ──────────────────────── */
+
+export function useRecentPayees() {
+  const { currentOrg } = useOrganization()
+
+  return useQuery({
+    queryKey: queryKeys.accounting.recentPayees(currentOrg?.id ?? ''),
+    queryFn: async () => {
+      if (!currentOrg) throw new Error('No organization selected')
+      const { data, error } = await supabase
+        .from('accounting_entries')
+        .select('payee')
+        .eq('organization_id', currentOrg.id)
+        .not('payee', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(200)
+      if (error) throw error
+      const unique = [...new Set((data ?? []).map((d) => d.payee).filter(Boolean))]
+      return unique as string[]
+    },
+    enabled: !!currentOrg,
+    staleTime: 5 * 60_000,
+  })
+}
+
+/* ── Create Conversion (two linked entries) ────────────── */
+
+export interface ConversionInput {
+  sourceRegisterId: string
+  sourceRegisterName: string
+  targetRegisterId: string
+  targetRegisterName: string
+  sourceAmount: number
+  targetAmount: number
+  sourceCurrency: string
+  targetCurrency: string
+  exchangeRate: number
+  exchangeRateOverride: boolean
+  entryDate: string
+  costPeriod: string
+  notes: string
+}
+
+export function useCreateConversion() {
+  const { currentOrg } = useOrganization()
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (input: ConversionInput) => {
+      if (!currentOrg || !user) throw new Error('No organization selected')
+
+      // Find conversion category
+      const { data: cats } = await supabase
+        .from('accounting_categories')
+        .select('id')
+        .eq('name', 'conversion')
+        .or(`organization_id.is.null,organization_id.eq.${currentOrg.id}`)
+        .limit(1)
+      const conversionCategoryId = cats?.[0]?.id ?? null
+
+      // 1. Create OUTGOING entry on source register
+      const { data: sourceEntry, error: err1 } = await supabase
+        .from('accounting_entries')
+        .insert({
+          organization_id: currentOrg.id,
+          description: `Conversion: ${input.sourceRegisterName} → ${input.targetRegisterName}`,
+          entry_type: 'TRANSFER',
+          direction: 'out',
+          amount: input.sourceAmount,
+          currency: input.sourceCurrency,
+          register: input.sourceRegisterName,
+          register_id: input.sourceRegisterId,
+          category_id: conversionCategoryId,
+          cost_period: input.costPeriod || null,
+          entry_date: input.entryDate,
+          exchange_rate_used: input.exchangeRate,
+          exchange_rate_override: input.exchangeRateOverride,
+          created_by: user.id,
+        } as never)
+        .select('id')
+        .single()
+      if (err1) throw err1
+
+      // 2. Create INCOMING entry on target register
+      const { data: targetEntry, error: err2 } = await supabase
+        .from('accounting_entries')
+        .insert({
+          organization_id: currentOrg.id,
+          description: `Conversion: ${input.sourceRegisterName} → ${input.targetRegisterName}`,
+          entry_type: 'TRANSFER',
+          direction: 'in',
+          amount: input.targetAmount,
+          currency: input.targetCurrency,
+          register: input.targetRegisterName,
+          register_id: input.targetRegisterId,
+          category_id: conversionCategoryId,
+          cost_period: input.costPeriod || null,
+          entry_date: input.entryDate,
+          exchange_rate_used: input.exchangeRate,
+          exchange_rate_override: input.exchangeRateOverride,
+          linked_entry_id: sourceEntry.id,
+          created_by: user.id,
+        } as never)
+        .select('id')
+        .single()
+      if (err2) throw err2
+
+      // 3. Link source → target
+      const { error: err3 } = await supabase
+        .from('accounting_entries')
+        .update({ linked_entry_id: targetEntry.id } as never)
+        .eq('id', sourceEntry.id)
+      if (err3) throw err3
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.accounting.lists() })
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.accounting.summary(currentOrg?.id ?? ''),
+      })
+    },
+  })
 }

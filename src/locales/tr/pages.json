@@ -607,7 +607,10 @@
     "tabs": {
       "ledger": "Kasa Defteri",
       "wallets": "Cüzdanlar",
-      "reconciliation": "Mutabakat"
+      "reconciliation": "Mutabakat",
+      "overview": "Genel Bakış",
+      "ibPartners": "IB Ortakları",
+      "settings": "Ayarlar"
     },
     "columns": {
       "description": "Açıklama",
@@ -617,7 +620,11 @@
       "currency": "Para Birimi",
       "register": "Kasa",
       "costPeriod": "Maliyet Dönemi",
-      "date": "Tarih"
+      "date": "Tarih",
+      "category": "Kategori",
+      "payee": "Alıcı",
+      "source": "Kaynak",
+      "manual": "Manuel"
     },
     "entryTypes": {
       "ODEME": "Ödeme",
@@ -646,7 +653,12 @@
       "paymentPeriodPlaceholder": "örn. OCK26",
       "save": "Kaydet",
       "saving": "Kaydediliyor...",
-      "cancel": "İptal"
+      "cancel": "İptal",
+      "category": "Kategori",
+      "categoryPlaceholder": "Kategori seçin",
+      "noCategory": "Yok",
+      "payee": "Alıcı",
+      "payeePlaceholder": "Kişi veya şirket"
     },
     "delete": {
       "title": "Kaydı Sil",
@@ -834,7 +846,17 @@
       "activeWallets": "Aktif Cüzdanlar",
       "lastSnapshot": "Son Görüntü",
       "tokenAllocation": "Token Dağılımı",
-      "chainAllocation": "Zincir Dağılımı"
+      "chainAllocation": "Zincir Dağılımı",
+      "verification": "Portföy Doğrulama",
+      "register": "Kasa",
+      "registerBalance": "Defter Bakiyesi",
+      "currency": "Para Birimi",
+      "status": "Durum",
+      "negative": "Negatif",
+      "ok": "Tamam",
+      "totalUsd": "Toplam Portföy (USD)",
+      "empty": "Kasa verisi yok",
+      "emptyDesc": "Portföy doğrulamayı görmek için kasaları yapılandırın ve kayıt ekleyin."
     },
     "dailyClosing": {
       "noData": "Günlük veri bulunamadı",
@@ -875,6 +897,83 @@
       "snapshotTaken": "Bakiye anlık görüntüsü kaydedildi",
       "snapshotDeleted": "Anlık görüntü kaldırıldı",
       "error": "Bir hata oluştu. Lütfen tekrar deneyin."
+    },
+    "overview": {
+      "title": "Genel Bakış",
+      "period": "Dönem",
+      "totalPortfolio": "Toplam Portföy (USD)",
+      "netPL": "Net K/Z",
+      "opening": "Devir",
+      "incoming": "Giren",
+      "outgoing": "Çıkan",
+      "net": "Net",
+      "closing": "Kapanış Bakiyesi",
+      "noRegisters": "Kasa tanımlanmamış. Ayarlar sekmesinden varsayılanları oluşturun.",
+      "categoryBreakdown": "Kategori Dağılımı",
+      "noCategoryData": "Bu dönem için harcama verisi yok.",
+      "entries": "kayıt",
+      "ofTotal": "toplam"
+    },
+    "conversion": {
+      "button": "Çevrim",
+      "title": "Döviz Çevrimi",
+      "sourceRegister": "Kaynak Kasa",
+      "targetRegister": "Hedef Kasa",
+      "sourceAmount": "Kaynak Tutar",
+      "exchangeRate": "Döviz Kuru",
+      "targetAmount": "Hedef Tutar (hesaplanan)",
+      "date": "Tarih",
+      "costPeriod": "Maliyet Dönemi",
+      "notes": "Notlar",
+      "submit": "Çevrimi Oluştur",
+      "creating": "Oluşturuluyor..."
+    },
+    "ibPartners": {
+      "title": "IB Ortakları",
+      "partners": "ortak",
+      "name": "Ad",
+      "agreementType": "Anlaşma",
+      "status": "Durum",
+      "thisMonth": "Bu Ay",
+      "paymentHistory": "Ödeme Geçmişi",
+      "noPayments": "Henüz ödeme kaydı yok.",
+      "date": "Tarih",
+      "amount": "Tutar",
+      "register": "Kasa",
+      "empty": "IB Ortağı Yok",
+      "emptyDesc": "IB ortakları IB Yönetimi sayfasından yönetilebilir."
+    },
+    "settings": {
+      "registersTitle": "Kasalar",
+      "addRegister": "Kasa Ekle",
+      "editRegister": "Kasa Düzenle",
+      "registerName": "Ad (kod)",
+      "registerLabel": "Görünen Ad",
+      "registerCurrency": "Para Birimi",
+      "noRegisters": "Kasa tanımlanmamış",
+      "noRegistersDesc": "Başlamak için varsayılan kasaları oluşturun.",
+      "seedDefaults": "Varsayılan Kasaları Oluştur",
+      "seeding": "Oluşturuluyor...",
+      "name": "Ad",
+      "label": "Etiket",
+      "currency": "Para Birimi",
+      "status": "Durum",
+      "type": "Tür",
+      "icon": "İkon",
+      "system": "Sistem",
+      "active": "Aktif",
+      "inactive": "Pasif",
+      "custom": "Özel",
+      "defaultCategories": "Varsayılan Kategoriler",
+      "customCategories": "Özel Kategoriler",
+      "addCategory": "Kategori Ekle",
+      "editCategory": "Kategori Düzenle",
+      "categoryName": "Ad (kod)",
+      "categoryLabel": "Görünen Ad",
+      "categoryIcon": "İkon (Phosphor adı)",
+      "noCustomCategories": "Henüz özel kategori yok.",
+      "noCategories": "Kategori bulunamadı.",
+      "adminOnly": "Yalnızca yöneticiler muhasebe ayarlarını düzenleyebilir."
     }
   },
   "psps": {

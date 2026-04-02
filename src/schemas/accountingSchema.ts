@@ -1,11 +1,18 @@
 import { z } from 'zod'
 
-export const DESCRIPTION_PRESETS = ['maas_avans', 'prim_avans', 'sigortali_maas_avans', 'diger'] as const
+export const DESCRIPTION_PRESETS = [
+  'maas_avans',
+  'prim_avans',
+  'sigortali_maas_avans',
+  'diger',
+] as const
 
 export type DescriptionPreset = (typeof DESCRIPTION_PRESETS)[number]
 
 export const entryFormSchema = z.object({
-  description_preset: z.enum(['maas_avans', 'prim_avans', 'sigortali_maas_avans', 'diger']).default('diger'),
+  description_preset: z
+    .enum(['maas_avans', 'prim_avans', 'sigortali_maas_avans', 'diger'])
+    .default('diger'),
   description: z.string().min(1, 'Description is required').trim(),
   entry_type: z.enum(['ODEME', 'TRANSFER']),
   direction: z.enum(['in', 'out']),
@@ -14,7 +21,12 @@ export const entryFormSchema = z.object({
   cost_period: z.string().optional(),
   entry_date: z.string().min(1, 'Date is required'),
   payment_period: z.string().optional(),
-  register: z.enum(['USDT', 'NAKIT_TL', 'NAKIT_USD']),
+  register: z.string().min(1),
+  register_id: z.string().nullable().optional(),
+  category_id: z.string().nullable().optional(),
+  payee: z.string().nullable().optional(),
+  exchange_rate_used: z.coerce.number().nullable().optional(),
+  exchange_rate_override: z.boolean().optional(),
   hr_employee_id: z.string().nullable().optional(),
   advance_type: z.enum(['salary', 'bonus', 'insured_salary']).nullable().optional(),
 })

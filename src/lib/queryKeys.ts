@@ -34,6 +34,15 @@ export const queryKeys = {
     list: (orgId: string, page: number) =>
       [...queryKeys.accounting.lists(), { orgId, page }] as const,
     summary: (orgId: string) => [...queryKeys.accounting.all, 'summary', orgId] as const,
+    overviewSummary: (orgId: string, period: string) =>
+      [...queryKeys.accounting.all, 'overviewSummary', orgId, period] as const,
+    categoryBreakdown: (orgId: string, period: string) =>
+      [...queryKeys.accounting.all, 'categoryBreakdown', orgId, period] as const,
+    registers: (orgId: string) => [...queryKeys.accounting.all, 'registers', orgId] as const,
+    categories: (orgId: string) => [...queryKeys.accounting.all, 'categories', orgId] as const,
+    snapshots: (orgId: string, registerId: string) =>
+      [...queryKeys.accounting.all, 'snapshots', orgId, registerId] as const,
+    recentPayees: (orgId: string) => [...queryKeys.accounting.all, 'recentPayees', orgId] as const,
     reconciliation: (orgId: string, year: number, month: number) =>
       [...queryKeys.accounting.all, 'reconciliation', orgId, year, month] as const,
     reconciliationPrev: (orgId: string, year: number, month: number) =>

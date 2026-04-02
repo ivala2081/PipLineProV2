@@ -17,6 +17,7 @@ import {
 import type { AccountingEntry } from '@/lib/database.types'
 import { formatAmount, parseAmount, amountPlaceholder } from '@/lib/formatAmount'
 import type { LedgerFilters } from '@/hooks/queries/useAccountingQuery'
+import { useAccountingRegisters } from '@/hooks/queries/useAccountingRegisters'
 import { LedgerDailySummaryDialog } from './LedgerDailySummaryDialog'
 import {
   Table,
@@ -125,6 +126,10 @@ export function LedgerTable({
   const { t, i18n } = useTranslation('pages')
   const navigate = useNavigate()
   const lang = (i18n.language === 'tr' ? 'tr' : 'en') as 'tr' | 'en'
+
+  // DB-driven lookups for display
+  const { data: dbRegisters = [] } = useAccountingRegisters()
+  const registerMap = new Map(dbRegisters.map((r) => [r.id, r]))
   const totalPages = Math.ceil(total / pageSize)
   const from = (page - 1) * pageSize + 1
   const to = Math.min(page * pageSize, total)
@@ -289,9 +294,21 @@ export function LedgerTable({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__all__">{t('accounting.filters.allRegisters')}</SelectItem>
-                    <SelectItem value="USDT">USDT</SelectItem>
-                    <SelectItem value="NAKIT_TL">Cash TL</SelectItem>
-                    <SelectItem value="NAKIT_USD">Cash USD</SelectItem>
+                    {dbRegisters.length > 0 ? (
+                      dbRegisters
+                        .filter((r) => r.is_active)
+                        .map((r) => (
+                          <SelectItem key={r.name} value={r.name}>
+                            {r.label}
+                          </SelectItem>
+                        ))
+                    ) : (
+                      <>
+                        <SelectItem value="USDT">USDT</SelectItem>
+                        <SelectItem value="NAKIT_TL">Cash TL</SelectItem>
+                        <SelectItem value="NAKIT_USD">Cash USD</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
                 <Select
@@ -469,12 +486,12 @@ export function LedgerTable({
                   <TableHeader>
                     <TableRow className="bg-black/[0.015] hover:bg-black/[0.015]">
                       <TableHead>{t('accounting.columns.description')}</TableHead>
-                      <TableHead>{t('accounting.columns.type')}</TableHead>
                       <TableHead>{t('accounting.columns.direction')}</TableHead>
                       <TableHead className="text-right">{t('accounting.columns.amount')}</TableHead>
                       <TableHead>{t('accounting.columns.currency')}</TableHead>
                       <TableHead>{t('accounting.columns.register')}</TableHead>
                       <TableHead>{t('accounting.columns.costPeriod')}</TableHead>
+                      <TableHead>{t('accounting.columns.source', 'Source')}</TableHead>
                       <TableHead className="w-16 px-2" />
                     </TableRow>
                   </TableHeader>
@@ -501,16 +518,6 @@ export function LedgerTable({
                               <Tag variant="purple">{t('accounting.bulk.tag', 'Toplu')}</Tag>
                             )}
                           </span>
-                        </TableCell>
-                        <TableCell
-                          className="whitespace-nowrap"
-                          data-label={t('accounting.columns.type')}
-                        >
-                          <Tag variant="default">
-                            {row.entry_type === 'ODEME'
-                              ? t('accounting.entryTypes.ODEME')
-                              : t('accounting.entryTypes.TRANSFER')}
-                          </Tag>
                         </TableCell>
                         <TableCell
                           className="whitespace-nowrap"
@@ -543,13 +550,37 @@ export function LedgerTable({
                           className="whitespace-nowrap text-sm text-black/60"
                           data-label={t('accounting.columns.register')}
                         >
-                          {REGISTER_LABELS[row.register] || row.register}
+                          {row.register_id
+                            ? (registerMap.get(row.register_id)?.label ?? row.register)
+                            : REGISTER_LABELS[row.register] || row.register}
                         </TableCell>
                         <TableCell
                           className="whitespace-nowrap text-sm text-black/50"
                           data-label={t('accounting.columns.costPeriod')}
                         >
                           {row.cost_period || '—'}
+                        </TableCell>
+                        <TableCell
+                          className="whitespace-nowrap"
+                          data-label={t('accounting.columns.source', 'Source')}
+                        >
+                          {row.source_type ? (
+                            <Tag variant="purple" className="text-[10px]">
+                              {row.source_type === 'hr_salary'
+                                ? 'HR'
+                                : row.source_type === 'hr_bonus'
+                                  ? 'Bonus'
+                                  : row.source_type === 'ib_payment'
+                                    ? 'IB'
+                                    : row.source_type === 'psp_transfer'
+                                      ? 'PSP'
+                                      : row.source_type}
+                            </Tag>
+                          ) : (
+                            <span className="text-xs text-black/30">
+                              {t('accounting.columns.manual', 'Manual')}
+                            </span>
+                          )}
                         </TableCell>
                         <TableCell className="whitespace-nowrap px-2" isActions>
                           <DropdownMenu>

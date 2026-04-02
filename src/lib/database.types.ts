@@ -12,6 +12,7 @@ export type Database = {
         Row: {
           advance_type: string | null
           amount: number
+          category_id: string | null
           cost_period: string | null
           created_at: string
           created_by: string | null
@@ -20,20 +21,28 @@ export type Database = {
           direction: string
           entry_date: string
           entry_type: string
+          exchange_rate_override: boolean
+          exchange_rate_used: number | null
           hr_employee_id: string | null
           hr_payment_id: string | null
           hr_payment_type: string | null
           id: string
+          linked_entry_id: string | null
           organization_id: string
+          payee: string | null
           payment_period: string | null
           register: string
+          register_id: string | null
           hr_bulk_payment_id: string | null
           ib_payment_id: string | null
+          source_type: string | null
+          source_id: string | null
           updated_at: string
         }
         Insert: {
           advance_type?: string | null
           amount: number
+          category_id?: string | null
           cost_period?: string | null
           created_at?: string
           created_by?: string | null
@@ -42,20 +51,28 @@ export type Database = {
           direction: string
           entry_date?: string
           entry_type: string
+          exchange_rate_override?: boolean
+          exchange_rate_used?: number | null
           hr_bulk_payment_id?: string | null
           hr_employee_id?: string | null
           hr_payment_id?: string | null
           hr_payment_type?: string | null
           ib_payment_id?: string | null
           id?: string
+          linked_entry_id?: string | null
           organization_id: string
+          payee?: string | null
           payment_period?: string | null
           register: string
+          register_id?: string | null
+          source_type?: string | null
+          source_id?: string | null
           updated_at?: string
         }
         Update: {
           advance_type?: string | null
           amount?: number
+          category_id?: string | null
           cost_period?: string | null
           created_at?: string
           created_by?: string | null
@@ -64,15 +81,22 @@ export type Database = {
           direction?: string
           entry_date?: string
           entry_type?: string
+          exchange_rate_override?: boolean
+          exchange_rate_used?: number | null
           hr_bulk_payment_id?: string | null
           hr_employee_id?: string | null
           hr_payment_id?: string | null
           hr_payment_type?: string | null
           ib_payment_id?: string | null
           id?: string
+          linked_entry_id?: string | null
           organization_id?: string
+          payee?: string | null
           payment_period?: string | null
           register?: string
+          register_id?: string | null
+          source_type?: string | null
+          source_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -151,6 +175,142 @@ export type Database = {
             columns: ['organization_id']
             isOneToOne: false
             referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      accounting_registers: {
+        Row: {
+          id: string
+          organization_id: string
+          name: string
+          label: string
+          currency: string
+          is_system: boolean
+          is_active: boolean
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          name: string
+          label: string
+          currency?: string
+          is_system?: boolean
+          is_active?: boolean
+          sort_order?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          name?: string
+          label?: string
+          currency?: string
+          is_system?: boolean
+          is_active?: boolean
+          sort_order?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'accounting_registers_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      accounting_categories: {
+        Row: {
+          id: string
+          organization_id: string | null
+          name: string
+          label: string
+          icon: string | null
+          is_system: boolean
+          sort_order: number
+        }
+        Insert: {
+          id?: string
+          organization_id?: string | null
+          name: string
+          label: string
+          icon?: string | null
+          is_system?: boolean
+          sort_order?: number
+        }
+        Update: {
+          id?: string
+          organization_id?: string | null
+          name?: string
+          label?: string
+          icon?: string | null
+          is_system?: boolean
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'accounting_categories_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      accounting_register_snapshots: {
+        Row: {
+          id: string
+          organization_id: string
+          register_id: string
+          snapshot_date: string
+          opening_balance: number
+          total_in: number
+          total_out: number
+          closing_balance: number
+          usd_equivalent: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          register_id: string
+          snapshot_date: string
+          opening_balance?: number
+          total_in?: number
+          total_out?: number
+          closing_balance?: number
+          usd_equivalent?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          register_id?: string
+          snapshot_date?: string
+          opening_balance?: number
+          total_in?: number
+          total_out?: number
+          closing_balance?: number
+          usd_equivalent?: number | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'accounting_register_snapshots_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'accounting_register_snapshots_register_id_fkey'
+            columns: ['register_id']
+            isOneToOne: false
+            referencedRelation: 'accounting_registers'
             referencedColumns: ['id']
           },
         ]
@@ -2717,6 +2877,15 @@ export type IBReferralInsert = Database['public']['Tables']['ib_referrals']['Ins
 export type IBCommission = Database['public']['Tables']['ib_commissions']['Row']
 export type IBPayment = Database['public']['Tables']['ib_payments']['Row']
 export type IBPaymentInsert = Database['public']['Tables']['ib_payments']['Insert']
+
+export type AccountingRegister = Database['public']['Tables']['accounting_registers']['Row']
+export type AccountingRegisterInsert =
+  Database['public']['Tables']['accounting_registers']['Insert']
+export type AccountingCategory = Database['public']['Tables']['accounting_categories']['Row']
+export type AccountingCategoryInsert =
+  Database['public']['Tables']['accounting_categories']['Insert']
+export type AccountingRegisterSnapshot =
+  Database['public']['Tables']['accounting_register_snapshots']['Row']
 
 export type OrgMemberRole = 'admin' | 'manager' | 'operation' | 'ik'
 export type SystemRole = 'god' | 'user'

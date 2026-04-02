@@ -8,6 +8,9 @@ import type { AccountingEntry } from '@/lib/database.types'
 import { formatAmount, parseAmount, numberToDisplay, amountPlaceholder } from '@/lib/formatAmount'
 import { useHrEmployeesQuery } from '@/hooks/queries/useHrQuery'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
+import { useAccountingRegisters } from '@/hooks/queries/useAccountingRegisters'
+import { useAccountingCategories } from '@/hooks/queries/useAccountingCategories'
+import { useRecentPayees } from '@/hooks/queries/useAccountingQuery'
 import {
   Dialog,
   DialogContent,
@@ -49,6 +52,11 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
   // For employee selector in advance entries
   const { data: employees = [] } = useHrEmployeesQuery()
 
+  // New overhaul data sources
+  const { data: registers = [] } = useAccountingRegisters()
+  const { data: categories = [] } = useAccountingCategories()
+  const { data: recentPayees = [] } = useRecentPayees()
+
   const {
     register,
     handleSubmit,
@@ -69,6 +77,11 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
       entry_date: localYMD(new Date()),
       payment_period: '',
       register: 'USDT',
+      register_id: null,
+      category_id: null,
+      payee: null,
+      exchange_rate_used: null,
+      exchange_rate_override: false,
       hr_employee_id: null,
       advance_type: null,
     },
@@ -93,7 +106,12 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
           cost_period: entry.cost_period ?? '',
           entry_date: entry.entry_date,
           payment_period: entry.payment_period ?? '',
-          register: entry.register as EntryFormValues['register'],
+          register: entry.register,
+          register_id: entry.register_id ?? null,
+          category_id: entry.category_id ?? null,
+          payee: entry.payee ?? null,
+          exchange_rate_used: entry.exchange_rate_used ?? null,
+          exchange_rate_override: entry.exchange_rate_override ?? false,
           hr_employee_id: entry.hr_employee_id ?? null,
           advance_type: (entry.advance_type as EntryFormValues['advance_type']) ?? null,
         })
@@ -110,6 +128,11 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
           entry_date: localYMD(new Date()),
           payment_period: '',
           register: 'USDT',
+          register_id: null,
+          category_id: null,
+          payee: null,
+          exchange_rate_used: null,
+          exchange_rate_override: false,
           hr_employee_id: null,
           advance_type: null,
         })
@@ -308,20 +331,82 @@ export function EntryDialog({ open, onClose, entry, onSubmit, isSubmitting }: En
             </div>
           </div>
 
+          {/* Category & Payee row */}
+          <div className="grid grid-cols-2 gap-md">
+            <div className="space-y-sm">
+              <Label>{t('accounting.form.category', 'Category')}</Label>
+              <Select
+                value={watch('category_id') ?? '__none__'}
+                onValueChange={(v) => setValue('category_id', v === '__none__' ? null : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={t('accounting.form.categoryPlaceholder', 'Select category')}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">
+                    {t('accounting.form.noCategory', 'None')}
+                  </SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-sm">
+              <Label>{t('accounting.form.payee', 'Payee')}</Label>
+              <Input
+                value={watch('payee') ?? ''}
+                onChange={(e) => setValue('payee', e.target.value || null)}
+                placeholder={t('accounting.form.payeePlaceholder', 'Person or company')}
+                list="payee-suggestions"
+              />
+              <datalist id="payee-suggestions">
+                {recentPayees.map((p) => (
+                  <option key={p} value={p} />
+                ))}
+              </datalist>
+            </div>
+          </div>
+
           {/* Register */}
           <div className="space-y-sm">
             <Label>{t('accounting.form.register')}</Label>
             <Select
-              value={watch('register')}
-              onValueChange={(v) => setValue('register', v as EntryFormValues['register'])}
+              value={watch('register_id') ?? watch('register') ?? ''}
+              onValueChange={(v) => {
+                const reg = registers.find((r) => r.id === v)
+                if (reg) {
+                  setValue('register_id', reg.id)
+                  setValue('register', reg.name)
+                } else {
+                  setValue('register_id', null)
+                  setValue('register', v)
+                }
+              }}
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="USDT">USDT</SelectItem>
-                <SelectItem value="NAKIT_TL">Cash TL</SelectItem>
-                <SelectItem value="NAKIT_USD">Cash USD</SelectItem>
+                {registers.length > 0 ? (
+                  registers
+                    .filter((r) => r.is_active)
+                    .map((r) => (
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.label} ({r.currency})
+                      </SelectItem>
+                    ))
+                ) : (
+                  <>
+                    <SelectItem value="USDT">USDT</SelectItem>
+                    <SelectItem value="NAKIT_TL">Cash TL</SelectItem>
+                    <SelectItem value="NAKIT_USD">Cash USD</SelectItem>
+                  </>
+                )}
               </SelectContent>
             </Select>
           </div>
