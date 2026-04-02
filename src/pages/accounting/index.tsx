@@ -66,7 +66,7 @@ export function AccountingPage() {
 
   // Period state shared between overview components
   const now = new Date()
-  const [overviewPeriod] = useState(
+  const [overviewPeriod, setOverviewPeriod] = useState(
     `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`,
   )
 
@@ -185,7 +185,7 @@ export function AccountingPage() {
         <TabsContent value="overview">
           <SectionErrorBoundary sectionName="Accounting Overview">
             <div className="space-y-lg">
-              <AccountingSummary />
+              <AccountingSummary period={overviewPeriod} onPeriodChange={setOverviewPeriod} />
               <div className="grid gap-lg lg:grid-cols-2">
                 <CategoryBreakdown period={overviewPeriod} />
                 <PortfolioVerification period={overviewPeriod} />

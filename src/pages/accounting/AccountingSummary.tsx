@@ -21,13 +21,6 @@ import { Card, Skeleton, Tag, Input, Button, Popover, PopoverTrigger, PopoverCon
 
 /* ── Helpers ──────────────────────────────────────────── */
 
-function currentYearMonth() {
-  const d = new Date()
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  return `${y}-${m}`
-}
-
 function shiftMonth(ym: string, delta: number) {
   const [y, m] = ym.split('-').map(Number)
   const d = new Date(y, m - 1 + delta, 1)
@@ -235,18 +228,22 @@ function RegisterCard({
 
 /* ── Main Component ───────────────────────────────────── */
 
-export function AccountingSummary() {
+interface AccountingSummaryProps {
+  period: string
+  onPeriodChange: (period: string) => void
+}
+
+export function AccountingSummary({ period, onPeriodChange }: AccountingSummaryProps) {
   const { t, i18n } = useTranslation('pages')
   const lang = (i18n.language === 'tr' ? 'tr' : 'en') as 'tr' | 'en'
   const { isGod } = useAuth()
   const { membership } = useOrganization()
   const isAdmin = isGod || membership?.role === 'admin'
 
-  const [period, setPeriod] = useState(currentYearMonth)
   const { data: summary, isLoading } = useAccountingOverviewSummary(period)
 
-  const goPrev = () => setPeriod((p) => shiftMonth(p, -1))
-  const goNext = () => setPeriod((p) => shiftMonth(p, 1))
+  const goPrev = () => onPeriodChange(shiftMonth(period, -1))
+  const goNext = () => onPeriodChange(shiftMonth(period, 1))
 
   return (
     <div className="space-y-md">
