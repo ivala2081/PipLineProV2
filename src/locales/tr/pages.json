@@ -20,7 +20,7 @@
     "settings": "Ayarlar",
     "more": "Daha Fazla",
     "audit": "Denetim",
-    "ib": "IB Ortakları",
+    "ib": "IB",
     "wallets": "Cüzdanlar"
   },
   "layout": {
@@ -609,7 +609,7 @@
       "wallets": "Cüzdanlar",
       "reconciliation": "Mutabakat",
       "overview": "Genel Bakış",
-      "ibPartners": "IB Ortakları",
+      "ibPartners": "IB",
       "settings": "Ayarlar"
     },
     "columns": {
@@ -907,12 +907,19 @@
       "incoming": "Giren",
       "outgoing": "Çıkan",
       "net": "Net",
-      "closing": "Kapanış Bakiyesi",
+      "closing": "KASA TOP",
       "noRegisters": "Kasa tanımlanmamış. Ayarlar sekmesinden varsayılanları oluşturun.",
       "categoryBreakdown": "Kategori Dağılımı",
       "noCategoryData": "Bu dönem için harcama verisi yok.",
       "entries": "kayıt",
       "ofTotal": "toplam"
+    },
+    "devir": {
+      "edit": "Devir Bakiyesini Düzenle",
+      "save": "Kaydet",
+      "saving": "Kaydediliyor...",
+      "saved": "Devir bakiyesi kaydedildi",
+      "manuallySet": "Manuel olarak girildi"
     },
     "conversion": {
       "button": "Çevrim",
@@ -929,7 +936,7 @@
       "creating": "Oluşturuluyor..."
     },
     "ibPartners": {
-      "title": "IB Ortakları",
+      "title": "IB",
       "partners": "ortak",
       "name": "Ad",
       "agreementType": "Anlaşma",
@@ -1609,7 +1616,7 @@
         "psp": "PSP",
         "accounting": "Muhasebe",
         "hr": "İnsan Kaynakları",
-        "ib": "IB Ortakları"
+        "ib": "IB"
       },
       "actions": {
         "select": "Oku",
@@ -1802,7 +1809,7 @@
       "emptyHint": "IB ortakları, muhasebe ve izin değişiklikleri burada görünecek.",
       "allTables": "Tüm tablolar",
       "tables": {
-        "ib_partners": "IB Ortakları",
+        "ib_partners": "IB",
         "ib_commissions": "IB Komisyonları",
         "ib_payments": "IB Ödemeleri",
         "accounting_entries": "Muhasebe",

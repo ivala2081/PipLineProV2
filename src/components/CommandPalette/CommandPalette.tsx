@@ -40,7 +40,7 @@ const GROUP_ICONS: Record<string, React.ComponentType<{ size?: number; className
   PSPs: CreditCard,
   Members: Users,
   Employees: IdentificationCard,
-  'IB Partners': Handshake,
+  IB: Handshake,
 }
 
 interface ActionCommand {
@@ -211,7 +211,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         )
       }
 
-      // 5. IB Partners — org-scoped, search by name or referral_code
+      // 5. IB — org-scoped, search by name or referral_code
       if (currentOrg?.id) {
         promises.push(
           (async () => {
@@ -228,7 +228,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                   label: row.name,
                   description: `${row.referral_code} · ${row.status}`,
                   href: '/ib',
-                  group: 'IB Partners',
+                  group: 'IB',
                 })
               }
             }

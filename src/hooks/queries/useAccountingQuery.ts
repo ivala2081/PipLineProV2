@@ -467,6 +467,45 @@ export function useAccountingOverviewSummary(period: string) {
   })
 }
 
+/* ── Opening Balance Upsert ─────────────────────────────── */
+
+export function useOpeningBalanceMutation() {
+  const { currentOrg } = useOrganization()
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      register,
+      period,
+      openingBalance,
+    }: {
+      register: string
+      period: string
+      openingBalance: number
+    }) => {
+      if (!currentOrg || !user) throw new Error('No organization selected')
+      const { error } = await supabase.from('register_opening_balances').upsert(
+        {
+          organization_id: currentOrg.id,
+          register,
+          period,
+          opening_balance: openingBalance,
+          updated_by: user.id,
+          updated_at: new Date().toISOString(),
+        } as never,
+        { onConflict: 'organization_id,register,period' },
+      )
+      if (error) throw error
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.accounting.overviewSummary(currentOrg?.id ?? '', variables.period),
+      })
+    },
+  })
+}
+
 /* ── Category Breakdown (RPC) ──────────────────────────── */
 
 export function useCategoryBreakdown(period: string) {

@@ -83,7 +83,7 @@ export function IBPage() {
         </TabsList>
 
         <TabsContent value="partners">
-          <SectionErrorBoundary sectionName="IB Partners">
+          <SectionErrorBoundary sectionName="IB">
             <PartnersTab isAdmin={isAdmin} />
           </SectionErrorBoundary>
         </TabsContent>

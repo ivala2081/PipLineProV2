@@ -191,7 +191,7 @@ export function IBPartnersTab() {
     return (
       <EmptyState
         icon={User}
-        title={t('accounting.ibPartners.empty', 'No IB Partners')}
+        title={t('accounting.ibPartners.empty', 'No IB records')}
         description={t(
           'accounting.ibPartners.emptyDesc',
           'IB partners can be managed from the IB Management page.',
@@ -204,7 +204,7 @@ export function IBPartnersTab() {
     <div className="space-y-md">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-black/70">
-          {t('accounting.ibPartners.title', 'IB Partners')}
+          {t('accounting.ibPartners.title', 'IB')}
         </h3>
         <Tag variant="default">
           {partners.length} {t('accounting.ibPartners.partners', 'partners')}

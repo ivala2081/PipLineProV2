@@ -184,7 +184,7 @@ const TABLE_DISPLAY: Record<string, string> = {
   hr_leaves: 'Leaves',
   hr_mt_config: 'MT Config',
   hr_re_config: 'RE Config',
-  ib_partners: 'IB Partners',
+  ib_partners: 'IB',
   ib_referrals: 'IB Referrals',
   ib_commissions: 'IB Commissions',
   ib_payments: 'IB Payments',

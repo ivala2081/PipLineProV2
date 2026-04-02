@@ -34,7 +34,6 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
-  ReferenceLine,
 } from 'recharts'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
@@ -55,6 +54,7 @@ import type { RecentTransfer } from '@/hooks/queries/useDashboardRecentQuery'
 import type { BreakdownItem } from '@/hooks/queries/useMonthlyAnalysisQuery'
 import { Tag, Tabs, TabsList, TabsTrigger, Skeleton, Grid, EmptyState } from '@ds'
 import { SectionErrorBoundary } from '@/components/ErrorBoundary'
+import { DailyNetMiniChart } from '@/components/DailyNetMiniChart'
 import { UserAvatar } from '@/components/UserAvatar'
 import { useTheme } from '@ds'
 import { cn } from '@ds/utils'
@@ -1376,8 +1376,8 @@ export function DashboardPage() {
           </ChartCard>
         </SectionErrorBoundary>
 
-        {/* ─ Daily Net Flow (Area with zero-line) ───── */}
-        <SectionErrorBoundary sectionName="Daily Net Flow" fallbackHeight="min-h-[350px]">
+        {/* ─ Daily Net Flow (Mini Bar Chart) ─────────── */}
+        <SectionErrorBoundary sectionName="Daily Net Flow" fallbackHeight="min-h-[250px]">
           <ChartCard
             title={t('dashboard.charts.dailyNet')}
             subtitle={chartFallbackLabel}
@@ -1385,56 +1385,11 @@ export function DashboardPage() {
             iconColor="text-green"
           >
             {isMonthlyLoading || isPrevMonthlyLoading ? (
-              <ChartSkeleton />
+              <DailyNetMiniChart data={[]} formatMoney={chartMoneyFmt} isLoading />
             ) : !chartMonthlyData?.daily_net?.length ? (
               <ChartEmpty message={t('dashboard.charts.noData')} />
             ) : (
-              <div className="min-h-[250px] md:min-h-[350px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartDailyNet}>
-                    <defs>
-                      <linearGradient id="gradNet" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={ct.lineColor} stopOpacity={0.12} />
-                        <stop offset="100%" stopColor={ct.lineColor} stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke={ct.gridStroke} vertical={false} />
-                    <XAxis
-                      dataKey="day"
-                      tickFormatter={fmtDay}
-                      tick={ct.axisTick}
-                      axisLine={ct.axisLine}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tickFormatter={fmtCompact}
-                      tick={ct.axisTick}
-                      axisLine={false}
-                      tickLine={false}
-                      width={50}
-                    />
-                    <ReferenceLine y={0} stroke={ct.zeroLineStroke} strokeDasharray="4 4" />
-                    <Tooltip
-                      formatter={(value: number) => [
-                        chartMoneyFmt(value),
-                        t('dashboard.charts.net'),
-                      ]}
-                      labelFormatter={fmtDay}
-                      contentStyle={ct.tooltipStyle}
-                      cursor={{ strokeDasharray: '4 4', stroke: ct.cursorStroke }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="net"
-                      stroke={ct.lineColor}
-                      strokeWidth={2}
-                      fill="url(#gradNet)"
-                      dot={{ r: 2, fill: ct.lineColor, strokeWidth: 0 }}
-                      activeDot={{ r: 4, strokeWidth: 0 }}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+              <DailyNetMiniChart data={chartDailyNet} formatMoney={chartMoneyFmt} />
             )}
           </ChartCard>
         </SectionErrorBoundary>

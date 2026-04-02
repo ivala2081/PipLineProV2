@@ -20,7 +20,7 @@
     "settings": "Settings",
     "more": "More",
     "audit": "Audits",
-    "ib": "IB Partners",
+    "ib": "IB",
     "wallets": "Wallets"
   },
   "layout": {
@@ -609,7 +609,7 @@
       "wallets": "Wallets",
       "reconciliation": "Reconciliation",
       "overview": "Overview",
-      "ibPartners": "IB Partners",
+      "ibPartners": "IB",
       "settings": "Settings"
     },
     "columns": {
@@ -907,12 +907,19 @@
       "incoming": "Incoming (Giren)",
       "outgoing": "Outgoing (Çıkan)",
       "net": "Net",
-      "closing": "Closing Balance",
+      "closing": "KASA TOP",
       "noRegisters": "No registers configured. Seed defaults from Settings tab.",
       "categoryBreakdown": "Category Breakdown",
       "noCategoryData": "No expense data for this period.",
       "entries": "entries",
       "ofTotal": "of total"
+    },
+    "devir": {
+      "edit": "Edit Opening Balance",
+      "save": "Save",
+      "saving": "Saving...",
+      "saved": "Opening balance saved",
+      "manuallySet": "Manually set"
     },
     "conversion": {
       "button": "Conversion",
@@ -929,7 +936,7 @@
       "creating": "Creating..."
     },
     "ibPartners": {
-      "title": "IB Partners",
+      "title": "IB",
       "partners": "partners",
       "name": "Name",
       "agreementType": "Agreement",
@@ -940,7 +947,7 @@
       "date": "Date",
       "amount": "Amount",
       "register": "Register",
-      "empty": "No IB Partners",
+      "empty": "No IB records",
       "emptyDesc": "IB partners can be managed from the IB Management page."
     },
     "settings": {
@@ -1802,7 +1809,7 @@
       "emptyHint": "Changes to IB partners, accounting, and permissions will appear here.",
       "allTables": "All tables",
       "tables": {
-        "ib_partners": "IB Partners",
+        "ib_partners": "IB",
         "ib_commissions": "IB Commissions",
         "ib_payments": "IB Payments",
         "accounting_entries": "Accounting",
