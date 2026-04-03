@@ -291,6 +291,10 @@ export function PartnerFormPage() {
   const watchedLogoUrl = useWatch({ control: form.control, name: 'logo_url' })
   const watchedManagedBy = useWatch({ control: form.control, name: 'managed_by_employee_id' })
 
+  /* ---- Indefinite contract toggle ---- */
+
+  const [indefiniteEnd, setIndefiniteEnd] = useState(!isEdit)
+
   /* ---- Agreement detail state ---- */
 
   const [selectedTypes, setSelectedTypes] = useState<Set<AgreementType>>(() => new Set())
@@ -371,6 +375,9 @@ export function PartnerFormPage() {
     setCpa(parsed.cpa)
     setLotRebate(parsed.lotRebate)
     setRevenueShare(parsed.revenueShare)
+
+    // Set indefinite toggle based on existing data
+    setIndefiniteEnd(!partner.contract_end_date)
 
     // Auto-activate social pills for non-empty fields
     const socials = new Set<SocialKey>()
@@ -704,10 +711,21 @@ export function PartnerFormPage() {
                       <CalendarBlank size={12} className="mr-1 inline text-black/30" />
                       {t('ib.partnerForm.contractEnd')}
                     </Label>
-                    <Input type="date" {...form.register('contract_end_date')} />
-                    <p className="mt-1 text-[11px] text-black/30">
-                      {t('ib.partnerForm.contractEndHint')}
-                    </p>
+                    <label className="mt-1.5 flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={indefiniteEnd}
+                        onChange={(e) => {
+                          setIndefiniteEnd(e.target.checked)
+                          if (e.target.checked) form.setValue('contract_end_date', '')
+                        }}
+                        className="size-4 rounded border-black/20 accent-brand"
+                      />
+                      <span className="text-xs text-black/60">{t('ib.partnerForm.indefinite')}</span>
+                    </label>
+                    {!indefiniteEnd && (
+                      <Input type="date" {...form.register('contract_end_date')} className="mt-1.5" />
+                    )}
                   </div>
                 </div>
               </div>

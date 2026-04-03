@@ -209,12 +209,28 @@ export function PartnerDetailPanel({ partnerId, isAdmin, onBack }: PartnerDetail
             <p className="text-xs text-black/50">{t('ib.partners.agreementDetails')}</p>
             <div className="mt-1 space-y-1">
               {((partner.agreement_types as string[]) ?? []).map((type) => {
-                const typeDetails = (details as Record<string, Record<string, unknown>>)?.[type]
-                if (!typeDetails) return null
-                const summary = Object.entries(typeDetails)
-                  .filter(([, v]) => v != null && v !== '')
-                  .map(([k, v]) => `${k}: ${v}`)
-                  .join(', ')
+                const d = (details as Record<string, Record<string, unknown>>)?.[type]
+                if (!d) return null
+                let summary = ''
+                if (type === 'salary') {
+                  const amt = d.amount != null ? fmt(Number(d.amount)) : '—'
+                  const cur = (d.currency as string) || 'USD'
+                  const period = d.period === 'weekly' ? t('ib.partners.detail.weekly') : t('ib.partners.detail.monthly')
+                  summary = `${amt} ${cur} / ${period}`
+                } else if (type === 'cpa') {
+                  const amt = d.cpa_amount != null ? fmt(Number(d.cpa_amount)) : '—'
+                  const cur = (d.currency as string) || 'USD'
+                  const minFtd = d.min_ftd_amount != null && d.min_ftd_amount !== '' ? ` (min FTD: ${fmt(Number(d.min_ftd_amount))} ${cur})` : ''
+                  summary = `${amt} ${cur}${minFtd}`
+                } else if (type === 'lot_rebate') {
+                  const rebate = d.rebate_per_lot != null ? fmt(Number(d.rebate_per_lot)) : '—'
+                  const cur = (d.currency as string) || 'USD'
+                  summary = `${rebate} ${cur} / lot`
+                } else if (type === 'revenue_share') {
+                  const pct = d.revshare_pct != null ? `${d.revshare_pct}%` : '—'
+                  const src = (d.source as string) || 'spread'
+                  summary = `${pct} (${src})`
+                }
                 return summary ? (
                   <p key={type} className="text-sm font-medium text-black/70">
                     <span className="text-xs text-black/40">{t(`ib.partners.agreements.${type}`)}: </span>

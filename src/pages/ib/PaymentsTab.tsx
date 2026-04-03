@@ -18,7 +18,6 @@ import {
 } from '@ds'
 import { useIBPaymentsQuery, type IBPaymentWithPartner } from '@/hooks/queries/useIBPaymentsQuery'
 import { useIBPartnersQuery } from '@/hooks/queries/useIBPartnersQuery'
-import { PaymentDialog } from './PaymentDialog'
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -26,8 +25,6 @@ import { PaymentDialog } from './PaymentDialog'
 
 interface PaymentsTabProps {
   isAdmin: boolean
-  showDialog: boolean
-  onShowDialog: (show: boolean) => void
 }
 
 /* ------------------------------------------------------------------ */
@@ -51,7 +48,7 @@ function formatDate(date: string) {
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export function PaymentsTab({ showDialog, onShowDialog }: PaymentsTabProps) {
+export function PaymentsTab(_props: PaymentsTabProps) {
   const { t } = useTranslation('pages')
 
   const { payments, isLoading } = useIBPaymentsQuery()
@@ -65,12 +62,6 @@ export function PaymentsTab({ showDialog, onShowDialog }: PaymentsTabProps) {
     if (filterPartnerId === '__all__') return payments
     return payments.filter((p) => p.ib_partner_id === filterPartnerId)
   }, [payments, filterPartnerId])
-
-  /* ---- Dialog state ---- */
-
-  const handleDialogClose = () => {
-    onShowDialog(false)
-  }
 
   /* ---- Render ---- */
 
@@ -163,8 +154,6 @@ export function PaymentsTab({ showDialog, onShowDialog }: PaymentsTabProps) {
         <p className="text-xs text-black/50">{t('ib.payments.accountingNote')}</p>
       </div>
 
-      {/* Payment Create Dialog */}
-      <PaymentDialog open={showDialog} onClose={handleDialogClose} />
     </div>
   )
 }

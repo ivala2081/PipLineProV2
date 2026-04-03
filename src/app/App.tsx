@@ -97,6 +97,9 @@ const IBPage = lazy(() => import('@/pages/ib').then((m) => ({ default: m.IBPage 
 const PartnerFormPage = lazy(() =>
   import('@/pages/ib/PartnerFormPage').then((m) => ({ default: m.PartnerFormPage })),
 )
+const PaymentFormPage = lazy(() =>
+  import('@/pages/ib/PaymentFormPage').then((m) => ({ default: m.PaymentFormPage })),
+)
 
 /* ------------------------------------------------------------------ */
 /*  Route guards                                                       */
@@ -439,6 +442,16 @@ export function App({ sessionPromise }: { sessionPromise?: SessionPromise }) {
                               <PageGuard page="ib">
                                 <PageSuspense>
                                   <PartnerFormPage />
+                                </PageSuspense>
+                              </PageGuard>
+                            }
+                          />
+                          <Route
+                            path="/ib/payments/new"
+                            element={
+                              <PageGuard page="ib">
+                                <PageSuspense>
+                                  <PaymentFormPage />
                                 </PageSuspense>
                               </PageGuard>
                             }

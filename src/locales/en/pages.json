@@ -2020,7 +2020,9 @@
         "profile": "Profile",
         "performance": "Performance",
         "conversionRate": "Conversion Rate",
-        "totalLots": "Total Lots"
+        "totalLots": "Total Lots",
+        "monthly": "Monthly",
+        "weekly": "Weekly"
       },
       "deleteConfirm": "Are you sure you want to delete this partner?",
       "deleteWarning": "This will also delete all associated referrals, commissions and payments.",
@@ -2078,6 +2080,7 @@
       "contractStart": "Contract Start Date",
       "contractEnd": "Contract End Date",
       "contractEndHint": "Leave empty for indefinite",
+      "indefinite": "Indefinite",
       "managedBy": "Manager",
       "selectManager": "Select manager",
       "organization": "Company",
@@ -2222,6 +2225,8 @@
       "emptyDesc": "Click \"Record Payment\" to create the first IB payment.",
       "noResults": "No payments match your filters",
       "accountingNote": "An accounting entry will be automatically created when this payment is saved.",
+      "backToPayments": "Back to Payments",
+      "details": "Details",
       "cancel": "Cancel",
       "save": "Save Payment",
       "saving": "Saving...",

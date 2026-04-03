@@ -211,22 +211,22 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         )
       }
 
-      // 5. IB — org-scoped, search by name or referral_code
+      // 5. IB — org-scoped, search by name
       if (currentOrg?.id) {
         promises.push(
           (async () => {
             const { data } = await supabase
               .from('ib_partners')
-              .select('id, name, referral_code, status')
+              .select('id, name, status')
               .eq('organization_id', currentOrg.id)
-              .or(`name.ilike.${term},referral_code.ilike.${term}`)
+              .ilike('name', term)
               .limit(5)
             if (data) {
               for (const row of data) {
                 items.push({
                   id: `ib-${row.id}`,
                   label: row.name,
-                  description: `${row.referral_code} · ${row.status}`,
+                  description: row.status,
                   href: '/ib',
                   group: 'IB',
                 })

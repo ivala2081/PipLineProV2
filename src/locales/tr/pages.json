@@ -2019,7 +2019,9 @@
         "profile": "Profil",
         "performance": "Performans",
         "conversionRate": "Dönüşüm Oranı",
-        "totalLots": "Toplam Lot"
+        "totalLots": "Toplam Lot",
+        "monthly": "Aylık",
+        "weekly": "Haftalık"
       },
       "deleteConfirm": "Bu ortağı silmek istediğinizden emin misiniz?",
       "deleteWarning": "Bu işlem ilişkili tüm yönlendirmeleri, komisyonları ve ödemeleri de silecektir.",
@@ -2077,6 +2079,7 @@
       "contractStart": "Sözleşme Başlangıç Tarihi",
       "contractEnd": "Sözleşme Bitiş Tarihi",
       "contractEndHint": "Süresiz için boş bırakın",
+      "indefinite": "Süresiz",
       "managedBy": "Yönetici",
       "selectManager": "Yönetici seçin",
       "organization": "Şirket",
@@ -2221,6 +2224,8 @@
       "emptyDesc": "İlk IB ödemesini oluşturmak için \"Ödeme Kaydet\"e tıklayın.",
       "noResults": "Filtrelerinizle eşleşen ödeme bulunamadı",
       "accountingNote": "Bu ödeme kaydedildiğinde otomatik olarak bir muhasebe kaydı oluşturulacaktır.",
+      "backToPayments": "Ödemelere Dön",
+      "details": "Detaylar",
       "cancel": "İptal",
       "save": "Ödemeyi Kaydet",
       "saving": "Kaydediliyor...",

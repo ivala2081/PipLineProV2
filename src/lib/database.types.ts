@@ -1374,12 +1374,10 @@ export type Database = {
           name: string
           contact_email: string | null
           contact_phone: string | null
-          referral_code: string
           agreement_types: string[]
           agreement_details: Json
           status: string
           notes: string | null
-          company_name: string | null
           website: string | null
           telegram: string | null
           whatsapp: string | null
@@ -1404,12 +1402,10 @@ export type Database = {
           name: string
           contact_email?: string | null
           contact_phone?: string | null
-          referral_code: string
           agreement_types: string[]
           agreement_details?: Json
           status?: string
           notes?: string | null
-          company_name?: string | null
           website?: string | null
           telegram?: string | null
           whatsapp?: string | null
@@ -1434,12 +1430,10 @@ export type Database = {
           name?: string
           contact_email?: string | null
           contact_phone?: string | null
-          referral_code?: string
           agreement_types?: string[]
           agreement_details?: Json
           status?: string
           notes?: string | null
-          company_name?: string | null
           website?: string | null
           telegram?: string | null
           whatsapp?: string | null

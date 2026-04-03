@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Plus } from '@phosphor-icons/react'
 import { PageHeader, Button, Tabs, TabsList, TabsTrigger, TabsContent } from '@ds'
@@ -24,10 +24,11 @@ export function IBPage() {
   const { membership } = useOrganization()
   const isAdmin = isGod || membership?.role === 'admin'
 
-  const [activeTab, setActiveTab] = useState<IBTab>('partners')
+  const [searchParams] = useSearchParams()
+  const initialTab = (searchParams.get('tab') as IBTab) || 'partners'
+  const [activeTab, setActiveTab] = useState<IBTab>(initialTab)
   const [showReferralDialog, setShowReferralDialog] = useState(false)
   const [showCalculateDialog, setShowCalculateDialog] = useState(false)
-  const [showPaymentDialog, setShowPaymentDialog] = useState(false)
 
   // Realtime subscriptions
   useRealtimeSubscription('ib_partners', [queryKeys.ib.all])
@@ -62,7 +63,7 @@ export function IBPage() {
         </Button>
       )}
       {activeTab === 'payments' && (
-        <Button variant="filled" size="sm" onClick={() => setShowPaymentDialog(true)}>
+        <Button variant="filled" size="sm" onClick={() => navigate('/ib/payments/new')}>
           <Plus size={14} weight="bold" />
           {t('ib.payments.create')}
         </Button>
@@ -110,11 +111,7 @@ export function IBPage() {
 
         <TabsContent value="payments">
           <SectionErrorBoundary sectionName="IB Payments">
-            <PaymentsTab
-              isAdmin={isAdmin}
-              showDialog={showPaymentDialog}
-              onShowDialog={setShowPaymentDialog}
-            />
+            <PaymentsTab isAdmin={isAdmin} />
           </SectionErrorBoundary>
         </TabsContent>
       </Tabs>
