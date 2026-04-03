@@ -33,6 +33,8 @@ import {
 } from '@ds'
 import { useIBPartnersQuery, useIBPartnerMutations } from '@/hooks/queries/useIBPartnersQuery'
 import { useIBReferralsQuery } from '@/hooks/queries/useIBReferralsQuery'
+import { useHrEmployeesQuery } from '@/hooks/queries/useHrQuery'
+import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { useToast } from '@/hooks/useToast'
 import { getIBTier, getTierVariant } from './utils/ibTiers'
 import type { IBPartner } from '@/lib/database.types'
@@ -74,6 +76,14 @@ export function PartnersTab({ isAdmin }: PartnersTabProps) {
   const { partners, isLoading } = useIBPartnersQuery()
   const { deletePartner } = useIBPartnerMutations()
   const { referrals } = useIBReferralsQuery()
+  const { data: hrEmployees = [] } = useHrEmployeesQuery()
+  const { currentOrg } = useOrganization()
+
+  const employeeMap = useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const e of hrEmployees) map[e.id] = e.full_name
+    return map
+  }, [hrEmployees])
 
   const [search, setSearch] = useState('')
   const [deletingPartner, setDeletingPartner] = useState<IBPartner | null>(null)
@@ -84,7 +94,7 @@ export function PartnersTab({ isAdmin }: PartnersTabProps) {
     if (!search.trim()) return partners
     const q = search.toLowerCase().trim()
     return partners.filter(
-      (p) => p.name.toLowerCase().includes(q) || p.referral_code.toLowerCase().includes(q),
+      (p) => p.name.toLowerCase().includes(q),
     )
   }, [partners, search])
 
@@ -170,10 +180,10 @@ export function PartnersTab({ isAdmin }: PartnersTabProps) {
           <TableHeader>
             <TableRow>
               <TableHead>{t('ib.partners.name')}</TableHead>
-              <TableHead>{t('ib.partners.referralCode')}</TableHead>
               <TableHead>{t('ib.partners.agreementType')}</TableHead>
               <TableHead>{t('ib.partners.status')}</TableHead>
               <TableHead>{t('ib.partners.tier')}</TableHead>
+              <TableHead>{t('ib.partners.managedBy')}</TableHead>
               <TableHead className="text-right">{t('ib.partners.totalReferrals')}</TableHead>
               <TableHead className="text-right">{t('ib.partners.ftds')}</TableHead>
               {isAdmin && <TableHead className="w-12" />}
@@ -194,11 +204,6 @@ export function PartnersTab({ isAdmin }: PartnersTabProps) {
                   <TableCell data-label={t('ib.partners.name')}>
                     <span className="font-medium">{partner.name}</span>
                   </TableCell>
-                  <TableCell data-label={t('ib.partners.referralCode')}>
-                    <code className="text-xs bg-muted/50 px-1.5 py-0.5 rounded">
-                      {partner.referral_code}
-                    </code>
-                  </TableCell>
                   <TableCell data-label={t('ib.partners.agreementType')}>
                     <div className="flex flex-wrap gap-1">
                       {((partner.agreement_types as string[]) ?? []).map((type) => (
@@ -215,6 +220,13 @@ export function PartnersTab({ isAdmin }: PartnersTabProps) {
                   </TableCell>
                   <TableCell data-label={t('ib.partners.tier')}>
                     <Tag variant={tierVariant}>{t(`ib.partners.tiers.${tier}`)}</Tag>
+                  </TableCell>
+                  <TableCell data-label={t('ib.partners.managedBy')}>
+                    <span className="text-sm">
+                      {partner.managed_by_employee_id
+                        ? employeeMap[partner.managed_by_employee_id] ?? '—'
+                        : currentOrg?.name ?? '—'}
+                    </span>
                   </TableCell>
                   <TableCell
                     data-label={t('ib.partners.totalReferrals')}

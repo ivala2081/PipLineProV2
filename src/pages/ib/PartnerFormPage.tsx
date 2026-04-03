@@ -32,6 +32,8 @@ import {
   Skeleton,
 } from '@ds'
 import { useIBPartnersQuery, useIBPartnerMutations } from '@/hooks/queries/useIBPartnersQuery'
+import { useHrEmployeesQuery } from '@/hooks/queries/useHrQuery'
+import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { useToast } from '@/hooks/useToast'
 import {
   ibPartnerSchema,
@@ -250,6 +252,8 @@ export function PartnerFormPage() {
 
   const { partners, isLoading: partnersLoading } = useIBPartnersQuery()
   const { createPartner, updatePartner } = useIBPartnerMutations()
+  const { data: hrEmployees = [] } = useHrEmployeesQuery()
+  const { currentOrg } = useOrganization()
 
   const partner = isEdit ? (partners.find((p) => p.id === id) ?? null) : null
 
@@ -259,14 +263,12 @@ export function PartnerFormPage() {
     resolver: zodResolver(ibPartnerSchema),
     defaultValues: {
       name: '',
-      referral_code: '',
       contact_email: '',
       contact_phone: '',
       agreement_types: [],
       agreement_details: {},
       status: 'active',
       notes: '',
-      company_name: '',
       website: '',
       telegram: '',
       whatsapp: '',
@@ -280,12 +282,14 @@ export function PartnerFormPage() {
       contract_start_date: '',
       contract_end_date: '',
       logo_url: '',
+      managed_by_employee_id: '',
     },
   })
 
   const watchedPaymentMethod = useWatch({ control: form.control, name: 'preferred_payment_method' })
   const watchedCryptoNetwork = useWatch({ control: form.control, name: 'crypto_network' })
   const watchedLogoUrl = useWatch({ control: form.control, name: 'logo_url' })
+  const watchedManagedBy = useWatch({ control: form.control, name: 'managed_by_employee_id' })
 
   /* ---- Agreement detail state ---- */
 
@@ -339,14 +343,12 @@ export function PartnerFormPage() {
     const types = (partner.agreement_types as string[]) ?? []
     form.reset({
       name: partner.name,
-      referral_code: partner.referral_code,
       contact_email: partner.contact_email ?? '',
       contact_phone: partner.contact_phone ?? '',
       agreement_types: types as AgreementType[],
       agreement_details: (details ?? {}) as Record<string, unknown>,
       status: partner.status as 'active' | 'paused' | 'terminated',
       notes: partner.notes ?? '',
-      company_name: partner.company_name ?? '',
       website: partner.website ?? '',
       telegram: partner.telegram ?? '',
       whatsapp: partner.whatsapp ?? '',
@@ -360,6 +362,7 @@ export function PartnerFormPage() {
       contract_start_date: partner.contract_start_date ?? '',
       contract_end_date: partner.contract_end_date ?? '',
       logo_url: partner.logo_url ?? '',
+      managed_by_employee_id: partner.managed_by_employee_id ?? '',
     })
 
     setSelectedTypes(new Set(types as AgreementType[]))
@@ -513,29 +516,18 @@ export function PartnerFormPage() {
                   />
                 </div>
 
-                {/* Name + Company (2-col) */}
-                <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
-                  <div>
-                    <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
-                      {t('ib.partners.name')} *
-                    </Label>
-                    <Input
-                      {...form.register('name')}
-                      placeholder={t('ib.partners.namePlaceholder')}
-                    />
-                    {form.formState.errors.name && (
-                      <p className={compactError}>{form.formState.errors.name.message}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
-                      {t('ib.partnerForm.companyName')}
-                    </Label>
-                    <Input
-                      {...form.register('company_name')}
-                      placeholder={t('ib.partnerForm.companyName')}
-                    />
-                  </div>
+                {/* Name */}
+                <div>
+                  <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
+                    {t('ib.partners.name')} *
+                  </Label>
+                  <Input
+                    {...form.register('name')}
+                    placeholder={t('ib.partners.namePlaceholder')}
+                  />
+                  {form.formState.errors.name && (
+                    <p className={compactError}>{form.formState.errors.name.message}</p>
+                  )}
                 </div>
 
                 {/* Email + Phone (2-col) */}
@@ -564,18 +556,33 @@ export function PartnerFormPage() {
                   </div>
                 </div>
 
-                {/* Referral Code */}
+                {/* Manager */}
                 <div>
                   <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
-                    {t('ib.partners.referralCode')} *
+                    {t('ib.partnerForm.managedBy')}
                   </Label>
-                  <Input
-                    {...form.register('referral_code')}
-                    placeholder={t('ib.partners.referralCodePlaceholder')}
-                  />
-                  {form.formState.errors.referral_code && (
-                    <p className={compactError}>{form.formState.errors.referral_code.message}</p>
-                  )}
+                  <Select
+                    value={watchedManagedBy || '__org__'}
+                    onValueChange={(v) =>
+                      form.setValue('managed_by_employee_id', v === '__org__' ? '' : v)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('ib.partnerForm.selectManager')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__org__">
+                        {currentOrg?.name ?? t('ib.partnerForm.organization')}
+                      </SelectItem>
+                      {hrEmployees
+                        .filter((e) => e.is_active)
+                        .map((e) => (
+                          <SelectItem key={e.id} value={e.id}>
+                            {e.full_name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Status (edit only — pills) */}

@@ -1393,6 +1393,7 @@ export type Database = {
           contract_start_date: string | null
           contract_end_date: string | null
           logo_url: string | null
+          managed_by_employee_id: string | null
           created_by: string | null
           created_at: string
           updated_at: string
@@ -1422,6 +1423,7 @@ export type Database = {
           contract_start_date?: string | null
           contract_end_date?: string | null
           logo_url?: string | null
+          managed_by_employee_id?: string | null
           created_by?: string | null
           created_at?: string
           updated_at?: string
@@ -1451,6 +1453,7 @@ export type Database = {
           contract_start_date?: string | null
           contract_end_date?: string | null
           logo_url?: string | null
+          managed_by_employee_id?: string | null
           created_by?: string | null
           created_at?: string
           updated_at?: string
@@ -1461,6 +1464,13 @@ export type Database = {
             columns: ['organization_id']
             isOneToOne: false
             referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ib_partners_managed_by_employee_id_fkey'
+            columns: ['managed_by_employee_id']
+            isOneToOne: false
+            referencedRelation: 'hr_employees'
             referencedColumns: ['id']
           },
           {

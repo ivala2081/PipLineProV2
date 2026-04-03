@@ -238,9 +238,6 @@ export function IBPartnersTab() {
               >
                 <TableCell data-label={t('accounting.ibPartners.name', 'Name')}>
                   <span className="font-medium text-black/80">{partner.name}</span>
-                  {partner.company_name && (
-                    <span className="ml-2 text-xs text-black/40">{partner.company_name}</span>
-                  )}
                 </TableCell>
                 <TableCell data-label={t('accounting.ibPartners.agreementType', 'Agreement')}>
                   <div className="flex flex-wrap gap-1">

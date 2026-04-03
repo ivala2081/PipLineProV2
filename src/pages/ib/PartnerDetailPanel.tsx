@@ -34,6 +34,8 @@ import { useIBPartnersQuery } from '@/hooks/queries/useIBPartnersQuery'
 import { useIBReferralsQuery } from '@/hooks/queries/useIBReferralsQuery'
 import { useIBCommissionsQuery } from '@/hooks/queries/useIBCommissionsQuery'
 import { useIBPaymentsQuery } from '@/hooks/queries/useIBPaymentsQuery'
+import { useHrEmployeesQuery } from '@/hooks/queries/useHrQuery'
+import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { getIBTier, getTierVariant } from './utils/ibTiers'
 
 interface PartnerDetailPanelProps {
@@ -49,6 +51,8 @@ export function PartnerDetailPanel({ partnerId, isAdmin, onBack }: PartnerDetail
   const { referrals } = useIBReferralsQuery()
   const { commissions } = useIBCommissionsQuery()
   const { payments } = useIBPaymentsQuery()
+  const { data: hrEmployees = [] } = useHrEmployeesQuery()
+  const { currentOrg } = useOrganization()
 
   const partner = partners.find((p) => p.id === partnerId)
 
@@ -144,7 +148,7 @@ export function PartnerDetailPanel({ partnerId, isAdmin, onBack }: PartnerDetail
             <span>{partner.name}</span>
           </div>
         }
-        subtitle={`${t('ib.partners.referralCode')}: ${partner.referral_code}${partner.company_name ? ` · ${partner.company_name}` : ''}`}
+        subtitle={partner.contact_email || ''}
         actions={
           <div className="flex items-center gap-2">
             {isAdmin && (
@@ -182,6 +186,14 @@ export function PartnerDetailPanel({ partnerId, isAdmin, onBack }: PartnerDetail
           <div>
             <p className="text-xs text-black/50">{t('ib.partners.contactPhone')}</p>
             <p className="text-sm font-medium">{partner.contact_phone || '—'}</p>
+          </div>
+          <div>
+            <p className="text-xs text-black/50">{t('ib.partners.managedBy')}</p>
+            <p className="text-sm font-medium">
+              {partner.managed_by_employee_id
+                ? hrEmployees.find((e) => e.id === partner.managed_by_employee_id)?.full_name ?? '—'
+                : currentOrg?.name ?? '—'}
+            </p>
           </div>
           <div>
             <p className="text-xs text-black/50">{t('ib.partners.agreementType')}</p>
