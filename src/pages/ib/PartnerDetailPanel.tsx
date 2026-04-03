@@ -185,18 +185,35 @@ export function PartnerDetailPanel({ partnerId, isAdmin, onBack }: PartnerDetail
           </div>
           <div>
             <p className="text-xs text-black/50">{t('ib.partners.agreementType')}</p>
-            <p className="text-sm font-medium">
-              {t(`ib.partners.agreements.${partner.agreement_type}`)}
-            </p>
+            <div className="mt-1 flex flex-wrap gap-1">
+              {((partner.agreement_types as string[]) ?? []).map((type) => (
+                <Tag key={type} variant="default">
+                  {t(`ib.partners.agreements.${type}`)}
+                </Tag>
+              ))}
+            </div>
           </div>
           <div>
             <p className="text-xs text-black/50">{t('ib.partners.agreementDetails')}</p>
-            <p className="text-sm font-medium text-black/70">
-              {Object.entries(details)
-                .filter(([, v]) => v != null && v !== '')
-                .map(([k, v]) => `${k}: ${v}`)
-                .join(', ') || '—'}
-            </p>
+            <div className="mt-1 space-y-1">
+              {((partner.agreement_types as string[]) ?? []).map((type) => {
+                const typeDetails = (details as Record<string, Record<string, unknown>>)?.[type]
+                if (!typeDetails) return null
+                const summary = Object.entries(typeDetails)
+                  .filter(([, v]) => v != null && v !== '')
+                  .map(([k, v]) => `${k}: ${v}`)
+                  .join(', ')
+                return summary ? (
+                  <p key={type} className="text-sm font-medium text-black/70">
+                    <span className="text-xs text-black/40">{t(`ib.partners.agreements.${type}`)}: </span>
+                    {summary}
+                  </p>
+                ) : null
+              })}
+              {!((partner.agreement_types as string[]) ?? []).some(
+                (type) => (details as Record<string, Record<string, unknown>>)?.[type]
+              ) && <p className="text-sm text-black/40">—</p>}
+            </div>
           </div>
         </div>
 

@@ -113,6 +113,7 @@ export function useTransferMutations(): TransferMutations {
           crm_id: data.crm_id || null,
           meta_id: data.meta_id || null,
           employee_id: data.employee_id || null,
+          ib_partner_id: data.ib_partner_id || null,
           is_first_deposit: data.is_first_deposit ?? false,
           notes: data.notes || null,
           created_by: user.id,
@@ -215,6 +216,7 @@ export function useTransferMutations(): TransferMutations {
           crm_id: data.crm_id || null,
           meta_id: data.meta_id || null,
           employee_id: data.employee_id || null,
+          ib_partner_id: data.ib_partner_id || null,
           is_first_deposit: data.is_first_deposit ?? false,
           notes: data.notes || null,
           exchange_rate: data.exchange_rate,
@@ -359,7 +361,7 @@ export function useTransferMutations(): TransferMutations {
 const DEFAULT_PAGE_SIZE = 25
 
 const SELECT_QUERY =
-  '*, category:transfer_categories!category_id(name, is_deposit), payment_method:payment_methods!payment_method_id(name), psp:psps!psp_id(name, commission_rate), type:transfer_types!type_id(name), employee:hr_employees!employee_id(full_name, role)'
+  '*, category:transfer_categories!category_id(name, is_deposit), payment_method:payment_methods!payment_method_id(name), psp:psps!psp_id(name, commission_rate), type:transfer_types!type_id(name), employee:hr_employees!employee_id(full_name, role), ib_partner:ib_partners!ib_partner_id(name)'
 
 export interface TransferFilters {
   search: string | null
@@ -369,6 +371,7 @@ export interface TransferFilters {
   typeId: string | null
   pspId: string | null
   employeeId: string | null
+  ibPartnerId: string | null
   dateFrom: string | null
   dateTo: string | null
   amountMin: string | null
@@ -383,6 +386,7 @@ const EMPTY_FILTERS: TransferFilters = {
   typeId: null,
   pspId: null,
   employeeId: null,
+  ibPartnerId: null,
   dateFrom: null,
   dateTo: null,
   amountMin: null,
@@ -441,6 +445,7 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
       typeId: get('typeId'),
       pspId: get('pspId'),
       employeeId: get('employeeId'),
+      ibPartnerId: get('ibPartnerId'),
       dateFrom: get('dateFrom'),
       dateTo: get('dateTo'),
       amountMin: get('amountMin'),
@@ -519,6 +524,7 @@ export function useTransfersQuery(): UseTransfersQueryReturn {
       if (filters.typeId) query = query.eq('type_id', filters.typeId)
       if (filters.pspId) query = query.eq('psp_id', filters.pspId)
       if (filters.employeeId) query = query.eq('employee_id', filters.employeeId)
+      if (filters.ibPartnerId) query = query.eq('ib_partner_id', filters.ibPartnerId)
       if (filters.dateFrom) {
         query = query.gte('transfer_date', localDayStart(filters.dateFrom))
       }

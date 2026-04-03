@@ -69,15 +69,10 @@ interface RevenueShareDetails {
   source: string
 }
 
-interface HybridDetails {
-  json: string
-}
-
 const DEFAULT_SALARY: SalaryDetails = { amount: '', currency: 'USD', period: 'monthly' }
 const DEFAULT_CPA: CpaDetails = { cpa_amount: '', currency: 'USD', min_ftd_amount: '' }
 const DEFAULT_LOT_REBATE: LotRebateDetails = { rebate_per_lot: '', currency: 'USD' }
 const DEFAULT_REVENUE_SHARE: RevenueShareDetails = { revshare_pct: '', source: 'spread' }
-const DEFAULT_HYBRID: HybridDetails = { json: '{}' }
 
 /* ------------------------------------------------------------------ */
 /*  Social platforms config                                            */
@@ -97,91 +92,94 @@ type SocialKey = (typeof SOCIAL_PLATFORMS)[number]['key']
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-function parseDetailsFromPartner(agreementType: string, details: Record<string, unknown> | null) {
-  const d = (details ?? {}) as Record<string, unknown>
-  switch (agreementType) {
-    case 'salary':
-      return {
-        salary: {
-          amount: (d.amount as number) ?? '',
-          currency: (d.currency as string) ?? 'USD',
-          period: (d.period as string) ?? 'monthly',
-        } satisfies SalaryDetails,
-      }
-    case 'cpa':
-      return {
-        cpa: {
-          cpa_amount: (d.cpa_amount as number) ?? '',
-          currency: (d.currency as string) ?? 'USD',
-          min_ftd_amount: (d.min_ftd_amount as number) ?? '',
-        } satisfies CpaDetails,
-      }
-    case 'lot_rebate':
-      return {
-        lotRebate: {
-          rebate_per_lot: (d.rebate_per_lot as number) ?? '',
-          currency: (d.currency as string) ?? 'USD',
-        } satisfies LotRebateDetails,
-      }
-    case 'revenue_share':
-      return {
-        revenueShare: {
-          revshare_pct: (d.revshare_pct as number) ?? '',
-          source: (d.source as string) ?? 'spread',
-        } satisfies RevenueShareDetails,
-      }
-    case 'hybrid':
-      return {
-        hybrid: {
-          json: JSON.stringify(d, null, 2),
-        } satisfies HybridDetails,
-      }
-    default:
-      return {}
+function parseDetailsFromPartner(
+  agreementTypes: string[],
+  details: Record<string, unknown> | null,
+) {
+  const d = (details ?? {}) as Record<string, Record<string, unknown>>
+  const result: {
+    salary: SalaryDetails
+    cpa: CpaDetails
+    lotRebate: LotRebateDetails
+    revenueShare: RevenueShareDetails
+  } = {
+    salary: { ...DEFAULT_SALARY },
+    cpa: { ...DEFAULT_CPA },
+    lotRebate: { ...DEFAULT_LOT_REBATE },
+    revenueShare: { ...DEFAULT_REVENUE_SHARE },
   }
+
+  if (agreementTypes.includes('salary') && d.salary) {
+    const s = d.salary
+    result.salary = {
+      amount: (s.amount as number) ?? '',
+      currency: (s.currency as string) ?? 'USD',
+      period: (s.period as string) ?? 'monthly',
+    }
+  }
+  if (agreementTypes.includes('cpa') && d.cpa) {
+    const c = d.cpa
+    result.cpa = {
+      cpa_amount: (c.cpa_amount as number) ?? '',
+      currency: (c.currency as string) ?? 'USD',
+      min_ftd_amount: (c.min_ftd_amount as number) ?? '',
+    }
+  }
+  if (agreementTypes.includes('lot_rebate') && d.lot_rebate) {
+    const l = d.lot_rebate
+    result.lotRebate = {
+      rebate_per_lot: (l.rebate_per_lot as number) ?? '',
+      currency: (l.currency as string) ?? 'USD',
+    }
+  }
+  if (agreementTypes.includes('revenue_share') && d.revenue_share) {
+    const r = d.revenue_share
+    result.revenueShare = {
+      revshare_pct: (r.revshare_pct as number) ?? '',
+      source: (r.source as string) ?? 'spread',
+    }
+  }
+
+  return result
 }
 
-function buildAgreementDetails(
-  agreementType: AgreementType,
+function buildAllAgreementDetails(
+  selectedTypes: Set<AgreementType>,
   salary: SalaryDetails,
   cpa: CpaDetails,
   lotRebate: LotRebateDetails,
   revenueShare: RevenueShareDetails,
-  hybrid: HybridDetails,
-): Record<string, unknown> {
-  switch (agreementType) {
-    case 'salary':
-      return {
-        amount: salary.amount === '' ? 0 : Number(salary.amount),
-        currency: salary.currency,
-        period: salary.period,
-      }
-    case 'cpa':
-      return {
-        cpa_amount: cpa.cpa_amount === '' ? 0 : Number(cpa.cpa_amount),
-        currency: cpa.currency,
-        ...(cpa.min_ftd_amount !== '' ? { min_ftd_amount: Number(cpa.min_ftd_amount) } : {}),
-      }
-    case 'lot_rebate':
-      return {
-        rebate_per_lot: lotRebate.rebate_per_lot === '' ? 0 : Number(lotRebate.rebate_per_lot),
-        currency: lotRebate.currency,
-      }
-    case 'revenue_share':
-      return {
-        revshare_pct: revenueShare.revshare_pct === '' ? 0 : Number(revenueShare.revshare_pct),
-        source: revenueShare.source,
-      }
-    case 'hybrid': {
-      try {
-        return JSON.parse(hybrid.json) as Record<string, unknown>
-      } catch {
-        return {}
-      }
+): Record<string, Record<string, unknown>> {
+  const result: Record<string, Record<string, unknown>> = {}
+
+  if (selectedTypes.has('salary')) {
+    result.salary = {
+      amount: salary.amount === '' ? 0 : Number(salary.amount),
+      currency: salary.currency,
+      period: salary.period,
     }
-    default:
-      return {}
   }
+  if (selectedTypes.has('cpa')) {
+    result.cpa = {
+      cpa_amount: cpa.cpa_amount === '' ? 0 : Number(cpa.cpa_amount),
+      currency: cpa.currency,
+      ...(cpa.min_ftd_amount !== '' ? { min_ftd_amount: Number(cpa.min_ftd_amount) } : {}),
+    }
+  }
+  if (selectedTypes.has('lot_rebate')) {
+    result.lot_rebate = {
+      rebate_per_lot: lotRebate.rebate_per_lot === '' ? 0 : Number(lotRebate.rebate_per_lot),
+      currency: lotRebate.currency,
+    }
+  }
+  if (selectedTypes.has('revenue_share')) {
+    result.revenue_share = {
+      revshare_pct: revenueShare.revshare_pct === '' ? 0 : Number(revenueShare.revshare_pct),
+      source: revenueShare.source,
+    }
+  }
+
+  return result
 }
 
 /* ------------------------------------------------------------------ */
@@ -264,7 +262,7 @@ export function PartnerFormPage() {
       referral_code: '',
       contact_email: '',
       contact_phone: '',
-      agreement_type: 'cpa',
+      agreement_types: [],
       agreement_details: {},
       status: 'active',
       notes: '',
@@ -285,21 +283,20 @@ export function PartnerFormPage() {
     },
   })
 
-  const watchedAgreementType = useWatch({ control: form.control, name: 'agreement_type' })
   const watchedPaymentMethod = useWatch({ control: form.control, name: 'preferred_payment_method' })
   const watchedCryptoNetwork = useWatch({ control: form.control, name: 'crypto_network' })
   const watchedLogoUrl = useWatch({ control: form.control, name: 'logo_url' })
 
   /* ---- Agreement detail state ---- */
 
+  const [selectedTypes, setSelectedTypes] = useState<Set<AgreementType>>(() => new Set())
   const [salary, setSalary] = useState<SalaryDetails>({ ...DEFAULT_SALARY })
   const [cpa, setCpa] = useState<CpaDetails>({ ...DEFAULT_CPA })
   const [lotRebate, setLotRebate] = useState<LotRebateDetails>({ ...DEFAULT_LOT_REBATE })
   const [revenueShare, setRevenueShare] = useState<RevenueShareDetails>({
     ...DEFAULT_REVENUE_SHARE,
   })
-  const [hybrid, setHybrid] = useState<HybridDetails>({ ...DEFAULT_HYBRID })
-  const [detailErrors, setDetailErrors] = useState<Record<string, string>>({})
+  const [detailErrors, setDetailErrors] = useState<Record<string, Record<string, string>>>({})
 
   /* ---- Social media toggle state ---- */
 
@@ -318,6 +315,20 @@ export function PartnerFormPage() {
     })
   }
 
+  const toggleAgreementType = (type: AgreementType) => {
+    setSelectedTypes((prev) => {
+      const next = new Set(prev)
+      if (next.has(type)) {
+        next.delete(type)
+      } else {
+        next.add(type)
+      }
+      form.setValue('agreement_types', [...next])
+      return next
+    })
+    setDetailErrors({})
+  }
+
   /* ---- Populate form when partner data loads (adjust state during render) ---- */
 
   const [populatedPartnerId, setPopulatedPartnerId] = useState<string | null>(null)
@@ -325,12 +336,13 @@ export function PartnerFormPage() {
     setPopulatedPartnerId(partner.id)
 
     const details = partner.agreement_details as Record<string, unknown> | null
+    const types = (partner.agreement_types as string[]) ?? []
     form.reset({
       name: partner.name,
       referral_code: partner.referral_code,
       contact_email: partner.contact_email ?? '',
       contact_phone: partner.contact_phone ?? '',
-      agreement_type: partner.agreement_type as AgreementType,
+      agreement_types: types as AgreementType[],
       agreement_details: (details ?? {}) as Record<string, unknown>,
       status: partner.status as 'active' | 'paused' | 'terminated',
       notes: partner.notes ?? '',
@@ -350,12 +362,12 @@ export function PartnerFormPage() {
       logo_url: partner.logo_url ?? '',
     })
 
-    const parsed = parseDetailsFromPartner(partner.agreement_type, details)
-    setSalary('salary' in parsed ? parsed.salary : { ...DEFAULT_SALARY })
-    setCpa('cpa' in parsed ? parsed.cpa : { ...DEFAULT_CPA })
-    setLotRebate('lotRebate' in parsed ? parsed.lotRebate : { ...DEFAULT_LOT_REBATE })
-    setRevenueShare('revenueShare' in parsed ? parsed.revenueShare : { ...DEFAULT_REVENUE_SHARE })
-    setHybrid('hybrid' in parsed ? parsed.hybrid : { ...DEFAULT_HYBRID })
+    setSelectedTypes(new Set(types as AgreementType[]))
+    const parsed = parseDetailsFromPartner(types, details)
+    setSalary(parsed.salary)
+    setCpa(parsed.cpa)
+    setLotRebate(parsed.lotRebate)
+    setRevenueShare(parsed.revenueShare)
 
     // Auto-activate social pills for non-empty fields
     const socials = new Set<SocialKey>()
@@ -370,16 +382,15 @@ export function PartnerFormPage() {
   /* ---- Submit ---- */
 
   const handleSubmit = form.handleSubmit(async (values) => {
-    const agreementDetails = buildAgreementDetails(
-      values.agreement_type,
+    const agreementDetails = buildAllAgreementDetails(
+      selectedTypes,
       salary,
       cpa,
       lotRebate,
       revenueShare,
-      hybrid,
     )
 
-    const validation = validateAgreementDetails(values.agreement_type, agreementDetails)
+    const validation = validateAgreementDetails([...selectedTypes], agreementDetails)
     if (!validation.success) {
       setDetailErrors(validation.errors)
       return
@@ -388,6 +399,7 @@ export function PartnerFormPage() {
 
     const payload: IBPartnerFormValues = {
       ...values,
+      agreement_types: [...selectedTypes],
       agreement_details: validation.data,
     }
 
@@ -636,43 +648,40 @@ export function PartnerFormPage() {
                   <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
                     {t('ib.partners.agreementType')}
                   </Label>
-                  <Select
-                    value={watchedAgreementType}
-                    onValueChange={(v) => {
-                      form.setValue('agreement_type', v as AgreementType)
-                      setDetailErrors({})
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {AGREEMENT_TYPES.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {t(`ib.partners.agreements.${type}`)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex flex-wrap gap-2">
+                    {AGREEMENT_TYPES.map((type) => (
+                      <TogglePill
+                        key={type}
+                        active={selectedTypes.has(type)}
+                        onClick={() => toggleAgreementType(type)}
+                        icon={Handshake}
+                        label={t(`ib.partners.agreements.${type}`)}
+                      />
+                    ))}
+                  </div>
+                  {form.formState.errors.agreement_types && (
+                    <p className={compactError}>{form.formState.errors.agreement_types.message}</p>
+                  )}
                 </div>
 
-                {/* Dynamic Agreement Details */}
-                <AgreementDetailsSection
-                  agreementType={watchedAgreementType}
-                  salary={salary}
-                  onSalaryChange={setSalary}
-                  cpa={cpa}
-                  onCpaChange={setCpa}
-                  lotRebate={lotRebate}
-                  onLotRebateChange={setLotRebate}
-                  revenueShare={revenueShare}
-                  onRevenueShareChange={setRevenueShare}
-                  hybrid={hybrid}
-                  onHybridChange={setHybrid}
-                  errors={detailErrors}
-                  t={t}
-                  currencies={CURRENCIES}
-                />
+                {/* Dynamic Agreement Details — one section per selected type */}
+                {AGREEMENT_TYPES.filter((type) => selectedTypes.has(type)).map((type) => (
+                  <AgreementDetailForm
+                    key={type}
+                    type={type}
+                    salary={salary}
+                    onSalaryChange={setSalary}
+                    cpa={cpa}
+                    onCpaChange={setCpa}
+                    lotRebate={lotRebate}
+                    onLotRebateChange={setLotRebate}
+                    revenueShare={revenueShare}
+                    onRevenueShareChange={setRevenueShare}
+                    errors={detailErrors[type]}
+                    t={t}
+                    currencies={CURRENCIES}
+                  />
+                ))}
 
                 {/* Contract Dates */}
                 <div className="grid grid-cols-1 gap-md sm:grid-cols-2">
@@ -824,11 +833,11 @@ export function PartnerFormPage() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Agreement Details Section                                          */
+/*  Agreement Detail Form (per type)                                   */
 /* ------------------------------------------------------------------ */
 
-interface AgreementDetailsSectionProps {
-  agreementType: AgreementType
+interface AgreementDetailFormProps {
+  type: AgreementType
   salary: SalaryDetails
   onSalaryChange: (v: SalaryDetails) => void
   cpa: CpaDetails
@@ -837,15 +846,13 @@ interface AgreementDetailsSectionProps {
   onLotRebateChange: (v: LotRebateDetails) => void
   revenueShare: RevenueShareDetails
   onRevenueShareChange: (v: RevenueShareDetails) => void
-  hybrid: HybridDetails
-  onHybridChange: (v: HybridDetails) => void
   errors?: Record<string, string>
   t: (key: string) => string
   currencies: string[]
 }
 
-function AgreementDetailsSection({
-  agreementType,
+function AgreementDetailForm({
+  type,
   salary,
   onSalaryChange,
   cpa,
@@ -854,13 +861,11 @@ function AgreementDetailsSection({
   onLotRebateChange,
   revenueShare,
   onRevenueShareChange,
-  hybrid,
-  onHybridChange,
   errors,
   t,
   currencies,
-}: AgreementDetailsSectionProps) {
-  switch (agreementType) {
+}: AgreementDetailFormProps) {
+  switch (type) {
     case 'salary':
       return (
         <fieldset className="space-y-sm rounded-lg border border-black/[0.07] bg-bg2/50 p-4">
@@ -1085,27 +1090,6 @@ function AgreementDetailsSection({
                 </SelectContent>
               </Select>
             </div>
-          </div>
-        </fieldset>
-      )
-
-    case 'hybrid':
-      return (
-        <fieldset className="space-y-sm rounded-lg border border-black/[0.07] bg-bg2/50 p-4">
-          <legend className="text-xs font-semibold text-black/70 px-1.5">
-            {t('ib.partners.hybridTitle')}
-          </legend>
-          <div className="space-y-1">
-            <Label htmlFor="hybrid-json">{t('ib.partners.hybridJson')}</Label>
-            <textarea
-              id="hybrid-json"
-              className="flex min-h-[100px] w-full rounded-md border border-black/[0.12] bg-bg2 px-3 py-2 text-sm placeholder:text-black/30 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/10"
-              value={hybrid.json}
-              onChange={(e) => onHybridChange({ json: e.target.value })}
-              placeholder='{ "components": [{ "type": "salary", "amount": 500 }] }'
-            />
-            {errors?.components && <p className="text-xs text-error">{errors.components}</p>}
-            {errors?._root && <p className="text-xs text-error">{errors._root}</p>}
           </div>
         </fieldset>
       )

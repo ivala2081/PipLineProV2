@@ -29,6 +29,7 @@ export interface TransferRow {
   amount_usd: number
   is_first_deposit: boolean
   employee_id: string | null
+  ib_partner_id: string | null
   notes: string | null
   created_by: string | null
   updated_by: string | null
@@ -40,6 +41,7 @@ export interface TransferRow {
   psp: { name: string; commission_rate: number } | null
   type: { name: string } | null
   employee: { full_name: string; role: string } | null
+  ib_partner: { name: string } | null
 }
 
 export interface TransferFormData {
@@ -57,6 +59,7 @@ export interface TransferFormData {
   crm_id?: string
   meta_id?: string
   employee_id?: string
+  ib_partner_id: string
   is_first_deposit?: boolean
   notes?: string
 }

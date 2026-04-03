@@ -33,9 +33,16 @@ interface CommissionCalculateDialogProps {
   onClose: () => void
 }
 
-interface CalculationResult {
+interface TypeResult {
+  type: string
   calculated_amount: number
   breakdown: Record<string, unknown>
+  currency: string
+}
+
+interface CalculationResult {
+  total_amount: number
+  types: TypeResult[]
   currency: string
 }
 
@@ -91,7 +98,6 @@ export function CommissionCalculateDialog({ open, onClose }: CommissionCalculate
         ib_partner_id: values.ib_partner_id,
         period_start: values.period_start,
         period_end: values.period_end,
-        agreement_type: selectedPartner.agreement_type,
       })
       setResult(calcResult as CalculationResult)
       toast({ title: t('ib.commissions.calculateSuccess'), variant: 'success' })
@@ -158,26 +164,42 @@ export function CommissionCalculateDialog({ open, onClose }: CommissionCalculate
                   {t('ib.commissions.calculatedAmount')}
                 </span>
                 <span className="text-lg font-semibold tabular-nums">
-                  {fmtNumber.format(result.calculated_amount)}{' '}
+                  {fmtNumber.format(result.total_amount)}{' '}
                   <span className="text-sm font-normal text-black/50">{result.currency}</span>
                 </span>
               </div>
 
-              {result.breakdown && Object.keys(result.breakdown).length > 0 && (
-                <div className="space-y-1">
-                  <span className="text-xs font-medium text-black/40">
-                    {t('ib.commissions.breakdown')}
-                  </span>
-                  <div className="rounded-md bg-black/[0.03] p-3">
-                    {Object.entries(result.breakdown).map(([key, value]) => (
-                      <div key={key} className="flex items-center justify-between py-1 text-sm">
-                        <span className="text-black/60">{key}</span>
-                        <span className="font-mono text-xs tabular-nums text-black/80">
-                          {typeof value === 'number' ? fmtNumber.format(value) : String(value)}
+              {result.types.length > 0 && (
+                <div className="space-y-2">
+                  {result.types.map((typeResult) => (
+                    <div key={typeResult.type} className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-black/50">
+                          {t(`ib.partners.agreements.${typeResult.type}`)}
+                        </span>
+                        <span className="font-mono text-xs tabular-nums text-black/70">
+                          {fmtNumber.format(typeResult.calculated_amount)} {typeResult.currency}
                         </span>
                       </div>
-                    ))}
-                  </div>
+                      {typeResult.breakdown && Object.keys(typeResult.breakdown).length > 0 && (
+                        <div className="rounded-md bg-black/[0.03] p-3">
+                          {Object.entries(typeResult.breakdown).map(([key, value]) => (
+                            <div
+                              key={key}
+                              className="flex items-center justify-between py-1 text-sm"
+                            >
+                              <span className="text-black/60">{key}</span>
+                              <span className="font-mono text-xs tabular-nums text-black/80">
+                                {typeof value === 'number'
+                                  ? fmtNumber.format(value)
+                                  : String(value)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

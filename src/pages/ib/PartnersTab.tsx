@@ -200,7 +200,13 @@ export function PartnersTab({ isAdmin }: PartnersTabProps) {
                     </code>
                   </TableCell>
                   <TableCell data-label={t('ib.partners.agreementType')}>
-                    {t(`ib.partners.agreements.${partner.agreement_type}`)}
+                    <div className="flex flex-wrap gap-1">
+                      {((partner.agreement_types as string[]) ?? []).map((type) => (
+                        <Tag key={type} variant="default">
+                          {t(`ib.partners.agreements.${type}`)}
+                        </Tag>
+                      ))}
+                    </div>
                   </TableCell>
                   <TableCell data-label={t('ib.partners.status')}>
                     <Tag variant={getStatusVariant(partner.status)}>

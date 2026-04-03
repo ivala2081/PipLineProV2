@@ -68,7 +68,13 @@ function PaymentHistorySheet({ partner, onClose }: PaymentSheetProps) {
                 <span className="text-black/40">
                   {t('accounting.ibPartners.agreementType', 'Agreement')}
                 </span>
-                <p className="font-medium">{partner.agreement_type}</p>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {((partner.agreement_types as string[]) ?? []).map((type) => (
+                    <Tag key={type} variant="default">
+                      {t(`ib.partners.agreements.${type}`)}
+                    </Tag>
+                  ))}
+                </div>
               </div>
               <div>
                 <span className="text-black/40">{t('accounting.ibPartners.status', 'Status')}</span>
@@ -237,7 +243,13 @@ export function IBPartnersTab() {
                   )}
                 </TableCell>
                 <TableCell data-label={t('accounting.ibPartners.agreementType', 'Agreement')}>
-                  <Tag variant="default">{partner.agreement_type}</Tag>
+                  <div className="flex flex-wrap gap-1">
+                    {((partner.agreement_types as string[]) ?? []).map((type) => (
+                      <Tag key={type} variant="default">
+                        {t(`ib.partners.agreements.${type}`)}
+                      </Tag>
+                    ))}
+                  </div>
                 </TableCell>
                 <TableCell data-label={t('accounting.ibPartners.status', 'Status')}>
                   <Tag variant={partner.status === 'active' ? 'default' : 'red'}>

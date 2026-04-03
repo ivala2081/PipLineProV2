@@ -53,16 +53,14 @@ export function useIBCommissionMutations() {
       ib_partner_id,
       period_start,
       period_end,
-      agreement_type,
     }: {
       ib_partner_id: string
       period_start: string
       period_end: string
-      agreement_type: string
     }) => {
       if (!currentOrg) throw new Error('No organization selected')
 
-      // Call RPC to calculate
+      // Call RPC to calculate all types
       const { data: rpcResult, error: rpcError } = await supabase.rpc('calculate_ib_commission', {
         p_ib_partner_id: ib_partner_id,
         p_period_start: period_start,
@@ -70,25 +68,31 @@ export function useIBCommissionMutations() {
       })
       if (rpcError) throw rpcError
 
-      const result = rpcResult as { calculated_amount: number; breakdown: Json; currency: string }
+      const result = rpcResult as {
+        total_amount: number
+        types: { type: string; calculated_amount: number; breakdown: Json; currency: string }[]
+        currency: string
+      }
 
-      // Upsert commission record
-      const { error } = await supabase.from('ib_commissions').upsert(
-        {
-          organization_id: currentOrg.id,
-          ib_partner_id,
-          period_start,
-          period_end,
-          agreement_type,
-          calculated_amount: result.calculated_amount,
-          currency: result.currency ?? 'USD',
-          breakdown: result.breakdown,
-          status: 'draft',
-          created_by: user?.id ?? null,
-        },
-        { onConflict: 'organization_id,ib_partner_id,period_start,period_end' },
-      )
-      if (error) throw error
+      // Upsert one commission record per type
+      for (const typeResult of result.types) {
+        const { error } = await supabase.from('ib_commissions').upsert(
+          {
+            organization_id: currentOrg.id,
+            ib_partner_id,
+            period_start,
+            period_end,
+            agreement_type: typeResult.type,
+            calculated_amount: typeResult.calculated_amount,
+            currency: typeResult.currency ?? 'USD',
+            breakdown: typeResult.breakdown,
+            status: 'draft',
+            created_by: user?.id ?? null,
+          },
+          { onConflict: 'idx_ib_commissions_unique_period' },
+        )
+        if (error) throw error
+      }
 
       return result
     },

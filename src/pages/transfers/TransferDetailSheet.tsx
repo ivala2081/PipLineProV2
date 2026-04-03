@@ -199,6 +199,11 @@ export function TransferDetailSheet({ row, onClose }: TransferDetailSheetProps) 
                   </span>
                 </DetailRow>
               )}
+              {row.ib_partner && (
+                <DetailRow label={lang === 'tr' ? 'IB Ortağı' : 'IB Partner'}>
+                  <span className="font-medium">{row.ib_partner.name}</span>
+                </DetailRow>
+              )}
             </div>
 
             {/* ── IDs ───────────────────────────────────────── */}

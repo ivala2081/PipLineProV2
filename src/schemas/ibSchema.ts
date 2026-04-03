@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const AGREEMENT_TYPES = ['salary', 'cpa', 'lot_rebate', 'revenue_share', 'hybrid'] as const
+export const AGREEMENT_TYPES = ['salary', 'cpa', 'lot_rebate', 'revenue_share'] as const
 export type AgreementType = (typeof AGREEMENT_TYPES)[number]
 
 export const IB_STATUSES = ['active', 'paused', 'terminated'] as const
@@ -34,44 +34,44 @@ export const revenueShareDetailsSchema = z.object({
   source: z.enum(['spread', 'commission', 'net_revenue']).default('spread'),
 })
 
-const hybridComponentSchema = z
-  .object({ type: z.enum(['salary', 'cpa', 'lot_rebate', 'revenue_share']) })
-  .passthrough()
-
-export const hybridDetailsSchema = z
-  .object({
-    components: z.array(hybridComponentSchema).min(1, 'At least one component required'),
-  })
-  .passthrough()
-
 const detailSchemaMap = {
   salary: salaryDetailsSchema,
   cpa: cpaDetailsSchema,
   lot_rebate: lotRebateDetailsSchema,
   revenue_share: revenueShareDetailsSchema,
-  hybrid: hybridDetailsSchema,
 } as const
 
-/** Validate agreement_details against the correct schema for the given type. */
+/** Validate agreement_details against the correct schema for each selected type. */
 export function validateAgreementDetails(
-  agreementType: AgreementType,
-  details: Record<string, unknown>,
+  agreementTypes: AgreementType[],
+  details: Record<string, Record<string, unknown>>,
 ):
-  | { success: true; data: Record<string, unknown> }
-  | { success: false; errors: Record<string, string> } {
-  const schema = detailSchemaMap[agreementType]
-  const result = schema.safeParse(details)
+  | { success: true; data: Record<string, Record<string, unknown>> }
+  | { success: false; errors: Record<string, Record<string, string>> } {
+  const allData: Record<string, Record<string, unknown>> = {}
+  const allErrors: Record<string, Record<string, string>> = {}
+  let hasError = false
 
-  if (result.success) {
-    return { success: true, data: result.data as Record<string, unknown> }
+  for (const type of agreementTypes) {
+    const schema = detailSchemaMap[type]
+    const typeDetails = details[type] ?? {}
+    const result = schema.safeParse(typeDetails)
+
+    if (result.success) {
+      allData[type] = result.data as Record<string, unknown>
+    } else {
+      hasError = true
+      const errors: Record<string, string> = {}
+      for (const issue of result.error.issues) {
+        const key = issue.path.join('.') || '_root'
+        if (!errors[key]) errors[key] = issue.message
+      }
+      allErrors[type] = errors
+    }
   }
 
-  const errors: Record<string, string> = {}
-  for (const issue of result.error.issues) {
-    const key = issue.path.join('.') || '_root'
-    if (!errors[key]) errors[key] = issue.message
-  }
-  return { success: false, errors }
+  if (hasError) return { success: false, errors: allErrors }
+  return { success: true, data: allData }
 }
 
 export const CRYPTO_NETWORKS = ['TRC20', 'ERC20', 'BEP20', 'SOL', 'BTC'] as const
@@ -88,7 +88,7 @@ export const ibPartnerSchema = z
       .string()
       .min(3, 'Referral code must be at least 3 characters')
       .regex(/^[A-Za-z0-9_-]+$/, 'Only letters, numbers, hyphens, and underscores'),
-    agreement_type: z.enum(AGREEMENT_TYPES),
+    agreement_types: z.array(z.enum(AGREEMENT_TYPES)).min(1, 'At least one agreement type required'),
     agreement_details: z.record(z.unknown()).default({}),
     status: z.enum(IB_STATUSES).default('active'),
     notes: z.string().optional().or(z.literal('')),

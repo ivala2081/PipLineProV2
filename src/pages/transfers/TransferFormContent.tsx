@@ -21,6 +21,7 @@ import type { useLookupQueries } from '@/hooks/queries/useLookupQueries'
 import type { TransferMutations } from '@/hooks/queries/useTransfersQuery'
 import { useExchangeRateQuery } from '@/hooks/queries/useExchangeRateQuery'
 import { useHrEmployeesQuery } from '@/hooks/queries/useHrQuery'
+import { useIBPartnersQuery } from '@/hooks/queries/useIBPartnersQuery'
 import { useToast } from '@/hooks/useToast'
 import { transferFormSchema, type TransferFormValues } from '@/schemas/transferSchema'
 import { basicInputClasses, disabledInputClasses, focusInputClasses } from '@ds/components/Input'
@@ -56,7 +57,7 @@ type SelectOption = { value: string; label: string; searchText?: string }
 
 type RememberedTransferFields = Pick<
   TransferFormValues,
-  'payment_method_id' | 'psp_id' | 'category_id' | 'currency'
+  'payment_method_id' | 'psp_id' | 'category_id' | 'currency' | 'ib_partner_id'
 >
 
 const TRANSFER_PREFS_KEY = 'piplinepro:transfer-form-prefs'
@@ -89,6 +90,7 @@ function getDefaultFormValues(): TransferFormValues {
     crm_id: '',
     meta_id: '',
     employee_id: '',
+    ib_partner_id: '',
     is_first_deposit: null,
     notes: '',
   }
@@ -112,6 +114,7 @@ function loadRememberedFields(orgId?: string): Partial<RememberedTransferFields>
       psp_id: isTether ? '' : typeof p.psp_id === 'string' ? p.psp_id : '',
       category_id: '',
       currency: '',
+      ib_partner_id: typeof p.ib_partner_id === 'string' ? p.ib_partner_id : '',
     }
   } catch {
     return {}
@@ -260,11 +263,12 @@ export function TransferFormContent({
   const [moreOpen, setMoreOpen] = useState(false)
   const [currencySearch, setCurrencySearch] = useState('')
 
-  type NameSuggestion = { crm_id: string; meta_id: string }
+  type NameSuggestion = { crm_id: string; meta_id: string; ib_partner_id: string }
   const [nameSuggestions, setNameSuggestions] = useState<NameSuggestion[]>([])
   const [autoFilledHint, setAutoFilledHint] = useState<NameSuggestion | null>(null)
 
   const { data: employees = [] } = useHrEmployeesQuery()
+  const { partners: ibPartners } = useIBPartnersQuery()
 
   const form = useForm<TransferFormValues>({
     resolver: zodResolver(transferFormSchema),
@@ -284,6 +288,7 @@ export function TransferFormContent({
           crm_id: transfer.crm_id ?? '',
           meta_id: transfer.meta_id ?? '',
           employee_id: transfer.employee_id ?? '',
+          ib_partner_id: transfer.ib_partner_id ?? '',
           is_first_deposit: transfer.is_first_deposit ?? false,
           notes: transfer.notes ?? '',
         }
@@ -363,6 +368,7 @@ export function TransferFormContent({
         crm_id: transfer.crm_id ?? '',
         meta_id: transfer.meta_id ?? '',
         employee_id: transfer.employee_id ?? '',
+        ib_partner_id: transfer.ib_partner_id ?? '',
         is_first_deposit:
           transfer.is_first_deposit ?? false,
         notes: transfer.notes ?? '',
@@ -416,6 +422,7 @@ export function TransferFormContent({
   const pspId = form.watch('psp_id')
   const typeId = form.watch('type_id')
   const employeeId = form.watch('employee_id')
+  const ibPartnerId = form.watch('ib_partner_id')
   const fullName = form.watch('full_name')
   const isFirstDeposit = form.watch('is_first_deposit')
 
@@ -480,7 +487,7 @@ export function TransferFormContent({
     const timer = setTimeout(async () => {
       const { data } = await supabase
         .from('transfers')
-        .select('crm_id, meta_id')
+        .select('crm_id, meta_id, ib_partner_id')
         .eq('organization_id', currentOrg.id)
         .ilike('full_name', trimmed)
         .order('transfer_date', { ascending: false })
@@ -495,11 +502,13 @@ export function TransferFormContent({
       // Benzersiz crm_id + meta_id çiftlerini bul
       const seen = new Set<string>()
       const unique: NameSuggestion[] = []
+      // En son kullanılan ib_partner_id'yi bul (ilk sıradaki, en güncel transfer)
+      const latestIbPartnerId = data.find((r) => r.ib_partner_id)?.ib_partner_id ?? ''
       for (const row of data) {
         const key = `${row.crm_id ?? ''}|${row.meta_id ?? ''}`
         if (!seen.has(key)) {
           seen.add(key)
-          unique.push({ crm_id: row.crm_id ?? '', meta_id: row.meta_id ?? '' })
+          unique.push({ crm_id: row.crm_id ?? '', meta_id: row.meta_id ?? '', ib_partner_id: row.ib_partner_id ?? latestIbPartnerId })
         }
       }
 
@@ -510,6 +519,7 @@ export function TransferFormContent({
         const cur = form.getValues()
         if (!cur.crm_id && unique[0].crm_id) form.setValue('crm_id', unique[0].crm_id)
         if (!cur.meta_id && unique[0].meta_id) form.setValue('meta_id', unique[0].meta_id)
+        if (!cur.ib_partner_id && unique[0].ib_partner_id) form.setValue('ib_partner_id', unique[0].ib_partner_id)
       } else {
         // Birden fazla kişi → kullanıcıya seç
         setNameSuggestions(unique)
@@ -523,6 +533,7 @@ export function TransferFormContent({
     (s: NameSuggestion) => {
       form.setValue('crm_id', s.crm_id)
       form.setValue('meta_id', s.meta_id)
+      if (s.ib_partner_id) form.setValue('ib_partner_id', s.ib_partner_id)
       setNameSuggestions([])
     },
     [form],
@@ -546,6 +557,18 @@ export function TransferFormContent({
     }
     return filtered
   }, [employees, isFirstDeposit, isEdit, employeeId])
+
+  const ibPartnerOptions = useMemo<SelectOption[]>(() => {
+    const active = ibPartners
+      .filter((p) => p.status === 'active')
+      .map((p) => ({ value: p.id, label: p.name }))
+    // Edit mode: include currently-selected partner even if no longer active
+    if (isEdit && ibPartnerId && !active.some((o) => o.value === ibPartnerId)) {
+      const partner = ibPartners.find((p) => p.id === ibPartnerId)
+      if (partner) active.unshift({ value: partner.id, label: partner.name })
+    }
+    return active
+  }, [ibPartners, isEdit, ibPartnerId])
 
   /* ── Reset employee when FTD/STD changes and selected employee no longer matches ── */
   useEffect(() => {
@@ -640,6 +663,7 @@ export function TransferFormContent({
         psp_id: data.psp_id,
         category_id: data.category_id,
         currency: data.currency,
+        ib_partner_id: data.ib_partner_id,
       })
 
       if (isEdit && transfer) {
@@ -755,6 +779,55 @@ export function TransferFormContent({
                 )}
               </Field>
 
+              {/* CRM & META — auto-filled from name lookup */}
+              <div className="grid grid-cols-2 gap-2">
+                <Field label={t('transfers.form.crmId')}>
+                  <input
+                    {...form.register('crm_id')}
+                    placeholder={t('transfers.form.crmIdPlaceholder')}
+                    className={cn(
+                      basicInputClasses,
+                      disabledInputClasses,
+                      focusInputClasses,
+                      'h-9 w-full rounded-lg bg-black/[0.02] px-3 py-1.5 font-mono text-xs tracking-wide',
+                    )}
+                  />
+                </Field>
+                <Field label={t('transfers.form.metaId')}>
+                  <input
+                    {...form.register('meta_id')}
+                    placeholder={t('transfers.form.metaIdPlaceholder')}
+                    className={cn(
+                      basicInputClasses,
+                      disabledInputClasses,
+                      focusInputClasses,
+                      'h-9 w-full rounded-lg bg-black/[0.02] px-3 py-1.5 font-mono text-xs tracking-wide',
+                    )}
+                  />
+                </Field>
+              </div>
+
+              {/* IB Partner (mandatory) */}
+              <Field
+                label={lang === 'tr' ? 'IB Ortağı' : 'IB Partner'}
+                error={form.formState.errors.ib_partner_id?.message}
+              >
+                {ibPartnerOptions.length === 0 ? (
+                  <p className="flex h-10 items-center rounded-xl border border-black/[0.07] bg-black/[0.02] px-3 text-xs text-black/35">
+                    {lang === 'tr' ? 'Aktif IB ortağı yok' : 'No active IB partners'}
+                  </p>
+                ) : (
+                  <SearchableSelectField
+                    value={ibPartnerId}
+                    onValueChange={(v) => form.setValue('ib_partner_id', v)}
+                    placeholder={lang === 'tr' ? 'IB ortağı seçin' : 'Select IB partner'}
+                    options={ibPartnerOptions}
+                    searchPlaceholder={t('transfers.form.searchInList')}
+                    noResultsText={t('transfers.form.noResults')}
+                  />
+                )}
+              </Field>
+
               {/* FTD / STD toggle */}
               <div>
                 <Label className="mb-1.5 block text-xs font-medium tracking-wide text-black/60">
@@ -800,21 +873,6 @@ export function TransferFormContent({
                 </div>
               </div>
 
-              {/* CRM & META — auto-filled from name lookup */}
-              <div className="grid grid-cols-2 gap-3">
-                <Field label={t('transfers.form.crmId')}>
-                  <Input
-                    {...form.register('crm_id')}
-                    placeholder={t('transfers.form.crmIdPlaceholder')}
-                  />
-                </Field>
-                <Field label={t('transfers.form.metaId')}>
-                  <Input
-                    {...form.register('meta_id')}
-                    placeholder={t('transfers.form.metaIdPlaceholder')}
-                  />
-                </Field>
-              </div>
             </div>
 
             {/* Divider between Client and Payment */}

@@ -1375,7 +1375,7 @@ export type Database = {
           contact_email: string | null
           contact_phone: string | null
           referral_code: string
-          agreement_type: string
+          agreement_types: string[]
           agreement_details: Json
           status: string
           notes: string | null
@@ -1404,7 +1404,7 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           referral_code: string
-          agreement_type: string
+          agreement_types: string[]
           agreement_details?: Json
           status?: string
           notes?: string | null
@@ -1433,7 +1433,7 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           referral_code?: string
-          agreement_type?: string
+          agreement_types?: string[]
           agreement_details?: Json
           status?: string
           notes?: string | null
@@ -2287,6 +2287,7 @@ export type Database = {
           exchange_rate: number
           external_transaction_id: string | null
           full_name: string
+          ib_partner_id: string | null
           id: string
           is_first_deposit: boolean
           meta_id: string | null
@@ -2315,6 +2316,7 @@ export type Database = {
           exchange_rate?: number
           external_transaction_id?: string | null
           full_name: string
+          ib_partner_id?: string | null
           id?: string
           is_first_deposit?: boolean
           meta_id?: string | null
@@ -2343,6 +2345,7 @@ export type Database = {
           exchange_rate?: number
           external_transaction_id?: string | null
           full_name?: string
+          ib_partner_id?: string | null
           id?: string
           is_first_deposit?: boolean
           meta_id?: string | null
@@ -2369,6 +2372,13 @@ export type Database = {
             columns: ['employee_id']
             isOneToOne: false
             referencedRelation: 'hr_employees'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'transfers_ib_partner_id_fkey'
+            columns: ['ib_partner_id']
+            isOneToOne: false
+            referencedRelation: 'ib_partners'
             referencedColumns: ['id']
           },
           {

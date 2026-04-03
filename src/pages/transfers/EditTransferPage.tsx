@@ -13,7 +13,7 @@ import { PageHeader } from '@ds'
 import { TransferFormContent } from './TransferFormContent'
 
 const SELECT_QUERY =
-  '*, category:transfer_categories!category_id(name, is_deposit), payment_method:payment_methods!payment_method_id(name), psp:psps!psp_id(name, commission_rate), type:transfer_types!type_id(name), employee:hr_employees!employee_id(full_name, role)'
+  '*, category:transfer_categories!category_id(name, is_deposit), payment_method:payment_methods!payment_method_id(name), psp:psps!psp_id(name, commission_rate), type:transfer_types!type_id(name), employee:hr_employees!employee_id(full_name, role), ib_partner:ib_partners!ib_partner_id(name)'
 
 export function EditTransferPage() {
   const { t } = useTranslation('pages')
