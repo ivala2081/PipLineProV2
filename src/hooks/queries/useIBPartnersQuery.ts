@@ -64,6 +64,7 @@ export function useIBPartnerMutations() {
         contract_end_date: formData.contract_end_date || null,
         logo_url: formData.logo_url?.trim() || null,
         managed_by_employee_id: formData.managed_by_employee_id?.trim() || null,
+        secondary_employee_id: formData.secondary_employee_id?.trim() || null,
         created_by: user?.id ?? null,
       })
       if (error) throw error
@@ -97,6 +98,7 @@ export function useIBPartnerMutations() {
           contract_end_date: formData.contract_end_date || null,
           logo_url: formData.logo_url?.trim() || null,
           managed_by_employee_id: formData.managed_by_employee_id?.trim() || null,
+          secondary_employee_id: formData.secondary_employee_id?.trim() || null,
         })
         .eq('id', id)
       if (error) throw error

@@ -1,3 +1,6 @@
+// DEPRECATED: Replaced by AddEntryPage.tsx and EditEntryPage.tsx
+// Kept for reference — no longer imported by index.tsx
+
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'

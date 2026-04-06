@@ -283,6 +283,7 @@ export function PartnerFormPage() {
       contract_end_date: '',
       logo_url: '',
       managed_by_employee_id: '',
+      secondary_employee_id: '',
     },
   })
 
@@ -290,6 +291,7 @@ export function PartnerFormPage() {
   const watchedCryptoNetwork = useWatch({ control: form.control, name: 'crypto_network' })
   const watchedLogoUrl = useWatch({ control: form.control, name: 'logo_url' })
   const watchedManagedBy = useWatch({ control: form.control, name: 'managed_by_employee_id' })
+  const watchedSecondary = useWatch({ control: form.control, name: 'secondary_employee_id' })
 
   /* ---- Indefinite contract toggle ---- */
 
@@ -367,6 +369,7 @@ export function PartnerFormPage() {
       contract_end_date: partner.contract_end_date ?? '',
       logo_url: partner.logo_url ?? '',
       managed_by_employee_id: partner.managed_by_employee_id ?? '',
+      secondary_employee_id: partner.secondary_employee_id ?? '',
     })
 
     setSelectedTypes(new Set(types as AgreementType[]))
@@ -563,10 +566,10 @@ export function PartnerFormPage() {
                   </div>
                 </div>
 
-                {/* Manager */}
+                {/* Responsible Employee */}
                 <div>
                   <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
-                    {t('ib.partnerForm.managedBy')}
+                    {t('ib.partnerForm.responsible')}
                   </Label>
                   <Select
                     value={watchedManagedBy || '__org__'}
@@ -575,7 +578,7 @@ export function PartnerFormPage() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={t('ib.partnerForm.selectManager')} />
+                      <SelectValue placeholder={t('ib.partnerForm.responsiblePlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__org__">
@@ -590,6 +593,36 @@ export function PartnerFormPage() {
                         ))}
                     </SelectContent>
                   </Select>
+                </div>
+
+                {/* Secondary Employee (Exception) */}
+                <div>
+                  <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
+                    {t('ib.partnerForm.secondary')}
+                  </Label>
+                  <Select
+                    value={watchedSecondary || '__none__'}
+                    onValueChange={(v) =>
+                      form.setValue('secondary_employee_id', v === '__none__' ? '' : v)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('ib.partnerForm.secondaryPlaceholder')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">{t('ib.partners.unassigned')}</SelectItem>
+                      {hrEmployees
+                        .filter((e) => e.is_active)
+                        .map((e) => (
+                          <SelectItem key={e.id} value={e.id}>
+                            {e.full_name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="mt-1 text-xs text-black/45">
+                    {t('ib.partnerForm.secondaryHelper')}
+                  </p>
                 </div>
 
                 {/* Status (edit only — pills) */}
@@ -721,10 +754,16 @@ export function PartnerFormPage() {
                         }}
                         className="size-4 rounded border-black/20 accent-brand"
                       />
-                      <span className="text-xs text-black/60">{t('ib.partnerForm.indefinite')}</span>
+                      <span className="text-xs text-black/60">
+                        {t('ib.partnerForm.indefinite')}
+                      </span>
                     </label>
                     {!indefiniteEnd && (
-                      <Input type="date" {...form.register('contract_end_date')} className="mt-1.5" />
+                      <Input
+                        type="date"
+                        {...form.register('contract_end_date')}
+                        className="mt-1.5"
+                      />
                     )}
                   </div>
                 </div>

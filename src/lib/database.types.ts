@@ -1392,6 +1392,7 @@ export type Database = {
           contract_end_date: string | null
           logo_url: string | null
           managed_by_employee_id: string | null
+          secondary_employee_id: string | null
           created_by: string | null
           created_at: string
           updated_at: string
@@ -1420,6 +1421,7 @@ export type Database = {
           contract_end_date?: string | null
           logo_url?: string | null
           managed_by_employee_id?: string | null
+          secondary_employee_id?: string | null
           created_by?: string | null
           created_at?: string
           updated_at?: string
@@ -1448,6 +1450,7 @@ export type Database = {
           contract_end_date?: string | null
           logo_url?: string | null
           managed_by_employee_id?: string | null
+          secondary_employee_id?: string | null
           created_by?: string | null
           created_at?: string
           updated_at?: string
@@ -1463,6 +1466,13 @@ export type Database = {
           {
             foreignKeyName: 'ib_partners_managed_by_employee_id_fkey'
             columns: ['managed_by_employee_id']
+            isOneToOne: false
+            referencedRelation: 'hr_employees'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ib_partners_secondary_employee_id_fkey'
+            columns: ['secondary_employee_id']
             isOneToOne: false
             referencedRelation: 'hr_employees'
             referencedColumns: ['id']

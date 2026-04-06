@@ -188,13 +188,22 @@ export function PartnerDetailPanel({ partnerId, isAdmin, onBack }: PartnerDetail
             <p className="text-sm font-medium">{partner.contact_phone || '—'}</p>
           </div>
           <div>
-            <p className="text-xs text-black/50">{t('ib.partners.managedBy')}</p>
+            <p className="text-xs text-black/50">{t('ib.partners.responsible')}</p>
             <p className="text-sm font-medium">
               {partner.managed_by_employee_id
-                ? hrEmployees.find((e) => e.id === partner.managed_by_employee_id)?.full_name ?? '—'
-                : currentOrg?.name ?? '—'}
+                ? (hrEmployees.find((e) => e.id === partner.managed_by_employee_id)?.full_name ??
+                  '—')
+                : (currentOrg?.name ?? '—')}
             </p>
           </div>
+          {partner.secondary_employee_id && (
+            <div>
+              <p className="text-xs text-black/50">{t('ib.partners.secondary')}</p>
+              <p className="text-sm font-medium">
+                {hrEmployees.find((e) => e.id === partner.secondary_employee_id)?.full_name ?? '—'}
+              </p>
+            </div>
+          )}
           <div>
             <p className="text-xs text-black/50">{t('ib.partners.agreementType')}</p>
             <div className="mt-1 flex flex-wrap gap-1">
@@ -215,12 +224,18 @@ export function PartnerDetailPanel({ partnerId, isAdmin, onBack }: PartnerDetail
                 if (type === 'salary') {
                   const amt = d.amount != null ? fmt(Number(d.amount)) : '—'
                   const cur = (d.currency as string) || 'USD'
-                  const period = d.period === 'weekly' ? t('ib.partners.detail.weekly') : t('ib.partners.detail.monthly')
+                  const period =
+                    d.period === 'weekly'
+                      ? t('ib.partners.detail.weekly')
+                      : t('ib.partners.detail.monthly')
                   summary = `${amt} ${cur} / ${period}`
                 } else if (type === 'cpa') {
                   const amt = d.cpa_amount != null ? fmt(Number(d.cpa_amount)) : '—'
                   const cur = (d.currency as string) || 'USD'
-                  const minFtd = d.min_ftd_amount != null && d.min_ftd_amount !== '' ? ` (min FTD: ${fmt(Number(d.min_ftd_amount))} ${cur})` : ''
+                  const minFtd =
+                    d.min_ftd_amount != null && d.min_ftd_amount !== ''
+                      ? ` (min FTD: ${fmt(Number(d.min_ftd_amount))} ${cur})`
+                      : ''
                   summary = `${amt} ${cur}${minFtd}`
                 } else if (type === 'lot_rebate') {
                   const rebate = d.rebate_per_lot != null ? fmt(Number(d.rebate_per_lot)) : '—'
@@ -233,13 +248,15 @@ export function PartnerDetailPanel({ partnerId, isAdmin, onBack }: PartnerDetail
                 }
                 return summary ? (
                   <p key={type} className="text-sm font-medium text-black/70">
-                    <span className="text-xs text-black/40">{t(`ib.partners.agreements.${type}`)}: </span>
+                    <span className="text-xs text-black/40">
+                      {t(`ib.partners.agreements.${type}`)}:{' '}
+                    </span>
                     {summary}
                   </p>
                 ) : null
               })}
               {!((partner.agreement_types as string[]) ?? []).some(
-                (type) => (details as Record<string, Record<string, unknown>>)?.[type]
+                (type) => (details as Record<string, Record<string, unknown>>)?.[type],
               ) && <p className="text-sm text-black/40">—</p>}
             </div>
           </div>

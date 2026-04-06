@@ -84,7 +84,9 @@ export const ibPartnerSchema = z
     name: z.string().min(2, 'Name must be at least 2 characters').trim(),
     contact_email: z.string().email('Invalid email').optional().or(z.literal('')),
     contact_phone: z.string().optional().or(z.literal('')),
-    agreement_types: z.array(z.enum(AGREEMENT_TYPES)).min(1, 'At least one agreement type required'),
+    agreement_types: z
+      .array(z.enum(AGREEMENT_TYPES))
+      .min(1, 'At least one agreement type required'),
     agreement_details: z.record(z.unknown()).default({}),
     status: z.enum(IB_STATUSES).default('active'),
     notes: z.string().optional().or(z.literal('')),
@@ -102,6 +104,7 @@ export const ibPartnerSchema = z
     contract_end_date: z.string().optional().or(z.literal('')),
     logo_url: z.string().optional().or(z.literal('')),
     managed_by_employee_id: z.string().optional().or(z.literal('')),
+    secondary_employee_id: z.string().optional().or(z.literal('')),
   })
   .superRefine((data, ctx) => {
     if (data.preferred_payment_method === 'iban' && !data.iban?.trim()) {

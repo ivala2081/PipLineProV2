@@ -33,6 +33,8 @@ export const queryKeys = {
     lists: () => [...queryKeys.accounting.all, 'list'] as const,
     list: (orgId: string, page: number) =>
       [...queryKeys.accounting.lists(), { orgId, page }] as const,
+    detail: (orgId: string, entryId: string) =>
+      [...queryKeys.accounting.all, 'detail', orgId, entryId] as const,
     summary: (orgId: string) => [...queryKeys.accounting.all, 'summary', orgId] as const,
     overviewSummary: (orgId: string, period: string) =>
       [...queryKeys.accounting.all, 'overviewSummary', orgId, period] as const,

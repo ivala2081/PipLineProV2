@@ -93,9 +93,7 @@ export function PartnersTab({ isAdmin }: PartnersTabProps) {
   const filtered = useMemo(() => {
     if (!search.trim()) return partners
     const q = search.toLowerCase().trim()
-    return partners.filter(
-      (p) => p.name.toLowerCase().includes(q),
-    )
+    return partners.filter((p) => p.name.toLowerCase().includes(q))
   }, [partners, search])
 
   const referralCountMap = useMemo(() => {
@@ -183,7 +181,7 @@ export function PartnersTab({ isAdmin }: PartnersTabProps) {
               <TableHead>{t('ib.partners.agreementType')}</TableHead>
               <TableHead>{t('ib.partners.status')}</TableHead>
               <TableHead>{t('ib.partners.tier')}</TableHead>
-              <TableHead>{t('ib.partners.managedBy')}</TableHead>
+              <TableHead>{t('ib.partners.responsible')}</TableHead>
               <TableHead className="text-right">{t('ib.partners.totalReferrals')}</TableHead>
               <TableHead className="text-right">{t('ib.partners.ftds')}</TableHead>
               {isAdmin && <TableHead className="w-12" />}
@@ -221,12 +219,17 @@ export function PartnersTab({ isAdmin }: PartnersTabProps) {
                   <TableCell data-label={t('ib.partners.tier')}>
                     <Tag variant={tierVariant}>{t(`ib.partners.tiers.${tier}`)}</Tag>
                   </TableCell>
-                  <TableCell data-label={t('ib.partners.managedBy')}>
+                  <TableCell data-label={t('ib.partners.responsible')}>
                     <span className="text-sm">
                       {partner.managed_by_employee_id
-                        ? employeeMap[partner.managed_by_employee_id] ?? '—'
-                        : currentOrg?.name ?? '—'}
+                        ? (employeeMap[partner.managed_by_employee_id] ?? '—')
+                        : (currentOrg?.name ?? '—')}
                     </span>
+                    {partner.secondary_employee_id && (
+                      <span className="block text-xs text-black/45">
+                        +{employeeMap[partner.secondary_employee_id] ?? '—'}
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell
                     data-label={t('ib.partners.totalReferrals')}

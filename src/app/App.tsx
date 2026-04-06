@@ -39,6 +39,12 @@ const EditTransferPage = lazy(() =>
 const AccountingPage = lazy(() =>
   import('@/pages/accounting').then((m) => ({ default: m.AccountingPage })),
 )
+const AddEntryPage = lazy(() =>
+  import('@/pages/accounting/AddEntryPage').then((m) => ({ default: m.AddEntryPage })),
+)
+const EditEntryPage = lazy(() =>
+  import('@/pages/accounting/EditEntryPage').then((m) => ({ default: m.EditEntryPage })),
+)
 const WalletTransfersPage = lazy(() =>
   import('@/pages/accounting/WalletTransfersPage').then((m) => ({
     default: m.WalletTransfersPage,
@@ -226,6 +232,26 @@ export function App({ sessionPromise }: { sessionPromise?: SessionPromise }) {
                               <PageGuard page="transfers">
                                 <PageSuspense>
                                   <EditTransferPage />
+                                </PageSuspense>
+                              </PageGuard>
+                            }
+                          />
+                          <Route
+                            path="/accounting/new"
+                            element={
+                              <PageGuard page="accounting">
+                                <PageSuspense>
+                                  <AddEntryPage />
+                                </PageSuspense>
+                              </PageGuard>
+                            }
+                          />
+                          <Route
+                            path="/accounting/:entryId/edit"
+                            element={
+                              <PageGuard page="accounting">
+                                <PageSuspense>
+                                  <EditEntryPage />
                                 </PageSuspense>
                               </PageGuard>
                             }

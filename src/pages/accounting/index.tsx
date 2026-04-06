@@ -31,7 +31,6 @@ import {
   DropdownMenuItem,
 } from '@ds'
 import { LedgerTable } from './LedgerTable'
-import { EntryDialog } from './EntryDialog'
 import { DeleteEntryDialog } from './DeleteEntryDialog'
 import { LedgerImportDialog } from './LedgerImportDialog'
 import { ReconciliationTab } from './ReconciliationTab'
@@ -56,9 +55,7 @@ export function AccountingPage() {
   useRealtimeSubscription('accounting_entries', [queryKeys.accounting.all])
 
   const [activeTab, setActiveTab] = useState('overview')
-  const [entryDialogOpen, setEntryDialogOpen] = useState(false)
   const [conversionDialogOpen, setConversionDialogOpen] = useState(false)
-  const [editingEntry, setEditingEntry] = useState<AccountingEntry | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<AccountingEntry | null>(null)
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
@@ -71,8 +68,7 @@ export function AccountingPage() {
   )
 
   const handleAddEntry = () => {
-    setEditingEntry(null)
-    setEntryDialogOpen(true)
+    navigate('/accounting/new')
   }
 
   const handleEditEntry = (entry: AccountingEntry) => {
@@ -80,8 +76,7 @@ export function AccountingPage() {
       navigate(`/accounting/bulk/${entry.hr_bulk_payment_id}`)
       return
     }
-    setEditingEntry(entry)
-    setEntryDialogOpen(true)
+    navigate(`/accounting/${entry.id}/edit`)
   }
 
   const handleDeleteEntry = (entry: AccountingEntry) => {
@@ -244,25 +239,6 @@ export function AccountingPage() {
           </SectionErrorBoundary>
         </TabsContent>
       </Tabs>
-
-      <EntryDialog
-        open={entryDialogOpen}
-        onClose={() => {
-          setEntryDialogOpen(false)
-          setEditingEntry(null)
-        }}
-        entry={editingEntry}
-        onSubmit={async (data) => {
-          if (editingEntry) {
-            await accounting.updateEntry(editingEntry.id, data)
-          } else {
-            await accounting.createEntry(data)
-          }
-          setEntryDialogOpen(false)
-          setEditingEntry(null)
-        }}
-        isSubmitting={accounting.isCreating || accounting.isUpdating}
-      />
 
       <DeleteEntryDialog
         entry={deleteTarget}
