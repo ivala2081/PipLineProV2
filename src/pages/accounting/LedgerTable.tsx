@@ -491,7 +491,7 @@ export function LedgerTable({
                       <TableHead>{t('accounting.columns.currency')}</TableHead>
                       <TableHead>{t('accounting.columns.register')}</TableHead>
                       <TableHead>{t('accounting.columns.costPeriod')}</TableHead>
-                      <TableHead>{t('accounting.columns.source', 'Source')}</TableHead>
+                      <TableHead>{t('accounting.columns.paymentPeriod', 'Payment Period')}</TableHead>
                       <TableHead className="w-16 px-2" />
                     </TableRow>
                   </TableHeader>
@@ -561,26 +561,10 @@ export function LedgerTable({
                           {row.cost_period || '—'}
                         </TableCell>
                         <TableCell
-                          className="whitespace-nowrap"
-                          data-label={t('accounting.columns.source', 'Source')}
+                          className="whitespace-nowrap text-sm text-black/50"
+                          data-label={t('accounting.columns.paymentPeriod', 'Payment Period')}
                         >
-                          {row.source_type ? (
-                            <Tag variant="purple" className="text-[10px]">
-                              {row.source_type === 'hr_salary'
-                                ? 'HR'
-                                : row.source_type === 'hr_bonus'
-                                  ? 'Bonus'
-                                  : row.source_type === 'ib_payment'
-                                    ? 'IB'
-                                    : row.source_type === 'psp_transfer'
-                                      ? 'PSP'
-                                      : row.source_type}
-                            </Tag>
-                          ) : (
-                            <span className="text-xs text-black/30">
-                              {t('accounting.columns.manual', 'Manual')}
-                            </span>
-                          )}
+                          {row.payment_period || '—'}
                         </TableCell>
                         <TableCell className="whitespace-nowrap px-2" isActions>
                           <DropdownMenu>

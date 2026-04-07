@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
@@ -31,6 +31,8 @@ import {
   SelectItem,
   Skeleton,
 } from '@ds'
+import { basicInputClasses, disabledInputClasses, focusInputClasses } from '@ds/components/Input'
+import { cn } from '@ds/utils'
 import { useIBPartnersQuery, useIBPartnerMutations } from '@/hooks/queries/useIBPartnersQuery'
 import { useHrEmployeesQuery } from '@/hooks/queries/useHrQuery'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
@@ -46,6 +48,18 @@ import {
 import { AvatarUpload } from '@/components/AvatarUpload'
 
 /* ------------------------------------------------------------------ */
+/*  Allowed roles for responsible / secondary employee selectors      */
+/* ------------------------------------------------------------------ */
+
+const IB_RESPONSIBLE_ROLES = [
+  'Manager',
+  'Marketing',
+  'Marketing Manager',
+  'Sales',
+  'Sales Development',
+] as const
+
+/* ------------------------------------------------------------------ */
 /*  Agreement detail types                                             */
 /* ------------------------------------------------------------------ */
 
@@ -55,12 +69,6 @@ interface SalaryDetails {
   period: string
 }
 
-interface CpaDetails {
-  cpa_amount: number | ''
-  currency: string
-  min_ftd_amount: number | ''
-}
-
 interface LotRebateDetails {
   rebate_per_lot: number | ''
   currency: string
@@ -68,13 +76,12 @@ interface LotRebateDetails {
 
 interface RevenueShareDetails {
   revshare_pct: number | ''
-  source: string
+  source: 'first_deposit' | 'net_revenue'
 }
 
 const DEFAULT_SALARY: SalaryDetails = { amount: '', currency: 'USD', period: 'monthly' }
-const DEFAULT_CPA: CpaDetails = { cpa_amount: '', currency: 'USD', min_ftd_amount: '' }
 const DEFAULT_LOT_REBATE: LotRebateDetails = { rebate_per_lot: '', currency: 'USD' }
-const DEFAULT_REVENUE_SHARE: RevenueShareDetails = { revshare_pct: '', source: 'spread' }
+const DEFAULT_REVENUE_SHARE: RevenueShareDetails = { revshare_pct: '', source: 'first_deposit' }
 
 /* ------------------------------------------------------------------ */
 /*  Social platforms config                                            */
@@ -101,12 +108,10 @@ function parseDetailsFromPartner(
   const d = (details ?? {}) as Record<string, Record<string, unknown>>
   const result: {
     salary: SalaryDetails
-    cpa: CpaDetails
     lotRebate: LotRebateDetails
     revenueShare: RevenueShareDetails
   } = {
     salary: { ...DEFAULT_SALARY },
-    cpa: { ...DEFAULT_CPA },
     lotRebate: { ...DEFAULT_LOT_REBATE },
     revenueShare: { ...DEFAULT_REVENUE_SHARE },
   }
@@ -119,14 +124,6 @@ function parseDetailsFromPartner(
       period: (s.period as string) ?? 'monthly',
     }
   }
-  if (agreementTypes.includes('cpa') && d.cpa) {
-    const c = d.cpa
-    result.cpa = {
-      cpa_amount: (c.cpa_amount as number) ?? '',
-      currency: (c.currency as string) ?? 'USD',
-      min_ftd_amount: (c.min_ftd_amount as number) ?? '',
-    }
-  }
   if (agreementTypes.includes('lot_rebate') && d.lot_rebate) {
     const l = d.lot_rebate
     result.lotRebate = {
@@ -136,9 +133,12 @@ function parseDetailsFromPartner(
   }
   if (agreementTypes.includes('revenue_share') && d.revenue_share) {
     const r = d.revenue_share
+    const rawSource = (r.source as string) ?? 'first_deposit'
+    const source: RevenueShareDetails['source'] =
+      rawSource === 'net_revenue' ? 'net_revenue' : 'first_deposit'
     result.revenueShare = {
       revshare_pct: (r.revshare_pct as number) ?? '',
-      source: (r.source as string) ?? 'spread',
+      source,
     }
   }
 
@@ -148,7 +148,6 @@ function parseDetailsFromPartner(
 function buildAllAgreementDetails(
   selectedTypes: Set<AgreementType>,
   salary: SalaryDetails,
-  cpa: CpaDetails,
   lotRebate: LotRebateDetails,
   revenueShare: RevenueShareDetails,
 ): Record<string, Record<string, unknown>> {
@@ -159,13 +158,6 @@ function buildAllAgreementDetails(
       amount: salary.amount === '' ? 0 : Number(salary.amount),
       currency: salary.currency,
       period: salary.period,
-    }
-  }
-  if (selectedTypes.has('cpa')) {
-    result.cpa = {
-      cpa_amount: cpa.cpa_amount === '' ? 0 : Number(cpa.cpa_amount),
-      currency: cpa.currency,
-      ...(cpa.min_ftd_amount !== '' ? { min_ftd_amount: Number(cpa.min_ftd_amount) } : {}),
     }
   }
   if (selectedTypes.has('lot_rebate')) {
@@ -182,6 +174,81 @@ function buildAllAgreementDetails(
   }
 
   return result
+}
+
+/* ------------------------------------------------------------------ */
+/*  Searchable Select                                                  */
+/* ------------------------------------------------------------------ */
+
+type SearchableSelectOption = { value: string; label: string; searchText?: string }
+
+function SearchableSelectField({
+  value,
+  onValueChange,
+  placeholder,
+  options,
+  searchPlaceholder,
+  noResultsText,
+}: {
+  value: string
+  onValueChange: (next: string) => void
+  placeholder: string
+  options: SearchableSelectOption[]
+  searchPlaceholder: string
+  noResultsText: string
+}) {
+  const [query, setQuery] = useState('')
+  const filteredOptions = useMemo(() => {
+    const n = query.trim().toLowerCase()
+    if (!n) return options
+    return options.filter((o) => (o.searchText ?? o.label).toLowerCase().includes(n))
+  }, [options, query])
+
+  const selectedLabel = options.find((o) => o.value === value)?.label
+
+  return (
+    <Select
+      value={value}
+      onValueChange={(v) => {
+        onValueChange(v)
+        setQuery('')
+      }}
+      onOpenChange={(open) => {
+        if (!open) setQuery('')
+      }}
+    >
+      <SelectTrigger>
+        <span className={cn('truncate', !selectedLabel && 'text-black/45')}>
+          {selectedLabel || placeholder}
+        </span>
+      </SelectTrigger>
+      <SelectContent>
+        <div className="px-2 pb-1">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.stopPropagation()}
+            placeholder={searchPlaceholder}
+            className={cn(
+              basicInputClasses,
+              disabledInputClasses,
+              focusInputClasses,
+              'h-9 w-full rounded-lg px-3 py-1.5 text-xs',
+            )}
+          />
+        </div>
+        {filteredOptions.length > 0 ? (
+          filteredOptions.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+            </SelectItem>
+          ))
+        ) : (
+          <p className="px-3 py-2 text-xs text-black/55">{noResultsText}</p>
+        )}
+      </SelectContent>
+    </Select>
+  )
 }
 
 /* ------------------------------------------------------------------ */
@@ -293,6 +360,63 @@ export function PartnerFormPage() {
   const watchedManagedBy = useWatch({ control: form.control, name: 'managed_by_employee_id' })
   const watchedSecondary = useWatch({ control: form.control, name: 'secondary_employee_id' })
 
+  /* ---- Filtered employee options (Manager / Marketing / Sales) ---- */
+
+  const eligibleEmployees = useMemo(() => {
+    return hrEmployees
+      .filter(
+        (e) =>
+          e.is_active &&
+          (IB_RESPONSIBLE_ROLES as readonly string[]).includes(e.role),
+      )
+      .map((e) => ({
+        value: e.id,
+        label: `${e.full_name} · ${e.role}`,
+        searchText: `${e.full_name} ${e.role}`,
+      }))
+  }, [hrEmployees])
+
+  const responsibleEmployeeOptions = useMemo<SearchableSelectOption[]>(() => {
+    const orgOption: SearchableSelectOption = {
+      value: '__org__',
+      label: currentOrg?.name ?? t('ib.partnerForm.organization'),
+      searchText: currentOrg?.name ?? '',
+    }
+    const list: SearchableSelectOption[] = [orgOption, ...eligibleEmployees]
+    // Edit mode: ensure currently-selected employee is always present even if role doesn't match
+    if (watchedManagedBy && !list.some((o) => o.value === watchedManagedBy)) {
+      const emp = hrEmployees.find((e) => e.id === watchedManagedBy)
+      if (emp) {
+        list.push({
+          value: emp.id,
+          label: `${emp.full_name} · ${emp.role}`,
+          searchText: `${emp.full_name} ${emp.role}`,
+        })
+      }
+    }
+    return list
+  }, [eligibleEmployees, hrEmployees, watchedManagedBy, currentOrg, t])
+
+  const secondaryEmployeeOptions = useMemo<SearchableSelectOption[]>(() => {
+    const noneOption: SearchableSelectOption = {
+      value: '__none__',
+      label: t('ib.partners.unassigned'),
+      searchText: '',
+    }
+    const list: SearchableSelectOption[] = [noneOption, ...eligibleEmployees]
+    if (watchedSecondary && !list.some((o) => o.value === watchedSecondary)) {
+      const emp = hrEmployees.find((e) => e.id === watchedSecondary)
+      if (emp) {
+        list.push({
+          value: emp.id,
+          label: `${emp.full_name} · ${emp.role}`,
+          searchText: `${emp.full_name} ${emp.role}`,
+        })
+      }
+    }
+    return list
+  }, [eligibleEmployees, hrEmployees, watchedSecondary, t])
+
   /* ---- Indefinite contract toggle ---- */
 
   const [indefiniteEnd, setIndefiniteEnd] = useState(!isEdit)
@@ -301,7 +425,6 @@ export function PartnerFormPage() {
 
   const [selectedTypes, setSelectedTypes] = useState<Set<AgreementType>>(() => new Set())
   const [salary, setSalary] = useState<SalaryDetails>({ ...DEFAULT_SALARY })
-  const [cpa, setCpa] = useState<CpaDetails>({ ...DEFAULT_CPA })
   const [lotRebate, setLotRebate] = useState<LotRebateDetails>({ ...DEFAULT_LOT_REBATE })
   const [revenueShare, setRevenueShare] = useState<RevenueShareDetails>({
     ...DEFAULT_REVENUE_SHARE,
@@ -372,10 +495,13 @@ export function PartnerFormPage() {
       secondary_employee_id: partner.secondary_employee_id ?? '',
     })
 
-    setSelectedTypes(new Set(types as AgreementType[]))
-    const parsed = parseDetailsFromPartner(types, details)
+    // Drop legacy 'cpa' from selected types (no longer supported)
+    const filteredTypes = (types as AgreementType[]).filter(
+      (t) => (AGREEMENT_TYPES as readonly string[]).includes(t),
+    )
+    setSelectedTypes(new Set(filteredTypes))
+    const parsed = parseDetailsFromPartner(filteredTypes, details)
     setSalary(parsed.salary)
-    setCpa(parsed.cpa)
     setLotRebate(parsed.lotRebate)
     setRevenueShare(parsed.revenueShare)
 
@@ -398,7 +524,6 @@ export function PartnerFormPage() {
     const agreementDetails = buildAllAgreementDetails(
       selectedTypes,
       salary,
-      cpa,
       lotRebate,
       revenueShare,
     )
@@ -571,28 +696,16 @@ export function PartnerFormPage() {
                   <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
                     {t('ib.partnerForm.responsible')}
                   </Label>
-                  <Select
+                  <SearchableSelectField
                     value={watchedManagedBy || '__org__'}
                     onValueChange={(v) =>
                       form.setValue('managed_by_employee_id', v === '__org__' ? '' : v)
                     }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('ib.partnerForm.responsiblePlaceholder')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__org__">
-                        {currentOrg?.name ?? t('ib.partnerForm.organization')}
-                      </SelectItem>
-                      {hrEmployees
-                        .filter((e) => e.is_active)
-                        .map((e) => (
-                          <SelectItem key={e.id} value={e.id}>
-                            {e.full_name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder={t('ib.partnerForm.responsiblePlaceholder')}
+                    options={responsibleEmployeeOptions}
+                    searchPlaceholder={t('ib.partnerForm.searchEmployee')}
+                    noResultsText={t('ib.partnerForm.noEmployeeResults')}
+                  />
                 </div>
 
                 {/* Secondary Employee (Exception) */}
@@ -600,26 +713,16 @@ export function PartnerFormPage() {
                   <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
                     {t('ib.partnerForm.secondary')}
                   </Label>
-                  <Select
+                  <SearchableSelectField
                     value={watchedSecondary || '__none__'}
                     onValueChange={(v) =>
                       form.setValue('secondary_employee_id', v === '__none__' ? '' : v)
                     }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('ib.partnerForm.secondaryPlaceholder')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">{t('ib.partners.unassigned')}</SelectItem>
-                      {hrEmployees
-                        .filter((e) => e.is_active)
-                        .map((e) => (
-                          <SelectItem key={e.id} value={e.id}>
-                            {e.full_name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder={t('ib.partnerForm.secondaryPlaceholder')}
+                    options={secondaryEmployeeOptions}
+                    searchPlaceholder={t('ib.partnerForm.searchEmployee')}
+                    noResultsText={t('ib.partnerForm.noEmployeeResults')}
+                  />
                   <p className="mt-1 text-xs text-black/45">
                     {t('ib.partnerForm.secondaryHelper')}
                   </p>
@@ -718,8 +821,6 @@ export function PartnerFormPage() {
                     type={type}
                     salary={salary}
                     onSalaryChange={setSalary}
-                    cpa={cpa}
-                    onCpaChange={setCpa}
                     lotRebate={lotRebate}
                     onLotRebateChange={setLotRebate}
                     revenueShare={revenueShare}
@@ -904,8 +1005,6 @@ interface AgreementDetailFormProps {
   type: AgreementType
   salary: SalaryDetails
   onSalaryChange: (v: SalaryDetails) => void
-  cpa: CpaDetails
-  onCpaChange: (v: CpaDetails) => void
   lotRebate: LotRebateDetails
   onLotRebateChange: (v: LotRebateDetails) => void
   revenueShare: RevenueShareDetails
@@ -919,8 +1018,6 @@ function AgreementDetailForm({
   type,
   salary,
   onSalaryChange,
-  cpa,
-  onCpaChange,
   lotRebate,
   onLotRebateChange,
   revenueShare,
@@ -987,73 +1084,6 @@ function AgreementDetailForm({
                   <SelectItem value="monthly">{t('ib.partners.salary.monthly')}</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-          </div>
-        </fieldset>
-      )
-
-    case 'cpa':
-      return (
-        <fieldset className="space-y-sm rounded-lg border border-black/[0.07] bg-bg2/50 p-4">
-          <legend className="text-xs font-semibold text-black/70 px-1.5">
-            {t('ib.partners.cpaTitle')}
-          </legend>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-sm">
-            <div className="space-y-1">
-              <Label htmlFor="cpa-amount">{t('ib.partners.cpa.cpaAmount')}</Label>
-              <Input
-                id="cpa-amount"
-                type="number"
-                min={0}
-                step="0.01"
-                value={cpa.cpa_amount}
-                onChange={(e) =>
-                  onCpaChange({
-                    ...cpa,
-                    cpa_amount: e.target.value === '' ? '' : Number(e.target.value),
-                  })
-                }
-                placeholder="0.00"
-              />
-              {errors?.cpa_amount && <p className="text-xs text-error">{errors.cpa_amount}</p>}
-            </div>
-            <div className="space-y-1">
-              <Label>{t('ib.partners.currency')}</Label>
-              <Select
-                value={cpa.currency}
-                onValueChange={(v) => onCpaChange({ ...cpa, currency: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {currencies.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="cpa-min-ftd">{t('ib.partners.cpa.minFtdAmount')}</Label>
-              <Input
-                id="cpa-min-ftd"
-                type="number"
-                min={0}
-                step="0.01"
-                value={cpa.min_ftd_amount}
-                onChange={(e) =>
-                  onCpaChange({
-                    ...cpa,
-                    min_ftd_amount: e.target.value === '' ? '' : Number(e.target.value),
-                  })
-                }
-                placeholder={t('ib.partners.optional')}
-              />
-              {errors?.min_ftd_amount && (
-                <p className="text-xs text-error">{errors.min_ftd_amount}</p>
-              )}
             </div>
           </div>
         </fieldset>
@@ -1138,21 +1168,30 @@ function AgreementDetailForm({
               <Label>{t('ib.partners.revenueShare.source')}</Label>
               <Select
                 value={revenueShare.source}
-                onValueChange={(v) => onRevenueShareChange({ ...revenueShare, source: v })}
+                onValueChange={(v) =>
+                  onRevenueShareChange({
+                    ...revenueShare,
+                    source: v === 'net_revenue' ? 'net_revenue' : 'first_deposit',
+                  })
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="spread">{t('ib.partners.revenueShare.spread')}</SelectItem>
-                  <SelectItem value="commission">
-                    {t('ib.partners.revenueShare.commission')}
+                  <SelectItem value="first_deposit">
+                    {t('ib.partners.revenueShare.firstDeposit')}
                   </SelectItem>
                   <SelectItem value="net_revenue">
                     {t('ib.partners.revenueShare.netRevenue')}
                   </SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-[11px] text-black/45">
+                {revenueShare.source === 'first_deposit'
+                  ? t('ib.partners.revenueShare.firstDepositHelper')
+                  : t('ib.partners.revenueShare.netRevenueHelper')}
+              </p>
             </div>
           </div>
         </fieldset>

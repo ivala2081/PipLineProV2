@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const AGREEMENT_TYPES = ['salary', 'cpa', 'lot_rebate', 'revenue_share'] as const
+export const AGREEMENT_TYPES = ['salary', 'lot_rebate', 'revenue_share'] as const
 export type AgreementType = (typeof AGREEMENT_TYPES)[number]
 
 export const IB_STATUSES = ['active', 'paused', 'terminated'] as const
@@ -15,12 +15,6 @@ export const salaryDetailsSchema = z.object({
   period: z.enum(['weekly', 'monthly']).default('monthly'),
 })
 
-export const cpaDetailsSchema = z.object({
-  cpa_amount: z.coerce.number().min(0, 'CPA amount must be non-negative'),
-  currency: z.enum(['USD', 'TRY', 'EUR']).default('USD'),
-  min_ftd_amount: z.coerce.number().min(0, 'Min FTD must be non-negative').optional(),
-})
-
 export const lotRebateDetailsSchema = z.object({
   rebate_per_lot: z.coerce.number().min(0, 'Rebate must be non-negative'),
   currency: z.enum(['USD', 'TRY', 'EUR']).default('USD'),
@@ -31,12 +25,11 @@ export const revenueShareDetailsSchema = z.object({
     .number()
     .min(0, 'Percentage must be non-negative')
     .max(100, 'Percentage must be 0-100'),
-  source: z.enum(['spread', 'commission', 'net_revenue']).default('spread'),
+  source: z.enum(['first_deposit', 'net_revenue']).default('first_deposit'),
 })
 
 const detailSchemaMap = {
   salary: salaryDetailsSchema,
-  cpa: cpaDetailsSchema,
   lot_rebate: lotRebateDetailsSchema,
   revenue_share: revenueShareDetailsSchema,
 } as const

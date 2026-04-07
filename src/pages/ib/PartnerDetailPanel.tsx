@@ -229,22 +229,16 @@ export function PartnerDetailPanel({ partnerId, isAdmin, onBack }: PartnerDetail
                       ? t('ib.partners.detail.weekly')
                       : t('ib.partners.detail.monthly')
                   summary = `${amt} ${cur} / ${period}`
-                } else if (type === 'cpa') {
-                  const amt = d.cpa_amount != null ? fmt(Number(d.cpa_amount)) : '—'
-                  const cur = (d.currency as string) || 'USD'
-                  const minFtd =
-                    d.min_ftd_amount != null && d.min_ftd_amount !== ''
-                      ? ` (min FTD: ${fmt(Number(d.min_ftd_amount))} ${cur})`
-                      : ''
-                  summary = `${amt} ${cur}${minFtd}`
                 } else if (type === 'lot_rebate') {
                   const rebate = d.rebate_per_lot != null ? fmt(Number(d.rebate_per_lot)) : '—'
                   const cur = (d.currency as string) || 'USD'
                   summary = `${rebate} ${cur} / lot`
                 } else if (type === 'revenue_share') {
                   const pct = d.revshare_pct != null ? `${d.revshare_pct}%` : '—'
-                  const src = (d.source as string) || 'spread'
-                  summary = `${pct} (${src})`
+                  const rawSrc = (d.source as string) || 'first_deposit'
+                  const srcKey =
+                    rawSrc === 'net_revenue' ? 'netRevenue' : 'firstDeposit'
+                  summary = `${pct} (${t(`ib.partners.revenueShare.${srcKey}`)})`
                 }
                 return summary ? (
                   <p key={type} className="text-sm font-medium text-black/70">

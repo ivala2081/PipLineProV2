@@ -7,7 +7,6 @@ import { useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
   UserCircle,
-  Briefcase,
   Shield,
   ShieldWarning,
   Money,
@@ -27,12 +26,13 @@ import {
   Label,
   Select,
   SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
   Separator,
   Skeleton,
 } from '@ds'
+import { basicInputClasses, disabledInputClasses, focusInputClasses } from '@ds/components/Input'
+import { cn } from '@ds/utils'
 import { useToast } from '@/hooks/useToast'
 import {
   useHrEmployeesQuery,
@@ -65,6 +65,81 @@ function buildEmployeeSchema(roles: string[]) {
 }
 
 type EmployeeFormValues = z.infer<ReturnType<typeof buildEmployeeSchema>>
+
+/* ------------------------------------------------------------------ */
+/*  Searchable Select                                                   */
+/* ------------------------------------------------------------------ */
+
+type SearchableSelectOption = { value: string; label: string; searchText?: string }
+
+function SearchableSelectField({
+  value,
+  onValueChange,
+  placeholder,
+  options,
+  searchPlaceholder,
+  noResultsText,
+}: {
+  value: string
+  onValueChange: (next: string) => void
+  placeholder: string
+  options: SearchableSelectOption[]
+  searchPlaceholder: string
+  noResultsText: string
+}) {
+  const [query, setQuery] = useState('')
+  const filteredOptions = useMemo(() => {
+    const n = query.trim().toLowerCase()
+    if (!n) return options
+    return options.filter((o) => (o.searchText ?? o.label).toLowerCase().includes(n))
+  }, [options, query])
+
+  const selectedLabel = options.find((o) => o.value === value)?.label
+
+  return (
+    <Select
+      value={value}
+      onValueChange={(v) => {
+        onValueChange(v)
+        setQuery('')
+      }}
+      onOpenChange={(open) => {
+        if (!open) setQuery('')
+      }}
+    >
+      <SelectTrigger>
+        <span className={cn('truncate', !selectedLabel && 'text-black/45')}>
+          {selectedLabel || placeholder}
+        </span>
+      </SelectTrigger>
+      <SelectContent>
+        <div className="px-2 pb-1">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => e.stopPropagation()}
+            placeholder={searchPlaceholder}
+            className={cn(
+              basicInputClasses,
+              disabledInputClasses,
+              focusInputClasses,
+              'h-9 w-full rounded-lg px-3 py-1.5 text-xs',
+            )}
+          />
+        </div>
+        {filteredOptions.length > 0 ? (
+          filteredOptions.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+            </SelectItem>
+          ))
+        ) : (
+          <p className="px-3 py-2 text-xs text-black/55">{noResultsText}</p>
+        )}
+      </SelectContent>
+    </Select>
+  )
+}
 
 /* ------------------------------------------------------------------ */
 /*  Section wrapper                                                     */
@@ -360,23 +435,16 @@ export function EmployeeFormPage() {
                   <Label className="mb-1.5 text-xs font-medium tracking-wide text-black/70">
                     {lang === 'tr' ? 'Rol' : 'Role'}
                   </Label>
-                  <Select
+                  <SearchableSelectField
                     value={form.watch('role')}
                     onValueChange={(v) =>
                       form.setValue('role', v as EmployeeFormValues['role'])
                     }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {settingsRoles.map((r) => (
-                        <SelectItem key={r} value={r}>
-                          {r}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder={lang === 'tr' ? 'Rol seçin' : 'Select role'}
+                    options={settingsRoles.map((r) => ({ value: r, label: r }))}
+                    searchPlaceholder={lang === 'tr' ? 'Rol ara...' : 'Search role...'}
+                    noResultsText={lang === 'tr' ? 'Sonuç bulunamadı' : 'No results'}
+                  />
                   {form.formState.errors.role && (
                     <p className={compactError}>{form.formState.errors.role.message}</p>
                   )}
