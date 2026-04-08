@@ -43,6 +43,7 @@ export const navGroups: NavGroup[] = [
         icon: BookOpen,
         page: 'accounting',
       },
+      { titleKey: 'nav.psps', href: '/psps', icon: CreditCard, page: 'psps' },
       {
         titleKey: 'nav.wallets',
         href: '/wallets',
@@ -58,13 +59,6 @@ export const navGroups: NavGroup[] = [
     titleKey: 'nav.groups.management',
     items: [
       {
-        titleKey: 'nav.members',
-        href: '/members',
-        icon: Users,
-        page: 'members',
-      },
-      { titleKey: 'nav.psps', href: '/psps', icon: CreditCard, page: 'psps' },
-      {
         titleKey: 'nav.hr',
         href: '/hr',
         icon: IdentificationCard,
@@ -75,6 +69,12 @@ export const navGroups: NavGroup[] = [
   {
     titleKey: 'nav.groups.system',
     items: [
+      {
+        titleKey: 'nav.members',
+        href: '/members',
+        icon: Users,
+        page: 'members',
+      },
       {
         titleKey: 'nav.organizations',
         href: '/organizations',

@@ -13,6 +13,9 @@ import {
   Tag,
   EmptyState,
   Skeleton,
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
   Table,
   TableHeader,
   TableBody,
@@ -200,7 +203,17 @@ export function PartnersTab({ isAdmin }: PartnersTabProps) {
                   onClick={() => handleRowClick(partner)}
                 >
                   <TableCell data-label={t('ib.partners.name')}>
-                    <span className="font-medium">{partner.name}</span>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="size-8 shrink-0 rounded-lg">
+                        {partner.logo_url ? (
+                          <AvatarImage src={partner.logo_url} className="rounded-lg object-cover" />
+                        ) : null}
+                        <AvatarFallback className="rounded-lg bg-gradient-to-br from-brand/10 to-brand/5 text-[11px] font-semibold text-brand/70">
+                          {partner.name.slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium">{partner.name}</span>
+                    </div>
                   </TableCell>
                   <TableCell data-label={t('ib.partners.agreementType')}>
                     <div className="flex flex-wrap gap-1">
@@ -225,7 +238,8 @@ export function PartnersTab({ isAdmin }: PartnersTabProps) {
                         ? (employeeMap[partner.managed_by_employee_id] ?? '—')
                         : (currentOrg?.name ?? '—')}
                     </span>
-                    {partner.secondary_employee_id && (
+                    {partner.secondary_employee_id &&
+                      partner.secondary_employee_id !== partner.managed_by_employee_id && (
                       <span className="block text-xs text-black/45">
                         +{employeeMap[partner.secondary_employee_id] ?? '—'}
                       </span>

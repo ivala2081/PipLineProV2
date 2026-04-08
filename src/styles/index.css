@@ -90,15 +90,15 @@
   --color-green: #16a34a;
   --color-yellow: #ffdb56;
   --color-orange: #ffb55b;
-  --color-red: #ff4747;
+  --color-red: #f87171;
   --color-bg3: #e6f1fd;
   --color-bg4: #edeefc;
 
   /* ---- Domain-specific semantic colors (chart & status contexts) ---- */
-  --color-deposit: #22c55e;
-  --color-withdrawal: #ef4444;
+  --color-deposit: #4ade80;
+  --color-withdrawal: #f87171;
   --color-net-line: #18181b;
-  --color-commission-chart: #f97316;
+  --color-commission-chart: #fb923c;
   --color-settlement: #f59e0b;
 
   /* ---- Animations ---- */

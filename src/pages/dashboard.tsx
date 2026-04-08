@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import {
@@ -13,8 +12,6 @@ import {
   TrendDown,
   ChartLine,
   ChartPie,
-  Coins,
-  Pulse,
   Trophy,
   ListBullets,
   CalendarStar,
@@ -22,14 +19,12 @@ import {
   CalendarCheck,
   Hash,
   CalendarBlank,
+  Users,
 } from '@phosphor-icons/react'
 import {
   ResponsiveContainer,
   AreaChart,
   Area,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   Tooltip,
@@ -37,12 +32,9 @@ import {
 } from 'recharts'
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
-import { supabase } from '@/lib/supabase'
 import { CURRENCIES } from '@/lib/currencies'
 import {
   useDashboardQuery,
-  getDateRange,
-  getPreviousDateRange,
   type DashboardPeriod,
 } from '@/hooks/queries/useDashboardQuery'
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
@@ -52,9 +44,11 @@ import { useExchangeRateQuery } from '@/hooks/queries/useExchangeRateQuery'
 import { useDashboardRecentQuery } from '@/hooks/queries/useDashboardRecentQuery'
 import type { RecentTransfer } from '@/hooks/queries/useDashboardRecentQuery'
 import type { BreakdownItem } from '@/hooks/queries/useMonthlyAnalysisQuery'
+import { useDashboardChartsQuery } from '@/hooks/queries/useDashboardChartsQuery'
+import { useBestEmployeesQuery, type EmployeePerformance } from '@/hooks/queries/useBestEmployeesQuery'
 import { Tag, Tabs, TabsList, TabsTrigger, Skeleton, Grid, EmptyState } from '@ds'
 import { SectionErrorBoundary } from '@/components/ErrorBoundary'
-import { DailyNetMiniChart } from '@/components/DailyNetMiniChart'
+
 import { UserAvatar } from '@/components/UserAvatar'
 import { useTheme } from '@ds'
 import { cn } from '@ds/utils'
@@ -69,12 +63,12 @@ const DEPOSIT_COLOR = 'var(--color-deposit)'
 const WITHDRAWAL_COLOR = 'var(--color-withdrawal)'
 
 const DONUT_COLORS = [
-  '#6366f1', // indigo-500
-  '#06b6d4', // cyan-500
-  '#10b981', // emerald-500
-  '#f59e0b', // amber-500
-  '#8b5cf6', // violet-500
-  '#f43f5e', // rose-500
+  '#9f9ff8', // indigo (muted)
+  '#aec7ed', // cyan (muted)
+  '#96e2d6', // mint (muted)
+  '#ffdb56', // yellow (muted)
+  '#c9b3ed', // purple (muted)
+  '#ffb55b', // orange (muted)
 ]
 
 function fmtMoney(n: number, lang: string, currency = '₺'): string {
@@ -99,6 +93,12 @@ function fmtCompact(value: number): string {
 function fmtDay(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00')
   return d.getDate().toString()
+}
+
+function fmtMonth(monthStr: string): string {
+  const [y, m] = monthStr.split('-')
+  const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara']
+  return `${months[Number(m) - 1]} ${y.slice(2)}`
 }
 
 function fmtTime(dateStr: string, lang: string): string {
@@ -184,6 +184,7 @@ function HeroKpiCard({
   iconColor,
   label,
   value,
+  valueColor,
   isLoading,
   trend,
   splitLeft,
@@ -196,6 +197,7 @@ function HeroKpiCard({
   iconColor: string
   label: string
   value: string | number
+  valueColor?: string
   isLoading?: boolean
   trend?: React.ReactNode
   splitLeft?: { label: string; value: string }
@@ -231,7 +233,7 @@ function HeroKpiCard({
       {isLoading ? (
         <Skeleton className="mt-4 h-7 w-28 rounded-lg" />
       ) : (
-        <p className="mt-4 text-lg font-bold tabular-nums tracking-tight text-black md:text-[22px]">
+        <p className={cn('mt-4 text-lg font-bold tabular-nums tracking-tight md:text-[22px]', valueColor || 'text-black')}>
           {value}
         </p>
       )}
@@ -416,7 +418,7 @@ function RecentTransfersTable({
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}{' '}
-              {tx.currency === 'TL' ? '₺' : '$'}
+              {CURRENCIES.find((c) => c.code === tx.currency)?.symbol ?? tx.currency}
             </p>
             <p className="mt-0.5 text-[10px] text-black/25">{fmtTime(tx.transfer_date, lang)}</p>
           </div>
@@ -459,10 +461,10 @@ function TopCustomersList({
   const maxVal = Math.max(...items.map((c) => c.volume))
 
   const rankStyle = (i: number) => {
-    if (i === 0) return { badge: 'bg-yellow/20 text-yellow', bar: '#f59e0b' }
-    if (i === 1) return { badge: 'bg-black/[0.07] text-black/40', bar: '#94a3b8' }
-    if (i === 2) return { badge: 'bg-orange/15 text-orange', bar: '#f97316' }
-    return { badge: 'bg-black/[0.04] text-black/25', bar: '#6366f1' }
+    if (i === 0) return { badge: 'bg-black/[0.12] text-black/80', bar: '#475569' }
+    if (i === 1) return { badge: 'bg-black/10 text-black/60', bar: '#64748b' }
+    if (i === 2) return { badge: 'bg-black/[0.08] text-black/50', bar: '#94a3b8' }
+    return { badge: 'bg-black/[0.06] text-black/40', bar: '#cbd5e1' }
   }
 
   return (
@@ -488,7 +490,6 @@ function TopCustomersList({
                 >
                   {i + 1}
                 </span>
-                <UserAvatar name={cust.name} size="sm" className="shrink-0" />
                 <span className="truncate text-sm font-medium text-black/60">{cust.name}</span>
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
@@ -514,7 +515,7 @@ function TopCustomersList({
                 </span>
               </div>
             </div>
-            <div className="ml-[72px] mt-1.5 h-1 overflow-hidden rounded-full bg-black/[0.04]">
+            <div className="ml-[38px] mt-1.5 h-1 overflow-hidden rounded-full bg-black/[0.04]">
               <div
                 className="h-full rounded-full transition-all duration-700"
                 style={{ width: `${pct}%`, background: bar, opacity: 0.5 }}
@@ -555,6 +556,114 @@ function InsightCard({
   )
 }
 
+/* ── Best Employees List ─────────────────────────────── */
+
+function BestEmployeesList({
+  employees,
+  tab,
+  isLoading,
+  lang,
+  t,
+}: {
+  employees: EmployeePerformance[]
+  tab: 'marketing' | 'retention'
+  isLoading: boolean
+  lang: string
+  t: (key: string) => string
+}) {
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-10 w-full rounded-lg" />
+        ))}
+      </div>
+    )
+  }
+
+  const items = employees.slice(0, 5)
+  if (items.length === 0) {
+    return <EmptyState icon={Users} title={t('dashboard.charts.noEmployees')} className="h-40 py-0" />
+  }
+
+  const maxVal = Math.max(
+    ...items.map((e) => (tab === 'marketing' ? e.transferCount : e.netContributionUsd)),
+  )
+
+  const rankStyle = (i: number) => {
+    if (i === 0) return { badge: 'bg-black/[0.12] text-black/80', bar: '#475569' }
+    if (i === 1) return { badge: 'bg-black/10 text-black/60', bar: '#64748b' }
+    if (i === 2) return { badge: 'bg-black/[0.08] text-black/50', bar: '#94a3b8' }
+    return { badge: 'bg-black/[0.06] text-black/40', bar: '#cbd5e1' }
+  }
+
+  return (
+    <div className="space-y-0.5">
+      {items.map((emp, i) => {
+        const primaryVal = tab === 'marketing' ? emp.transferCount : emp.netContributionUsd
+        const pct = maxVal > 0 ? (Math.abs(primaryVal) / Math.max(Math.abs(maxVal), 1)) * 100 : 0
+        const { badge, bar } = rankStyle(i)
+
+        return (
+          <div
+            key={emp.employeeId}
+            className="rounded-xl px-2 py-2 transition-colors hover:bg-black/[0.02]"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <span
+                  className={cn(
+                    'flex size-6 shrink-0 items-center justify-center rounded-lg font-mono text-[10px] font-black',
+                    badge,
+                  )}
+                >
+                  {i + 1}
+                </span>
+                <span className="truncate text-sm font-medium text-black/60">{emp.fullName}</span>
+              </div>
+              <div className="flex shrink-0 items-center gap-1.5">
+                {tab === 'marketing' ? (
+                  <>
+                    <span className="font-mono text-xs font-bold tabular-nums text-black/60">
+                      {emp.transferCount} tx
+                    </span>
+                    {emp.firstDepositCount > 0 && (
+                      <span className="rounded-full bg-green/10 px-1.5 py-0.5 text-[10px] font-bold text-green">
+                        {emp.firstDepositCount} FTD
+                      </span>
+                    )}
+                    <span className="rounded-full bg-black/[0.04] px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-black/25">
+                      {fmtCompact(emp.totalVolumeUsd)} $
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className={cn(
+                      'font-mono text-xs font-bold tabular-nums',
+                      emp.netContributionUsd >= 0 ? 'text-green' : 'text-red',
+                    )}>
+                      {fmtMoney(emp.netContributionUsd, lang, '$')}
+                    </span>
+                    <span className="rounded-full bg-black/[0.04] px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-black/25">
+                      {emp.transferCount} tx
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="ml-[38px] mt-1.5 h-1 overflow-hidden rounded-full bg-black/[0.04]">
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{ width: `${pct}%`, background: bar, opacity: 0.5 }}
+              />
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 /* ================================================================== */
 /*  Dashboard Page                                                     */
 /* ================================================================== */
@@ -588,11 +697,21 @@ export function DashboardPage() {
     period === 'custom' ? customTo : undefined,
   )
 
-  const now = useMemo(() => new Date(), [])
-  const { data: monthlyData, isLoading: isMonthlyLoading } = useMonthlyAnalysisQuery(
-    now.getFullYear(),
-    now.getMonth() + 1,
+  /* ── Period-aware chart data ─────────────────────── */
+  const { chartsData, isChartsLoading, granularity } = useDashboardChartsQuery(
+    period,
+    period === 'custom' ? customFrom : undefined,
+    period === 'custom' ? customTo : undefined,
   )
+  const { bestEmployees, isBestEmployeesLoading } = useBestEmployeesQuery(
+    period,
+    period === 'custom' ? customFrom : undefined,
+    period === 'custom' ? customTo : undefined,
+  )
+  const [empTab, setEmpTab] = useState<'marketing' | 'retention'>('marketing')
+
+  /* ── Previous month (for bottom overview section) ── */
+  const now = useMemo(() => new Date(), [])
   const prevMonthDate = useMemo(() => {
     const d = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     return d
@@ -601,20 +720,12 @@ export function DashboardPage() {
     prevMonthDate.getFullYear(),
     prevMonthDate.getMonth() + 1,
   )
-  // Fallback: if current month has no chart data, use previous month
-  const currentMonthHasData = !!(
-    monthlyData?.daily_volume?.length ||
-    monthlyData?.payment_method_breakdown?.length ||
-    monthlyData?.daily_net?.length
+  /* ── Current month (for insights section) ────────── */
+  const { data: monthlyData, isLoading: isMonthlyLoading } = useMonthlyAnalysisQuery(
+    now.getFullYear(),
+    now.getMonth() + 1,
   )
-  const chartMonthlyData = currentMonthHasData ? monthlyData : prevMonthlyData
-  const isChartFallback = !currentMonthHasData && !!prevMonthlyData?.daily_volume?.length
-  const chartFallbackLabel = isChartFallback
-    ? new Date(prevMonthDate.getFullYear(), prevMonthDate.getMonth()).toLocaleDateString(
-        lang === 'tr' ? 'tr-TR' : 'en-US',
-        { year: 'numeric', month: 'long' },
-      )
-    : null
+  const chartMonthlyData = monthlyData ?? prevMonthlyData
 
   const { recentTransfers, isTransfersLoading } = useDashboardRecentQuery()
 
@@ -628,133 +739,18 @@ export function DashboardPage() {
     [recentTransfers, activeFilter],
   )
 
-  /* ── PSP Commission by Period ────────────────────── */
-  const currentRange = useMemo(
-    () => getDateRange(period, customFrom, customTo),
-    [period, customFrom, customTo],
-  )
-  const prevRange = useMemo(
-    () => getPreviousDateRange(period, customFrom, customTo),
-    [period, customFrom, customTo],
-  )
-
-  /* ── PSP metadata (name / rate / is_internal) ────── */
-  const { data: pspMeta } = useQuery({
-    queryKey: queryKeys.dashboard.pspMeta(currentOrg?.id ?? ''),
-    queryFn: async () => {
-      if (!currentOrg) throw new Error('No org')
-      const { data, error } = await supabase
-        .from('psps')
-        .select('id, name, commission_rate, is_internal')
-        .eq('organization_id', currentOrg.id)
-      if (error) throw error
-      return new Map(
-        (
-          data as Array<{
-            id: string
-            name: string
-            commission_rate: number
-            is_internal: boolean
-          }>
-        ).map((p) => [p.id, p]),
-      )
-    },
-    enabled: !!currentOrg,
-    staleTime: 10 * 60_000,
-  })
-
-  const { data: pspCommissionData, isLoading: isCommissionLoading } = useQuery({
-    queryKey: queryKeys.dashboard.pspCommission(currentOrg?.id ?? '', currentRange.from),
-    queryFn: async () => {
-      if (!currentOrg) throw new Error('No org')
-      const { data, error } = await supabase
-        .from('transfers')
-        .select('psp_id, commission, category_id, transfer_types(name)')
-        .eq('organization_id', currentOrg.id)
-        .gte('transfer_date', currentRange.from)
-        .lte('transfer_date', currentRange.to)
-      if (error) throw error
-
-      const commMap = new Map<string, { commission: number; count: number }>()
-      for (const row of (data ?? []) as Array<{
-        psp_id: string
-        commission: number
-        category_id: string
-        transfer_types: { name: string } | null
-      }>) {
-        // Deposits only; blocked transfers have commission=0 but exclude for count accuracy
-        const typeName = (row.transfer_types?.name ?? '').toLowerCase()
-        if (row.category_id !== 'dep') continue
-        if (typeName.includes('bloke') || typeName.includes('blocked')) continue
-        const id = row.psp_id
-        if (!commMap.has(id)) commMap.set(id, { commission: 0, count: 0 })
-        const entry = commMap.get(id)!
-        entry.commission += Number(row.commission) || 0
-        entry.count++
-      }
-
-      const top3 = [...commMap.entries()]
-        .map(([psp_id, { commission, count }]) => {
-          const psp = pspMeta?.get(psp_id)
-          return {
-            name: psp?.name ?? psp_id,
-            commission_rate: Number(psp?.commission_rate ?? 0),
-            commission,
-            count,
-            is_internal: psp?.is_internal ?? false,
-          }
-        })
-        .filter((p) => !p.is_internal)
-        .sort((a, b) => b.commission - a.commission)
-        .slice(0, 3)
-
-      return top3
-    },
-    enabled: !!currentOrg && !!pspMeta,
-    staleTime: 5 * 60_000,
-  })
-
-  const { data: prevPspCommissionMap } = useQuery({
-    queryKey: queryKeys.dashboard.prevPspCommission(currentOrg?.id ?? '', prevRange.from),
-    queryFn: async () => {
-      if (!currentOrg) throw new Error('No org')
-      const { data, error } = await supabase
-        .from('transfers')
-        .select('psp_id, commission, category_id, transfer_types(name)')
-        .eq('organization_id', currentOrg.id)
-        .gte('transfer_date', prevRange.from)
-        .lte('transfer_date', prevRange.to)
-      if (error) throw error
-
-      const map = new Map<string, number>()
-      for (const row of (data ?? []) as Array<{
-        psp_id: string
-        commission: number
-        category_id: string
-        transfer_types: { name: string } | null
-      }>) {
-        const typeName = (row.transfer_types?.name ?? '').toLowerCase()
-        if (row.category_id !== 'dep') continue
-        if (typeName.includes('bloke') || typeName.includes('blocked')) continue
-        const name = pspMeta?.get(row.psp_id)?.name ?? row.psp_id
-        map.set(name, (map.get(name) ?? 0) + (Number(row.commission) || 0))
-      }
-      return map
-    },
-    enabled: !!currentOrg && !!pspMeta,
-    staleTime: 5 * 60_000,
-  })
 
   /* ── Derived values ──────────────────────────────── */
   const displayName = profile?.display_name || t('dashboard.defaultUser')
 
+  /* ── Period-aware chart derived data ──────────────── */
   const paymentMethods = useMemo(() => {
     const factor = showUsd && usdToBaseRate ? 1 / usdToBaseRate : 1
-    return (chartMonthlyData?.payment_method_breakdown ?? [])
+    return (chartsData?.paymentMethodBreakdown ?? [])
       .filter((pm) => (pmView === 'volume' ? pm.volume > 0 : pm.count > 0))
       .sort((a, b) => (pmView === 'volume' ? b.volume - a.volume : b.count - a.count))
       .map((pm) => ({ ...pm, volume: pm.volume * factor }))
-  }, [chartMonthlyData?.payment_method_breakdown, pmView, showUsd, usdToBaseRate])
+  }, [chartsData?.paymentMethodBreakdown, pmView, showUsd, usdToBaseRate])
 
   const pmTotal = useMemo(
     () => paymentMethods.reduce((s, pm) => s + (pmView === 'volume' ? pm.volume : pm.count), 0),
@@ -771,21 +767,11 @@ export function DashboardPage() {
   // Base → USD multiplier for chart conversion (null = rate not yet loaded)
   const chartUsdFactor = isUSD && usdToBaseRate ? 1 / usdToBaseRate : null
 
-  const chartDailyVolume = useMemo(() => {
-    const src = chartMonthlyData?.daily_volume ?? []
-    if (!chartUsdFactor) return src
-    return src.map((p) => ({
-      day: p.day,
-      deposits: p.deposits * chartUsdFactor,
-      withdrawals: p.withdrawals * chartUsdFactor,
-    }))
-  }, [chartMonthlyData?.daily_volume, chartUsdFactor])
-
-  const chartDailyNet = useMemo(() => {
-    const src = chartMonthlyData?.daily_net ?? []
-    if (!chartUsdFactor) return src
-    return src.map((p) => ({ day: p.day, net: p.net * chartUsdFactor }))
-  }, [chartMonthlyData?.daily_net, chartUsdFactor])
+  const chartVolumeTrend = useMemo(() => {
+    const src = chartsData?.volumeTrend ?? []
+    if (!isUSD) return src.map((p) => ({ label: p.label, deposits: p.deposits, withdrawals: p.withdrawals }))
+    return src.map((p) => ({ label: p.label, deposits: p.depositsUsd, withdrawals: p.withdrawalsUsd }))
+  }, [chartsData?.volumeTrend, isUSD])
 
   const prevChartDailyVolume = useMemo(() => {
     const src = prevMonthlyData?.daily_volume ?? []
@@ -796,6 +782,21 @@ export function DashboardPage() {
       withdrawals: p.withdrawals * chartUsdFactor,
     }))
   }, [prevMonthlyData?.daily_volume, chartUsdFactor])
+
+  /* ── Dynamic chart titles based on period ────────── */
+  const volumeChartTitle = useMemo(() => {
+    switch (period) {
+      case 'today': return t('dashboard.charts.dailyVolume')     // today → current month daily
+      case 'week': return t('dashboard.charts.weeklyVolume')
+      case 'month': return t('dashboard.charts.monthlyVolume')   // month → yearly monthly
+      case 'custom': return t('dashboard.charts.volumeTrend')
+    }
+  }, [period, t])
+
+  const volumeXFormatter = useMemo(() => {
+    if (granularity === 'month') return fmtMonth
+    return fmtDay
+  }, [granularity])
 
   // Tooltip formatter: switches symbol with toggle
   const chartMoneyFmt = (value: number) =>
@@ -864,9 +865,7 @@ export function DashboardPage() {
   /* ── Card filter helpers ─────────────────────────── */
   const cardCls = (filter: 'deposits' | 'withdrawals' | 'commission') => {
     if (activeFilter === filter) {
-      if (filter === 'deposits') return 'ring-2 ring-green/40 border-green/20'
-      if (filter === 'withdrawals') return 'ring-2 ring-red/40 border-red/20'
-      return 'ring-2 ring-orange/40 border-orange/20'
+      return 'ring-1 ring-black/20 border-black/[0.12] bg-black/[0.02]'
     }
     return activeFilter !== null ? 'opacity-50' : ''
   }
@@ -976,10 +975,11 @@ export function DashboardPage() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <HeroKpiCard
             icon={ArrowCircleDown}
-            iconBg="bg-green/10"
-            iconColor="text-green"
+            iconBg="bg-black/10"
+            iconColor="text-black/60"
             label={t('dashboard.kpi.deposits')}
             value={depositMainValue}
+            valueColor="text-green"
             isLoading={isLoading}
             trend={<TrendBadge {...depositTrend} />}
             splitLeft={depositSecondary}
@@ -988,10 +988,11 @@ export function DashboardPage() {
           />
           <HeroKpiCard
             icon={ArrowCircleUp}
-            iconBg="bg-red/10"
-            iconColor="text-red"
+            iconBg="bg-black/10"
+            iconColor="text-black/60"
             label={t('dashboard.kpi.withdrawals')}
             value={withdrawalMainValue}
+            valueColor="text-red"
             isLoading={isLoading}
             trend={<TrendBadge {...withdrawalTrend} />}
             splitLeft={withdrawalSecondary}
@@ -999,23 +1000,12 @@ export function DashboardPage() {
             onClick={() => setActiveFilter((f) => (f === 'withdrawals' ? null : 'withdrawals'))}
           />
           <HeroKpiCard
-            icon={Wallet}
-            iconBg="bg-indigo/10"
-            iconColor="text-indigo"
-            label={t('dashboard.kpi.netCash')}
-            value={netMainValue}
-            isLoading={isLoading}
-            trend={<TrendBadge {...netTrend} />}
-            splitLeft={netSecondary}
-            className={neutralCardCls}
-            onClick={() => setActiveFilter(null)}
-          />
-          <HeroKpiCard
             icon={Percent}
-            iconBg="bg-orange/10"
-            iconColor="text-orange"
+            iconBg="bg-black/10"
+            iconColor="text-black/60"
             label={t('dashboard.kpi.commission')}
             value={fmtMoney(kpis?.totalCommission ?? 0, lang)}
+            valueColor="text-red/60"
             isLoading={isLoading}
             trend={
               <TrendBadge
@@ -1027,9 +1017,21 @@ export function DashboardPage() {
             onClick={() => setActiveFilter((f) => (f === 'commission' ? null : 'commission'))}
           />
           <HeroKpiCard
+            icon={Wallet}
+            iconBg="bg-black/10"
+            iconColor="text-black/60"
+            label={t('dashboard.kpi.netCash')}
+            value={netMainValue}
+            isLoading={isLoading}
+            trend={<TrendBadge {...netTrend} />}
+            splitLeft={netSecondary}
+            className={neutralCardCls}
+            onClick={() => setActiveFilter(null)}
+          />
+          <HeroKpiCard
             icon={Hash}
-            iconBg="bg-purple/10"
-            iconColor="text-purple"
+            iconBg="bg-black/10"
+            iconColor="text-black/60"
             label={t('dashboard.kpi.transactions', 'Transactions')}
             value={fmtCount(kpis?.transactionCount ?? 0, lang)}
             isLoading={isLoading}
@@ -1047,353 +1049,225 @@ export function DashboardPage() {
         </div>
       </SectionErrorBoundary>
 
-      {/* ── Charts Section (2x2 grid) ────────────────── */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {/* ─ Daily Volume Trend (AreaChart) ─────────── */}
-        <SectionErrorBoundary sectionName="Daily Volume Chart" fallbackHeight="min-h-[350px]">
-          <ChartCard
-            title={t('dashboard.charts.dailyVolume')}
-            subtitle={chartFallbackLabel}
-            icon={ChartLine}
-            iconColor="text-indigo"
-          >
-            {isMonthlyLoading || isPrevMonthlyLoading ? (
-              <ChartSkeleton />
-            ) : !chartMonthlyData?.daily_volume?.length ? (
-              <ChartEmpty message={t('dashboard.charts.noData')} />
-            ) : (
-              <>
-                <div className="min-h-[250px] md:min-h-[350px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={chartDailyVolume}>
-                      <defs>
-                        <linearGradient id="gradDep" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={DEPOSIT_COLOR} stopOpacity={0.2} />
-                          <stop offset="100%" stopColor={DEPOSIT_COLOR} stopOpacity={0} />
-                        </linearGradient>
-                        <linearGradient id="gradWd" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={WITHDRAWAL_COLOR} stopOpacity={0.15} />
-                          <stop offset="100%" stopColor={WITHDRAWAL_COLOR} stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        stroke={ct.gridStroke}
-                        vertical={false}
-                      />
-                      <XAxis
-                        dataKey="day"
-                        tickFormatter={fmtDay}
-                        tick={ct.axisTick}
-                        axisLine={ct.axisLine}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        tickFormatter={fmtCompact}
-                        tick={ct.axisTick}
-                        axisLine={false}
-                        tickLine={false}
-                        width={50}
-                      />
-                      <Tooltip
-                        formatter={(value: number, name: string) => [
-                          chartMoneyFmt(value),
-                          name === 'deposits'
-                            ? t('dashboard.charts.deposits')
-                            : t('dashboard.charts.withdrawals'),
-                        ]}
-                        labelFormatter={fmtDay}
-                        contentStyle={ct.tooltipStyle}
-                        cursor={{ strokeDasharray: '4 4', stroke: ct.cursorStroke }}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="deposits"
-                        stroke={DEPOSIT_COLOR}
-                        strokeWidth={2}
-                        fill="url(#gradDep)"
-                        opacity={activeFilter === 'withdrawals' ? 0.12 : 1}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="withdrawals"
-                        stroke={WITHDRAWAL_COLOR}
-                        strokeWidth={2}
-                        fill="url(#gradWd)"
-                        opacity={activeFilter === 'deposits' ? 0.12 : 1}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-                {/* Legend */}
-                <div className="mt-3 flex items-center justify-center gap-6">
-                  <div className="flex items-center gap-1.5">
-                    <div className="size-2 rounded-full bg-green" />
-                    <span className="text-xs text-black/40">{t('dashboard.charts.deposits')}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="size-2 rounded-full bg-red" />
-                    <span className="text-xs text-black/40">
-                      {t('dashboard.charts.withdrawals')}
-                    </span>
-                  </div>
-                </div>
-              </>
-            )}
-          </ChartCard>
-        </SectionErrorBoundary>
-
-        {/* ─ Payment Methods (Donut with side legend) ─ */}
-        <SectionErrorBoundary sectionName="Payment Methods Chart" fallbackHeight="min-h-[350px]">
-          <ChartCard
-            title={t('dashboard.charts.paymentMethods')}
-            subtitle={chartFallbackLabel}
-            icon={ChartPie}
-            iconColor="text-purple"
-            headerRight={
-              !isMonthlyLoading && paymentMethods.length > 0 ? (
-                <Tabs value={pmView} onValueChange={(v) => setPmView(v as 'volume' | 'count')}>
-                  <TabsList className="h-7 p-0.5">
-                    <TabsTrigger value="volume" className="px-2 py-1 text-xs">
-                      {t('dashboard.charts.volume')}
-                    </TabsTrigger>
-                    <TabsTrigger value="count" className="px-2 py-1 text-xs">
-                      {t('dashboard.charts.count')}
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              ) : null
-            }
-          >
-            {isMonthlyLoading || isPrevMonthlyLoading ? (
-              <ChartSkeleton />
-            ) : !paymentMethods.length ? (
-              <ChartEmpty message={t('dashboard.charts.noData')} />
-            ) : (
-              <div className="flex flex-1 items-center justify-center">
-                <div className="flex w-full flex-col items-center gap-4 sm:flex-row sm:items-center">
-                  {/* Donut */}
-                  <div className="relative h-[200px] w-[200px] shrink-0">
+      {/* ── Charts Section ─────────────────────────────── */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
+        {/* ─ Volume Trend (AreaChart, 3 cols) ────────── */}
+        <div className="xl:col-span-3">
+          <SectionErrorBoundary sectionName="Volume Chart" fallbackHeight="min-h-[350px]">
+            <ChartCard
+              title={volumeChartTitle}
+              icon={ChartLine}
+              iconColor="text-black/60"
+            >
+              {isChartsLoading ? (
+                <ChartSkeleton />
+              ) : !chartVolumeTrend.length ? (
+                <ChartEmpty message={t('dashboard.charts.noData')} />
+              ) : (
+                <>
+                  <div className="h-[300px] md:h-[380px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={paymentMethods}
-                          dataKey={pmView === 'volume' ? 'volume' : 'count'}
-                          nameKey="name"
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={58}
-                          outerRadius={92}
-                          paddingAngle={2}
-                          stroke={ct.isDark ? '#0f172a' : '#ffffff'}
-                          strokeWidth={2}
-                          animationBegin={0}
-                          animationDuration={800}
-                        >
-                          {paymentMethods.map((_, i) => (
-                            <Cell
-                              key={i}
-                              fill={DONUT_COLORS[i % DONUT_COLORS.length]}
-                              className="transition-opacity hover:opacity-80"
-                            />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          formatter={(value: number) =>
-                            pmView === 'volume' ? fmtMoney(value, lang) : fmtCount(value, lang)
-                          }
-                          contentStyle={ct.tooltipStyle}
+                      <AreaChart data={chartVolumeTrend}>
+                        <defs>
+                          <linearGradient id="gradDep" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={DEPOSIT_COLOR} stopOpacity={0.2} />
+                            <stop offset="100%" stopColor={DEPOSIT_COLOR} stopOpacity={0} />
+                          </linearGradient>
+                          <linearGradient id="gradWd" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={WITHDRAWAL_COLOR} stopOpacity={0.15} />
+                            <stop offset="100%" stopColor={WITHDRAWAL_COLOR} stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke={ct.gridStroke}
+                          vertical={false}
                         />
-                      </PieChart>
+                        <XAxis
+                          dataKey="label"
+                          tickFormatter={volumeXFormatter}
+                          tick={ct.axisTick}
+                          axisLine={ct.axisLine}
+                          tickLine={false}
+                        />
+                        <YAxis
+                          tickFormatter={fmtCompact}
+                          tick={ct.axisTick}
+                          axisLine={false}
+                          tickLine={false}
+                          width={50}
+                        />
+                        <Tooltip
+                          formatter={(value: number, name: string) => [
+                            chartMoneyFmt(value),
+                            name === 'deposits'
+                              ? t('dashboard.charts.deposits')
+                              : t('dashboard.charts.withdrawals'),
+                          ]}
+                          labelFormatter={volumeXFormatter}
+                          contentStyle={ct.tooltipStyle}
+                          cursor={{ strokeDasharray: '4 4', stroke: ct.cursorStroke }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="deposits"
+                          stroke={DEPOSIT_COLOR}
+                          strokeWidth={2}
+                          fill="url(#gradDep)"
+                          opacity={activeFilter === 'withdrawals' ? 0.12 : 1}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="withdrawals"
+                          stroke={WITHDRAWAL_COLOR}
+                          strokeWidth={2}
+                          fill="url(#gradWd)"
+                          opacity={activeFilter === 'deposits' ? 0.12 : 1}
+                        />
+                      </AreaChart>
                     </ResponsiveContainer>
-                    {/* Center label */}
-                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                      <div className="text-center">
-                        <p className="text-[9px] font-bold uppercase tracking-widest text-black/25">
-                          {pmView === 'volume'
-                            ? t('dashboard.charts.total')
-                            : t('dashboard.charts.totalCount')}
-                        </p>
-                        <p className="mt-0.5 font-mono text-lg font-black tabular-nums text-black/70">
-                          {pmView === 'volume' ? fmtCompact(pmTotal) : pmTotal}
-                          {pmView === 'volume' && (
-                            <span className="ml-0.5 text-sm font-medium">
-                              {isUSD ? '$' : baseCurrencySymbol}
-                            </span>
-                          )}
-                        </p>
-                      </div>
+                  </div>
+                  {/* Legend */}
+                  <div className="mt-3 flex items-center justify-center gap-6">
+                    <div className="flex items-center gap-1.5">
+                      <div className="size-2 rounded-full bg-green" />
+                      <span className="text-xs text-black/40">{t('dashboard.charts.deposits')}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="size-2 rounded-full bg-red" />
+                      <span className="text-xs text-black/40">
+                        {t('dashboard.charts.withdrawals')}
+                      </span>
                     </div>
                   </div>
+                </>
+              )}
+            </ChartCard>
+          </SectionErrorBoundary>
+        </div>
 
-                  {/* Side Legend */}
-                  <div className="min-w-0 flex-1 space-y-1">
-                    {paymentMethods.map((pm, i) => {
-                      const val = pmView === 'volume' ? pm.volume : pm.count
-                      const pct = pmTotal > 0 ? ((val / pmTotal) * 100).toFixed(1) : '0'
-                      const prevPm = prevMonthlyData?.payment_method_breakdown?.find(
-                        (p) => p.name === pm.name,
-                      )
-                      const prevVal = prevPm
-                        ? pmView === 'volume'
-                          ? prevPm.volume
-                          : prevPm.count
-                        : 0
-                      const diff = prevVal > 0 ? ((val - prevVal) / prevVal) * 100 : 0
-
-                      return (
-                        <div
-                          key={pm.name}
-                          className="flex items-center justify-between rounded-lg px-2 py-1.5 transition-colors hover:bg-black/[0.02]"
-                        >
-                          <div className="flex min-w-0 items-center gap-2">
-                            <div
-                              className="size-2.5 shrink-0 rounded-full"
-                              style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }}
-                            />
-                            <span className="truncate text-xs font-medium text-black/60">
-                              {pm.name}
-                            </span>
-                          </div>
-                          <div className="flex shrink-0 items-center gap-2">
-                            <span className="font-mono text-xs font-bold tabular-nums text-black/60">
-                              {pmView === 'volume' ? fmtCompact(pm.volume) : pm.count}
-                            </span>
-                            <span className="text-[10px] font-semibold text-black/20">{pct}%</span>
-                            {diff !== 0 && (
-                              <span
-                                className={cn(
-                                  'text-[10px] font-semibold',
-                                  diff > 0 ? 'text-green' : 'text-red',
-                                )}
-                              >
-                                {diff > 0 ? '↑' : '↓'}
-                                {Math.abs(diff).toFixed(0)}%
-                              </span>
-                            )}
-                          </div>
+        {/* ─ Right column: Payment Methods + Insights (2 cols) ─ */}
+        <div className="flex flex-col gap-3 xl:col-span-2">
+          {/* Payment Methods - compact cards */}
+          <SectionErrorBoundary sectionName="Payment Methods" fallbackHeight="min-h-[120px]">
+            <div className="rounded-2xl border border-black/[0.06] bg-bg1 p-3 md:p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <ChartPie size={16} className="text-black/60" weight="duotone" />
+                <h3 className="text-sm font-semibold text-black/60">{t('dashboard.charts.paymentMethods')}</h3>
+              </div>
+              {isChartsLoading ? (
+                <div className="grid grid-cols-3 gap-2">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton key={i} className="h-16 w-full rounded-xl" />
+                  ))}
+                </div>
+              ) : !paymentMethods.length ? (
+                <p className="py-4 text-center text-xs text-black/30">{t('dashboard.charts.noData')}</p>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {paymentMethods.map((pm, i) => {
+                    const val = pmView === 'volume' ? pm.volume : pm.count
+                    const pct = pmTotal > 0 ? ((val / pmTotal) * 100).toFixed(1) : '0'
+                    return (
+                      <div
+                        key={pm.name}
+                        className="rounded-xl border border-black/[0.04] bg-black/[0.015] px-3 py-2.5 transition-colors hover:border-black/[0.08]"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <div
+                            className="size-2 shrink-0 rounded-full"
+                            style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }}
+                          />
+                          <span className="truncate text-[11px] font-medium text-black/50">{pm.name}</span>
                         </div>
-                      )
-                    })}
+                        <p className="mt-1 font-mono text-sm font-bold tabular-nums text-black/70">
+                          {pmView === 'volume' ? fmtCompact(pm.volume) : pm.count}
+                          {pmView === 'volume' && <span className="ml-0.5 text-[10px] font-medium text-black/30">{isUSD ? '$' : baseCurrencySymbol}</span>}
+                        </p>
+                        <p className="text-[10px] font-semibold text-black/25">{pct}%</p>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </SectionErrorBoundary>
+
+          {/* Insight cards - larger */}
+          {chartMonthlyData?.insights && (
+            <SectionErrorBoundary sectionName="Insights" fallbackHeight="min-h-[100px]">
+              <div className="grid grid-cols-1 gap-3">
+                <div className="flex flex-col gap-3 rounded-2xl border border-black/[0.06] bg-bg1 p-4 md:p-5 transition-all duration-200 hover:border-black/[0.1] hover:shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex size-10 items-center justify-center rounded-xl bg-black/10">
+                      <Fire size={18} className="text-black/60" weight="duotone" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-black/40">{t('dashboard.insights.avgDailyVolume')}</p>
+                      <p className="mt-0.5 font-mono text-base font-bold tabular-nums text-black/70">{fmtMoney(chartMonthlyData.insights.avg_daily_volume, lang)}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-3 rounded-2xl border border-black/[0.06] bg-bg1 p-4 md:p-5 transition-all duration-200 hover:border-black/[0.1] hover:shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex size-10 items-center justify-center rounded-xl bg-black/10">
+                      <Receipt size={18} className="text-black/60" weight="duotone" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-black/40">{t('dashboard.insights.avgPerTransfer')}</p>
+                      <p className="mt-0.5 font-mono text-base font-bold tabular-nums text-black/70">{fmtMoney(chartMonthlyData.insights.avg_per_transfer, lang)}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-3 rounded-2xl border border-black/[0.06] bg-bg1 p-4 md:p-5 transition-all duration-200 hover:border-black/[0.1] hover:shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex size-10 items-center justify-center rounded-xl bg-black/10">
+                      <CalendarStar size={18} className="text-black/60" weight="duotone" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-black/40">{t('dashboard.insights.peakDay')}</p>
+                      <p className="mt-0.5 font-mono text-base font-bold tabular-nums text-black/70">
+                        {chartMonthlyData.insights.peak_day
+                          ? `${fmtDate(chartMonthlyData.insights.peak_day, lang)} — ${fmtCompact(chartMonthlyData.insights.peak_day_volume)} ₺`
+                          : '—'}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-            )}
-          </ChartCard>
-        </SectionErrorBoundary>
-
-        {/* ─ Commission by PSP (Top 3) ────────────────── */}
-        <SectionErrorBoundary sectionName="Commission by PSP" fallbackHeight="min-h-[250px]">
-          <ChartCard
-            title={t('dashboard.charts.pspCommission')}
-            icon={Coins}
-            iconColor="text-orange"
-            className={
-              activeFilter === 'commission' ? 'ring-2 ring-orange/40 border-orange/20' : ''
-            }
-          >
-            {isCommissionLoading || !pspCommissionData ? (
-              <ChartSkeleton />
-            ) : !pspCommissionData.length ? (
-              <ChartEmpty message={t('dashboard.charts.noData')} />
-            ) : (
-              <div className="space-y-0.5">
-                {(() => {
-                  const maxCommission = pspCommissionData[0].commission
-                  const rankBadge = [
-                    'bg-yellow/20 text-yellow',
-                    'bg-black/[0.07] text-black/40',
-                    'bg-orange/15 text-orange',
-                  ]
-                  return pspCommissionData.map((psp, i) => {
-                    const widthPct = maxCommission > 0 ? (psp.commission / maxCommission) * 100 : 0
-                    const prevCommission = prevPspCommissionMap?.get(psp.name) ?? null
-                    const diff =
-                      prevCommission != null && prevCommission > 0
-                        ? ((psp.commission - prevCommission) / prevCommission) * 100
-                        : null
-
-                    return (
-                      <div
-                        key={psp.name}
-                        className="rounded-xl px-2 py-2 transition-colors hover:bg-black/[0.025]"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <span
-                            className={cn(
-                              'flex size-6 shrink-0 items-center justify-center rounded-lg font-mono text-[10px] font-black',
-                              rankBadge[i] ?? 'bg-black/[0.04] text-black/25',
-                            )}
-                          >
-                            {i + 1}
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex min-w-0 items-center gap-1.5">
-                                <span className="truncate text-sm font-semibold text-black/60">
-                                  {psp.name}
-                                </span>
-                                {psp.commission_rate > 0 && (
-                                  <span className="shrink-0 rounded-full bg-orange/10 px-1.5 py-0.5 text-[9px] font-bold text-orange">
-                                    {(psp.commission_rate * 100).toFixed(1)}%
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex shrink-0 items-center gap-2">
-                                {diff !== null && (
-                                  <span
-                                    className={cn(
-                                      'text-[10px] font-bold',
-                                      diff >= 0 ? 'text-green' : 'text-red',
-                                    )}
-                                  >
-                                    {diff >= 0 ? '↑' : '↓'}
-                                    {Math.abs(diff).toFixed(0)}%
-                                  </span>
-                                )}
-                                <span className="font-mono text-xs font-bold tabular-nums text-black/60">
-                                  {fmtMoney(psp.commission, lang)}
-                                </span>
-                                <span className="rounded-full bg-black/[0.04] px-1.5 py-0.5 text-[10px] font-bold text-black/25">
-                                  {psp.count}x
-                                </span>
-                              </div>
-                            </div>
-                            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-black/[0.04]">
-                              <div
-                                className="h-full rounded-full bg-[#f97316]/60 transition-all duration-700"
-                                style={{ width: `${widthPct}%` }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })
-                })()}
-              </div>
-            )}
-          </ChartCard>
-        </SectionErrorBoundary>
-
-        {/* ─ Daily Net Flow (Mini Bar Chart) ─────────── */}
-        <SectionErrorBoundary sectionName="Daily Net Flow" fallbackHeight="min-h-[250px]">
-          <ChartCard
-            title={t('dashboard.charts.dailyNet')}
-            subtitle={chartFallbackLabel}
-            icon={Pulse}
-            iconColor="text-green"
-          >
-            {isMonthlyLoading || isPrevMonthlyLoading ? (
-              <DailyNetMiniChart data={[]} formatMoney={chartMoneyFmt} isLoading />
-            ) : !chartMonthlyData?.daily_net?.length ? (
-              <ChartEmpty message={t('dashboard.charts.noData')} />
-            ) : (
-              <DailyNetMiniChart data={chartDailyNet} formatMoney={chartMoneyFmt} />
-            )}
-          </ChartCard>
-        </SectionErrorBoundary>
+            </SectionErrorBoundary>
+          )}
+        </div>
       </div>
+
+      {/* ── Best Employees ─────────────────────────────── */}
+      <SectionErrorBoundary sectionName="Best Employees" fallbackHeight="min-h-[250px]">
+        <ChartCard
+          title={t('dashboard.charts.bestEmployees')}
+          icon={Users}
+          iconColor="text-black/60"
+          headerRight={
+            <Tabs value={empTab} onValueChange={(v) => setEmpTab(v as 'marketing' | 'retention')}>
+              <TabsList className="h-7 p-0.5">
+                <TabsTrigger value="marketing" className="px-2 py-1 text-xs">
+                  {t('dashboard.charts.marketing')}
+                </TabsTrigger>
+                <TabsTrigger value="retention" className="px-2 py-1 text-xs">
+                  {t('dashboard.charts.retention')}
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          }
+        >
+          <BestEmployeesList
+            employees={empTab === 'marketing' ? (bestEmployees?.marketing ?? []) : (bestEmployees?.retention ?? [])}
+            tab={empTab}
+            isLoading={isBestEmployeesLoading}
+            lang={lang}
+            t={t as (key: string) => string}
+          />
+        </ChartCard>
+      </SectionErrorBoundary>
 
       {/* ── Bottom: Transfers + Customers side-by-side  */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
@@ -1428,15 +1302,10 @@ export function DashboardPage() {
         <div className="rounded-2xl border border-black/[0.06] bg-bg1 p-3 md:p-5 xl:col-span-2">
           <SectionErrorBoundary sectionName="Top Customers" fallbackHeight="min-h-[200px]">
             <div className="mb-4 flex items-center gap-2">
-              <Trophy size={16} className="text-yellow" weight="duotone" />
+              <Trophy size={16} className="text-black/60" weight="duotone" />
               <h2 className="text-[13px] font-semibold text-black/50">
                 {t('dashboard.tables.topCustomers')}
               </h2>
-              {chartFallbackLabel && (
-                <span className="rounded-md bg-black/[0.04] px-1.5 py-0.5 text-[10px] font-medium text-black/40">
-                  {chartFallbackLabel}
-                </span>
-              )}
             </div>
             <TopCustomersList
               customers={chartMonthlyData?.top_customers ?? []}
@@ -1449,45 +1318,6 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Monthly Insights ────────────────────────── */}
-      {chartMonthlyData?.insights && (
-        <SectionErrorBoundary sectionName="Monthly Insights" fallbackHeight="min-h-[100px]">
-          <Grid cols={4}>
-            <InsightCard
-              icon={CalendarStar}
-              iconBg="bg-yellow/10"
-              iconColor="text-yellow"
-              label={t('dashboard.insights.peakDay')}
-              value={
-                chartMonthlyData.insights.peak_day
-                  ? `${fmtDate(chartMonthlyData.insights.peak_day, lang)} — ${fmtCompact(chartMonthlyData.insights.peak_day_volume)} ₺`
-                  : '—'
-              }
-            />
-            <InsightCard
-              icon={CalendarCheck}
-              iconBg="bg-green/10"
-              iconColor="text-green"
-              label={t('dashboard.insights.activeDays')}
-              value={`${chartMonthlyData.insights.active_days} ${t('dashboard.insights.days')}`}
-            />
-            <InsightCard
-              icon={Fire}
-              iconBg="bg-orange/10"
-              iconColor="text-orange"
-              label={t('dashboard.insights.avgDailyVolume')}
-              value={fmtMoney(chartMonthlyData.insights.avg_daily_volume, lang)}
-            />
-            <InsightCard
-              icon={Receipt}
-              iconBg="bg-blue/10"
-              iconColor="text-blue"
-              label={t('dashboard.insights.avgPerTransfer')}
-              value={fmtMoney(chartMonthlyData.insights.avg_per_transfer, lang)}
-            />
-          </Grid>
-        </SectionErrorBoundary>
-      )}
 
       {/* ── Previous Month Overview ──────────────────── */}
       {(isPrevMonthlyLoading || prevMonthlyData) && (
@@ -1497,7 +1327,7 @@ export function DashboardPage() {
               {/* Header */}
               <div className="mb-5 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="flex size-8 items-center justify-center rounded-xl bg-black/[0.05]">
+                  <div className="flex size-8 items-center justify-center rounded-xl bg-black/[0.05]0">
                     <CalendarBlank size={15} weight="duotone" className="text-black/35" />
                   </div>
                   <div>
@@ -1534,9 +1364,10 @@ export function DashboardPage() {
                     {/* Deposits */}
                     <HeroKpiCard
                       icon={ArrowCircleDown}
-                      iconBg="bg-green/[0.07]"
-                      iconColor="text-green"
+                      iconBg="bg-black/[0.08]"
+                      iconColor="text-black/60"
                       label={t('dashboard.kpi.deposits')}
+                      valueColor="text-green"
                       value={
                         isUSD
                           ? fmtMoney(
@@ -1583,9 +1414,10 @@ export function DashboardPage() {
                     {/* Withdrawals */}
                     <HeroKpiCard
                       icon={ArrowCircleUp}
-                      iconBg="bg-red/[0.07]"
-                      iconColor="text-red"
+                      iconBg="bg-black/[0.08]"
+                      iconColor="text-black/60"
                       label={t('dashboard.kpi.withdrawals')}
+                      valueColor="text-red"
                       value={
                         isUSD
                           ? fmtMoney(prevMonthlyData.kpis.total_withdrawals_usd, lang, '$')
@@ -1607,8 +1439,8 @@ export function DashboardPage() {
                     {/* Net Cash */}
                     <HeroKpiCard
                       icon={Wallet}
-                      iconBg="bg-indigo/[0.07]"
-                      iconColor="text-indigo"
+                      iconBg="bg-black/[0.08]"
+                      iconColor="text-black/60"
                       label={t('dashboard.kpi.netCash')}
                       value={
                         isUSD
@@ -1660,9 +1492,10 @@ export function DashboardPage() {
                     {/* Commission */}
                     <HeroKpiCard
                       icon={Percent}
-                      iconBg="bg-orange/[0.07]"
-                      iconColor="text-orange"
+                      iconBg="bg-black/[0.08]"
+                      iconColor="text-black/60"
                       label={t('dashboard.kpi.commission')}
+                      valueColor="text-red/60"
                       value={fmtMoney(prevMonthlyData.kpis.total_commission_try, lang)}
                       splitLeft={{
                         label: 'USD',
@@ -1673,8 +1506,8 @@ export function DashboardPage() {
                     {/* Transactions */}
                     <HeroKpiCard
                       icon={Hash}
-                      iconBg="bg-purple/[0.07]"
-                      iconColor="text-purple"
+                      iconBg="bg-black/[0.08]"
+                      iconColor="text-black/60"
                       label={t('dashboard.kpi.transactions')}
                       value={fmtCount(prevMonthlyData.kpis.transfer_count, lang)}
                       splitLeft={{
@@ -1705,7 +1538,7 @@ export function DashboardPage() {
                       <ChartCard
                         title={t('dashboard.charts.dailyVolume')}
                         icon={ChartLine}
-                        iconColor="text-indigo/60"
+                        iconColor="text-black/60"
                       >
                         <div className="min-h-[250px] md:min-h-[350px]">
                           <ResponsiveContainer width="100%" height="100%">
@@ -1800,8 +1633,8 @@ export function DashboardPage() {
                       <Grid cols={2}>
                         <InsightCard
                           icon={CalendarStar}
-                          iconBg="bg-yellow/10"
-                          iconColor="text-yellow"
+                          iconBg="bg-black/10"
+                          iconColor="text-black/60"
                           label={t('dashboard.insights.peakDay')}
                           value={
                             prevMonthlyData.insights.peak_day
@@ -1811,22 +1644,22 @@ export function DashboardPage() {
                         />
                         <InsightCard
                           icon={CalendarCheck}
-                          iconBg="bg-green/10"
-                          iconColor="text-green"
+                          iconBg="bg-black/10"
+                          iconColor="text-black/60"
                           label={t('dashboard.insights.activeDays')}
                           value={`${prevMonthlyData.insights.active_days} ${t('dashboard.insights.days')}`}
                         />
                         <InsightCard
                           icon={Fire}
-                          iconBg="bg-orange/10"
-                          iconColor="text-orange"
+                          iconBg="bg-black/10"
+                          iconColor="text-black/60"
                           label={t('dashboard.insights.avgDailyVolume')}
                           value={fmtMoney(prevMonthlyData.insights.avg_daily_volume, lang)}
                         />
                         <InsightCard
                           icon={Receipt}
-                          iconBg="bg-blue/10"
-                          iconColor="text-blue"
+                          iconBg="bg-black/10"
+                          iconColor="text-black/60"
                           label={t('dashboard.insights.avgPerTransfer')}
                           value={fmtMoney(prevMonthlyData.insights.avg_per_transfer, lang)}
                         />

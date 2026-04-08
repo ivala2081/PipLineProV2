@@ -403,7 +403,7 @@ export function PartnerFormPage() {
       label: t('ib.partners.unassigned'),
       searchText: '',
     }
-    const list: SearchableSelectOption[] = [noneOption, ...eligibleEmployees]
+    const list: SearchableSelectOption[] = [noneOption, ...eligibleEmployees.filter((e) => e.value !== watchedManagedBy)]
     if (watchedSecondary && !list.some((o) => o.value === watchedSecondary)) {
       const emp = hrEmployees.find((e) => e.id === watchedSecondary)
       if (emp) {
@@ -415,7 +415,7 @@ export function PartnerFormPage() {
       }
     }
     return list
-  }, [eligibleEmployees, hrEmployees, watchedSecondary, t])
+  }, [eligibleEmployees, hrEmployees, watchedSecondary, watchedManagedBy, t])
 
   /* ---- Indefinite contract toggle ---- */
 

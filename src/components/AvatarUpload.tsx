@@ -261,6 +261,7 @@ export function AvatarUpload({
         <>
           {/* Upload/Edit Button */}
           <button
+            type="button"
             onClick={() => setShowMenu(!showMenu)}
             disabled={isUploading || isRemoving}
             className="absolute bottom-1 right-1 flex size-10 items-center justify-center rounded-full border-[3px] border-bg1 bg-white shadow-lg transition-all hover:scale-105 hover:bg-black/5 disabled:opacity-50"
@@ -278,6 +279,7 @@ export function AvatarUpload({
               <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
               <div className="absolute bottom-12 right-0 z-50 w-48 overflow-hidden rounded-xl border border-black/10 bg-white shadow-xl">
                 <button
+                  type="button"
                   onClick={() => {
                     setShowMenu(false)
                     fileInputRef.current?.click()
@@ -291,6 +293,7 @@ export function AvatarUpload({
                 </button>
                 {currentAvatarUrl && (
                   <button
+                    type="button"
                     onClick={handleRemove}
                     className="flex w-full items-center gap-3 border-t border-black/5 px-4 py-3 text-left text-sm transition-colors hover:bg-red/5"
                   >

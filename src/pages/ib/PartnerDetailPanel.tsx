@@ -196,7 +196,8 @@ export function PartnerDetailPanel({ partnerId, isAdmin, onBack }: PartnerDetail
                 : (currentOrg?.name ?? '—')}
             </p>
           </div>
-          {partner.secondary_employee_id && (
+          {partner.secondary_employee_id &&
+            partner.secondary_employee_id !== partner.managed_by_employee_id && (
             <div>
               <p className="text-xs text-black/50">{t('ib.partners.secondary')}</p>
               <p className="text-sm font-medium">
