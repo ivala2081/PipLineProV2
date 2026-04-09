@@ -136,7 +136,7 @@ export function CommissionCalculateDialog({ open, onClose }: CommissionCalculate
               </SelectContent>
             </Select>
             {errors.ib_partner_id && (
-              <p className="text-xs text-error">{errors.ib_partner_id.message}</p>
+              <p className="text-xs text-red">{errors.ib_partner_id.message}</p>
             )}
           </div>
 
@@ -145,7 +145,7 @@ export function CommissionCalculateDialog({ open, onClose }: CommissionCalculate
             <Label htmlFor="calc_period_start">{t('ib.commissions.periodStart')}</Label>
             <Input id="calc_period_start" type="date" {...register('period_start')} />
             {errors.period_start && (
-              <p className="text-xs text-error">{errors.period_start.message}</p>
+              <p className="text-xs text-red">{errors.period_start.message}</p>
             )}
           </div>
 
@@ -153,7 +153,7 @@ export function CommissionCalculateDialog({ open, onClose }: CommissionCalculate
           <div className="space-y-sm">
             <Label htmlFor="calc_period_end">{t('ib.commissions.periodEnd')}</Label>
             <Input id="calc_period_end" type="date" {...register('period_end')} />
-            {errors.period_end && <p className="text-xs text-error">{errors.period_end.message}</p>}
+            {errors.period_end && <p className="text-xs text-red">{errors.period_end.message}</p>}
           </div>
 
           {/* Result section */}

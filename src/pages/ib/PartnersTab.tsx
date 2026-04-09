@@ -269,7 +269,7 @@ export function PartnersTab({ isAdmin }: PartnersTabProps) {
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={(e) => handleDeleteClick(e, partner)}
-                            className="text-error"
+                            className="text-red"
                           >
                             <Trash size={14} className="mr-2" />
                             {t('ib.partners.delete')}
@@ -302,7 +302,7 @@ export function PartnersTab({ isAdmin }: PartnersTabProps) {
             </Button>
             <Button
               variant="filled"
-              className="bg-error hover:bg-error/90"
+              className="bg-red hover:bg-red/90"
               onClick={handleDeleteConfirm}
               disabled={deletePartner.isPending}
             >

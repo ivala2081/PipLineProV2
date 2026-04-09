@@ -22,7 +22,7 @@ export function IBPage() {
   const navigate = useNavigate()
   const { isGod } = useAuth()
   const { membership } = useOrganization()
-  const isAdmin = isGod || membership?.role === 'admin'
+  const isAdmin = isGod || !!membership
 
   const [searchParams] = useSearchParams()
   const initialTab = (searchParams.get('tab') as IBTab) || 'partners'

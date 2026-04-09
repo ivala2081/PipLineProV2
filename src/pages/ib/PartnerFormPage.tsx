@@ -1050,7 +1050,7 @@ function AgreementDetailForm({
                 }
                 placeholder="0.00"
               />
-              {errors?.amount && <p className="text-xs text-error">{errors.amount}</p>}
+              {errors?.amount && <p className="text-xs text-red">{errors.amount}</p>}
             </div>
             <div className="space-y-1">
               <Label>{t('ib.partners.currency')}</Label>
@@ -1113,7 +1113,7 @@ function AgreementDetailForm({
                 placeholder="0.00"
               />
               {errors?.rebate_per_lot && (
-                <p className="text-xs text-error">{errors.rebate_per_lot}</p>
+                <p className="text-xs text-red">{errors.rebate_per_lot}</p>
               )}
             </div>
             <div className="space-y-1">
@@ -1162,7 +1162,7 @@ function AgreementDetailForm({
                 }
                 placeholder="0"
               />
-              {errors?.revshare_pct && <p className="text-xs text-error">{errors.revshare_pct}</p>}
+              {errors?.revshare_pct && <p className="text-xs text-red">{errors.revshare_pct}</p>}
             </div>
             <div className="space-y-1">
               <Label>{t('ib.partners.revenueShare.source')}</Label>

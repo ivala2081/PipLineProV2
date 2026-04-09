@@ -360,7 +360,7 @@ export function CommissionsTab({
                 {...register('override_amount')}
               />
               {errors.override_amount && (
-                <p className="text-xs text-error">{errors.override_amount.message}</p>
+                <p className="text-xs text-red">{errors.override_amount.message}</p>
               )}
             </div>
             <div className="space-y-sm">
@@ -372,7 +372,7 @@ export function CommissionsTab({
                 {...register('override_reason')}
               />
               {errors.override_reason && (
-                <p className="text-xs text-error">{errors.override_reason.message}</p>
+                <p className="text-xs text-red">{errors.override_reason.message}</p>
               )}
             </div>
             <DialogFooter>

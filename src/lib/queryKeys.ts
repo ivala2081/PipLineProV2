@@ -133,6 +133,8 @@ export const queryKeys = {
       [...queryKeys.dashboard.all, 'charts', orgId, from, to] as const,
     bestEmployees: (orgId: string, from: string, to: string) =>
       [...queryKeys.dashboard.all, 'bestEmployees', orgId, from, to] as const,
+    topBrokers: (orgId: string, from: string, to: string) =>
+      [...queryKeys.dashboard.all, 'topBrokers', orgId, from, to] as const,
   },
   exchangeRate: {
     all: ['exchangeRate'] as const,

@@ -20,6 +20,7 @@ import {
   Hash,
   CalendarBlank,
   Users,
+  Handshake,
 } from '@phosphor-icons/react'
 import {
   ResponsiveContainer,
@@ -46,6 +47,7 @@ import type { RecentTransfer } from '@/hooks/queries/useDashboardRecentQuery'
 import type { BreakdownItem } from '@/hooks/queries/useMonthlyAnalysisQuery'
 import { useDashboardChartsQuery } from '@/hooks/queries/useDashboardChartsQuery'
 import { useBestEmployeesQuery, type EmployeePerformance } from '@/hooks/queries/useBestEmployeesQuery'
+import { useTopBrokersQuery, type BrokerPerformance } from '@/hooks/queries/useTopBrokersQuery'
 import { Tag, Tabs, TabsList, TabsTrigger, Skeleton, Grid, EmptyState } from '@ds'
 import { SectionErrorBoundary } from '@/components/ErrorBoundary'
 
@@ -664,6 +666,93 @@ function BestEmployeesList({
   )
 }
 
+/* ── Top Brokers List ───────────────────────────────── */
+
+function TopBrokersList({
+  brokers,
+  isLoading,
+  lang,
+  t,
+}: {
+  brokers: BrokerPerformance[]
+  isLoading: boolean
+  lang: string
+  t: (key: string) => string
+}) {
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-10 w-full rounded-lg" />
+        ))}
+      </div>
+    )
+  }
+
+  const items = brokers.slice(0, 5)
+  if (items.length === 0) {
+    return <EmptyState icon={Handshake} title={t('dashboard.charts.noBrokers')} className="h-40 py-0" />
+  }
+
+  const maxVal = Math.max(...items.map((b) => Math.abs(b.netProfit)))
+
+  const rankStyle = (i: number) => {
+    if (i === 0) return { badge: 'bg-black/[0.12] text-black/80', bar: '#475569' }
+    if (i === 1) return { badge: 'bg-black/10 text-black/60', bar: '#64748b' }
+    if (i === 2) return { badge: 'bg-black/[0.08] text-black/50', bar: '#94a3b8' }
+    return { badge: 'bg-black/[0.06] text-black/40', bar: '#cbd5e1' }
+  }
+
+  return (
+    <div className="space-y-0.5">
+      {items.map((broker, i) => {
+        const pct = maxVal > 0 ? (Math.abs(broker.netProfit) / maxVal) * 100 : 0
+        const { badge, bar } = rankStyle(i)
+
+        return (
+          <div
+            key={broker.partnerId}
+            className="rounded-xl px-2 py-2 transition-colors hover:bg-black/[0.02]"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <span
+                  className={cn(
+                    'flex size-6 shrink-0 items-center justify-center rounded-lg font-mono text-[10px] font-black',
+                    badge,
+                  )}
+                >
+                  {i + 1}
+                </span>
+                <span className="truncate text-sm font-medium text-black/60">{broker.name}</span>
+              </div>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <span className={cn(
+                  'font-mono text-xs font-bold tabular-nums',
+                  broker.netProfit >= 0 ? 'text-green' : 'text-red',
+                )}>
+                  {fmtMoney(broker.netProfit, lang, '$')}
+                </span>
+                {broker.referralCount > 0 && (
+                  <span className="rounded-full bg-black/[0.04] px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-black/25">
+                    {broker.referralCount} ref
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="ml-[38px] mt-1.5 h-1 overflow-hidden rounded-full bg-black/[0.04]">
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{ width: `${pct}%`, background: bar, opacity: 0.5 }}
+              />
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 /* ================================================================== */
 /*  Dashboard Page                                                     */
 /* ================================================================== */
@@ -704,6 +793,11 @@ export function DashboardPage() {
     period === 'custom' ? customTo : undefined,
   )
   const { bestEmployees, isBestEmployeesLoading } = useBestEmployeesQuery(
+    period,
+    period === 'custom' ? customFrom : undefined,
+    period === 'custom' ? customTo : undefined,
+  )
+  const { topBrokers, isTopBrokersLoading } = useTopBrokersQuery(
     period,
     period === 'custom' ? customFrom : undefined,
     period === 'custom' ? customTo : undefined,
@@ -1240,34 +1334,60 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Best Employees ─────────────────────────────── */}
-      <SectionErrorBoundary sectionName="Best Employees" fallbackHeight="min-h-[250px]">
-        <ChartCard
-          title={t('dashboard.charts.bestEmployees')}
-          icon={Users}
-          iconColor="text-black/60"
-          headerRight={
-            <Tabs value={empTab} onValueChange={(v) => setEmpTab(v as 'marketing' | 'retention')}>
-              <TabsList className="h-7 p-0.5">
-                <TabsTrigger value="marketing" className="px-2 py-1 text-xs">
-                  {t('dashboard.charts.marketing')}
-                </TabsTrigger>
-                <TabsTrigger value="retention" className="px-2 py-1 text-xs">
-                  {t('dashboard.charts.retention')}
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          }
-        >
-          <BestEmployeesList
-            employees={empTab === 'marketing' ? (bestEmployees?.marketing ?? []) : (bestEmployees?.retention ?? [])}
-            tab={empTab}
-            isLoading={isBestEmployeesLoading}
-            lang={lang}
-            t={t as (key: string) => string}
-          />
-        </ChartCard>
-      </SectionErrorBoundary>
+      {/* ── Best Employees + Top Brokers ────────────────── */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <SectionErrorBoundary sectionName="Best Employees" fallbackHeight="min-h-[250px]">
+          <ChartCard
+            title={t('dashboard.charts.bestEmployees')}
+            icon={Users}
+            iconColor="text-black/60"
+            headerRight={
+              <Tabs value={empTab} onValueChange={(v) => setEmpTab(v as 'marketing' | 'retention')}>
+                <TabsList className="h-7 p-0.5">
+                  <TabsTrigger value="marketing" className="px-2 py-1 text-xs">
+                    {t('dashboard.charts.marketing')}
+                  </TabsTrigger>
+                  <TabsTrigger value="retention" className="px-2 py-1 text-xs">
+                    {t('dashboard.charts.retention')}
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            }
+          >
+            <BestEmployeesList
+              employees={empTab === 'marketing' ? (bestEmployees?.marketing ?? []) : (bestEmployees?.retention ?? [])}
+              tab={empTab}
+              isLoading={isBestEmployeesLoading}
+              lang={lang}
+              t={t as (key: string) => string}
+            />
+          </ChartCard>
+        </SectionErrorBoundary>
+
+        <SectionErrorBoundary sectionName="Top Brokers" fallbackHeight="min-h-[250px]">
+          <ChartCard
+            title={t('dashboard.charts.topBrokers')}
+            icon={Handshake}
+            iconColor="text-black/60"
+            headerRight={
+              <Link
+                to="/ib"
+                className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-black/40 transition-colors hover:bg-black/[0.03] hover:text-black/60"
+              >
+                {t('dashboard.tables.viewAll')}
+                <ArrowRight size={12} />
+              </Link>
+            }
+          >
+            <TopBrokersList
+              brokers={topBrokers}
+              isLoading={isTopBrokersLoading}
+              lang={lang}
+              t={t as (key: string) => string}
+            />
+          </ChartCard>
+        </SectionErrorBoundary>
+      </div>
 
       {/* ── Bottom: Transfers + Customers side-by-side  */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
