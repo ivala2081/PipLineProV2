@@ -230,4 +230,9 @@ export const queryKeys = {
     commissions: (orgId: string) => ['ib', orgId, 'commissions'] as const,
     payments: (orgId: string) => ['ib', orgId, 'payments'] as const,
   },
+  tv: {
+    monthly: (orgId: string, year: number, month: number, dept: string) =>
+      ['tv', orgId, 'monthly', year, month, dept] as const,
+    employees: (orgId: string, dept: string) => ['tv', orgId, 'employees', dept] as const,
+  },
 } as const

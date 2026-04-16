@@ -1,7 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { queryClient } from '@/lib/queryClient'
 import { ThemeProvider } from '@/app/providers/ThemeProvider'
 import { AuthProvider, useAuth, type SessionPromise } from '@/app/providers/AuthProvider'
@@ -106,6 +105,12 @@ const PartnerFormPage = lazy(() =>
 const PaymentFormPage = lazy(() =>
   import('@/pages/ib/PaymentFormPage').then((m) => ({ default: m.PaymentFormPage })),
 )
+const TvMarketingPage = lazy(() =>
+  import('@/pages/tv/marketing').then((m) => ({ default: m.TvMarketingPage })),
+)
+const TvRetentionPage = lazy(() =>
+  import('@/pages/tv/retention').then((m) => ({ default: m.TvRetentionPage })),
+)
 
 /* ------------------------------------------------------------------ */
 /*  Route guards                                                       */
@@ -187,6 +192,31 @@ export function App({ sessionPromise }: { sessionPromise?: SessionPromise }) {
                       <ResetPasswordPage />
                     </PageSuspense>
                   </PublicRoute>
+                }
+              />
+              {/* TV Leaderboard — full-screen, no sidebar */}
+              <Route
+                path="/tv/marketing"
+                element={
+                  <PrivateRoute>
+                    <OrganizationProvider>
+                      <PageSuspense>
+                        <TvMarketingPage />
+                      </PageSuspense>
+                    </OrganizationProvider>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/tv/retention"
+                element={
+                  <PrivateRoute>
+                    <OrganizationProvider>
+                      <PageSuspense>
+                        <TvRetentionPage />
+                      </PageSuspense>
+                    </OrganizationProvider>
+                  </PrivateRoute>
                 }
               />
               <Route
@@ -513,7 +543,6 @@ export function App({ sessionPromise }: { sessionPromise?: SessionPromise }) {
           </AuthProvider>
         </AppToastProvider>
       </ThemeProvider>
-      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
     </QueryClientProvider>
   )
 }
