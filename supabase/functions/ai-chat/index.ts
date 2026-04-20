@@ -18,7 +18,9 @@ const AiChatBodySchema = z.object({
     .min(1, 'At least one message is required'),
   orgId: z.string().uuid('orgId must be a valid UUID'),
   orgName: z.string().min(1, 'orgName is required'),
-  userRole: z.string().min(1, 'userRole is required'),
+  // userRole accepted for backward compat with clients, but authorization is
+  // always derived server-side from the authenticated user's profile/membership.
+  userRole: z.string().optional(),
 })
 
 /* ── Config ─────────────────────────────────────────────────────── */
@@ -134,6 +136,32 @@ const TOOLS = [
   },
 ]
 
+/* ── Role-based tool allowlist ──────────────────────────────────── */
+
+// Tools that expose sensitive data (payroll, crypto, full ledger) — restricted
+// to admin/manager/god. Operation-level users cannot call these.
+const ADMIN_ONLY_TOOLS = new Set([
+  'get_hr_summary',
+  'get_wallet_balances',
+  'get_accounting_summary',
+])
+
+type EffectiveRole = 'god' | 'admin' | 'manager' | 'operation'
+
+function isPrivilegedRole(role: EffectiveRole): boolean {
+  return role === 'god' || role === 'admin' || role === 'manager'
+}
+
+function filterToolsForRole(role: EffectiveRole) {
+  if (isPrivilegedRole(role)) return TOOLS
+  return TOOLS.filter((t) => !ADMIN_ONLY_TOOLS.has(t.name))
+}
+
+function isToolAllowedForRole(toolName: string, role: EffectiveRole): boolean {
+  if (isPrivilegedRole(role)) return true
+  return !ADMIN_ONLY_TOOLS.has(toolName)
+}
+
 /* ── Tool execution ─────────────────────────────────────────────── */
 
 type AdminClient = ReturnType<typeof createAdminClient>
@@ -142,8 +170,14 @@ async function executeTool(
   name: string,
   input: Record<string, unknown>,
   orgId: string,
+  role: EffectiveRole,
   admin: AdminClient,
 ): Promise<unknown> {
+  // Defense-in-depth: reject forbidden tools even if model somehow calls them.
+  if (!isToolAllowedForRole(name, role)) {
+    return { error: `Tool "${name}" is not available for your role.` }
+  }
+
   try {
     switch (name) {
       case 'get_monthly_summary': {
@@ -381,8 +415,9 @@ async function executeTool(
 
       case 'get_recent_activity': {
         const limit = Math.min(Number(input.limit) || 20, 50)
+        const canSeeSensitive = isPrivilegedRole(role)
 
-        // Fetch recent items from each table in parallel
+        // Operation role: skip accounting + HR payment sources (sensitive).
         const [transfersRes, accountingRes, hrPaymentsRes] = await Promise.all([
           admin
             .from('transfers')
@@ -390,18 +425,22 @@ async function executeTool(
             .eq('organization_id', orgId)
             .order('created_at', { ascending: false })
             .limit(limit),
-          admin
-            .from('accounting_entries')
-            .select('id, created_at, entry_type, direction, register, amount, description')
-            .eq('organization_id', orgId)
-            .order('created_at', { ascending: false })
-            .limit(limit),
-          admin
-            .from('hr_salary_payments')
-            .select('id, created_at, employee_id, amount_tl, period, paid_at')
-            .eq('organization_id', orgId)
-            .order('created_at', { ascending: false })
-            .limit(limit),
+          canSeeSensitive
+            ? admin
+                .from('accounting_entries')
+                .select('id, created_at, entry_type, direction, register, amount, description')
+                .eq('organization_id', orgId)
+                .order('created_at', { ascending: false })
+                .limit(limit)
+            : Promise.resolve({ data: [], error: null }),
+          canSeeSensitive
+            ? admin
+                .from('hr_salary_payments')
+                .select('id, created_at, employee_id, amount_tl, period, paid_at')
+                .eq('organization_id', orgId)
+                .order('created_at', { ascending: false })
+                .limit(limit)
+            : Promise.resolve({ data: [], error: null }),
         ])
 
         // Collect all items with a unified shape
@@ -504,6 +543,7 @@ async function runAgenticLoop(
   messages: ApiMessage[],
   systemPrompt: string,
   orgId: string,
+  role: EffectiveRole,
   admin: AdminClient,
   writer: WritableStreamDefaultWriter<Uint8Array>,
   encoder: TextEncoder,
@@ -511,6 +551,8 @@ async function runAgenticLoop(
 ): Promise<void> {
   const send = (event: Record<string, unknown>) =>
     writer.write(encoder.encode(`data: ${JSON.stringify(event)}\n\n`))
+
+  const allowedTools = filterToolsForRole(role)
 
   for (let loop = 0; loop < MAX_LOOPS; loop++) {
     const apiRes = await fetch('https://api.anthropic.com/v1/messages', {
@@ -524,7 +566,7 @@ async function runAgenticLoop(
         model: MODEL,
         max_tokens: MAX_TOKENS,
         system: systemPrompt,
-        tools: TOOLS,
+        tools: allowedTools,
         stream: true,
         messages,
       }),
@@ -655,7 +697,7 @@ async function runAgenticLoop(
       // Notify frontend which tool is running
       await send({ type: 'tool_call', name: toolBlock.name })
 
-      const result = await executeTool(toolBlock.name, toolBlock.input, orgId, admin)
+      const result = await executeTool(toolBlock.name, toolBlock.input, orgId, role, admin)
       toolResults.push({
         type: 'tool_result',
         tool_use_id: toolBlock.id,
@@ -720,7 +762,7 @@ serve(async (req: Request) => {
     )
     if (validationError) return validationError
 
-    const { messages, orgId, orgName, userRole } = body
+    const { messages, orgId, orgName } = body
 
     // ── 3. Authorize: verify org membership ────────────────────────
     const admin = createAdminClient()
@@ -733,7 +775,13 @@ serve(async (req: Request) => {
 
     const isGod = profile?.system_role === 'god'
 
-    if (!isGod) {
+    // Compute effective role server-side from the authenticated user's
+    // profile and membership. The request body's `userRole` is ignored for
+    // authorization — clients cannot be trusted to declare their own role.
+    let effectiveRole: EffectiveRole
+    if (isGod) {
+      effectiveRole = 'god'
+    } else {
       const { data: membership } = await admin
         .from('organization_members')
         .select('role')
@@ -742,6 +790,14 @@ serve(async (req: Request) => {
         .single()
 
       if (!membership) return jsonErr(403, 'FORBIDDEN')
+
+      const memberRole = membership.role as string
+      if (memberRole === 'admin' || memberRole === 'manager' || memberRole === 'operation') {
+        effectiveRole = memberRole
+      } else {
+        // Unknown role — fail closed to the least-privileged tier.
+        effectiveRole = 'operation'
+      }
     }
 
     // ── 4. Build system prompt ──────────────────────────────────────
@@ -751,7 +807,7 @@ serve(async (req: Request) => {
 
 Current context:
 - Organization: ${orgName} (ID: ${orgId})
-- User role: ${userRole}
+- User role: ${effectiveRole}
 - Today's date: ${today}
 
 You have read-only access to this organization's live data through the provided tools. You can query transfers, PSPs, HR/payroll data, crypto wallet balances, and accounting ledger entries. Always fetch real data before making any claims about specific numbers.
@@ -784,7 +840,7 @@ Date intelligence:
     const writer = writable.getWriter()
     const encoder = new TextEncoder()
 
-    runAgenticLoop(apiMessages, systemPrompt, orgId, admin, writer, encoder, apiKey)
+    runAgenticLoop(apiMessages, systemPrompt, orgId, effectiveRole, admin, writer, encoder, apiKey)
       .catch(async (err) => {
         console.error('Agentic loop error:', err)
         try {
