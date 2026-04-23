@@ -105,6 +105,9 @@ const PartnerFormPage = lazy(() =>
 const PaymentFormPage = lazy(() =>
   import('@/pages/ib/PaymentFormPage').then((m) => ({ default: m.PaymentFormPage })),
 )
+const CheckinPage = lazy(() =>
+  import('@/pages/checkin').then((m) => ({ default: m.CheckinPage })),
+)
 const TvMarketingPage = lazy(() =>
   import('@/pages/tv/marketing').then((m) => ({ default: m.TvMarketingPage })),
 )
@@ -192,6 +195,15 @@ export function App({ sessionPromise }: { sessionPromise?: SessionPromise }) {
                       <ResetPasswordPage />
                     </PageSuspense>
                   </PublicRoute>
+                }
+              />
+              {/* QR Check-in — public, no auth, no organization context */}
+              <Route
+                path="/checkin/:token"
+                element={
+                  <PageSuspense>
+                    <CheckinPage />
+                  </PageSuspense>
                 }
               />
               {/* TV Leaderboard — full-screen, no sidebar */}

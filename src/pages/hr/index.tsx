@@ -21,6 +21,7 @@ import {
   CaretLeft,
   CaretRight,
   Monitor,
+  QrCode,
 } from '@phosphor-icons/react'
 import {
   PageHeader,
@@ -68,6 +69,7 @@ import { BonusesTab } from './bonuses'
 import { AttendanceTab } from './AttendanceTab'
 import { SalariesTab } from './SalariesTab'
 import { SettingsTab } from './SettingsTab'
+import { QrCodeTab } from './QrCodeTab'
 import { getRoleVariant } from './utils/hrConstants'
 import type { HrEmployeeRole } from '@/hooks/queries/useHrQuery'
 
@@ -427,6 +429,12 @@ export function HrPage() {
             {lang === 'tr' ? 'Devam Takibi' : 'Attendance'}
           </TabsTrigger>
           {canManage && (
+            <TabsTrigger value="qr">
+              <QrCode size={14} className="mr-1" />
+              {lang === 'tr' ? 'QR Kodu' : 'QR Code'}
+            </TabsTrigger>
+          )}
+          {canManage && (
             <TabsTrigger value="settings">
               <GearSix size={14} className="mr-1" />
               {lang === 'tr' ? 'Ayarlar' : 'Settings'}
@@ -748,6 +756,17 @@ export function HrPage() {
             </div>
           </SectionErrorBoundary>
         </TabsContent>
+
+        {/* ── QR Code Tab ── */}
+        {canManage && (
+          <TabsContent value="qr">
+            <SectionErrorBoundary sectionName="HR QR Code">
+              <div className="pt-lg">
+                <QrCodeTab lang={lang} />
+              </div>
+            </SectionErrorBoundary>
+          </TabsContent>
+        )}
 
         {/* ── Settings Tab ── */}
         {canManage && (

@@ -1306,6 +1306,7 @@ export type Database = {
           hourly_deduction_enabled: boolean
           id: string
           organization_id: string
+          qr_token: string
           roles: Json
           standard_check_in: string
           standard_check_out: string
@@ -1328,6 +1329,7 @@ export type Database = {
           insured_bank_amount_tl?: number
           insured_bank_currency?: string
           organization_id: string
+          qr_token?: string
           roles?: Json
           standard_check_in?: string
           standard_check_out?: string
@@ -1348,6 +1350,7 @@ export type Database = {
           insured_bank_amount_tl?: number
           insured_bank_currency?: string
           organization_id?: string
+          qr_token?: string
           roles?: Json
           standard_check_in?: string
           standard_check_out?: string
@@ -2703,6 +2706,10 @@ export type Database = {
         }[]
       }
       get_user_id_by_email: { Args: { _email: string }; Returns: string }
+      hr_checkin_by_qr: {
+        Args: { p_token: string; p_email: string }
+        Returns: Json
+      }
       is_device_trusted: {
         Args: { p_device_id: string; p_user_id: string }
         Returns: boolean

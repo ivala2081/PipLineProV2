@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(git add:*)",
-      "Read(//dev/**)"
+      "Read(//dev/**)",
+      "mcp__plugin_supabase_supabase__list_migrations"
     ]
   },
   "enabledPlugins": {

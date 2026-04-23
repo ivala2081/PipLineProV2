@@ -204,6 +204,7 @@ export type HrSettings = {
   timezone: string
   weekend_off: boolean
   barem_roles: string[]
+  qr_token: string
 }
 
 export const DEFAULT_HR_SETTINGS: HrSettings = {
@@ -234,6 +235,7 @@ export const DEFAULT_HR_SETTINGS: HrSettings = {
   timezone: 'Europe/Istanbul',
   weekend_off: true,
   barem_roles: ['Marketing'],
+  qr_token: '',
 }
 
 export const DEFAULT_MT_CONFIG: MtConfig = {
@@ -1912,6 +1914,7 @@ export function useHrSettingsQuery() {
         timezone: data.timezone ?? DEFAULT_HR_SETTINGS.timezone,
         weekend_off: data.weekend_off ?? DEFAULT_HR_SETTINGS.weekend_off,
         barem_roles: (data.barem_roles ?? DEFAULT_HR_SETTINGS.barem_roles) as string[],
+        qr_token: data.qr_token ?? DEFAULT_HR_SETTINGS.qr_token,
       } as HrSettings
     },
     enabled: !!orgId,
@@ -1950,6 +1953,27 @@ export function useUpdateHrSettingsMutation() {
         { onConflict: 'organization_id' },
       )
       if (error) throw error
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.hr.hrSettings(orgId) })
+    },
+  })
+}
+
+export function useRegenerateQrTokenMutation() {
+  const { currentOrg } = useOrganization()
+  const queryClient = useQueryClient()
+  const orgId = currentOrg?.id ?? ''
+
+  return useMutation({
+    mutationFn: async () => {
+      const newToken = crypto.randomUUID()
+      const { error } = await supabase
+        .from('hr_settings')
+        .update({ qr_token: newToken, updated_at: new Date().toISOString() })
+        .eq('organization_id', orgId)
+      if (error) throw error
+      return newToken
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.hr.hrSettings(orgId) })
