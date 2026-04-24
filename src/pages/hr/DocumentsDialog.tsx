@@ -205,10 +205,7 @@ export function DocumentsDialog({ open, onClose, employee }: DocumentsDialogProp
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent
-        size="2xl"
-        onInteractOutside={(e) => e.preventDefault()}
-      >
+      <DialogContent size="2xl" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
             <FolderOpen size={20} className="text-brand" weight="duotone" />

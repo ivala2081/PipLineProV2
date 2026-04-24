@@ -1,13 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import {
-  ArrowLeft,
-  Bank,
-  CheckFat,
-  Trash,
-  Warning,
-  CalendarBlank,
-} from '@phosphor-icons/react'
+import { ArrowLeft, Bank, CheckFat, Trash, Warning, CalendarBlank } from '@phosphor-icons/react'
 import {
   Button,
   Input,
@@ -147,9 +140,7 @@ function Content({
   }
 
   const updateCurrency = (id: string, currency: 'TL' | 'USD') => {
-    setEditableItems((prev) =>
-      prev.map((i) => (i.employee_id === id ? { ...i, currency } : i)),
-    )
+    setEditableItems((prev) => prev.map((i) => (i.employee_id === id ? { ...i, currency } : i)))
   }
 
   const handleConfirm = async () => {
@@ -208,7 +199,9 @@ function Content({
         </div>
         <div className="flex items-center gap-2">
           <CalendarBlank size={14} className="text-black/40" />
-          <span className="whitespace-nowrap text-xs text-black/40">{t ? 'Ödeme Tarihi' : 'Date'}</span>
+          <span className="whitespace-nowrap text-xs text-black/40">
+            {t ? 'Ödeme Tarihi' : 'Date'}
+          </span>
           <Input
             type="date"
             className="h-8 w-40 text-sm"
@@ -248,12 +241,8 @@ function Content({
                   </TableHead>
                   <TableHead>{t ? 'Çalışan' : 'Employee'}</TableHead>
                   <TableHead className="text-right">{t ? 'Brüt Maaş' : 'Gross Salary'}</TableHead>
-                  <TableHead className="text-right">
-                    {t ? 'Para Birimi' : 'Currency'}
-                  </TableHead>
-                  <TableHead className="text-right">
-                    {t ? 'Banka Tutarı' : 'Bank Amount'}
-                  </TableHead>
+                  <TableHead className="text-right">{t ? 'Para Birimi' : 'Currency'}</TableHead>
+                  <TableHead className="text-right">{t ? 'Banka Tutarı' : 'Bank Amount'}</TableHead>
                   <TableHead>{t ? 'Açıklama' : 'Description'}</TableHead>
                   <TableHead className="w-10" />
                 </TableRow>
@@ -262,10 +251,7 @@ function Content({
                 {editableItems.map((item) => {
                   const excluded = excludedIds.has(item.employee_id)
                   return (
-                    <TableRow
-                      key={item.employee_id}
-                      className={excluded ? 'opacity-30' : ''}
-                    >
+                    <TableRow key={item.employee_id} className={excluded ? 'opacity-30' : ''}>
                       <TableCell>
                         <input
                           type="checkbox"
@@ -279,11 +265,7 @@ function Content({
                           <span className="text-sm font-medium text-black">
                             {item.employee_name}
                           </span>
-                          {!item.is_auto && (
-                            <Tag variant="orange">
-                              {t ? 'Elle' : 'Manual'}
-                            </Tag>
-                          )}
+                          {!item.is_auto && <Tag variant="orange">{t ? 'Elle' : 'Manual'}</Tag>}
                         </div>
                       </TableCell>
                       <TableCell className="text-right">

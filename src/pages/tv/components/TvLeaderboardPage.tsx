@@ -27,8 +27,18 @@ const DEPT_LABEL: Record<TvDepartment, string> = {
 }
 
 const MONTH_NAMES = [
-  'OCAK', 'ŞUBAT', 'MART', 'NİSAN', 'MAYIS', 'HAZİRAN',
-  'TEMMUZ', 'AĞUSTOS', 'EYLÜL', 'EKİM', 'KASIM', 'ARALIK',
+  'OCAK',
+  'ŞUBAT',
+  'MART',
+  'NİSAN',
+  'MAYIS',
+  'HAZİRAN',
+  'TEMMUZ',
+  'AĞUSTOS',
+  'EYLÜL',
+  'EKİM',
+  'KASIM',
+  'ARALIK',
 ]
 
 const EMPTY_DATA: TvLeaderboardData = {
@@ -64,6 +74,7 @@ function useRankDeltas(entries: TvLeaderboardData['entries']) {
     })
 
     if (newDeltas.size > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- flashing rank-change indicators on leaderboard update
       setDeltas(newDeltas)
       const timer = setTimeout(() => setDeltas(new Map()), 8000)
       prevRankMap.current = currentRankMap
@@ -104,6 +115,7 @@ export function TvLeaderboardPage({ department }: Props) {
     if (currentAlert || alertQueue.length === 0 || processingRef.current) return
     processingRef.current = true
     const next = alertQueue[0]
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- draining transfer-alert queue one at a time
     setAlertQueue((q) => q.slice(1))
     setCurrentAlert(next)
     processingRef.current = false
@@ -135,25 +147,39 @@ export function TvLeaderboardPage({ department }: Props) {
   const rest = data.entries.slice(1)
 
   return (
-    <div className={`flex h-screen flex-col ${light ? 'bg-[#fafafa] text-black' : 'bg-black text-white'}`}>
+    <div
+      className={`flex h-screen flex-col ${light ? 'bg-[#fafafa] text-black' : 'bg-black text-white'}`}
+    >
       {/* Header */}
       <header className="flex shrink-0 items-end justify-between px-12 pb-5 pt-7">
         <div>
-          <p className={`text-[11px] font-medium tracking-[0.35em] ${light ? 'text-black/40' : 'text-white/30'}`}>
+          <p
+            className={`text-[11px] font-medium tracking-[0.35em] ${light ? 'text-black/40' : 'text-white/30'}`}
+          >
             {MONTH_NAMES[now.getMonth()]} {now.getFullYear()}
           </p>
-          <h1 className={`mt-1 text-[2.5rem] font-bold leading-none tracking-tight ${light ? 'text-black' : 'text-white'}`}>
+          <h1
+            className={`mt-1 text-[2.5rem] font-bold leading-none tracking-tight ${light ? 'text-black' : 'text-white'}`}
+          >
             {DEPT_LABEL[department]}
           </h1>
-          <div className={`mt-3 h-[2px] w-16 rounded-full ${light ? 'bg-black/20' : 'bg-white/25'}`} />
+          <div
+            className={`mt-3 h-[2px] w-16 rounded-full ${light ? 'bg-black/20' : 'bg-white/25'}`}
+          />
         </div>
 
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
             <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            <span className={`text-[10px] font-semibold tracking-[0.3em] ${light ? 'text-black/35' : 'text-white/35'}`}>CANLI</span>
+            <span
+              className={`text-[10px] font-semibold tracking-[0.3em] ${light ? 'text-black/35' : 'text-white/35'}`}
+            >
+              CANLI
+            </span>
           </div>
-          <p className={`tabular-nums text-[2rem] font-light leading-none tracking-tight ${light ? 'text-black/30' : 'text-white/30'}`}>
+          <p
+            className={`tabular-nums text-[2rem] font-light leading-none tracking-tight ${light ? 'text-black/30' : 'text-white/30'}`}
+          >
             {hours}
             <span className="animate-pulse">:</span>
             {mins}
@@ -164,7 +190,12 @@ export function TvLeaderboardPage({ department }: Props) {
 
       {leader && <Spotlight entry={leader} theme={theme} />}
 
-      <LeaderboardTable entries={rest} highlightedId={highlightedId} rankDeltas={rankDeltas} theme={theme} />
+      <LeaderboardTable
+        entries={rest}
+        highlightedId={highlightedId}
+        rankDeltas={rankDeltas}
+        theme={theme}
+      />
 
       <TvStats data={data} theme={theme} />
 

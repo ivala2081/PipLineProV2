@@ -1,7 +1,15 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Crown, DotsThree, IdentificationCard, Plus, ShieldCheck, Users, Wrench } from '@phosphor-icons/react'
+import {
+  Crown,
+  DotsThree,
+  IdentificationCard,
+  Plus,
+  ShieldCheck,
+  Users,
+  Wrench,
+} from '@phosphor-icons/react'
 import {
   Table,
   TableHeader,
@@ -291,18 +299,15 @@ export function MembersPage() {
                                             {t('organizations.members.actions.makeOperation')}
                                           </DropdownMenuItem>
                                         )}
-                                      {assignableRoles.includes('ik') &&
-                                        member.role !== 'ik' && (
-                                          <DropdownMenuItem
-                                            onClick={() => handleChangeRole(member, 'ik')}
-                                          >
-                                            {t('organizations.members.actions.makeIk')}
-                                          </DropdownMenuItem>
-                                        )}
-                                      {isGod && (
+                                      {assignableRoles.includes('ik') && member.role !== 'ik' && (
                                         <DropdownMenuItem
-                                          onClick={() => setCredTarget(member)}
+                                          onClick={() => handleChangeRole(member, 'ik')}
                                         >
+                                          {t('organizations.members.actions.makeIk')}
+                                        </DropdownMenuItem>
+                                      )}
+                                      {isGod && (
+                                        <DropdownMenuItem onClick={() => setCredTarget(member)}>
                                           {t('credentials.menuLabel')}
                                         </DropdownMenuItem>
                                       )}

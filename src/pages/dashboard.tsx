@@ -34,10 +34,7 @@ import {
 import { useAuth } from '@/app/providers/AuthProvider'
 import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { CURRENCIES } from '@/lib/currencies'
-import {
-  useDashboardQuery,
-  type DashboardPeriod,
-} from '@/hooks/queries/useDashboardQuery'
+import { useDashboardQuery, type DashboardPeriod } from '@/hooks/queries/useDashboardQuery'
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import { queryKeys } from '@/lib/queryKeys'
 import { useMonthlyAnalysisQuery } from '@/hooks/queries/useMonthlyAnalysisQuery'
@@ -46,12 +43,14 @@ import { useDashboardRecentQuery } from '@/hooks/queries/useDashboardRecentQuery
 import type { RecentTransfer } from '@/hooks/queries/useDashboardRecentQuery'
 import type { BreakdownItem } from '@/hooks/queries/useMonthlyAnalysisQuery'
 import { useDashboardChartsQuery } from '@/hooks/queries/useDashboardChartsQuery'
-import { useBestEmployeesQuery, type EmployeePerformance } from '@/hooks/queries/useBestEmployeesQuery'
+import {
+  useBestEmployeesQuery,
+  type EmployeePerformance,
+} from '@/hooks/queries/useBestEmployeesQuery'
 import { useTopBrokersQuery, type BrokerPerformance } from '@/hooks/queries/useTopBrokersQuery'
 import { Tag, Tabs, TabsList, TabsTrigger, Skeleton, Grid, EmptyState } from '@ds'
 import { SectionErrorBoundary } from '@/components/ErrorBoundary'
 
-import { UserAvatar } from '@/components/UserAvatar'
 import { useTheme } from '@ds'
 import { cn } from '@ds/utils'
 import type { ComponentType } from 'react'
@@ -99,7 +98,20 @@ function fmtDay(dateStr: string): string {
 
 function fmtMonth(monthStr: string): string {
   const [y, m] = monthStr.split('-')
-  const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara']
+  const months = [
+    'Oca',
+    'Şub',
+    'Mar',
+    'Nis',
+    'May',
+    'Haz',
+    'Tem',
+    'Ağu',
+    'Eyl',
+    'Eki',
+    'Kas',
+    'Ara',
+  ]
   return `${months[Number(m) - 1]} ${y.slice(2)}`
 }
 
@@ -235,7 +247,12 @@ function HeroKpiCard({
       {isLoading ? (
         <Skeleton className="mt-4 h-7 w-28 rounded-lg" />
       ) : (
-        <p className={cn('mt-4 text-lg font-bold tabular-nums tracking-tight md:text-[22px]', valueColor || 'text-black')}>
+        <p
+          className={cn(
+            'mt-4 text-lg font-bold tabular-nums tracking-tight md:text-[22px]',
+            valueColor || 'text-black',
+          )}
+        >
           {value}
         </p>
       )}
@@ -585,7 +602,9 @@ function BestEmployeesList({
 
   const items = employees.slice(0, 5)
   if (items.length === 0) {
-    return <EmptyState icon={Users} title={t('dashboard.charts.noEmployees')} className="h-40 py-0" />
+    return (
+      <EmptyState icon={Users} title={t('dashboard.charts.noEmployees')} className="h-40 py-0" />
+    )
   }
 
   const maxVal = Math.max(
@@ -640,10 +659,12 @@ function BestEmployeesList({
                   </>
                 ) : (
                   <>
-                    <span className={cn(
-                      'font-mono text-xs font-bold tabular-nums',
-                      emp.netContributionUsd >= 0 ? 'text-green' : 'text-red',
-                    )}>
+                    <span
+                      className={cn(
+                        'font-mono text-xs font-bold tabular-nums',
+                        emp.netContributionUsd >= 0 ? 'text-green' : 'text-red',
+                      )}
+                    >
                       {fmtMoney(emp.netContributionUsd, lang, '$')}
                     </span>
                     <span className="rounded-full bg-black/[0.04] px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-black/25">
@@ -691,7 +712,9 @@ function TopBrokersList({
 
   const items = brokers.slice(0, 5)
   if (items.length === 0) {
-    return <EmptyState icon={Handshake} title={t('dashboard.charts.noBrokers')} className="h-40 py-0" />
+    return (
+      <EmptyState icon={Handshake} title={t('dashboard.charts.noBrokers')} className="h-40 py-0" />
+    )
   }
 
   const maxVal = Math.max(...items.map((b) => Math.abs(b.netProfit)))
@@ -727,10 +750,12 @@ function TopBrokersList({
                 <span className="truncate text-sm font-medium text-black/60">{broker.name}</span>
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
-                <span className={cn(
-                  'font-mono text-xs font-bold tabular-nums',
-                  broker.netProfit >= 0 ? 'text-green' : 'text-red',
-                )}>
+                <span
+                  className={cn(
+                    'font-mono text-xs font-bold tabular-nums',
+                    broker.netProfit >= 0 ? 'text-green' : 'text-red',
+                  )}
+                >
                   {fmtMoney(broker.netProfit, lang, '$')}
                 </span>
                 {broker.referralCount > 0 && (
@@ -777,7 +802,7 @@ export function DashboardPage() {
   const [period, setPeriod] = useState<DashboardPeriod>('month')
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
-  const [pmView, setPmView] = useState<'volume' | 'count'>('volume')
+  const [pmView] = useState<'volume' | 'count'>('volume')
   const [showUsd, setShowUsd] = useState(true)
   const [viewMode, setViewMode] = useState<'gross' | 'net'>('gross')
   const { kpis, prevKpis, isLoading } = useDashboardQuery(
@@ -833,7 +858,6 @@ export function DashboardPage() {
     [recentTransfers, activeFilter],
   )
 
-
   /* ── Derived values ──────────────────────────────── */
   const displayName = profile?.display_name || t('dashboard.defaultUser')
 
@@ -863,8 +887,13 @@ export function DashboardPage() {
 
   const chartVolumeTrend = useMemo(() => {
     const src = chartsData?.volumeTrend ?? []
-    if (!isUSD) return src.map((p) => ({ label: p.label, deposits: p.deposits, withdrawals: p.withdrawals }))
-    return src.map((p) => ({ label: p.label, deposits: p.depositsUsd, withdrawals: p.withdrawalsUsd }))
+    if (!isUSD)
+      return src.map((p) => ({ label: p.label, deposits: p.deposits, withdrawals: p.withdrawals }))
+    return src.map((p) => ({
+      label: p.label,
+      deposits: p.depositsUsd,
+      withdrawals: p.withdrawalsUsd,
+    }))
   }, [chartsData?.volumeTrend, isUSD])
 
   const prevChartDailyVolume = useMemo(() => {
@@ -880,10 +909,14 @@ export function DashboardPage() {
   /* ── Dynamic chart titles based on period ────────── */
   const volumeChartTitle = useMemo(() => {
     switch (period) {
-      case 'today': return t('dashboard.charts.dailyVolume')     // today → current month daily
-      case 'week': return t('dashboard.charts.weeklyVolume')
-      case 'month': return t('dashboard.charts.monthlyVolume')   // month → yearly monthly
-      case 'custom': return t('dashboard.charts.volumeTrend')
+      case 'today':
+        return t('dashboard.charts.dailyVolume') // today → current month daily
+      case 'week':
+        return t('dashboard.charts.weeklyVolume')
+      case 'month':
+        return t('dashboard.charts.monthlyVolume') // month → yearly monthly
+      case 'custom':
+        return t('dashboard.charts.volumeTrend')
     }
   }, [period, t])
 
@@ -1148,11 +1181,7 @@ export function DashboardPage() {
         {/* ─ Volume Trend (AreaChart, 3 cols) ────────── */}
         <div className="xl:col-span-3">
           <SectionErrorBoundary sectionName="Volume Chart" fallbackHeight="min-h-[350px]">
-            <ChartCard
-              title={volumeChartTitle}
-              icon={ChartLine}
-              iconColor="text-black/60"
-            >
+            <ChartCard title={volumeChartTitle} icon={ChartLine} iconColor="text-black/60">
               {isChartsLoading ? (
                 <ChartSkeleton />
               ) : !chartVolumeTrend.length ? (
@@ -1225,7 +1254,9 @@ export function DashboardPage() {
                   <div className="mt-3 flex items-center justify-center gap-6">
                     <div className="flex items-center gap-1.5">
                       <div className="size-2 rounded-full bg-green" />
-                      <span className="text-xs text-black/40">{t('dashboard.charts.deposits')}</span>
+                      <span className="text-xs text-black/40">
+                        {t('dashboard.charts.deposits')}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <div className="size-2 rounded-full bg-red" />
@@ -1247,7 +1278,9 @@ export function DashboardPage() {
             <div className="rounded-2xl border border-black/[0.06] bg-bg1 p-3 md:p-4">
               <div className="mb-3 flex items-center gap-2">
                 <ChartPie size={16} className="text-black/60" weight="duotone" />
-                <h3 className="text-sm font-semibold text-black/60">{t('dashboard.charts.paymentMethods')}</h3>
+                <h3 className="text-sm font-semibold text-black/60">
+                  {t('dashboard.charts.paymentMethods')}
+                </h3>
               </div>
               {isChartsLoading ? (
                 <div className="grid grid-cols-3 gap-2">
@@ -1256,7 +1289,9 @@ export function DashboardPage() {
                   ))}
                 </div>
               ) : !paymentMethods.length ? (
-                <p className="py-4 text-center text-xs text-black/30">{t('dashboard.charts.noData')}</p>
+                <p className="py-4 text-center text-xs text-black/30">
+                  {t('dashboard.charts.noData')}
+                </p>
               ) : (
                 <div className="grid grid-cols-3 gap-2">
                   {paymentMethods.map((pm, i) => {
@@ -1272,11 +1307,17 @@ export function DashboardPage() {
                             className="size-2 shrink-0 rounded-full"
                             style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }}
                           />
-                          <span className="truncate text-[11px] font-medium text-black/50">{pm.name}</span>
+                          <span className="truncate text-[11px] font-medium text-black/50">
+                            {pm.name}
+                          </span>
                         </div>
                         <p className="mt-1 font-mono text-sm font-bold tabular-nums text-black/70">
                           {pmView === 'volume' ? fmtCompact(pm.volume) : pm.count}
-                          {pmView === 'volume' && <span className="ml-0.5 text-[10px] font-medium text-black/30">{isUSD ? '$' : baseCurrencySymbol}</span>}
+                          {pmView === 'volume' && (
+                            <span className="ml-0.5 text-[10px] font-medium text-black/30">
+                              {isUSD ? '$' : baseCurrencySymbol}
+                            </span>
+                          )}
                         </p>
                         <p className="text-[10px] font-semibold text-black/25">{pct}%</p>
                       </div>
@@ -1297,8 +1338,12 @@ export function DashboardPage() {
                       <Fire size={18} className="text-black/60" weight="duotone" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-black/40">{t('dashboard.insights.avgDailyVolume')}</p>
-                      <p className="mt-0.5 font-mono text-base font-bold tabular-nums text-black/70">{fmtMoney(chartMonthlyData.insights.avg_daily_volume, lang)}</p>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-black/40">
+                        {t('dashboard.insights.avgDailyVolume')}
+                      </p>
+                      <p className="mt-0.5 font-mono text-base font-bold tabular-nums text-black/70">
+                        {fmtMoney(chartMonthlyData.insights.avg_daily_volume, lang)}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1308,8 +1353,12 @@ export function DashboardPage() {
                       <Receipt size={18} className="text-black/60" weight="duotone" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-black/40">{t('dashboard.insights.avgPerTransfer')}</p>
-                      <p className="mt-0.5 font-mono text-base font-bold tabular-nums text-black/70">{fmtMoney(chartMonthlyData.insights.avg_per_transfer, lang)}</p>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-black/40">
+                        {t('dashboard.insights.avgPerTransfer')}
+                      </p>
+                      <p className="mt-0.5 font-mono text-base font-bold tabular-nums text-black/70">
+                        {fmtMoney(chartMonthlyData.insights.avg_per_transfer, lang)}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1319,7 +1368,9 @@ export function DashboardPage() {
                       <CalendarStar size={18} className="text-black/60" weight="duotone" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-black/40">{t('dashboard.insights.peakDay')}</p>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-black/40">
+                        {t('dashboard.insights.peakDay')}
+                      </p>
                       <p className="mt-0.5 font-mono text-base font-bold tabular-nums text-black/70">
                         {chartMonthlyData.insights.peak_day
                           ? `${fmtDate(chartMonthlyData.insights.peak_day, lang)} — ${fmtCompact(chartMonthlyData.insights.peak_day_volume)} ₺`
@@ -1355,7 +1406,11 @@ export function DashboardPage() {
             }
           >
             <BestEmployeesList
-              employees={empTab === 'marketing' ? (bestEmployees?.marketing ?? []) : (bestEmployees?.retention ?? [])}
+              employees={
+                empTab === 'marketing'
+                  ? (bestEmployees?.marketing ?? [])
+                  : (bestEmployees?.retention ?? [])
+              }
               tab={empTab}
               isLoading={isBestEmployeesLoading}
               lang={lang}
@@ -1437,7 +1492,6 @@ export function DashboardPage() {
           </SectionErrorBoundary>
         </div>
       </div>
-
 
       {/* ── Previous Month Overview ──────────────────── */}
       {(isPrevMonthlyLoading || prevMonthlyData) && (

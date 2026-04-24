@@ -51,9 +51,29 @@ function getDateKey(ts: number): string {
 
 /** Known tokens whitelist (filter out spam) */
 const KNOWN_TOKENS = new Set([
-  'TRX', 'USDT', 'USDD', 'USDC', 'TUSD', 'USDJ', 'BTT', 'JST', 'SUN',
-  'WIN', 'NFT', 'APENFT', 'WTRX', 'stUSDT', 'BNB', 'WBNB', 'ETH', 'WETH',
-  'SOL', 'BTC', 'WBTC', 'DAI', 'BUSD',
+  'TRX',
+  'USDT',
+  'USDD',
+  'USDC',
+  'TUSD',
+  'USDJ',
+  'BTT',
+  'JST',
+  'SUN',
+  'WIN',
+  'NFT',
+  'APENFT',
+  'WTRX',
+  'stUSDT',
+  'BNB',
+  'WBNB',
+  'ETH',
+  'WETH',
+  'SOL',
+  'BTC',
+  'WBTC',
+  'DAI',
+  'BUSD',
 ])
 
 function isLegitToken(symbol: string): boolean {
@@ -92,12 +112,15 @@ export function computeDailyClosings(
   transfers: NormalizedTransfer[],
   currentBalances: Record<string, number>,
 ): DailyClosingRow[] {
-  const map = new Map<string, {
-    inByToken: Record<string, number>
-    outByToken: Record<string, number>
-    inCount: number
-    outCount: number
-  }>()
+  const map = new Map<
+    string,
+    {
+      inByToken: Record<string, number>
+      outByToken: Record<string, number>
+      inCount: number
+      outCount: number
+    }
+  >()
 
   for (const tx of transfers) {
     const symbol = tx.symbol || 'UNKNOWN'
@@ -131,7 +154,10 @@ export function computeDailyClosings(
 
     const d = new Date(dateKey + 'T00:00:00')
     const label = d.toLocaleDateString('tr-TR', {
-      day: 'numeric', month: 'long', year: 'numeric', weekday: 'short',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      weekday: 'short',
     })
 
     closings.push({
@@ -231,7 +257,9 @@ export async function exportWalletTransfersXlsx(
       formatDateTimeDMY(tx.timestamp),
       tx.direction === 'in' ? 'GİRİŞ' : 'ÇIKIŞ',
       parseFloat(tx.amount) || 0,
-      isKnownToken(chain, tx.tokenAddress) ? (tx.symbol || '') : `Bilinmeyen / Sahte Token (${tx.tokenAddress ? tx.tokenAddress.slice(0, 10) + '…' : ''})`,
+      isKnownToken(chain, tx.tokenAddress)
+        ? tx.symbol || ''
+        : `Bilinmeyen / Sahte Token (${tx.tokenAddress ? tx.tokenAddress.slice(0, 10) + '…' : ''})`,
       tx.fromAddress || tx.counterAddress || '',
       tx.toAddress || tx.counterAddress || '',
       tx.hash || '',
@@ -274,7 +302,10 @@ export async function exportWalletTransfersXlsx(
   }
 
   if (transfers.length > 0) {
-    ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: transfers.length + 1, column: COLUMNS.length } }
+    ws.autoFilter = {
+      from: { row: 1, column: 1 },
+      to: { row: transfers.length + 1, column: COLUMNS.length },
+    }
   }
 
   const safeName = safeLabelName(walletLabel)
@@ -303,7 +334,17 @@ export async function exportWalletDailyClosingsXlsx(
     }
   }
   // Exclude native chain tokens (TRX, ETH, BNB, SOL, BTC) — only show stablecoins/tokens
-  const EXCLUDED_TOKENS = new Set(['TRX', 'WTRX', 'ETH', 'WETH', 'BNB', 'WBNB', 'SOL', 'BTC', 'WBTC'])
+  const EXCLUDED_TOKENS = new Set([
+    'TRX',
+    'WTRX',
+    'ETH',
+    'WETH',
+    'BNB',
+    'WBNB',
+    'SOL',
+    'BTC',
+    'WBTC',
+  ])
   const tokens = [...allTokens].filter((t) => !EXCLUDED_TOKENS.has(t)).sort()
 
   const ws = wb.addWorksheet('Günlük Kapanış')

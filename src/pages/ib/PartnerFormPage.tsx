@@ -364,11 +364,7 @@ export function PartnerFormPage() {
 
   const eligibleEmployees = useMemo(() => {
     return hrEmployees
-      .filter(
-        (e) =>
-          e.is_active &&
-          (IB_RESPONSIBLE_ROLES as readonly string[]).includes(e.role),
-      )
+      .filter((e) => e.is_active && (IB_RESPONSIBLE_ROLES as readonly string[]).includes(e.role))
       .map((e) => ({
         value: e.id,
         label: `${e.full_name} · ${e.role}`,
@@ -403,7 +399,10 @@ export function PartnerFormPage() {
       label: t('ib.partners.unassigned'),
       searchText: '',
     }
-    const list: SearchableSelectOption[] = [noneOption, ...eligibleEmployees.filter((e) => e.value !== watchedManagedBy)]
+    const list: SearchableSelectOption[] = [
+      noneOption,
+      ...eligibleEmployees.filter((e) => e.value !== watchedManagedBy),
+    ]
     if (watchedSecondary && !list.some((o) => o.value === watchedSecondary)) {
       const emp = hrEmployees.find((e) => e.id === watchedSecondary)
       if (emp) {
@@ -496,8 +495,8 @@ export function PartnerFormPage() {
     })
 
     // Drop legacy 'cpa' from selected types (no longer supported)
-    const filteredTypes = (types as AgreementType[]).filter(
-      (t) => (AGREEMENT_TYPES as readonly string[]).includes(t),
+    const filteredTypes = (types as AgreementType[]).filter((t) =>
+      (AGREEMENT_TYPES as readonly string[]).includes(t),
     )
     setSelectedTypes(new Set(filteredTypes))
     const parsed = parseDetailsFromPartner(filteredTypes, details)

@@ -201,10 +201,16 @@ async function fetchV4Portfolio(chain: string, address: string): Promise<Portfol
   ])
 
   if (nativeRes.status === 'rejected') {
-    console.warn(`[Tatum] ${chain} native portfolio failed:`, nativeRes.reason?.message ?? nativeRes.reason)
+    console.warn(
+      `[Tatum] ${chain} native portfolio failed:`,
+      nativeRes.reason?.message ?? nativeRes.reason,
+    )
   }
   if (fungibleRes.status === 'rejected') {
-    console.warn(`[Tatum] ${chain} fungible portfolio failed:`, fungibleRes.reason?.message ?? fungibleRes.reason)
+    console.warn(
+      `[Tatum] ${chain} fungible portfolio failed:`,
+      fungibleRes.reason?.message ?? fungibleRes.reason,
+    )
   }
 
   const assets: PortfolioAsset[] = []

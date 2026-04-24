@@ -173,7 +173,10 @@ export function BonusPaymentDialog({
           notes: data.notes?.trim() || null,
           description: desc,
         })
-        toast({ title: lang === 'tr' ? 'Ödeme güncellendi' : 'Payment updated', variant: 'success' })
+        toast({
+          title: lang === 'tr' ? 'Ödeme güncellendi' : 'Payment updated',
+          variant: 'success',
+        })
       } else if (agreement) {
         await createPayment.mutateAsync({
           agreement_id: agreement.id,
@@ -184,7 +187,10 @@ export function BonusPaymentDialog({
           notes: data.notes?.trim() || null,
           description: `${agreement.title} — ${employee?.full_name ?? ''} (${data.period.trim()})`,
         })
-        toast({ title: lang === 'tr' ? 'Ödeme kaydedildi' : 'Payment recorded', variant: 'success' })
+        toast({
+          title: lang === 'tr' ? 'Ödeme kaydedildi' : 'Payment recorded',
+          variant: 'success',
+        })
       }
       onClose()
     } catch {
@@ -210,14 +216,21 @@ export function BonusPaymentDialog({
               <Money size={20} className="text-brand" weight="duotone" />
             )}
             {isEditMode
-              ? lang === 'tr' ? 'Ödemeyi Düzenle' : 'Edit Payment'
-              : lang === 'tr' ? 'Prim Ödemesi' : 'Bonus Payment'}
+              ? lang === 'tr'
+                ? 'Ödemeyi Düzenle'
+                : 'Edit Payment'
+              : lang === 'tr'
+                ? 'Prim Ödemesi'
+                : 'Bonus Payment'}
           </DialogTitle>
           <DialogDescription className="text-xs text-black/55">
             {employee && <span className="font-medium text-black/70">{employee.full_name}</span>}
             {!isEditMode && agreement && <> — {agreement.title}</>}
             {isEditMode && existingPayment && (
-              <> — <span className="text-black/50">{existingPayment.period}</span></>
+              <>
+                {' '}
+                — <span className="text-black/50">{existingPayment.period}</span>
+              </>
             )}
           </DialogDescription>
         </DialogHeader>
@@ -282,7 +295,9 @@ export function BonusPaymentDialog({
                 onChange={(e) => {
                   const formatted = formatAmount(e.target.value, lang)
                   setAmountDisplay(formatted)
-                  form.setValue('amount_usdt', parseAmount(formatted, lang), { shouldValidate: true })
+                  form.setValue('amount_usdt', parseAmount(formatted, lang), {
+                    shouldValidate: true,
+                  })
                 }}
                 placeholder={amountPlaceholder(lang)}
               />

@@ -186,7 +186,10 @@ export function WalletCard({ wallet, onViewDetail, onEdit, onDelete }: WalletCar
           </div>
           <div className="mt-1 flex items-center gap-1.5">
             <code className="truncate text-[11px] text-black/30">{truncAddr(wallet.address)}</code>
-            <button onClick={handleCopy} className="shrink-0 text-black/15 transition hover:text-black/40">
+            <button
+              onClick={handleCopy}
+              className="shrink-0 text-black/15 transition hover:text-black/40"
+            >
               <Copy size={10} />
             </button>
           </div>
@@ -203,7 +206,9 @@ export function WalletCard({ wallet, onViewDetail, onEdit, onDelete }: WalletCar
           {isBalanceLoading ? (
             <Skeleton className="mt-1 h-6 w-20 rounded" />
           ) : balanceError ? (
-            <p className="mt-0.5 text-xs text-red/80" title={balanceError}>API Error</p>
+            <p className="mt-0.5 text-xs text-red/80" title={balanceError}>
+              API Error
+            </p>
           ) : (
             <p className="mt-0.5 font-mono text-base font-bold tabular-nums text-black/85">
               ${fmt(totalUsd)}
@@ -256,7 +261,9 @@ export function WalletCard({ wallet, onViewDetail, onEdit, onDelete }: WalletCar
             </div>
             {/* NET row */}
             <div className="flex items-center gap-2 border-t border-black/[0.04] pt-1">
-              <span className="w-8 shrink-0 text-[10px] font-bold uppercase text-black/30">NET</span>
+              <span className="w-8 shrink-0 text-[10px] font-bold uppercase text-black/30">
+                NET
+              </span>
               <div className="flex min-w-0 flex-wrap gap-x-3 gap-y-0.5">
                 {renderTokenAmounts(todaySummary.netByToken, 'auto', '')}
               </div>

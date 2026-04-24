@@ -24,9 +24,11 @@ const STEP_LABELS: Record<Step, string> = {
 
 interface PersistedState {
   step: Step
-  parsedData: (Omit<ParsedCsvData, 'kasaExchangeRates'> & {
-    kasaExchangeRates: [string, number][]
-  }) | null
+  parsedData:
+    | (Omit<ParsedCsvData, 'kasaExchangeRates'> & {
+        kasaExchangeRates: [string, number][]
+      })
+    | null
   csvCompareResults: AllCsvCompareResults | null
   systemDiscrepancies: SystemDiscrepancy[]
   resolved: string[]
@@ -98,9 +100,15 @@ export function TransferFixTab() {
   const [initialized] = useState(() => loadFromStorage())
 
   const [step, setStep] = useState<Step>(initialized?.step ?? 'upload')
-  const [parsedData, setParsedData] = useState<ParsedCsvData | null>(initialized?.parsedData ?? null)
-  const [csvCompareResults, setCsvCompareResults] = useState<AllCsvCompareResults | null>(initialized?.csvCompareResults ?? null)
-  const [systemDiscrepancies, setSystemDiscrepancies] = useState<SystemDiscrepancy[]>(initialized?.systemDiscrepancies ?? [])
+  const [parsedData, setParsedData] = useState<ParsedCsvData | null>(
+    initialized?.parsedData ?? null,
+  )
+  const [csvCompareResults, setCsvCompareResults] = useState<AllCsvCompareResults | null>(
+    initialized?.csvCompareResults ?? null,
+  )
+  const [systemDiscrepancies, setSystemDiscrepancies] = useState<SystemDiscrepancy[]>(
+    initialized?.systemDiscrepancies ?? [],
+  )
   const [resolved, setResolved] = useState<Set<string>>(initialized?.resolved ?? new Set())
 
   // Persist state to localStorage on every change
@@ -196,11 +204,7 @@ export function TransferFixTab() {
       )}
 
       {step === 'employee-assign' && parsedData && (
-        <StepEmployeeAssign
-          data={parsedData}
-          onBack={() => setStep('fix')}
-          onReset={handleReset}
-        />
+        <StepEmployeeAssign data={parsedData} onBack={() => setStep('fix')} onReset={handleReset} />
       )}
     </div>
   )

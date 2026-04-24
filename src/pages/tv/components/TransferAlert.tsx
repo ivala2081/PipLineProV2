@@ -15,6 +15,7 @@ function useCountUp(target: number, duration = 1200) {
 
   useEffect(() => {
     const start = performance.now()
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting animation value on target change
     setValue(0)
 
     function tick(now: number) {
@@ -83,20 +84,32 @@ export function TransferAlert({ alert, onComplete, theme }: Props) {
           phase === 'exit' && '-translate-y-2 opacity-0 duration-500',
         )}
       >
-        <p className={`text-sm font-medium tracking-[0.4em] ${l ? 'text-black/30' : 'text-white/30'}`}>YENİ YATIRIM</p>
+        <p
+          className={`text-sm font-medium tracking-[0.4em] ${l ? 'text-black/30' : 'text-white/30'}`}
+        >
+          YENİ YATIRIM
+        </p>
 
-        <h1 className={`mt-4 text-center text-7xl font-bold leading-none tracking-tight ${l ? 'text-black' : 'text-white'}`}>
+        <h1
+          className={`mt-4 text-center text-7xl font-bold leading-none tracking-tight ${l ? 'text-black' : 'text-white'}`}
+        >
           {alert.employeeName}
         </h1>
 
-        <p className={`mt-8 tabular-nums text-8xl font-bold leading-none tracking-tighter ${l ? 'text-black' : 'text-white'}`}>
+        <p
+          className={`mt-8 tabular-nums text-8xl font-bold leading-none tracking-tighter ${l ? 'text-black' : 'text-white'}`}
+        >
           ${countUp.toLocaleString('en-US')}
         </p>
 
         <div className="mt-6 flex items-center gap-4">
           <p className={`text-lg ${l ? 'text-black/35' : 'text-white/35'}`}>{alert.customerName}</p>
           {alert.isFirstDeposit && (
-            <span className={`text-xs font-semibold tracking-[0.3em] ${l ? 'text-black/45' : 'text-white/45'}`}>FTD</span>
+            <span
+              className={`text-xs font-semibold tracking-[0.3em] ${l ? 'text-black/45' : 'text-white/45'}`}
+            >
+              FTD
+            </span>
           )}
         </div>
       </div>

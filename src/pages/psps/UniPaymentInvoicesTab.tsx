@@ -25,10 +25,7 @@ import {
   TableCell,
   Skeleton,
 } from '@ds'
-import {
-  useUniPaymentInvoices,
-  useCreateInvoiceMutation,
-} from '@/hooks/queries/useUniPaymentQuery'
+import { useUniPaymentInvoices, useCreateInvoiceMutation } from '@/hooks/queries/useUniPaymentQuery'
 import type { UniPaymentInvoiceStatus } from '@/lib/uniPaymentTypes'
 import {
   formatAmount as formatAmountInput,
@@ -63,7 +60,11 @@ function getInvoiceStatusTag(status: UniPaymentInvoiceStatus) {
     Expired: 'red',
     Invalid: 'red',
   }
-  return <Tag variant={map[status] ?? 'blue'} className="text-[10px]">{status}</Tag>
+  return (
+    <Tag variant={map[status] ?? 'blue'} className="text-[10px]">
+      {status}
+    </Tag>
+  )
 }
 
 interface Props {
@@ -167,11 +168,11 @@ export function UniPaymentInvoicesTab({ pspId, isAdmin }: Props) {
                       {formatDisplayAmount(inv.price_amount)}
                     </TableCell>
                     <TableCell>
-                      <Tag variant="blue" className="text-[10px]">{inv.price_currency}</Tag>
+                      <Tag variant="blue" className="text-[10px]">
+                        {inv.price_currency}
+                      </Tag>
                     </TableCell>
-                    <TableCell>
-                      {getInvoiceStatusTag(inv.status)}
-                    </TableCell>
+                    <TableCell>{getInvoiceStatusTag(inv.status)}</TableCell>
                     <TableCell className="text-xs tabular-nums text-black/60">
                       {formatDate(inv.created_at)}
                     </TableCell>
@@ -223,7 +224,13 @@ export function UniPaymentInvoicesTab({ pspId, isAdmin }: Props) {
       )}
 
       {/* Create Invoice Dialog */}
-      <Dialog open={createOpen} onOpenChange={(open) => { setCreateOpen(open); if (!open) resetForm() }}>
+      <Dialog
+        open={createOpen}
+        onOpenChange={(open) => {
+          setCreateOpen(open)
+          if (!open) resetForm()
+        }}
+      >
         <DialogContent size="md" onInteractOutside={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>{t('psps.invoices.create')}</DialogTitle>
@@ -273,7 +280,11 @@ export function UniPaymentInvoicesTab({ pspId, isAdmin }: Props) {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={createMutation.isPending}>
+            <Button
+              variant="outline"
+              onClick={() => setCreateOpen(false)}
+              disabled={createMutation.isPending}
+            >
               {t('psps.settlement.cancel')}
             </Button>
             <Button

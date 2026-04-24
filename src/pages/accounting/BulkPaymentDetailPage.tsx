@@ -38,7 +38,10 @@ function formatNumber(n: number) {
   })
 }
 
-const BATCH_TYPE_LABELS: Record<string, { tr: string; en: string; variant: 'blue' | 'green' | 'purple' }> = {
+const BATCH_TYPE_LABELS: Record<
+  string,
+  { tr: string; en: string; variant: 'blue' | 'green' | 'purple' }
+> = {
   salary: { tr: 'Maaş', en: 'Salary', variant: 'blue' },
   bonus: { tr: 'Prim', en: 'Bonus', variant: 'green' },
   bank_deposit: { tr: 'Banka Yatırımı', en: 'Bank Deposit', variant: 'purple' },
@@ -54,7 +57,9 @@ export function BulkPaymentDetailPage() {
   const toast = useToast()
 
   const { data, isLoading, error } = useBulkPaymentDetailQuery(bulkPaymentId ?? '')
-  const { updateItem, deleteItem, deleteBulkPayment } = useBulkPaymentItemMutations(bulkPaymentId ?? '')
+  const { updateItem, deleteItem, deleteBulkPayment } = useBulkPaymentItemMutations(
+    bulkPaymentId ?? '',
+  )
 
   const [deleteAllOpen, setDeleteAllOpen] = useState(false)
   const [deleteItemTarget, setDeleteItemTarget] = useState<string | null>(null)
@@ -97,7 +102,11 @@ export function BulkPaymentDetailPage() {
         <EmptyState
           icon={Warning}
           title={lang === 'tr' ? 'Kayıt bulunamadı' : 'Record not found'}
-          description={lang === 'tr' ? 'Bu toplu ödeme kaydı bulunamadı.' : 'This bulk payment record was not found.'}
+          description={
+            lang === 'tr'
+              ? 'Bu toplu ödeme kaydı bulunamadı.'
+              : 'This bulk payment record was not found.'
+          }
         />
       </div>
     )
@@ -198,13 +207,17 @@ export function BulkPaymentDetailPage() {
           </div>
           <div className="ml-auto flex items-center gap-4">
             <div className="text-right">
-              <div className="text-xs text-black/40">{t('accounting.bulk.totalAmount', 'Toplam Tutar')}</div>
+              <div className="text-xs text-black/40">
+                {t('accounting.bulk.totalAmount', 'Toplam Tutar')}
+              </div>
               <div className="font-mono text-lg font-semibold tabular-nums text-red">
                 -{formatNumber(bp.total_amount)} {bp.currency}
               </div>
             </div>
             <div className="text-right">
-              <div className="text-xs text-black/40">{t('accounting.bulk.itemCount', 'Kalem Sayısı')}</div>
+              <div className="text-xs text-black/40">
+                {t('accounting.bulk.itemCount', 'Kalem Sayısı')}
+              </div>
               <div className="text-lg font-semibold">{bp.item_count}</div>
             </div>
           </div>
@@ -227,7 +240,9 @@ export function BulkPaymentDetailPage() {
                 <TableHead className="text-right">{t('accounting.bulk.amount', 'Tutar')}</TableHead>
                 <TableHead>{lang === 'tr' ? 'Para Birimi' : 'Currency'}</TableHead>
                 {isSalary && (
-                  <TableHead className="text-right">{t('accounting.bulk.deductions', 'Kesintiler')}</TableHead>
+                  <TableHead className="text-right">
+                    {t('accounting.bulk.deductions', 'Kesintiler')}
+                  </TableHead>
                 )}
                 <TableHead className="w-24 px-2" />
               </TableRow>
@@ -279,13 +294,20 @@ export function BulkPaymentDetailPage() {
                   </TableCell>
                   {isSalary && (
                     <TableCell className="whitespace-nowrap text-right text-sm text-black/50">
-                      {(item.attendance_deduction ?? 0) > 0 || (item.unpaid_leave_deduction ?? 0) > 0 ? (
+                      {(item.attendance_deduction ?? 0) > 0 ||
+                      (item.unpaid_leave_deduction ?? 0) > 0 ? (
                         <div className="space-y-0.5">
                           {(item.attendance_deduction ?? 0) > 0 && (
-                            <div>{lang === 'tr' ? 'Devamsızlık' : 'Absence'}: -{formatNumber(item.attendance_deduction!)}</div>
+                            <div>
+                              {lang === 'tr' ? 'Devamsızlık' : 'Absence'}: -
+                              {formatNumber(item.attendance_deduction!)}
+                            </div>
                           )}
                           {(item.unpaid_leave_deduction ?? 0) > 0 && (
-                            <div>{lang === 'tr' ? 'Ücretsiz İzin' : 'Unpaid Leave'}: -{formatNumber(item.unpaid_leave_deduction!)}</div>
+                            <div>
+                              {lang === 'tr' ? 'Ücretsiz İzin' : 'Unpaid Leave'}: -
+                              {formatNumber(item.unpaid_leave_deduction!)}
+                            </div>
                           )}
                         </div>
                       ) : (
@@ -319,7 +341,8 @@ export function BulkPaymentDetailPage() {
               {/* Totals Row */}
               <TableRow className="bg-black/[0.02] font-medium">
                 <TableCell colSpan={2} className="text-sm text-black/60">
-                  {lang === 'tr' ? 'Toplam' : 'Total'} ({items.length} {lang === 'tr' ? 'kalem' : 'items'})
+                  {lang === 'tr' ? 'Toplam' : 'Total'} ({items.length}{' '}
+                  {lang === 'tr' ? 'kalem' : 'items'})
                 </TableCell>
                 <TableCell className="whitespace-nowrap text-right">
                   <span className="font-mono text-sm font-semibold tabular-nums text-red">

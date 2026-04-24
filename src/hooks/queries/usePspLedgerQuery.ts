@@ -32,11 +32,7 @@ export function usePspLedgerQuery(pspId: string | undefined): UsePspLedgerReturn
 
       // Fetch initial_balance and ledger data in parallel
       const [pspRes, ledgerRes] = await Promise.all([
-        supabase
-          .from('psps')
-          .select('initial_balance')
-          .eq('id', pspId)
-          .single(),
+        supabase.from('psps').select('initial_balance').eq('id', pspId).single(),
         supabase.rpc('get_psp_ledger', {
           _psp_id: pspId,
           _org_id: currentOrg.id,

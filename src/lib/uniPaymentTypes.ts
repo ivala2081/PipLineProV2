@@ -120,12 +120,7 @@ export interface UniPaymentPayment {
   updated_at: string
 }
 
-export type UniPaymentPaymentStatus =
-  | 'Pending'
-  | 'Confirmed'
-  | 'Complete'
-  | 'Cancelled'
-  | 'Failed'
+export type UniPaymentPaymentStatus = 'Pending' | 'Confirmed' | 'Complete' | 'Cancelled' | 'Failed'
 
 export interface CreatePaymentParams {
   from_account_id: string

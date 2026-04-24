@@ -19,14 +19,7 @@ import {
   exportWalletTransfersXlsx,
   exportWalletDailyClosingsXlsx,
 } from '@/lib/csvExport/exportWalletXlsx'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  Button,
-} from '@ds'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Button } from '@ds'
 import { cn } from '@ds/utils'
 
 /* ── Helpers ──────────────────────────────────────────── */
@@ -45,13 +38,33 @@ function getMonthRange(year: number, month: number): { from: string; to: string 
 }
 
 const MONTH_NAMES_TR = [
-  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
+  'Ocak',
+  'Şubat',
+  'Mart',
+  'Nisan',
+  'Mayıs',
+  'Haziran',
+  'Temmuz',
+  'Ağustos',
+  'Eylül',
+  'Ekim',
+  'Kasım',
+  'Aralık',
 ]
 
 const MONTH_NAMES_EN = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ]
 
 /* ── Component ────────────────────────────────────────── */
@@ -83,7 +96,6 @@ export function WalletExcelExportDialog({
   transfers,
   currentBalances,
   walletLabel,
-  walletAddress,
   chain,
   hasMore,
   isFetching,
@@ -151,14 +163,26 @@ export function WalletExcelExportDialog({
     if (mode === 'daily' && selectedDate) {
       const d = new Date(selectedDate + 'T00:00:00')
       return d.toLocaleDateString(isTr ? 'tr-TR' : 'en-US', {
-        day: 'numeric', month: 'long', year: 'numeric',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
       })
     }
     if (customFrom === '2020-01-01' && customTo === toYMD(now)) {
       return isTr ? 'Tüm Zamanlar' : 'All Time'
     }
     return `${dateRange.from} — ${dateRange.to}`
-  }, [dateRange, mode, selectedMonth, selectedYear, selectedDate, monthNames, isTr, customFrom, customTo])
+  }, [
+    dateRange,
+    mode,
+    selectedMonth,
+    selectedYear,
+    selectedDate,
+    monthNames,
+    isTr,
+    customFrom,
+    customTo,
+  ])
 
   // Count how many transfers match the selected range
   const matchCount = useMemo(() => {
@@ -189,9 +213,11 @@ export function WalletExcelExportDialog({
       const filtered = filterTransfersByDateRange(safeTransfers, dateRange.from, dateRange.to)
 
       if (filtered.length === 0) {
-        setError(isTr
-          ? 'Seçilen tarih aralığında transfer bulunamadı.'
-          : 'No transfers found in the selected date range.')
+        setError(
+          isTr
+            ? 'Seçilen tarih aralığında transfer bulunamadı.'
+            : 'No transfers found in the selected date range.',
+        )
         setIsExporting(false)
         return
       }
@@ -230,9 +256,7 @@ export function WalletExcelExportDialog({
         }}
       >
         <DialogHeader>
-          <DialogTitle>
-            {isTr ? 'Cüzdan Excel Dışa Aktarma' : 'Wallet Excel Export'}
-          </DialogTitle>
+          <DialogTitle>{isTr ? 'Cüzdan Excel Dışa Aktarma' : 'Wallet Excel Export'}</DialogTitle>
           <DialogDescription>
             {isTr
               ? 'Seçilen tarih aralığındaki cüzdan transferlerini ve günlük kapanışları Excel dosyasına aktarın.'
@@ -306,10 +330,16 @@ export function WalletExcelExportDialog({
                   className="mr-1.5 inline-block"
                 />
                 {m === 'month'
-                  ? (isTr ? 'Aylık' : 'Monthly')
+                  ? isTr
+                    ? 'Aylık'
+                    : 'Monthly'
                   : m === 'daily'
-                    ? (isTr ? 'Günlük' : 'Daily')
-                    : (isTr ? 'Özel Aralık' : 'Custom Range')}
+                    ? isTr
+                      ? 'Günlük'
+                      : 'Daily'
+                    : isTr
+                      ? 'Özel Aralık'
+                      : 'Custom Range'}
               </button>
             ))}
           </div>
@@ -473,9 +503,7 @@ export function WalletExcelExportDialog({
             <div className="flex items-start gap-sm rounded-lg border border-orange-200 bg-orange-50 p-3">
               <Warning size={16} weight="fill" className="mt-0.5 shrink-0 text-orange-500" />
               <p className="text-xs text-orange-700">
-                {isTr
-                  ? 'Henüz transfer verisi yüklenmemiş.'
-                  : 'No transfer data loaded yet.'}
+                {isTr ? 'Henüz transfer verisi yüklenmemiş.' : 'No transfer data loaded yet.'}
               </p>
             </div>
           )}

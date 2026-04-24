@@ -63,7 +63,11 @@ function getPaymentStatusTag(status: UniPaymentPaymentStatus) {
     Cancelled: 'red',
     Failed: 'red',
   }
-  return <Tag variant={map[status] ?? 'blue'} className="text-[10px]">{status}</Tag>
+  return (
+    <Tag variant={map[status] ?? 'blue'} className="text-[10px]">
+      {status}
+    </Tag>
+  )
 }
 
 interface Props {
@@ -184,7 +188,9 @@ export function UniPaymentPaymentsTab({ pspId, isAdmin }: Props) {
                       {pmt.to}
                     </TableCell>
                     <TableCell>
-                      <Tag variant="blue" className="text-[10px]">{pmt.asset_type}</Tag>
+                      <Tag variant="blue" className="text-[10px]">
+                        {pmt.asset_type}
+                      </Tag>
                     </TableCell>
                     <TableCell className="text-right font-medium tabular-nums text-red-600">
                       -{formatDisplayAmount(pmt.amount)}
@@ -241,7 +247,13 @@ export function UniPaymentPaymentsTab({ pspId, isAdmin }: Props) {
       )}
 
       {/* Create Payment Dialog */}
-      <Dialog open={createOpen} onOpenChange={(open) => { setCreateOpen(open); if (!open) resetForm() }}>
+      <Dialog
+        open={createOpen}
+        onOpenChange={(open) => {
+          setCreateOpen(open)
+          if (!open) resetForm()
+        }}
+      >
         <DialogContent size="md" onInteractOutside={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>{t('psps.upPayments.create')}</DialogTitle>
@@ -306,7 +318,11 @@ export function UniPaymentPaymentsTab({ pspId, isAdmin }: Props) {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={createMutation.isPending}>
+            <Button
+              variant="outline"
+              onClick={() => setCreateOpen(false)}
+              disabled={createMutation.isPending}
+            >
               {t('psps.settlement.cancel')}
             </Button>
             <Button

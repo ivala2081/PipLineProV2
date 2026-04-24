@@ -180,9 +180,7 @@ export async function fetchAllTransfersForPeriod(
   return all
 }
 
-export async function resolveProfileNames(
-  userIds: string[],
-): Promise<Map<string, string>> {
+export async function resolveProfileNames(userIds: string[]): Promise<Map<string, string>> {
   const map = new Map<string, string>()
   if (userIds.length === 0) return map
 
@@ -258,7 +256,8 @@ export async function exportTransfersXlsx(
 
   // Pre-compute mapped values for each transfer
   const mappedRows = transfers.map((t) => {
-    const paymentMethodTr = PAYMENT_METHOD_TR[t.payment_method?.name ?? ''] ?? t.payment_method?.name ?? ''
+    const paymentMethodTr =
+      PAYMENT_METHOD_TR[t.payment_method?.name ?? ''] ?? t.payment_method?.name ?? ''
     const kategori = t.category?.is_deposit ? 'YATIRIM' : 'ÇEKİM'
     const typeTr = TYPE_TR[t.type?.name ?? ''] ?? t.type?.name ?? ''
     const personelId = t.updated_by ?? t.created_by ?? ''
@@ -329,7 +328,7 @@ export async function exportTransfersXlsx(
     const paraBirimiList = [...paraBirimiSet]
     const sirketList = [...sirketSet]
 
-    const mkFormula = (items: string[]) => items.length > 0 ? `"${items.join(',')}"` : undefined
+    const mkFormula = (items: string[]) => (items.length > 0 ? `"${items.join(',')}"` : undefined)
 
     const odemeSekliFormula = mkFormula(odemeSekliList)
     const sirketFormula = mkFormula(sirketList)

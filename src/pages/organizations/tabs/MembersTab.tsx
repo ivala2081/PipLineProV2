@@ -222,14 +222,11 @@ export function MembersTab({ orgId, canManage, assignableRoles = [], isGod }: Me
                                       {t('organizations.members.actions.makeOperation')}
                                     </DropdownMenuItem>
                                   )}
-                                {assignableRoles.includes('ik') &&
-                                  member.role !== 'ik' && (
-                                    <DropdownMenuItem
-                                      onClick={() => handleChangeRole(member, 'ik')}
-                                    >
-                                      {t('organizations.members.actions.makeIk')}
-                                    </DropdownMenuItem>
-                                  )}
+                                {assignableRoles.includes('ik') && member.role !== 'ik' && (
+                                  <DropdownMenuItem onClick={() => handleChangeRole(member, 'ik')}>
+                                    {t('organizations.members.actions.makeIk')}
+                                  </DropdownMenuItem>
+                                )}
                                 <DropdownMenuItem
                                   onClick={(e) => {
                                     e.stopPropagation()

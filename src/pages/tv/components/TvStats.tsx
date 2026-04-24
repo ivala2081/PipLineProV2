@@ -16,8 +16,16 @@ function formatUsd(val: number) {
 function Stat({ label, value, l }: { label: string; value: string; l: boolean }) {
   return (
     <div>
-      <p className={`text-[10px] font-medium uppercase tracking-[0.25em] ${l ? 'text-black/30' : 'text-white/25'}`}>{label}</p>
-      <p className={`mt-0.5 tabular-nums text-lg font-semibold ${l ? 'text-black/55' : 'text-white/55'}`}>{value}</p>
+      <p
+        className={`text-[10px] font-medium uppercase tracking-[0.25em] ${l ? 'text-black/30' : 'text-white/25'}`}
+      >
+        {label}
+      </p>
+      <p
+        className={`mt-0.5 tabular-nums text-lg font-semibold ${l ? 'text-black/55' : 'text-white/55'}`}
+      >
+        {value}
+      </p>
     </div>
   )
 }
@@ -33,10 +41,16 @@ export function TvStats({ data, theme }: Props) {
   const monthlyCount = entries.reduce((s, e) => s + e.transferCount, 0)
 
   return (
-    <div className={`shrink-0 border-t px-12 py-5 ${l ? 'border-black/[0.06]' : 'border-white/[0.06]'}`}>
+    <div
+      className={`shrink-0 border-t px-12 py-5 ${l ? 'border-black/[0.06]' : 'border-white/[0.06]'}`}
+    >
       <div className="flex items-center gap-12">
         <div className="flex items-center gap-8">
-          <span className={`text-[10px] font-semibold tracking-[0.3em] ${l ? 'text-black/20' : 'text-white/18'}`}>BUGÜN</span>
+          <span
+            className={`text-[10px] font-semibold tracking-[0.3em] ${l ? 'text-black/20' : 'text-white/18'}`}
+          >
+            BUGÜN
+          </span>
           <Stat label="Hacim" value={formatUsd(todayUsd)} l={l} />
           <Stat label="İşlem" value={String(todayCount)} l={l} />
           <Stat label="FTD" value={String(todayFtd)} l={l} />
@@ -45,7 +59,11 @@ export function TvStats({ data, theme }: Props) {
         <div className={`h-6 w-px ${l ? 'bg-black/[0.08]' : 'bg-white/[0.08]'}`} />
 
         <div className="flex items-center gap-8">
-          <span className={`text-[10px] font-semibold tracking-[0.3em] ${l ? 'text-black/20' : 'text-white/18'}`}>AYLIK</span>
+          <span
+            className={`text-[10px] font-semibold tracking-[0.3em] ${l ? 'text-black/20' : 'text-white/18'}`}
+          >
+            AYLIK
+          </span>
           <Stat label="Hacim" value={formatUsd(monthlyUsd)} l={l} />
           <Stat label="İşlem" value={String(monthlyCount)} l={l} />
         </div>
@@ -54,16 +72,32 @@ export function TvStats({ data, theme }: Props) {
 
         {biggestToday && (
           <div className="flex items-center gap-8">
-            <span className={`text-[10px] font-semibold tracking-[0.3em] ${l ? 'text-black/20' : 'text-white/18'}`}>EN BÜYÜK</span>
+            <span
+              className={`text-[10px] font-semibold tracking-[0.3em] ${l ? 'text-black/20' : 'text-white/18'}`}
+            >
+              EN BÜYÜK
+            </span>
             <div>
-              <p className={`text-[10px] font-medium uppercase tracking-[0.25em] ${l ? 'text-black/30' : 'text-white/25'}`}>{biggestToday.employeeName}</p>
-              <p className={`mt-0.5 tabular-nums text-lg font-semibold ${l ? 'text-black/55' : 'text-white/55'}`}>{formatUsd(biggestToday.amount)}</p>
+              <p
+                className={`text-[10px] font-medium uppercase tracking-[0.25em] ${l ? 'text-black/30' : 'text-white/25'}`}
+              >
+                {biggestToday.employeeName}
+              </p>
+              <p
+                className={`mt-0.5 tabular-nums text-lg font-semibold ${l ? 'text-black/55' : 'text-white/55'}`}
+              >
+                {formatUsd(biggestToday.amount)}
+              </p>
             </div>
           </div>
         )}
 
         <div className="ml-auto flex items-center gap-4">
-          <span className={`text-[10px] font-semibold tracking-[0.3em] ${l ? 'text-black/20' : 'text-white/18'}`}>SAATLİK</span>
+          <span
+            className={`text-[10px] font-semibold tracking-[0.3em] ${l ? 'text-black/20' : 'text-white/18'}`}
+          >
+            SAATLİK
+          </span>
           <Sparkline data={hourlyToday} width={180} height={36} theme={theme} />
         </div>
       </div>

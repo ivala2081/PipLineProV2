@@ -181,14 +181,18 @@ function ToggleButton({
   color?: 'brand' | 'orange'
 }) {
   const activeClasses =
-    color === 'orange' ? 'border-orange/40 bg-orange/5 text-black' : 'border-brand/40 bg-brand/5 text-black'
+    color === 'orange'
+      ? 'border-orange/40 bg-orange/5 text-black'
+      : 'border-brand/40 bg-brand/5 text-black'
 
   return (
     <button
       type="button"
       onClick={onClick}
       className={`rounded-lg border px-3.5 py-2.5 text-center transition-all ${
-        active ? activeClasses : 'border-black/[0.09] bg-bg2 text-black/60 hover:border-black/15 hover:bg-bg1'
+        active
+          ? activeClasses
+          : 'border-black/[0.09] bg-bg2 text-black/60 hover:border-black/15 hover:bg-bg1'
       }`}
     >
       <span className="text-xs font-medium">{children}</span>
@@ -246,7 +250,8 @@ export function EmployeeFormPage() {
   // Populate form when editing
   useEffect(() => {
     if (employee) {
-      const hasCustomBank = employee.bank_salary_tl !== null && employee.bank_salary_tl !== undefined
+      const hasCustomBank =
+        employee.bank_salary_tl !== null && employee.bank_salary_tl !== undefined
       form.reset({
         full_name: employee.full_name,
         email: employee.email,
@@ -281,7 +286,7 @@ export function EmployeeFormPage() {
           data.is_insured && data.use_custom_bank_salary ? (data.bank_salary_tl ?? null) : null,
         is_active: data.is_active,
         hire_date: data.hire_date || null,
-        exit_date: data.is_active ? null : (data.exit_date || null),
+        exit_date: data.is_active ? null : data.exit_date || null,
         notes: data.notes?.trim() || null,
       }
 
@@ -411,11 +416,7 @@ export function EmployeeFormPage() {
                     <Envelope size={12} className="mr-1 inline text-black/30" />
                     {lang === 'tr' ? 'E-posta' : 'Email'}
                   </Label>
-                  <Input
-                    type="email"
-                    {...form.register('email')}
-                    placeholder="ornek@sirket.com"
-                  />
+                  <Input type="email" {...form.register('email')} placeholder="ornek@sirket.com" />
                   {form.formState.errors.email && (
                     <p className={compactError}>{form.formState.errors.email.message}</p>
                   )}
@@ -437,9 +438,7 @@ export function EmployeeFormPage() {
                   </Label>
                   <SearchableSelectField
                     value={form.watch('role')}
-                    onValueChange={(v) =>
-                      form.setValue('role', v as EmployeeFormValues['role'])
-                    }
+                    onValueChange={(v) => form.setValue('role', v as EmployeeFormValues['role'])}
                     placeholder={lang === 'tr' ? 'Rol seçin' : 'Select role'}
                     options={settingsRoles.map((r) => ({ value: r, label: r }))}
                     searchPlaceholder={lang === 'tr' ? 'Rol ara...' : 'Search role...'}
@@ -486,10 +485,7 @@ export function EmployeeFormPage() {
             </FormSection>
 
             {/* Notes */}
-            <FormSection
-              icon={NotePencil}
-              title={lang === 'tr' ? 'Notlar' : 'Notes'}
-            >
+            <FormSection icon={NotePencil} title={lang === 'tr' ? 'Notlar' : 'Notes'}>
               <div>
                 <textarea
                   {...form.register('notes')}
@@ -506,10 +502,7 @@ export function EmployeeFormPage() {
           {/* ── Right column ── */}
           <div className="space-y-md">
             {/* Role & Status */}
-            <FormSection
-              icon={Shield}
-              title={lang === 'tr' ? 'Sigorta' : 'Insurance'}
-            >
+            <FormSection icon={Shield} title={lang === 'tr' ? 'Sigorta' : 'Insurance'}>
               <div className="space-y-md">
                 {/* Insurance */}
                 <div>
@@ -534,7 +527,11 @@ export function EmployeeFormPage() {
                         form.setValue('receives_supplement', false)
                       }}
                     >
-                      <ShieldWarning size={14} weight="fill" className="mr-1.5 inline text-orange" />
+                      <ShieldWarning
+                        size={14}
+                        weight="fill"
+                        className="mr-1.5 inline text-orange"
+                      />
                       {lang === 'tr' ? 'Sigortasız' : 'Uninsured'}
                     </ToggleButton>
                   </div>
@@ -562,9 +559,7 @@ export function EmployeeFormPage() {
                       >
                         <span
                           className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-                            form.watch('receives_supplement')
-                              ? 'translate-x-5'
-                              : 'translate-x-0'
+                            form.watch('receives_supplement') ? 'translate-x-5' : 'translate-x-0'
                           }`}
                         />
                       </div>
@@ -684,7 +679,7 @@ export function EmployeeFormPage() {
                             </p>
                             <p className="text-sm font-bold tabular-nums text-blue">
                               {(form.watch('use_custom_bank_salary')
-                                ? form.watch('bank_salary_tl') ?? 0
+                                ? (form.watch('bank_salary_tl') ?? 0)
                                 : insuredBankAmountTl
                               ).toLocaleString('tr-TR', {
                                 minimumFractionDigits: 2,
@@ -703,7 +698,7 @@ export function EmployeeFormPage() {
                                 0,
                                 form.watch('salary_tl') -
                                   (form.watch('use_custom_bank_salary')
-                                    ? form.watch('bank_salary_tl') ?? 0
+                                    ? (form.watch('bank_salary_tl') ?? 0)
                                     : insuredBankAmountTl),
                               ).toLocaleString('tr-TR', {
                                 minimumFractionDigits: 2,
@@ -730,12 +725,7 @@ export function EmployeeFormPage() {
 
         {/* ── Actions bar ── */}
         <div className="flex items-center justify-between gap-3 rounded-xl border border-black/[0.07] bg-bg1 px-5 py-3.5">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => navigate('/hr')}
-          >
+          <Button type="button" variant="outline" size="sm" onClick={() => navigate('/hr')}>
             <ArrowLeft size={14} weight="bold" />
             {lang === 'tr' ? 'İptal' : 'Cancel'}
           </Button>

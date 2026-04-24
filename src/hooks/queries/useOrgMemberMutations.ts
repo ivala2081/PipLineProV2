@@ -133,7 +133,12 @@ export function useGetCredentials() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.message || data.error || 'Failed to get credentials')
-      return data as { success: boolean; email: string; createdAt: string; lastSignInAt: string | null }
+      return data as {
+        success: boolean
+        email: string
+        createdAt: string
+        lastSignInAt: string | null
+      }
     },
   })
 }

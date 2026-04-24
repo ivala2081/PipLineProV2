@@ -130,12 +130,12 @@ describe('parseCsvFile', () => {
   })
 
   it('extracts exchange rates from extended columns', () => {
-    // Build a row with exchange rate data in columns 15 (date) and 23 (rate)
-    const cols = new Array(24).fill('')
+    // Build a row with exchange rate data in columns 18 (date) and 26 (rate)
+    const cols = new Array(27).fill('')
     cols[0] = 'CRM001'
     cols[2] = 'John Doe'
-    cols[15] = '15.01.2024'
-    cols[23] = '"32,50"'
+    cols[18] = '15.01.2024'
+    cols[26] = '"32,50"'
     const dataRow = cols.join(',')
     const csv = buildCsv(HEADER, [dataRow])
     const result = parseCsvFile(csv)

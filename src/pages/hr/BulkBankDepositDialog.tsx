@@ -135,9 +135,7 @@ export function BulkBankDepositDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Bank size={20} weight="duotone" className="text-blue" />
-            {lang === 'tr'
-              ? 'Sigortalı Banka Ödemesi'
-              : 'Insured Bank Deposit'}
+            {lang === 'tr' ? 'Sigortalı Banka Ödemesi' : 'Insured Bank Deposit'}
           </DialogTitle>
         </DialogHeader>
 
@@ -196,9 +194,7 @@ export function BulkBankDepositDialog({
                               {item.employee_name}
                             </span>
                             {!item.is_auto && (
-                              <Tag variant="orange">
-                                {lang === 'tr' ? 'Elle' : 'Manual'}
-                              </Tag>
+                              <Tag variant="orange">{lang === 'tr' ? 'Elle' : 'Manual'}</Tag>
                             )}
                           </div>
                         </TableCell>

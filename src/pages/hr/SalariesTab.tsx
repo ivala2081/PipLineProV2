@@ -13,7 +13,6 @@ import {
   CaretRight,
   Bank,
   UserMinus,
-  XCircle,
 } from '@phosphor-icons/react'
 import {
   Button,
@@ -77,7 +76,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
   const { data: hrSettings } = useHrSettingsQuery()
   const supplementTl = hrSettings?.supplement_tl ?? 4000
   const supplementCurrency = hrSettings?.supplement_currency ?? 'TL'
-  const insuredBankAmountTl = hrSettings?.insured_bank_amount_tl ?? 28075.50
+  const insuredBankAmountTl = hrSettings?.insured_bank_amount_tl ?? 28075.5
   const insuredBankCurrency = hrSettings?.insured_bank_currency ?? 'TL'
   const fullDayDivisor = hrSettings?.absence_full_day_divisor ?? 30
   const halfDayDivisor = hrSettings?.absence_half_day_divisor ?? 60
@@ -100,7 +99,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
     return employees.filter((e) => {
       if (e.is_active || e.salary_tl <= 0 || !e.exit_date) return false
       const exitDate = new Date(e.exit_date)
-      return exitDate.getFullYear() === year && (exitDate.getMonth() + 1) === month
+      return exitDate.getFullYear() === year && exitDate.getMonth() + 1 === month
     })
   }, [employees, year, month])
 
@@ -294,14 +293,13 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
           attendance_deduction_tl: deduction,
           unpaid_leave_deduction_tl: leaveDeduction,
           period: periodLabel,
-          description:
-            prorated
-              ? lang === 'tr'
-                ? `${e.full_name} — ${periodLabel} Hakediş (${prorated.workedDays}/${prorated.totalDays} gün)`
-                : `${e.full_name} — ${periodLabel} Prorated Salary (${prorated.workedDays}/${prorated.totalDays} days)`
-              : lang === 'tr'
-                ? `${e.full_name} — ${periodLabel} Maaş Ödemesi`
-                : `${e.full_name} — ${periodLabel} Salary Payment`,
+          description: prorated
+            ? lang === 'tr'
+              ? `${e.full_name} — ${periodLabel} Hakediş (${prorated.workedDays}/${prorated.totalDays} gün)`
+              : `${e.full_name} — ${periodLabel} Prorated Salary (${prorated.workedDays}/${prorated.totalDays} days)`
+            : lang === 'tr'
+              ? `${e.full_name} — ${periodLabel} Maaş Ödemesi`
+              : `${e.full_name} — ${periodLabel} Salary Payment`,
         }
       })
   }, [
@@ -402,61 +400,67 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                 </div>
 
                 {/* Active / Exited sub-tabs */}
-                {!isLoading && (activeEmployees.length > 0 || passiveEmployeesForPeriod.length > 0) && (
-                  <Tabs value={salarySubTab} onValueChange={(v) => setSalarySubTab(v as 'active' | 'exited')}>
-                    <TabsList>
-                      <TabsTrigger value="active">
-                        <CheckCircle size={13} weight="fill" className="mr-1 text-green" />
-                        {lang === 'tr' ? 'Aktif Çalışanlar' : 'Active Employees'}
-                        {activeUnpaidCount > 0 && (
-                          <span className="ml-1.5 rounded-full bg-orange/15 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none text-orange">
-                            {activeUnpaidCount}
-                          </span>
-                        )}
-                      </TabsTrigger>
-                      <TabsTrigger value="exited">
-                        <UserMinus size={13} weight="fill" className="mr-1 text-red" />
-                        {lang === 'tr' ? 'Bu Ay Ayrılanlar' : 'Exited This Month'}
-                        {exitedUnpaidCount > 0 && (
-                          <span className="ml-1.5 rounded-full bg-red/15 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none text-red">
-                            {exitedUnpaidCount}
-                          </span>
-                        )}
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                )}
+                {!isLoading &&
+                  (activeEmployees.length > 0 || passiveEmployeesForPeriod.length > 0) && (
+                    <Tabs
+                      value={salarySubTab}
+                      onValueChange={(v) => setSalarySubTab(v as 'active' | 'exited')}
+                    >
+                      <TabsList>
+                        <TabsTrigger value="active">
+                          <CheckCircle size={13} weight="fill" className="mr-1 text-green" />
+                          {lang === 'tr' ? 'Aktif Çalışanlar' : 'Active Employees'}
+                          {activeUnpaidCount > 0 && (
+                            <span className="ml-1.5 rounded-full bg-orange/15 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none text-orange">
+                              {activeUnpaidCount}
+                            </span>
+                          )}
+                        </TabsTrigger>
+                        <TabsTrigger value="exited">
+                          <UserMinus size={13} weight="fill" className="mr-1 text-red" />
+                          {lang === 'tr' ? 'Bu Ay Ayrılanlar' : 'Exited This Month'}
+                          {exitedUnpaidCount > 0 && (
+                            <span className="ml-1.5 rounded-full bg-red/15 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none text-red">
+                              {exitedUnpaidCount}
+                            </span>
+                          )}
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                  )}
 
                 {/* Action buttons */}
                 <div className="flex items-center gap-2 sm:ml-auto">
                   {/* Bank deposit button */}
-                  {canManage && insuredBankAmountTl > 0 && (() => {
-                    const insuredWithoutDeposit = activeEmployees.filter(
-                      (e) => e.is_insured && !insuredBankDepositByEmp.has(e.id),
-                    )
-                    return insuredWithoutDeposit.length > 0 ? (
-                      <Button
-                        variant="outline"
-                        className="w-full sm:w-auto"
-                        onClick={() =>
-                          navigate('/hr/bank-deposit', {
-                            state: {
-                              employees: insuredWithoutDeposit,
-                              insuredBankAmountTl,
-                              insuredBankCurrency,
-                              periodLabel,
-                              lang,
-                            },
-                          })
-                        }
-                      >
-                        <Bank size={15} weight="fill" />
-                        {lang === 'tr'
-                          ? `Banka Ödemeleri (${insuredWithoutDeposit.length})`
-                          : `Bank Deposits (${insuredWithoutDeposit.length})`}
-                      </Button>
-                    ) : null
-                  })()}
+                  {canManage &&
+                    insuredBankAmountTl > 0 &&
+                    (() => {
+                      const insuredWithoutDeposit = activeEmployees.filter(
+                        (e) => e.is_insured && !insuredBankDepositByEmp.has(e.id),
+                      )
+                      return insuredWithoutDeposit.length > 0 ? (
+                        <Button
+                          variant="outline"
+                          className="w-full sm:w-auto"
+                          onClick={() =>
+                            navigate('/hr/bank-deposit', {
+                              state: {
+                                employees: insuredWithoutDeposit,
+                                insuredBankAmountTl,
+                                insuredBankCurrency,
+                                periodLabel,
+                                lang,
+                              },
+                            })
+                          }
+                        >
+                          <Bank size={15} weight="fill" />
+                          {lang === 'tr'
+                            ? `Banka Ödemeleri (${insuredWithoutDeposit.length})`
+                            : `Bank Deposits (${insuredWithoutDeposit.length})`}
+                        </Button>
+                      ) : null
+                    })()}
 
                   {/* Pay button */}
                   {canManage && unpaidCount > 0 && (
@@ -524,8 +528,12 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
             {!isLoading && filteredUnpaid.length > 0 && (
               <h3 className="text-sm font-semibold text-black/70">
                 {salarySubTab === 'active'
-                  ? (lang === 'tr' ? 'Bekleyen Ödemeler' : 'Pending Payments')
-                  : (lang === 'tr' ? 'Ayrılan Çalışan Hakedişleri' : 'Exited Employee Earnings')}
+                  ? lang === 'tr'
+                    ? 'Bekleyen Ödemeler'
+                    : 'Pending Payments'
+                  : lang === 'tr'
+                    ? 'Ayrılan Çalışan Hakedişleri'
+                    : 'Exited Employee Earnings'}
               </h3>
             )}
             {isLoading ? (
@@ -538,7 +546,11 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
               salarySubTab === 'exited' ? (
                 <EmptyState
                   icon={UserMinus}
-                  title={lang === 'tr' ? 'Bu dönemde ayrılan çalışan yok' : 'No exited employees this period'}
+                  title={
+                    lang === 'tr'
+                      ? 'Bu dönemde ayrılan çalışan yok'
+                      : 'No exited employees this period'
+                  }
                   description={
                     lang === 'tr'
                       ? `${periodLabel} döneminde çıkış tarihi olan çalışan bulunamadı.`
@@ -587,14 +599,16 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                         </TableHead>
                         <TableHead>{lang === 'tr' ? 'Rol' : 'Role'}</TableHead>
                         {salarySubTab === 'exited' && (
-                          <TableHead>
-                            {lang === 'tr' ? 'Çıkış Tarihi' : 'Exit Date'}
-                          </TableHead>
+                          <TableHead>{lang === 'tr' ? 'Çıkış Tarihi' : 'Exit Date'}</TableHead>
                         )}
                         <TableHead className="text-right">
                           {salarySubTab === 'exited'
-                            ? (lang === 'tr' ? 'Hakediş' : 'Earned')
-                            : (lang === 'tr' ? 'Brüt Maaş' : 'Gross Salary')}
+                            ? lang === 'tr'
+                              ? 'Hakediş'
+                              : 'Earned'
+                            : lang === 'tr'
+                              ? 'Brüt Maaş'
+                              : 'Gross Salary'}
                         </TableHead>
                         <TableHead className="text-right">
                           {lang === 'tr' ? 'Banka' : 'Bank'}
@@ -630,7 +644,8 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                         const deduction = attendanceDeductionByEmp.get(emp.id) ?? 0
                         const leaveDeduction = unpaidLeaveDeductionByEmp.get(emp.id) ?? 0
                         const bankDeposit = insuredBankDepositByEmp.get(emp.id) ?? 0
-                        const isAutoBank = emp.is_insured && cur === insuredBankCurrency && !prorated
+                        const isAutoBank =
+                          emp.is_insured && cur === insuredBankCurrency && !prorated
                         const bankAmount = isAutoBank
                           ? (emp.bank_salary_tl ?? insuredBankAmountTl)
                           : 0
@@ -683,10 +698,13 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                               <TableCell data-label="Exit Date">
                                 <span className="tabular-nums text-xs text-black/60">
                                   {emp.exit_date
-                                    ? new Date(emp.exit_date).toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', {
-                                        day: 'numeric',
-                                        month: 'short',
-                                      })
+                                    ? new Date(emp.exit_date).toLocaleDateString(
+                                        lang === 'tr' ? 'tr-TR' : 'en-US',
+                                        {
+                                          day: 'numeric',
+                                          month: 'short',
+                                        },
+                                      )
                                     : '—'}
                                 </span>
                               </TableCell>
@@ -700,7 +718,8 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                                 </span>
                                 {prorated && (
                                   <span className="text-[10px] text-black/40">
-                                    {prorated.workedDays}/{prorated.totalDays} {lang === 'tr' ? 'gün' : 'days'}
+                                    {prorated.workedDays}/{prorated.totalDays}{' '}
+                                    {lang === 'tr' ? 'gün' : 'days'}
                                   </span>
                                 )}
                               </div>
@@ -711,11 +730,7 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                               {emp.is_insured && isAutoBank ? (
                                 <div className="flex items-center justify-end gap-1">
                                   {bankDeposit > 0 && (
-                                    <CheckCircle
-                                      size={13}
-                                      weight="fill"
-                                      className="text-green"
-                                    />
+                                    <CheckCircle size={13} weight="fill" className="text-green" />
                                   )}
                                   <span
                                     className={`tabular-nums text-sm font-medium ${bankDeposit > 0 ? 'text-green' : 'text-blue'}`}
@@ -756,159 +771,276 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
 
                             {/* Advance */}
                             <TableCell data-label="Advance" className="text-right">
-                              {advance > 0 ? (() => {
-                                const empAdvances = advances.filter(
-                                  (a) => a.hr_employee_id === emp.id && a.advance_type === 'salary',
-                                )
-                                return (
-                                  <Popover>
-                                    <PopoverTrigger asChild>
-                                      <button type="button" className="tabular-nums text-sm font-medium text-orange underline decoration-dashed underline-offset-2 hover:text-orange/80 transition-colors">
-                                        -{fmtAmount(advance, cur)}
-                                      </button>
-                                    </PopoverTrigger>
-                                    <PopoverContent align="end" className="w-72">
-                                      <p className="mb-2 text-xs font-semibold text-black/60">
-                                        {lang === 'tr' ? 'Avans Detayı' : 'Advance Details'}
-                                      </p>
-                                      <div className="space-y-1.5">
-                                        {empAdvances.map((a) => (
-                                          <div key={a.id} className="flex items-center justify-between gap-2 text-xs">
-                                            <span className="text-black/50">
-                                              {new Date(a.entry_date).toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', { day: 'numeric', month: 'short' })}
-                                            </span>
-                                            <span className="truncate text-black/70">{a.description}</span>
-                                            <span className="shrink-0 tabular-nums font-medium text-orange">
-                                              {fmtAmount(a.amount, a.currency)}
-                                            </span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                      <div className="mt-2 border-t border-black/[0.07] pt-2 flex justify-between text-xs font-semibold">
-                                        <span className="text-black/50">{lang === 'tr' ? 'Toplam' : 'Total'}</span>
-                                        <span className="tabular-nums text-orange">{fmtAmount(advance, cur)}</span>
-                                      </div>
-                                    </PopoverContent>
-                                  </Popover>
-                                )
-                              })() : (
+                              {advance > 0 ? (
+                                (() => {
+                                  const empAdvances = advances.filter(
+                                    (a) =>
+                                      a.hr_employee_id === emp.id && a.advance_type === 'salary',
+                                  )
+                                  return (
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <button
+                                          type="button"
+                                          className="tabular-nums text-sm font-medium text-orange underline decoration-dashed underline-offset-2 hover:text-orange/80 transition-colors"
+                                        >
+                                          -{fmtAmount(advance, cur)}
+                                        </button>
+                                      </PopoverTrigger>
+                                      <PopoverContent align="end" className="w-72">
+                                        <p className="mb-2 text-xs font-semibold text-black/60">
+                                          {lang === 'tr' ? 'Avans Detayı' : 'Advance Details'}
+                                        </p>
+                                        <div className="space-y-1.5">
+                                          {empAdvances.map((a) => (
+                                            <div
+                                              key={a.id}
+                                              className="flex items-center justify-between gap-2 text-xs"
+                                            >
+                                              <span className="text-black/50">
+                                                {new Date(a.entry_date).toLocaleDateString(
+                                                  lang === 'tr' ? 'tr-TR' : 'en-US',
+                                                  { day: 'numeric', month: 'short' },
+                                                )}
+                                              </span>
+                                              <span className="truncate text-black/70">
+                                                {a.description}
+                                              </span>
+                                              <span className="shrink-0 tabular-nums font-medium text-orange">
+                                                {fmtAmount(a.amount, a.currency)}
+                                              </span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                        <div className="mt-2 border-t border-black/[0.07] pt-2 flex justify-between text-xs font-semibold">
+                                          <span className="text-black/50">
+                                            {lang === 'tr' ? 'Toplam' : 'Total'}
+                                          </span>
+                                          <span className="tabular-nums text-orange">
+                                            {fmtAmount(advance, cur)}
+                                          </span>
+                                        </div>
+                                      </PopoverContent>
+                                    </Popover>
+                                  )
+                                })()
+                              ) : (
                                 <span className="text-xs text-black/25">—</span>
                               )}
                             </TableCell>
 
                             {/* Attendance deduction */}
                             <TableCell data-label="Absence Ded." className="text-right">
-                              {deduction > 0 ? (() => {
-                                let empAtt = monthlyAttendance.filter((a) => a.employee_id === emp.id)
-                                if (weekendOff) empAtt = empAtt.filter((a) => !isWeekendDate(a.date))
-                                const deductible = empAtt.filter((a) => !a.deduction_exempt && (a.status === 'absent' || a.status === 'half_day' || (a.absent_hours ?? 0) > 0))
-                                return (
-                                  <Popover>
-                                    <PopoverTrigger asChild>
-                                      <button type="button" className="tabular-nums text-sm font-medium text-red underline decoration-dashed underline-offset-2 hover:text-red/80 transition-colors">
-                                        -{fmtAmount(deduction, cur)}
-                                      </button>
-                                    </PopoverTrigger>
-                                    <PopoverContent align="end" className="w-80">
-                                      <p className="mb-2 text-xs font-semibold text-black/60">
-                                        {lang === 'tr' ? 'Devam Kesintisi Detayı' : 'Absence Deduction Details'}
-                                      </p>
-                                      <div className="space-y-1.5">
-                                        {deductible.map((a) => {
-                                          let dayDed = 0
-                                          if (a.status === 'absent') dayDed = Math.round(emp.salary_tl / fullDayDivisor)
-                                          else if (a.status === 'half_day') dayDed = Math.round(emp.salary_tl / halfDayDivisor)
-                                          const hourDed = (a.absent_hours ?? 0) > 0 ? Math.round((emp.salary_tl * (a.absent_hours ?? 0)) / hourlyDivisor) : 0
-                                          const statusLabel = a.status === 'absent' ? (lang === 'tr' ? 'Gelmedi' : 'Absent') : a.status === 'half_day' ? (lang === 'tr' ? 'Yarım Gün' : 'Half Day') : (lang === 'tr' ? 'Eksik Saat' : 'Missing Hours')
-                                          return (
-                                            <div key={a.id} className="flex items-center justify-between gap-2 text-xs">
-                                              <span className="text-black/50">
-                                                {new Date(a.date + 'T00:00:00').toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', { day: 'numeric', month: 'short' })}
-                                              </span>
-                                              <span className="text-black/70">{statusLabel}{(a.absent_hours ?? 0) > 0 ? ` (${a.absent_hours}s)` : ''}</span>
-                                              <span className="shrink-0 tabular-nums font-medium text-red">
-                                                -{fmtAmount(dayDed + hourDed, cur)}
-                                              </span>
-                                            </div>
-                                          )
-                                        })}
-                                      </div>
-                                      <div className="mt-2 border-t border-black/[0.07] pt-2 flex justify-between text-xs font-semibold">
-                                        <span className="text-black/50">{lang === 'tr' ? 'Toplam' : 'Total'}</span>
-                                        <span className="tabular-nums text-red">-{fmtAmount(deduction, cur)}</span>
-                                      </div>
-                                    </PopoverContent>
-                                  </Popover>
-                                )
-                              })() : (
+                              {deduction > 0 ? (
+                                (() => {
+                                  let empAtt = monthlyAttendance.filter(
+                                    (a) => a.employee_id === emp.id,
+                                  )
+                                  if (weekendOff)
+                                    empAtt = empAtt.filter((a) => !isWeekendDate(a.date))
+                                  const deductible = empAtt.filter(
+                                    (a) =>
+                                      !a.deduction_exempt &&
+                                      (a.status === 'absent' ||
+                                        a.status === 'half_day' ||
+                                        (a.absent_hours ?? 0) > 0),
+                                  )
+                                  return (
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <button
+                                          type="button"
+                                          className="tabular-nums text-sm font-medium text-red underline decoration-dashed underline-offset-2 hover:text-red/80 transition-colors"
+                                        >
+                                          -{fmtAmount(deduction, cur)}
+                                        </button>
+                                      </PopoverTrigger>
+                                      <PopoverContent align="end" className="w-80">
+                                        <p className="mb-2 text-xs font-semibold text-black/60">
+                                          {lang === 'tr'
+                                            ? 'Devam Kesintisi Detayı'
+                                            : 'Absence Deduction Details'}
+                                        </p>
+                                        <div className="space-y-1.5">
+                                          {deductible.map((a) => {
+                                            let dayDed = 0
+                                            if (a.status === 'absent')
+                                              dayDed = Math.round(emp.salary_tl / fullDayDivisor)
+                                            else if (a.status === 'half_day')
+                                              dayDed = Math.round(emp.salary_tl / halfDayDivisor)
+                                            const hourDed =
+                                              (a.absent_hours ?? 0) > 0
+                                                ? Math.round(
+                                                    (emp.salary_tl * (a.absent_hours ?? 0)) /
+                                                      hourlyDivisor,
+                                                  )
+                                                : 0
+                                            const statusLabel =
+                                              a.status === 'absent'
+                                                ? lang === 'tr'
+                                                  ? 'Gelmedi'
+                                                  : 'Absent'
+                                                : a.status === 'half_day'
+                                                  ? lang === 'tr'
+                                                    ? 'Yarım Gün'
+                                                    : 'Half Day'
+                                                  : lang === 'tr'
+                                                    ? 'Eksik Saat'
+                                                    : 'Missing Hours'
+                                            return (
+                                              <div
+                                                key={a.id}
+                                                className="flex items-center justify-between gap-2 text-xs"
+                                              >
+                                                <span className="text-black/50">
+                                                  {new Date(
+                                                    a.date + 'T00:00:00',
+                                                  ).toLocaleDateString(
+                                                    lang === 'tr' ? 'tr-TR' : 'en-US',
+                                                    { day: 'numeric', month: 'short' },
+                                                  )}
+                                                </span>
+                                                <span className="text-black/70">
+                                                  {statusLabel}
+                                                  {(a.absent_hours ?? 0) > 0
+                                                    ? ` (${a.absent_hours}s)`
+                                                    : ''}
+                                                </span>
+                                                <span className="shrink-0 tabular-nums font-medium text-red">
+                                                  -{fmtAmount(dayDed + hourDed, cur)}
+                                                </span>
+                                              </div>
+                                            )
+                                          })}
+                                        </div>
+                                        <div className="mt-2 border-t border-black/[0.07] pt-2 flex justify-between text-xs font-semibold">
+                                          <span className="text-black/50">
+                                            {lang === 'tr' ? 'Toplam' : 'Total'}
+                                          </span>
+                                          <span className="tabular-nums text-red">
+                                            -{fmtAmount(deduction, cur)}
+                                          </span>
+                                        </div>
+                                      </PopoverContent>
+                                    </Popover>
+                                  )
+                                })()
+                              ) : (
                                 <span className="text-xs text-black/25">—</span>
                               )}
                             </TableCell>
 
                             {/* Unpaid leave deduction */}
                             <TableCell data-label="Leave Ded." className="text-right">
-                              {leaveDeduction > 0 ? (() => {
-                                // From hr_leaves
-                                const empLeaves = monthlyLeaves.filter(
-                                  (l) => l.employee_id === emp.id && l.leave_type === 'unpaid',
-                                )
-                                // From attendance unpaid_leave
-                                let empAtt = monthlyAttendance.filter((a) => a.employee_id === emp.id)
-                                if (weekendOff) empAtt = empAtt.filter((a) => !isWeekendDate(a.date))
-                                const unpaidAtt = empAtt.filter((a) => a.status === 'unpaid_leave' && !a.deduction_exempt)
-                                return (
-                                  <Popover>
-                                    <PopoverTrigger asChild>
-                                      <button type="button" className="tabular-nums text-sm font-medium text-red underline decoration-dashed underline-offset-2 hover:text-red/80 transition-colors">
-                                        -{fmtAmount(leaveDeduction, cur)}
-                                      </button>
-                                    </PopoverTrigger>
-                                    <PopoverContent align="end" className="w-80">
-                                      <p className="mb-2 text-xs font-semibold text-black/60">
-                                        {lang === 'tr' ? 'İzin Kesintisi Detayı' : 'Leave Deduction Details'}
-                                      </p>
-                                      <div className="space-y-1.5">
-                                        {empLeaves.map((l) => {
-                                          const days = countLeaveDaysInMonth(l, year, month)
-                                          const ded = Math.round((emp.salary_tl * days) / fullDayDivisor)
-                                          return (
-                                            <div key={l.id} className="flex items-center justify-between gap-2 text-xs">
-                                              <span className="text-black/50">
-                                                {new Date(l.start_date + 'T00:00:00').toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', { day: 'numeric', month: 'short' })}
-                                                {l.start_date !== l.end_date && (
-                                                  <> – {new Date(l.end_date + 'T00:00:00').toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', { day: 'numeric', month: 'short' })}</>
-                                                )}
-                                              </span>
-                                              <span className="text-black/70">{days} {lang === 'tr' ? 'gün' : 'days'}</span>
-                                              <span className="shrink-0 tabular-nums font-medium text-red">
-                                                -{fmtAmount(ded, cur)}
-                                              </span>
-                                            </div>
-                                          )
-                                        })}
-                                        {unpaidAtt.map((a) => {
-                                          const ded = Math.round(emp.salary_tl / fullDayDivisor)
-                                          return (
-                                            <div key={a.id} className="flex items-center justify-between gap-2 text-xs">
-                                              <span className="text-black/50">
-                                                {new Date(a.date + 'T00:00:00').toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US', { day: 'numeric', month: 'short' })}
-                                              </span>
-                                              <span className="text-black/70">{lang === 'tr' ? 'Ücretsiz İzin' : 'Unpaid Leave'}</span>
-                                              <span className="shrink-0 tabular-nums font-medium text-red">
-                                                -{fmtAmount(ded, cur)}
-                                              </span>
-                                            </div>
-                                          )
-                                        })}
-                                      </div>
-                                      <div className="mt-2 border-t border-black/[0.07] pt-2 flex justify-between text-xs font-semibold">
-                                        <span className="text-black/50">{lang === 'tr' ? 'Toplam' : 'Total'}</span>
-                                        <span className="tabular-nums text-red">-{fmtAmount(leaveDeduction, cur)}</span>
-                                      </div>
-                                    </PopoverContent>
-                                  </Popover>
-                                )
-                              })() : (
+                              {leaveDeduction > 0 ? (
+                                (() => {
+                                  // From hr_leaves
+                                  const empLeaves = monthlyLeaves.filter(
+                                    (l) => l.employee_id === emp.id && l.leave_type === 'unpaid',
+                                  )
+                                  // From attendance unpaid_leave
+                                  let empAtt = monthlyAttendance.filter(
+                                    (a) => a.employee_id === emp.id,
+                                  )
+                                  if (weekendOff)
+                                    empAtt = empAtt.filter((a) => !isWeekendDate(a.date))
+                                  const unpaidAtt = empAtt.filter(
+                                    (a) => a.status === 'unpaid_leave' && !a.deduction_exempt,
+                                  )
+                                  return (
+                                    <Popover>
+                                      <PopoverTrigger asChild>
+                                        <button
+                                          type="button"
+                                          className="tabular-nums text-sm font-medium text-red underline decoration-dashed underline-offset-2 hover:text-red/80 transition-colors"
+                                        >
+                                          -{fmtAmount(leaveDeduction, cur)}
+                                        </button>
+                                      </PopoverTrigger>
+                                      <PopoverContent align="end" className="w-80">
+                                        <p className="mb-2 text-xs font-semibold text-black/60">
+                                          {lang === 'tr'
+                                            ? 'İzin Kesintisi Detayı'
+                                            : 'Leave Deduction Details'}
+                                        </p>
+                                        <div className="space-y-1.5">
+                                          {empLeaves.map((l) => {
+                                            const days = countLeaveDaysInMonth(l, year, month)
+                                            const ded = Math.round(
+                                              (emp.salary_tl * days) / fullDayDivisor,
+                                            )
+                                            return (
+                                              <div
+                                                key={l.id}
+                                                className="flex items-center justify-between gap-2 text-xs"
+                                              >
+                                                <span className="text-black/50">
+                                                  {new Date(
+                                                    l.start_date + 'T00:00:00',
+                                                  ).toLocaleDateString(
+                                                    lang === 'tr' ? 'tr-TR' : 'en-US',
+                                                    { day: 'numeric', month: 'short' },
+                                                  )}
+                                                  {l.start_date !== l.end_date && (
+                                                    <>
+                                                      {' '}
+                                                      –{' '}
+                                                      {new Date(
+                                                        l.end_date + 'T00:00:00',
+                                                      ).toLocaleDateString(
+                                                        lang === 'tr' ? 'tr-TR' : 'en-US',
+                                                        { day: 'numeric', month: 'short' },
+                                                      )}
+                                                    </>
+                                                  )}
+                                                </span>
+                                                <span className="text-black/70">
+                                                  {days} {lang === 'tr' ? 'gün' : 'days'}
+                                                </span>
+                                                <span className="shrink-0 tabular-nums font-medium text-red">
+                                                  -{fmtAmount(ded, cur)}
+                                                </span>
+                                              </div>
+                                            )
+                                          })}
+                                          {unpaidAtt.map((a) => {
+                                            const ded = Math.round(emp.salary_tl / fullDayDivisor)
+                                            return (
+                                              <div
+                                                key={a.id}
+                                                className="flex items-center justify-between gap-2 text-xs"
+                                              >
+                                                <span className="text-black/50">
+                                                  {new Date(
+                                                    a.date + 'T00:00:00',
+                                                  ).toLocaleDateString(
+                                                    lang === 'tr' ? 'tr-TR' : 'en-US',
+                                                    { day: 'numeric', month: 'short' },
+                                                  )}
+                                                </span>
+                                                <span className="text-black/70">
+                                                  {lang === 'tr' ? 'Ücretsiz İzin' : 'Unpaid Leave'}
+                                                </span>
+                                                <span className="shrink-0 tabular-nums font-medium text-red">
+                                                  -{fmtAmount(ded, cur)}
+                                                </span>
+                                              </div>
+                                            )
+                                          })}
+                                        </div>
+                                        <div className="mt-2 border-t border-black/[0.07] pt-2 flex justify-between text-xs font-semibold">
+                                          <span className="text-black/50">
+                                            {lang === 'tr' ? 'Toplam' : 'Total'}
+                                          </span>
+                                          <span className="tabular-nums text-red">
+                                            -{fmtAmount(leaveDeduction, cur)}
+                                          </span>
+                                        </div>
+                                      </PopoverContent>
+                                    </Popover>
+                                  )
+                                })()
+                              ) : (
                                 <span className="text-xs text-black/25">—</span>
                               )}
                             </TableCell>
@@ -957,7 +1089,6 @@ export function SalariesTab({ employees, canManage, lang }: SalariesTabProps) {
                 )}
               </>
             )}
-
           </div>
         </TabsContent>
 

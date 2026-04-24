@@ -109,7 +109,12 @@ export function useTvLeaderboardQuery(
     queryKey: queryKeys.tv.monthly(orgId, year, month, department),
     queryFn: async (): Promise<TvLeaderboardData> => {
       if (employeeIds.length === 0)
-        return { entries: [], hourlyToday: Array(24).fill(0), biggestToday: null, recentTransfers: [] }
+        return {
+          entries: [],
+          hourlyToday: Array(24).fill(0),
+          biggestToday: null,
+          recentTransfers: [],
+        }
 
       const { data, error } = await supabase
         .from('transfers')
@@ -219,10 +224,15 @@ export function useTvRealtimeTransfer(
   const queryClient = useQueryClient()
 
   const callbackRef = useRef(onNewTransfer)
-  callbackRef.current = onNewTransfer
-
   const mapRef = useRef(employeeMap)
-  mapRef.current = employeeMap
+
+  useEffect(() => {
+    callbackRef.current = onNewTransfer
+  }, [onNewTransfer])
+
+  useEffect(() => {
+    mapRef.current = employeeMap
+  }, [employeeMap])
 
   const now = new Date()
   const year = now.getFullYear()

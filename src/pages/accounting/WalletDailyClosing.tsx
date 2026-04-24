@@ -226,9 +226,7 @@ function TokenAmountList({
           </div>
         )
       })}
-      {hiddenCount > 0 && (
-        <span className="text-[10px] text-black/25">+{hiddenCount} more</span>
-      )}
+      {hiddenCount > 0 && <span className="text-[10px] text-black/25">+{hiddenCount} more</span>}
     </div>
   )
 }

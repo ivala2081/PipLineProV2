@@ -198,13 +198,14 @@ export function PartnerDetailPanel({ partnerId, isAdmin, onBack }: PartnerDetail
           </div>
           {partner.secondary_employee_id &&
             partner.secondary_employee_id !== partner.managed_by_employee_id && (
-            <div>
-              <p className="text-xs text-black/50">{t('ib.partners.secondary')}</p>
-              <p className="text-sm font-medium">
-                {hrEmployees.find((e) => e.id === partner.secondary_employee_id)?.full_name ?? '—'}
-              </p>
-            </div>
-          )}
+              <div>
+                <p className="text-xs text-black/50">{t('ib.partners.secondary')}</p>
+                <p className="text-sm font-medium">
+                  {hrEmployees.find((e) => e.id === partner.secondary_employee_id)?.full_name ??
+                    '—'}
+                </p>
+              </div>
+            )}
           <div>
             <p className="text-xs text-black/50">{t('ib.partners.agreementType')}</p>
             <div className="mt-1 flex flex-wrap gap-1">
@@ -237,8 +238,7 @@ export function PartnerDetailPanel({ partnerId, isAdmin, onBack }: PartnerDetail
                 } else if (type === 'revenue_share') {
                   const pct = d.revshare_pct != null ? `${d.revshare_pct}%` : '—'
                   const rawSrc = (d.source as string) || 'first_deposit'
-                  const srcKey =
-                    rawSrc === 'net_revenue' ? 'netRevenue' : 'firstDeposit'
+                  const srcKey = rawSrc === 'net_revenue' ? 'netRevenue' : 'firstDeposit'
                   summary = `${pct} (${t(`ib.partners.revenueShare.${srcKey}`)})`
                 }
                 return summary ? (

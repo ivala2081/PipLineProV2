@@ -726,15 +726,13 @@ export function AccountingEntryFormContent({ entry, onDone }: AccountingEntryFor
     }
   })
 
-  const isSubmitting = accounting.isCreating || accounting.isUpdating || ibPaymentSubmitting || pspSubmitting
+  const isSubmitting =
+    accounting.isCreating || accounting.isUpdating || ibPaymentSubmitting || pspSubmitting
 
   /* ── Computed options ─────────────────────────────────────── */
   const employeeOptions = useMemo<SelectOption[]>(() => {
     const filtered = employees
-      .filter(
-        (e) =>
-          e.is_active && (descriptionPreset !== 'sigortali_maas_avans' || e.is_insured),
-      )
+      .filter((e) => e.is_active && (descriptionPreset !== 'sigortali_maas_avans' || e.is_insured))
       .map((e) => ({ value: e.id, label: e.full_name, searchText: `${e.full_name} ${e.role}` }))
     // Edit mode: include currently-selected employee even if it no longer matches the filter
     if (isEdit && watchedHrEmployeeId && !filtered.some((o) => o.value === watchedHrEmployeeId)) {
@@ -771,7 +769,11 @@ export function AccountingEntryFormContent({ entry, onDone }: AccountingEntryFor
     () =>
       psps
         .filter((p) => p.is_active)
-        .map((p) => ({ value: p.id, label: `${p.name} (${p.currency})`, searchText: `${p.name} ${p.currency}` })),
+        .map((p) => ({
+          value: p.id,
+          label: `${p.name} (${p.currency})`,
+          searchText: `${p.name} ${p.currency}`,
+        })),
     [psps],
   )
 
@@ -852,15 +854,15 @@ export function AccountingEntryFormContent({ entry, onDone }: AccountingEntryFor
     sectionDirection: t('accounting.form.sectionDirection', 'Yön'),
     sectionAmount: t('accounting.form.sectionAmount', 'Tutar'),
     sectionRegisterDate: t('accounting.form.sectionRegisterDate', 'Kasa & Tarih'),
-    descriptionGroupAdvance: t(
-      'accounting.form.descriptionGroupAdvance',
-      'Avans / Maaş Ödemeleri',
-    ),
+    descriptionGroupAdvance: t('accounting.form.descriptionGroupAdvance', 'Avans / Maaş Ödemeleri'),
     descriptionGroupCategory: t('accounting.form.descriptionGroupCategory', 'Gider Kategorileri'),
     descriptionGroupOther: t('accounting.form.descriptionGroupOther', 'Diğer'),
     presetMaasAvans: t('accounting.form.presetMaasAvans', 'Maaş Avansı'),
     presetPrimAvans: t('accounting.form.presetPrimAvans', 'Prim Avansı'),
-    presetSigortaliMaasAvans: t('accounting.form.presetSigortaliMaasAvans', 'Sigortalı Banka Ödeme'),
+    presetSigortaliMaasAvans: t(
+      'accounting.form.presetSigortaliMaasAvans',
+      'Sigortalı Banka Ödeme',
+    ),
     presetDiger: t('accounting.form.presetDiger', 'Diğer (Serbest Metin)'),
     descriptionPlaceholder: t('accounting.form.descriptionSelectPlaceholder', 'Seçiniz'),
     descriptionRequired: t('accounting.form.descriptionRequired', 'Lütfen bir açıklama seçin'),
@@ -928,11 +930,7 @@ export function AccountingEntryFormContent({ entry, onDone }: AccountingEntryFor
 
   const handleDescriptionDropdownChange = (val: string) => {
     setDescriptionTouched(true)
-    if (
-      val === 'maas_avans' ||
-      val === 'prim_avans' ||
-      val === 'sigortali_maas_avans'
-    ) {
+    if (val === 'maas_avans' || val === 'prim_avans' || val === 'sigortali_maas_avans') {
       handlePresetChange(val)
       form.setValue('category_id', null)
       setIbPartnerId('')
@@ -1112,11 +1110,7 @@ export function AccountingEntryFormContent({ entry, onDone }: AccountingEntryFor
                 </SectionHeader>
                 <Field
                   label={labels.pspLabel}
-                  error={
-                    !pspId && form.formState.isSubmitted
-                      ? labels.pspRequired
-                      : undefined
-                  }
+                  error={!pspId && form.formState.isSubmitted ? labels.pspRequired : undefined}
                 >
                   {pspOptions.length === 0 ? (
                     <p className="flex h-10 items-center rounded-xl border border-black/[0.07] bg-black/[0.02] px-3 text-xs text-black/35">
@@ -1179,8 +1173,7 @@ export function AccountingEntryFormContent({ entry, onDone }: AccountingEntryFor
           {/* Payee — ÖDEME: hidden for advance + IB; TRANSFER: only for Diğer. */}
           {(entryType === 'TRANSFER'
             ? descriptionDropdownValue === 'diger'
-            : !isAdvance &&
-              descriptionDropdownValue !== `cat:${IB_PAYMENT_SLUG}`) && (
+            : !isAdvance && descriptionDropdownValue !== `cat:${IB_PAYMENT_SLUG}`) && (
             <>
               <div className="my-5" />
               <SectionHeader icon={<ListBullets size={14} weight="bold" />}>

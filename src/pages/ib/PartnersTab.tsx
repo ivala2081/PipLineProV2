@@ -240,10 +240,10 @@ export function PartnersTab({ isAdmin }: PartnersTabProps) {
                     </span>
                     {partner.secondary_employee_id &&
                       partner.secondary_employee_id !== partner.managed_by_employee_id && (
-                      <span className="block text-xs text-black/45">
-                        +{employeeMap[partner.secondary_employee_id] ?? '—'}
-                      </span>
-                    )}
+                        <span className="block text-xs text-black/45">
+                          +{employeeMap[partner.secondary_employee_id] ?? '—'}
+                        </span>
+                      )}
                   </TableCell>
                   <TableCell
                     data-label={t('ib.partners.totalReferrals')}

@@ -52,17 +52,22 @@ export function Ticker({ transfers, theme }: Props) {
   const items = [...transfers, ...transfers]
 
   return (
-    <div className={`shrink-0 border-t ${l ? 'border-black/[0.04] bg-[#fafafa]' : 'border-white/[0.03] bg-black'}`}>
-      <div
-        ref={scrollRef}
-        className="flex gap-8 overflow-hidden whitespace-nowrap px-12 py-3"
-      >
+    <div
+      className={`shrink-0 border-t ${l ? 'border-black/[0.04] bg-[#fafafa]' : 'border-white/[0.03] bg-black'}`}
+    >
+      <div ref={scrollRef} className="flex gap-8 overflow-hidden whitespace-nowrap px-12 py-3">
         {items.map((t, i) => (
           <span key={i} className="inline-flex items-center gap-2 text-sm">
-            <span className={`font-medium ${l ? 'text-black/40' : 'text-white/35'}`}>{t.employeeName}</span>
+            <span className={`font-medium ${l ? 'text-black/40' : 'text-white/35'}`}>
+              {t.employeeName}
+            </span>
             <span className={l ? 'text-black/15' : 'text-white/15'}>&rarr;</span>
-            <span className={`tabular-nums font-semibold ${l ? 'text-black/30' : 'text-white/28'}`}>{formatUsd(t.amount)}</span>
-            <span className={`tabular-nums text-xs ${l ? 'text-black/20' : 'text-white/18'}`}>{t.time}</span>
+            <span className={`tabular-nums font-semibold ${l ? 'text-black/30' : 'text-white/28'}`}>
+              {formatUsd(t.amount)}
+            </span>
+            <span className={`tabular-nums text-xs ${l ? 'text-black/20' : 'text-white/18'}`}>
+              {t.time}
+            </span>
           </span>
         ))}
       </div>

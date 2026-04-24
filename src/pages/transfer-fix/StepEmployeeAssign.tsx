@@ -84,9 +84,7 @@ export function StepEmployeeAssign({ data, onBack, onReset }: StepEmployeeAssign
   }
 
   const selectAll = () => {
-    setAssignments((prev) =>
-      prev.map((a) => (a.resolvedEmployeeId ? { ...a, selected: true } : a)),
-    )
+    setAssignments((prev) => prev.map((a) => (a.resolvedEmployeeId ? { ...a, selected: true } : a)))
   }
 
   const deselectAll = () => {
@@ -106,14 +104,11 @@ export function StepEmployeeAssign({ data, onBack, onReset }: StepEmployeeAssign
     setProgressFailed(0)
     setProgressTotal(counts.selected)
     try {
-      const result = await applyEmployeeAssignments(
-        assignments,
-        (done, total, failed) => {
-          setProgressDone(done)
-          setProgressTotal(total)
-          setProgressFailed(failed)
-        },
-      )
+      const result = await applyEmployeeAssignments(assignments, (done, total, failed) => {
+        setProgressDone(done)
+        setProgressTotal(total)
+        setProgressFailed(failed)
+      })
       setPhase(result.failed > 0 ? 'error' : 'done')
     } catch (err) {
       setPhase('error')
@@ -138,10 +133,14 @@ export function StepEmployeeAssign({ data, onBack, onReset }: StepEmployeeAssign
         <div className="flex flex-col items-center gap-3 py-lg">
           <Warning className="h-8 w-8 text-red-500" weight="duotone" />
           <p className="text-sm text-red-500">{error}</p>
-          <Button variant="gray" onClick={loadData}>Tekrar Dene</Button>
+          <Button variant="gray" onClick={loadData}>
+            Tekrar Dene
+          </Button>
         </div>
         <div className="flex justify-start">
-          <Button variant="gray" onClick={onBack}>Geri</Button>
+          <Button variant="gray" onClick={onBack}>
+            Geri
+          </Button>
         </div>
       </div>
     )
@@ -174,7 +173,9 @@ export function StepEmployeeAssign({ data, onBack, onReset }: StepEmployeeAssign
         <div className="rounded-xl border p-lg space-y-md">
           <div className="flex items-center gap-3">
             {phase === 'running' && <SpinnerGap className="h-6 w-6 animate-spin text-brand" />}
-            {phase === 'done' && <CheckCircle className="h-6 w-6 text-green-500" weight="duotone" />}
+            {phase === 'done' && (
+              <CheckCircle className="h-6 w-6 text-green-500" weight="duotone" />
+            )}
             {phase === 'error' && <Warning className="h-6 w-6 text-red-500" weight="duotone" />}
             <div>
               <p className="text-sm font-semibold text-primary">
@@ -191,7 +192,9 @@ export function StepEmployeeAssign({ data, onBack, onReset }: StepEmployeeAssign
           <div className="h-2 w-full rounded-full bg-border overflow-hidden">
             <div
               className="h-full rounded-full bg-brand transition-all duration-300"
-              style={{ width: `${progressTotal > 0 ? Math.round((progressDone / progressTotal) * 100) : 0}%` }}
+              style={{
+                width: `${progressTotal > 0 ? Math.round((progressDone / progressTotal) * 100) : 0}%`,
+              }}
             />
           </div>
         </div>
@@ -314,7 +317,15 @@ function AssignmentRow({
         {Math.abs(a.amount).toLocaleString('tr-TR')}
       </TableCell>
       <TableCell>
-        <Tag variant={a.csvSource === 'order-satis' ? 'blue' : a.csvSource === 'ord-ret-deposit' ? 'purple' : 'orange'}>
+        <Tag
+          variant={
+            a.csvSource === 'order-satis'
+              ? 'blue'
+              : a.csvSource === 'ord-ret-deposit'
+                ? 'purple'
+                : 'orange'
+          }
+        >
           {CSV_SOURCE_LABELS[a.csvSource] || a.csvSource}
         </Tag>
       </TableCell>
@@ -327,9 +338,7 @@ function AssignmentRow({
           <Tag variant="red">Bulunamadı</Tag>
         )}
       </TableCell>
-      <TableCell className="text-xs text-muted">
-        {a.currentEmployeeId ? 'Var' : '-'}
-      </TableCell>
+      <TableCell className="text-xs text-muted">{a.currentEmployeeId ? 'Var' : '-'}</TableCell>
     </TableRow>
   )
 }

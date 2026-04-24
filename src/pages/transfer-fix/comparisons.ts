@@ -76,7 +76,9 @@ function comparePaymentMethods(kasaRows: KasaRow[], csvPaymentType: string): Csv
   if (!csvPm) return null
   const csvParts = csvPm.split('/').map((s) => s.trim())
 
-  const mismatched = kasaMethods.filter((km) => !csvParts.some((cp) => cp === km || cp.includes(km) || km.includes(cp)))
+  const mismatched = kasaMethods.filter(
+    (km) => !csvParts.some((cp) => cp === km || cp.includes(km) || km.includes(cp)),
+  )
   if (mismatched.length === 0) return null
 
   return {
@@ -98,7 +100,8 @@ function datesWithinRange(isoA: string, isoB: string, dayRange: number): boolean
 function isKasaDeposit(row: KasaRow): boolean {
   const cat = row.categoryName.toUpperCase().trim()
   // Blacklist: known withdrawal categories
-  if (cat.includes('ÇEK') || cat.includes('CEK') || cat.includes('WD') || cat.includes('WITHDRAW')) return false
+  if (cat.includes('ÇEK') || cat.includes('CEK') || cat.includes('WD') || cat.includes('WITHDRAW'))
+    return false
   // Everything else (YATIRIM, DEP, DEPOSIT, or any other) is treated as deposit
   return true
 }
@@ -107,7 +110,13 @@ function isKasaDeposit(row: KasaRow): boolean {
 function isKasaClient(row: KasaRow): boolean {
   const type = row.typeName.toUpperCase().trim()
   // Blacklist: known non-client types
-  if (type.includes('ÖDEME') || type.includes('ODEME') || type.includes('BLOKE') || type.includes('PAYMENT')) return false
+  if (
+    type.includes('ÖDEME') ||
+    type.includes('ODEME') ||
+    type.includes('BLOKE') ||
+    type.includes('PAYMENT')
+  )
+    return false
   // Everything else is treated as client (MÜŞTERİ, MUSTERI, CLIENT, empty, or any variant)
   return true
 }
@@ -163,11 +172,7 @@ function buildKasaMap(kasaRows: KasaRow[], depositOnly: boolean) {
 }
 
 /** Check if KASA group SUM matches CSV totals (either TL or USD match is sufficient) */
-function groupAmountsMatch(
-  candidates: KasaRow[],
-  csvTl: number,
-  csvUsd: number,
-): boolean {
+function groupAmountsMatch(candidates: KasaRow[], csvTl: number, csvUsd: number): boolean {
   const kasaTlTotal = candidates.reduce((sum, r) => sum + getKasaAmountTl(r), 0)
   const kasaUsdTotal = candidates.reduce((sum, r) => sum + getKasaAmountUsd(r), 0)
   const tlMatch = kasaTlTotal > 0 && csvTl > 0 && Math.abs(kasaTlTotal - csvTl) < 2
@@ -268,13 +273,14 @@ function matchSalesCsvToKasa<T>(
     const firstRow = csvRows[0]
     const employee = getEmployee(firstRow)
     const manager = getManager(firstRow)
-    const paymentType = csvRows.map((r) => getPaymentType(r)).filter(Boolean).join('/')
+    const paymentType = csvRows
+      .map((r) => getPaymentType(r))
+      .filter(Boolean)
+      .join('/')
 
     // --- 2a. Exact meta+date match ---
     const allKasaRows = kasaMap.get(key) ?? []
-    const candidates = allKasaRows.filter(
-      (r) => !matchedKasaKeys.has(`${key}|${r.rowIndex}`),
-    )
+    const candidates = allKasaRows.filter((r) => !matchedKasaKeys.has(`${key}|${r.rowIndex}`))
 
     if (candidates.length > 0) {
       if (groupAmountsMatch(candidates, csvTl, csvUsd)) {
@@ -307,7 +313,10 @@ function matchSalesCsvToKasa<T>(
       }
 
       const combinedRows = combinedCandidates.map((c) => c.row)
-      if (combinedRows.length > candidates.length && groupAmountsMatch(combinedRows, csvTl, csvUsd)) {
+      if (
+        combinedRows.length > candidates.length &&
+        groupAmountsMatch(combinedRows, csvTl, csvUsd)
+      ) {
         // Combined nearby-date rows match the CSV total — consume all
         const combinedDates = [...new Set(combinedCandidates.map((c) => c.mapKey.split('|')[1]))]
         const fieldNotes: CsvFieldNote[] = [
@@ -321,7 +330,8 @@ function matchSalesCsvToKasa<T>(
           csvSource,
           kasaRow: combinedRows[0],
           csvRow: firstRow as never,
-          kasaAmount: combinedRows.reduce((s, r) => s + getKasaAmountTl(r), 0) ||
+          kasaAmount:
+            combinedRows.reduce((s, r) => s + getKasaAmountTl(r), 0) ||
             combinedRows.reduce((s, r) => s + getKasaAmountUsd(r), 0),
           csvAmount: csvTl || csvUsd,
           employeeName: employee,
@@ -386,7 +396,8 @@ function matchSalesCsvToKasa<T>(
           csvSource,
           kasaRow: nearCandidates[0],
           csvRow: firstRow as never,
-          kasaAmount: nearCandidates.reduce((s, r) => s + getKasaAmountTl(r), 0) ||
+          kasaAmount:
+            nearCandidates.reduce((s, r) => s + getKasaAmountTl(r), 0) ||
             nearCandidates.reduce((s, r) => s + getKasaAmountUsd(r), 0),
           csvAmount: csvTl || csvUsd,
           employeeName: employee,
@@ -428,7 +439,8 @@ function matchSalesCsvToKasa<T>(
           csvSource,
           kasaRow: nearbyRows[0],
           csvRow: firstRow as never,
-          kasaAmount: nearbyRows.reduce((s, r) => s + getKasaAmountTl(r), 0) ||
+          kasaAmount:
+            nearbyRows.reduce((s, r) => s + getKasaAmountTl(r), 0) ||
             nearbyRows.reduce((s, r) => s + getKasaAmountUsd(r), 0),
           csvAmount: csvTl || csvUsd,
           employeeName: employee,
@@ -459,7 +471,11 @@ function matchSalesCsvToKasa<T>(
 
         if (groupAmountsMatch(nameCandidates, csvTl, csvUsd)) {
           const fieldNotes: CsvFieldNote[] = [
-            { field: 'META ID', kasaValue: nameCandidates[0].metaId || '(boş)', csvValue: normalizedMeta },
+            {
+              field: 'META ID',
+              kasaValue: nameCandidates[0].metaId || '(boş)',
+              csvValue: normalizedMeta,
+            },
           ]
           if (entryDate !== csvIsoDate) {
             fieldNotes.push({ field: 'Tarih', kasaValue: entryDate, csvValue: csvIsoDate })
@@ -470,7 +486,8 @@ function matchSalesCsvToKasa<T>(
             csvSource,
             kasaRow: nameCandidates[0],
             csvRow: firstRow as never,
-            kasaAmount: nameCandidates.reduce((s, r) => s + getKasaAmountTl(r), 0) ||
+            kasaAmount:
+              nameCandidates.reduce((s, r) => s + getKasaAmountTl(r), 0) ||
               nameCandidates.reduce((s, r) => s + getKasaAmountUsd(r), 0),
             csvAmount: csvTl || csvUsd,
             employeeName: employee,
@@ -750,9 +767,7 @@ export function runAllCsvComparisons(
   // Step 2: Build remaining KASA deposit map (exclude already matched by ORDER SATIS)
   const remainingKasaDepositMap = new Map<string, KasaRow[]>()
   for (const [key, rows] of kasaDepositMap) {
-    const remaining = rows.filter(
-      (r) => !orderSatisMatch.matched.has(`${key}|${r.rowIndex}`),
-    )
+    const remaining = rows.filter((r) => !orderSatisMatch.matched.has(`${key}|${r.rowIndex}`))
     if (remaining.length > 0) remainingKasaDepositMap.set(key, remaining)
   }
 
@@ -788,10 +803,7 @@ export function runAllCsvComparisons(
   )
 
   // Step 5: Find KASA deposits not matched by EITHER ORDER SATIS or RET DEPOSIT
-  const allMatchedDepositKeys = new Set([
-    ...orderSatisMatch.matched,
-    ...ordRetMatch.matched,
-  ])
+  const allMatchedDepositKeys = new Set([...orderSatisMatch.matched, ...ordRetMatch.matched])
   const unmatchedKasaDeposits: CsvDiscrepancy[] = []
   for (const [key, rows] of kasaDepositMap) {
     for (const kasaRow of rows) {
@@ -1027,7 +1039,11 @@ export function compareKasaToSystem(
         if (Math.abs(Math.abs(sysRow.amount) - Math.abs(kasaAmount)) < 2) {
           const diffs = compareFields(kasaRow, sysRow)
           if (kasaMeta !== normalizeMeta(sysRow.meta_id || '')) {
-            diffs.push({ field: 'meta_id', kasaValue: kasaMeta, systemValue: sysRow.meta_id || '(boş)' })
+            diffs.push({
+              field: 'meta_id',
+              kasaValue: kasaMeta,
+              systemValue: sysRow.meta_id || '(boş)',
+            })
           }
           matchedSystemIds.add(sysRow.id)
           discrepancies.push({
@@ -1075,11 +1091,22 @@ function compareFields(kasaRow: KasaRow, sysRow: SystemTransfer): FieldDiff[] {
   const diffs: FieldDiff[] = []
 
   const kasaCat = kasaRow.categoryName.toUpperCase().trim()
-  const isKasaWd = kasaCat === 'ÇEKME' || kasaCat === 'CEKME' || kasaCat === 'ÇEKİM' || kasaCat === 'CEKIM' || kasaCat === 'WD' || kasaCat === 'WITHDRAWAL'
-  const isKasaDep = !isKasaWd && (kasaCat === 'YATIRIM' || kasaCat === 'DEP' || kasaCat === 'DEPOSIT')
+  const isKasaWd =
+    kasaCat === 'ÇEKME' ||
+    kasaCat === 'CEKME' ||
+    kasaCat === 'ÇEKİM' ||
+    kasaCat === 'CEKIM' ||
+    kasaCat === 'WD' ||
+    kasaCat === 'WITHDRAWAL'
+  const isKasaDep =
+    !isKasaWd && (kasaCat === 'YATIRIM' || kasaCat === 'DEP' || kasaCat === 'DEPOSIT')
   const sysCat = sysRow.category_id
   if ((isKasaDep && sysCat !== 'dep') || (!isKasaDep && sysCat !== 'wd')) {
-    diffs.push({ field: 'category', kasaValue: isKasaDep ? 'dep' : 'wd', systemValue: sysCat || '' })
+    diffs.push({
+      field: 'category',
+      kasaValue: isKasaDep ? 'dep' : 'wd',
+      systemValue: sysCat || '',
+    })
   }
 
   const kasaPm = kasaRow.paymentMethodName.toLowerCase().trim()
@@ -1089,7 +1116,10 @@ function compareFields(kasaRow: KasaRow, sysRow: SystemTransfer): FieldDiff[] {
       ? 'bank'
       : kasaPm === 'tether' || kasaPm === 'usdt'
         ? 'tether'
-        : kasaPm === 'kredi kartı' || kasaPm === 'credit card' || kasaPm === 'credit-card' || kasaPm === 'kk'
+        : kasaPm === 'kredi kartı' ||
+            kasaPm === 'credit card' ||
+            kasaPm === 'credit-card' ||
+            kasaPm === 'kk'
           ? 'credit-card'
           : kasaPm
   const sysPmNorm = sysPm === 'kk' ? 'credit-card' : sysPm

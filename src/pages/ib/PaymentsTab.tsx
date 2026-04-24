@@ -20,14 +20,6 @@ import { useIBPaymentsQuery, type IBPaymentWithPartner } from '@/hooks/queries/u
 import { useIBPartnersQuery } from '@/hooks/queries/useIBPartnersQuery'
 
 /* ------------------------------------------------------------------ */
-/*  Types                                                              */
-/* ------------------------------------------------------------------ */
-
-interface PaymentsTabProps {
-  isAdmin: boolean
-}
-
-/* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
@@ -48,7 +40,7 @@ function formatDate(date: string) {
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export function PaymentsTab(_props: PaymentsTabProps) {
+export function PaymentsTab() {
   const { t } = useTranslation('pages')
 
   const { payments, isLoading } = useIBPaymentsQuery()
@@ -153,7 +145,6 @@ export function PaymentsTab(_props: PaymentsTabProps) {
         <Info size={14} className="mt-0.5 shrink-0 text-blue/60" />
         <p className="text-xs text-black/50">{t('ib.payments.accountingNote')}</p>
       </div>
-
     </div>
   )
 }

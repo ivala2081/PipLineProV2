@@ -20,9 +20,7 @@ export function parseOrderSatisCsv(csvText: string): OrderSatisRow[] {
   for (let i = 0; i < Math.min(allRows.length, 10); i++) {
     const row = allRows[i]
     if (!row) continue
-    const hasTargetCol = row.some(
-      (cell) => cell?.trim() === 'Tarih' || cell?.trim() === 'Dönem',
-    )
+    const hasTargetCol = row.some((cell) => cell?.trim() === 'Tarih' || cell?.trim() === 'Dönem')
     if (hasTargetCol) {
       headerIdx = i
       break
@@ -334,11 +332,16 @@ export function filterOrderSatisByPeriod(rows: OrderSatisRow[], period: Period):
   return rows.filter((r) => donemMatchesPeriod(r.donem, period) || isInExactMonth(r.tarih, period))
 }
 
-export function filterOrdRetDepositByPeriod(rows: OrdRetDepositRow[], period: Period): OrdRetDepositRow[] {
+export function filterOrdRetDepositByPeriod(
+  rows: OrdRetDepositRow[],
+  period: Period,
+): OrdRetDepositRow[] {
   return rows.filter((r) => donemMatchesPeriod(r.ay, period) || isInExactMonth(r.tarih, period))
 }
 
-export function filterOrdWithdrawalByPeriod(rows: OrdWithdrawalRow[], period: Period): OrdWithdrawalRow[] {
+export function filterOrdWithdrawalByPeriod(
+  rows: OrdWithdrawalRow[],
+  period: Period,
+): OrdWithdrawalRow[] {
   return rows.filter((r) => donemMatchesPeriod(r.ay, period) || isInExactMonth(r.tarih, period))
 }
-

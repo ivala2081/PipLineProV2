@@ -126,7 +126,9 @@ export function PaymentFormPage() {
             <div className="rounded-xl border border-black/[0.07] bg-bg1">
               <div className="flex items-center gap-2.5 border-b border-black/[0.06] px-5 py-3.5">
                 <Wallet size={16} weight="duotone" className="text-brand" />
-                <h3 className="text-sm font-semibold text-black/80">{t('ib.payments.dialog.title')}</h3>
+                <h3 className="text-sm font-semibold text-black/80">
+                  {t('ib.payments.dialog.title')}
+                </h3>
               </div>
               <div className="space-y-md p-5">
                 {/* Partner */}

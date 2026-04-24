@@ -57,7 +57,10 @@ import { LeavesTab } from './LeavesTab'
 /* ------------------------------------------------------------------ */
 
 function getLeaveTagConfig(type: HrLeaveType, lang: 'tr' | 'en') {
-  const map: Record<HrLeaveType, { label: string; variant: 'green' | 'red' | 'blue'; icon: React.ReactNode }> = {
+  const map: Record<
+    HrLeaveType,
+    { label: string; variant: 'green' | 'red' | 'blue'; icon: React.ReactNode }
+  > = {
     paid: {
       label: lang === 'tr' ? 'Ücretli İzin' : 'Paid Leave',
       variant: 'green',
@@ -160,9 +163,7 @@ function AttendanceOnLeaveRow({
         </span>
       </TableCell>
       <TableCell data-label="Status">
-        <span className="text-xs text-black/30">
-          {lang === 'tr' ? 'İzinli' : 'On Leave'}
-        </span>
+        <span className="text-xs text-black/30">{lang === 'tr' ? 'İzinli' : 'On Leave'}</span>
       </TableCell>
       <TableCell data-label="Badge">
         <Tag variant={cfg.variant}>
@@ -237,7 +238,6 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
   )
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- pagination reset on filter change
     setPage(1)
     setSelectedIds(new Set())
   }, [search, selectedDate])
@@ -273,7 +273,8 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
       setSelectedIds(new Set(selectableEmployees.map((e) => e.id)))
     }
   }
-  const allSelected = selectableEmployees.length > 0 && selectedIds.size === selectableEmployees.length
+  const allSelected =
+    selectableEmployees.length > 0 && selectedIds.size === selectableEmployees.length
   const hasSelection = selectedIds.size > 0
 
   const handleBulkStatus = async (status: HrAttendanceStatus) => {
@@ -290,9 +291,10 @@ export function AttendanceTab({ employees, canManage, lang }: AttendanceTabProps
       }))
       await bulkUpsertAttendance.mutateAsync(payloads)
       toast({
-        title: lang === 'tr'
-          ? `${selectedIds.size} çalışan toplu işaretlendi`
-          : `${selectedIds.size} employees bulk marked`,
+        title:
+          lang === 'tr'
+            ? `${selectedIds.size} çalışan toplu işaretlendi`
+            : `${selectedIds.size} employees bulk marked`,
         variant: 'success',
       })
       setSelectedIds(new Set())

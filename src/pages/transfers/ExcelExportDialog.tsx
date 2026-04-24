@@ -14,14 +14,7 @@ import {
   resolveProfileNames,
   exportTransfersXlsx,
 } from '@/lib/csvExport/exportTransfersXlsx'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  Button,
-} from '@ds'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Button } from '@ds'
 import { cn } from '@ds/utils'
 
 /* ── Helpers ──────────────────────────────────────────── */
@@ -40,13 +33,33 @@ function getMonthRange(year: number, month: number): { from: string; to: string 
 }
 
 const MONTH_NAMES_TR = [
-  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
+  'Ocak',
+  'Şubat',
+  'Mart',
+  'Nisan',
+  'Mayıs',
+  'Haziran',
+  'Temmuz',
+  'Ağustos',
+  'Eylül',
+  'Ekim',
+  'Kasım',
+  'Aralık',
 ]
 
 const MONTH_NAMES_EN = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ]
 
 /* ── Component ────────────────────────────────────────── */
@@ -146,9 +159,7 @@ export function ExcelExportDialog({ open, onClose }: ExcelExportDialogProps) {
 
       const userIds = [
         ...new Set(
-          transfers
-            .flatMap((tr) => [tr.updated_by, tr.created_by])
-            .filter(Boolean) as string[],
+          transfers.flatMap((tr) => [tr.updated_by, tr.created_by]).filter(Boolean) as string[],
         ),
       ]
       const profileMap = await resolveProfileNames(userIds)
@@ -201,7 +212,11 @@ export function ExcelExportDialog({ open, onClose }: ExcelExportDialogProps) {
                   : 'border-black/10 bg-bg1 text-black/50 hover:border-black/20',
               )}
             >
-              <CalendarBlank size={14} weight={mode === 'month' ? 'fill' : 'regular'} className="mr-1.5 inline-block" />
+              <CalendarBlank
+                size={14}
+                weight={mode === 'month' ? 'fill' : 'regular'}
+                className="mr-1.5 inline-block"
+              />
               {isTr ? 'Aylık' : 'Monthly'}
             </button>
             <button
@@ -214,7 +229,11 @@ export function ExcelExportDialog({ open, onClose }: ExcelExportDialogProps) {
                   : 'border-black/10 bg-bg1 text-black/50 hover:border-black/20',
               )}
             >
-              <CalendarBlank size={14} weight={mode === 'daily' ? 'fill' : 'regular'} className="mr-1.5 inline-block" />
+              <CalendarBlank
+                size={14}
+                weight={mode === 'daily' ? 'fill' : 'regular'}
+                className="mr-1.5 inline-block"
+              />
               {isTr ? 'Günlük' : 'Daily'}
             </button>
             <button
@@ -227,7 +246,11 @@ export function ExcelExportDialog({ open, onClose }: ExcelExportDialogProps) {
                   : 'border-black/10 bg-bg1 text-black/50 hover:border-black/20',
               )}
             >
-              <CalendarBlank size={14} weight={mode === 'custom' ? 'fill' : 'regular'} className="mr-1.5 inline-block" />
+              <CalendarBlank
+                size={14}
+                weight={mode === 'custom' ? 'fill' : 'regular'}
+                className="mr-1.5 inline-block"
+              />
               {isTr ? 'Özel Aralık' : 'Custom Range'}
             </button>
           </div>
@@ -365,9 +388,13 @@ export function ExcelExportDialog({ open, onClose }: ExcelExportDialogProps) {
               <SpinnerGap size={16} className="shrink-0 animate-spin text-brand" />
               <p className="text-xs text-black/60">
                 {fetchedCount > 0
-                  ? t('transfers.export.fetchingTransfers', 'Transferler getiriliyor ({{count}})...', {
-                      count: fetchedCount,
-                    })
+                  ? t(
+                      'transfers.export.fetchingTransfers',
+                      'Transferler getiriliyor ({{count}})...',
+                      {
+                        count: fetchedCount,
+                      },
+                    )
                   : t('transfers.export.exporting', 'Dışa aktarılıyor...')}
               </p>
             </div>
@@ -379,11 +406,7 @@ export function ExcelExportDialog({ open, onClose }: ExcelExportDialogProps) {
           <Button variant="ghost" onClick={handleClose} disabled={isExporting}>
             {t('common.cancel', 'İptal')}
           </Button>
-          <Button
-            variant="filled"
-            onClick={handleExport}
-            disabled={!dateRange || isExporting}
-          >
+          <Button variant="filled" onClick={handleExport} disabled={!dateRange || isExporting}>
             <DownloadSimple size={16} weight="bold" />
             {t('transfers.export.export', 'Dışa Aktar')}
           </Button>

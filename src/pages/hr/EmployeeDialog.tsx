@@ -21,7 +21,12 @@ import {
   Separator,
 } from '@ds'
 import { useToast } from '@/hooks/useToast'
-import { useHrMutations, useHrSettingsQuery, HR_EMPLOYEE_ROLES, type HrEmployee } from '@/hooks/queries/useHrQuery'
+import {
+  useHrMutations,
+  useHrSettingsQuery,
+  HR_EMPLOYEE_ROLES,
+  type HrEmployee,
+} from '@/hooks/queries/useHrQuery'
 import { formatAmount, parseAmount, numberToDisplay, amountPlaceholder } from '@/lib/formatAmount'
 
 /* ------------------------------------------------------------------ */
@@ -68,7 +73,7 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
   const { createEmployee, updateEmployee } = useHrMutations()
   const { data: hrSettings } = useHrSettingsQuery()
   const settingsRoles = hrSettings?.roles ?? HR_EMPLOYEE_ROLES
-  const insuredBankAmountTl = hrSettings?.insured_bank_amount_tl ?? 28075.50
+  const insuredBankAmountTl = hrSettings?.insured_bank_amount_tl ?? 28075.5
 
   const schema = useMemo(() => buildEmployeeSchema(settingsRoles), [settingsRoles])
 
@@ -93,7 +98,8 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
   useEffect(() => {
     if (open) {
       if (employee) {
-        const hasCustomBank = employee.bank_salary_tl !== null && employee.bank_salary_tl !== undefined
+        const hasCustomBank =
+          employee.bank_salary_tl !== null && employee.bank_salary_tl !== undefined
         form.reset({
           full_name: employee.full_name,
           email: employee.email,
@@ -272,7 +278,9 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
                   onChange={(e) => {
                     const formatted = formatAmount(e.target.value, lang)
                     setSalaryDisplay(formatted)
-                    form.setValue('salary_tl', parseAmount(formatted, lang), { shouldValidate: true })
+                    form.setValue('salary_tl', parseAmount(formatted, lang), {
+                      shouldValidate: true,
+                    })
                   }}
                   placeholder={amountPlaceholder(lang)}
                 />
@@ -476,7 +484,7 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
                         </p>
                         <p className="text-sm font-bold tabular-nums text-blue">
                           {(form.watch('use_custom_bank_salary')
-                            ? form.watch('bank_salary_tl') ?? 0
+                            ? (form.watch('bank_salary_tl') ?? 0)
                             : insuredBankAmountTl
                           ).toLocaleString('tr-TR', {
                             minimumFractionDigits: 2,
@@ -495,7 +503,7 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
                             0,
                             form.watch('salary_tl') -
                               (form.watch('use_custom_bank_salary')
-                                ? form.watch('bank_salary_tl') ?? 0
+                                ? (form.watch('bank_salary_tl') ?? 0)
                                 : insuredBankAmountTl),
                           ).toLocaleString('tr-TR', {
                             minimumFractionDigits: 2,
@@ -509,7 +517,7 @@ export function EmployeeDialog({ open, onClose, employee }: EmployeeDialogProps)
 
                   <p className="text-[11px] text-black/30">
                     {lang === 'tr'
-                      ? 'Her ayın 5\'inde bankaya yatırılacak tutar. Kalan kısım elden ödenecek.'
+                      ? "Her ayın 5'inde bankaya yatırılacak tutar. Kalan kısım elden ödenecek."
                       : 'Amount to be deposited to bank on the 5th. The rest is paid as cash.'}
                   </p>
                 </div>

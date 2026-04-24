@@ -6,8 +6,18 @@ import { useOrganization } from '@/app/providers/OrganizationProvider'
 import { queryKeys } from '@/lib/queryKeys'
 import { localDayStart, localDayEnd } from '@/lib/date'
 import { parseTurkishDecimal, parseTurkishDate } from '@/lib/csvImport/parseCsv'
-import { findCategoryByAlias, findPaymentMethodByAlias, findTypeByAlias } from '@/lib/transferLookups'
-import type { KasaRow, SystemTransfer, SystemDiscrepancy, FixProgress, EmployeeAssignment } from '@/pages/transfer-fix/types'
+import {
+  findCategoryByAlias,
+  findPaymentMethodByAlias,
+  findTypeByAlias,
+} from '@/lib/transferLookups'
+import type {
+  KasaRow,
+  SystemTransfer,
+  SystemDiscrepancy,
+  FixProgress,
+  EmployeeAssignment,
+} from '@/pages/transfer-fix/types'
 
 const BATCH_SIZE = 50
 
@@ -47,54 +57,48 @@ export function useTransferFix() {
   )
 
   /** Build insert payload from a KASA row */
-  function buildInsertPayload(kasaRow: KasaRow, pspRateMap: Map<string, number>) {
-    if (!currentOrg || !user) throw new Error('No organization or user')
+  const buildInsertPayload = useCallback(
+    (kasaRow: KasaRow) => {
+      if (!currentOrg || !user) throw new Error('No organization or user')
 
-    const isoDate = parseTurkishDate(kasaRow.dateRaw)
-    const amount = parseTurkishDecimal(kasaRow.amountRaw)
-    const currency = kasaRow.currency.toUpperCase().trim()
-    const commission = parseTurkishDecimal(kasaRow.commissionRaw)
-    const net = parseTurkishDecimal(kasaRow.netRaw)
+      const isoDate = parseTurkishDate(kasaRow.dateRaw)
+      const amount = parseTurkishDecimal(kasaRow.amountRaw)
+      const currency = kasaRow.currency.toUpperCase().trim()
+      const commission = parseTurkishDecimal(kasaRow.commissionRaw)
+      const net = parseTurkishDecimal(kasaRow.netRaw)
 
-    const cat = findCategoryByAlias(kasaRow.categoryName)
-    const pm = findPaymentMethodByAlias(kasaRow.paymentMethodName)
-    const type = findTypeByAlias(kasaRow.typeName)
+      const cat = findCategoryByAlias(kasaRow.categoryName)
+      const pm = findPaymentMethodByAlias(kasaRow.paymentMethodName)
+      const type = findTypeByAlias(kasaRow.typeName)
 
-    // PSP: match by pspName (case-insensitive)
-    const pspName = kasaRow.pspName.toLowerCase().trim()
+      // Exchange rate from CSV daily summary section (default 1; real rate applied later)
+      const exchangeRate = 1
+      const amountTry = currency === 'TL' ? amount : amount
+      const amountUsd = currency === 'USD' || currency === 'USDT' ? amount : 0
 
-    // Exchange rate from CSV daily summary section
-    let exchangeRate = 1
-    let amountTry = amount
-    let amountUsd = 0
-
-    if (currency === 'TL') {
-      amountTry = amount
-    } else if (currency === 'USD' || currency === 'USDT') {
-      amountUsd = amount
-    }
-
-    return {
-      organization_id: currentOrg.id,
-      full_name: kasaRow.fullName,
-      crm_id: kasaRow.crmId || null,
-      meta_id: kasaRow.metaId || null,
-      payment_method_id: pm?.id ?? 'bank',
-      psp_id: null as string | null, // Will be resolved later
-      transfer_date: isoDate ? `${isoDate}T00:00:00` : '',
-      category_id: cat?.id ?? 'dep',
-      amount,
-      commission,
-      net,
-      currency,
-      type_id: type?.id ?? 'client',
-      exchange_rate: exchangeRate,
-      amount_try: amountTry,
-      amount_usd: amountUsd,
-      commission_rate_snapshot: 0,
-      created_by: user.id,
-    }
-  }
+      return {
+        organization_id: currentOrg.id,
+        full_name: kasaRow.fullName,
+        crm_id: kasaRow.crmId || null,
+        meta_id: kasaRow.metaId || null,
+        payment_method_id: pm?.id ?? 'bank',
+        psp_id: null as string | null, // Will be resolved later
+        transfer_date: isoDate ? `${isoDate}T00:00:00` : '',
+        category_id: cat?.id ?? 'dep',
+        amount,
+        commission,
+        net,
+        currency,
+        type_id: type?.id ?? 'client',
+        exchange_rate: exchangeRate,
+        amount_try: amountTry,
+        amount_usd: amountUsd,
+        commission_rate_snapshot: 0,
+        created_by: user.id,
+      }
+    },
+    [currentOrg, user],
+  )
 
   /** Apply fix actions: insert, update, delete */
   const applyFixes = useCallback(
@@ -142,7 +146,7 @@ export function useTransferFix() {
         const batches = chunkArray(toInsert, BATCH_SIZE)
         for (const batch of batches) {
           const payload = batch.map((d) => {
-            const row = buildInsertPayload(d.kasaRow!, pspRateMap)
+            const row = buildInsertPayload(d.kasaRow!)
             // Resolve PSP
             const pspKey = d.kasaRow!.pspName.toLowerCase().trim()
             row.psp_id = pspNameMap.get(pspKey) ?? null
@@ -153,8 +157,7 @@ export function useTransferFix() {
             if (rate) {
               row.exchange_rate = rate
               if (row.currency === 'TL') {
-                row.amount_usd =
-                  rate > 1 ? Math.round((row.amount / rate) * 100) / 100 : 0
+                row.amount_usd = rate > 1 ? Math.round((row.amount / rate) * 100) / 100 : 0
               } else {
                 row.amount_try = Math.round(row.amount * rate * 100) / 100
               }
@@ -192,8 +195,13 @@ export function useTransferFix() {
         const isoDate = parseTurkishDate(kasaRow.dateRaw)
         const rate = isoDate ? kasaExchangeRates.get(isoDate) : undefined
 
-        let amountTry = currency === 'TL' ? amount : rate ? Math.round(amount * rate * 100) / 100 : sysRow.amount_try
-        let amountUsd =
+        const amountTry =
+          currency === 'TL'
+            ? amount
+            : rate
+              ? Math.round(amount * rate * 100) / 100
+              : sysRow.amount_try
+        const amountUsd =
           currency === 'USD' || currency === 'USDT'
             ? amount
             : rate && rate > 1
@@ -256,7 +264,7 @@ export function useTransferFix() {
       // Invalidate caches
       queryClient.invalidateQueries({ queryKey: queryKeys.transfers.lists() })
     },
-    [currentOrg, user, queryClient],
+    [currentOrg, user, queryClient, buildInsertPayload],
   )
 
   /** Fetch all active HR employees */

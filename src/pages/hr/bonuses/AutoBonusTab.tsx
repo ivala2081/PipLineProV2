@@ -231,7 +231,9 @@ function computeMtStats(
   transfers: AutoBonusTransfer[],
   config: MtConfig,
 ): MtEmployeeStat[] {
-  const marketingEmps = employees.filter((e) => (e.role === 'Marketing' || e.role === 'Marketing Manager') && e.is_active)
+  const marketingEmps = employees.filter(
+    (e) => (e.role === 'Marketing' || e.role === 'Marketing Manager') && e.is_active,
+  )
   if (marketingEmps.length === 0) return []
 
   const empStats = marketingEmps.map((emp) => {
@@ -241,10 +243,12 @@ function computeMtStats(
     )
     const count = firstDeposits.length
     const totalVolumeUsd = firstDeposits.reduce((s, t) => s + Math.abs(t.amount_usd), 0)
-    const depositBonus = isManager ? 0 : firstDeposits.reduce(
-      (s, t) => s + getMtDepositBonus(Math.abs(t.amount_usd), config.deposit_tiers),
-      0,
-    )
+    const depositBonus = isManager
+      ? 0
+      : firstDeposits.reduce(
+          (s, t) => s + getMtDepositBonus(Math.abs(t.amount_usd), config.deposit_tiers),
+          0,
+        )
     const countBonus = isManager ? 0 : getMtCountBonus(count, config.count_tiers)
     const volumeBonus = isManager ? 0 : getMtVolumeBonus(totalVolumeUsd, config.volume_tiers)
 
@@ -263,7 +267,9 @@ function computeMtStats(
   })
 
   // Manager IDs — excluded from prizes and bonus calculation
-  const managerIds = new Set(empStats.filter((s) => s.employee.role === 'Marketing Manager').map((s) => s.employee.id))
+  const managerIds = new Set(
+    empStats.filter((s) => s.employee.role === 'Marketing Manager').map((s) => s.employee.id),
+  )
 
   // Weekly prizes (managers excluded)
   const weeklyEmpCounts = new Map<string, Map<string, { count: number; volume: number }>>()
@@ -335,7 +341,9 @@ function computeReStats(
   transfers: AutoBonusTransfer[],
   config: ReConfig,
 ): ReEmployeeStat[] {
-  const reEmps = employees.filter((e) => (e.role === 'Retention' || e.role === 'Retention Manager') && e.is_active)
+  const reEmps = employees.filter(
+    (e) => (e.role === 'Retention' || e.role === 'Retention Manager') && e.is_active,
+  )
   return reEmps.map((emp) => {
     const isManager = emp.role === 'Retention Manager'
     const empTransfers = transfers.filter((t) => t.employee_id === emp.id)
@@ -347,7 +355,7 @@ function computeReStats(
       .reduce((s, t) => s + Math.abs(t.amount_usd), 0)
     const netUsd = totalDepositsUsd - totalWithdrawalsUsd
     const rate = isManager ? 0 : getReRate(netUsd, config.rate_tiers)
-    const bonus = isManager ? 0 : (netUsd > 0 ? Math.round(netUsd * (rate / 100) * 100) / 100 : 0)
+    const bonus = isManager ? 0 : netUsd > 0 ? Math.round(netUsd * (rate / 100) * 100) / 100 : 0
     return { employee: emp, totalDepositsUsd, totalWithdrawalsUsd, netUsd, bonus }
   })
 }
@@ -373,7 +381,7 @@ function BonusCell({ value, color = 'text-purple' }: { value: number; color?: st
 /* ------------------------------------------------------------------ */
 
 interface BaremProgress {
-  pct: number       // 0-100
+  pct: number // 0-100
   countPct: number | null
   volumePct: number | null
   passed: boolean
@@ -388,12 +396,14 @@ function calcBaremProgress(
   if (!target || (target.count_target == null && target.volume_target == null)) {
     return { pct: 100, countPct: null, volumePct: null, passed: true, hasTarget: false }
   }
-  const countPct = target.count_target != null && target.count_target > 0
-    ? Math.min(100, Math.round((count / target.count_target) * 100))
-    : null
-  const volumePct = target.volume_target != null && target.volume_target > 0
-    ? Math.min(100, Math.round((volumeUsd / target.volume_target) * 100))
-    : null
+  const countPct =
+    target.count_target != null && target.count_target > 0
+      ? Math.min(100, Math.round((count / target.count_target) * 100))
+      : null
+  const volumePct =
+    target.volume_target != null && target.volume_target > 0
+      ? Math.min(100, Math.round((volumeUsd / target.volume_target) * 100))
+      : null
 
   // If both set, must pass both. If only one, use that.
   let pct: number
@@ -435,17 +445,14 @@ function BaremProgressCell({
   }
 
   const pct = progress.pct
-  const barColor = pct >= 100
-    ? 'bg-green'
-    : pct >= 70
-      ? 'bg-yellow-500'
-      : pct >= 40
-        ? 'bg-orange'
-        : 'bg-red'
+  const barColor =
+    pct >= 100 ? 'bg-green' : pct >= 70 ? 'bg-yellow-500' : pct >= 40 ? 'bg-orange' : 'bg-red'
 
   const tooltipParts: string[] = []
-  if (progress.countPct != null) tooltipParts.push(`${lang === 'tr' ? 'Adet' : 'Count'}: ${progress.countPct}%`)
-  if (progress.volumePct != null) tooltipParts.push(`${lang === 'tr' ? 'Hacim' : 'Vol'}: ${progress.volumePct}%`)
+  if (progress.countPct != null)
+    tooltipParts.push(`${lang === 'tr' ? 'Adet' : 'Count'}: ${progress.countPct}%`)
+  if (progress.volumePct != null)
+    tooltipParts.push(`${lang === 'tr' ? 'Hacim' : 'Vol'}: ${progress.volumePct}%`)
 
   return (
     <button
@@ -459,14 +466,19 @@ function BaremProgressCell({
     >
       <div className="relative h-[5px] w-full overflow-hidden rounded-full bg-black/[0.06]">
         <div
-          className={cn('absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out', barColor)}
+          className={cn(
+            'absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out',
+            barColor,
+          )}
           style={{ width: `${Math.min(100, pct)}%` }}
         />
       </div>
-      <span className={cn(
-        'text-[10px] font-semibold tabular-nums leading-none',
-        pct >= 100 ? 'text-green' : pct >= 70 ? 'text-yellow-600' : 'text-red',
-      )}>
+      <span
+        className={cn(
+          'text-[10px] font-semibold tabular-nums leading-none',
+          pct >= 100 ? 'text-green' : pct >= 70 ? 'text-yellow-600' : 'text-red',
+        )}
+      >
         %{pct}
       </span>
       {canManage && (
@@ -507,7 +519,7 @@ function BaremTargetDialog({
     if (open) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing form
       setCountStr(target?.count_target != null ? String(target.count_target) : '')
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing form
+
       setVolumeStr(target?.volume_target != null ? String(target.volume_target) : '')
     }
   }, [open, target])
@@ -530,9 +542,7 @@ function BaremTargetDialog({
             {lang === 'tr' ? 'Barem Hedefi' : 'Threshold Target'}
           </DialogTitle>
           <DialogDescription className="text-xs text-black/55">
-            {employee && (
-              <span className="font-medium text-black/70">{employee.full_name}</span>
-            )}
+            {employee && <span className="font-medium text-black/70">{employee.full_name}</span>}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-md">
@@ -549,7 +559,9 @@ function BaremTargetDialog({
               placeholder={lang === 'tr' ? 'Ör: 25' : 'E.g: 25'}
             />
             <p className="mt-0.5 text-[10px] text-black/30">
-              {lang === 'tr' ? 'Boş bırakılırsa adet hedefi uygulanmaz' : 'Leave empty to skip count target'}
+              {lang === 'tr'
+                ? 'Boş bırakılırsa adet hedefi uygulanmaz'
+                : 'Leave empty to skip count target'}
             </p>
           </div>
           <div>
@@ -565,7 +577,9 @@ function BaremTargetDialog({
               placeholder={lang === 'tr' ? 'Ör: 10000' : 'E.g: 10000'}
             />
             <p className="mt-0.5 text-[10px] text-black/30">
-              {lang === 'tr' ? 'Boş bırakılırsa hacim hedefi uygulanmaz' : 'Leave empty to skip volume target'}
+              {lang === 'tr'
+                ? 'Boş bırakılırsa hacim hedefi uygulanmaz'
+                : 'Leave empty to skip volume target'}
             </p>
           </div>
           <div className="flex items-center justify-between gap-2 pt-1">
@@ -580,8 +594,12 @@ function BaremTargetDialog({
               onClick={handleSave}
             >
               {isPending
-                ? lang === 'tr' ? 'Kaydediliyor...' : 'Saving...'
-                : lang === 'tr' ? 'Kaydet' : 'Save'}
+                ? lang === 'tr'
+                  ? 'Kaydediliyor...'
+                  : 'Saving...'
+                : lang === 'tr'
+                  ? 'Kaydet'
+                  : 'Save'}
             </Button>
           </div>
         </div>
@@ -890,7 +908,9 @@ function MarketingBonusTable({
           <Trophy size={16} weight="fill" className="shrink-0 text-orange" />
           <span className="font-semibold text-black">{monthlyWinner.employee.full_name}</span>
           <span className="text-black/40">—</span>
-          <span className="text-black/70">{lang === 'tr' ? `${monthlyWinner.count} satış` : `${monthlyWinner.count} sales`}</span>
+          <span className="text-black/70">
+            {lang === 'tr' ? `${monthlyWinner.count} satış` : `${monthlyWinner.count} sales`}
+          </span>
           <span className="text-xs text-black/40">+{config?.monthly_prize_amount ?? 200} USDT</span>
           <Tag variant="orange" className="shrink-0 text-[10px]">
             {lang === 'tr' ? 'Ay Birincisi' : '1st Place'}
@@ -913,15 +933,33 @@ function MarketingBonusTable({
                   />
                 </TableHead>
               )}
-              <TableHead className="min-w-[100px]">{lang === 'tr' ? 'Çalışan' : 'Employee'}</TableHead>
-              <TableHead className="text-right text-[11px] whitespace-nowrap">{lang === 'tr' ? 'FD' : 'FD'}</TableHead>
-              <TableHead className="text-right text-[11px] whitespace-nowrap">{lang === 'tr' ? 'Hacim' : 'Vol.'}</TableHead>
-              <TableHead className="text-right text-[11px] whitespace-nowrap">{lang === 'tr' ? 'Dep.P' : 'Dep.B'}</TableHead>
-              <TableHead className="text-right text-[11px] whitespace-nowrap">{lang === 'tr' ? 'Adet P' : 'Cnt.B'}</TableHead>
-              <TableHead className="text-right text-[11px] whitespace-nowrap">{lang === 'tr' ? 'Hacim P' : 'Vol.B'}</TableHead>
-              <TableHead className="text-right text-[11px] whitespace-nowrap">{lang === 'tr' ? 'H.Ödül' : 'W.Prize'}</TableHead>
-              <TableHead className="text-right text-[11px] whitespace-nowrap">{lang === 'tr' ? 'A.Ödül' : 'M.Prize'}</TableHead>
-              <TableHead className="text-right text-[11px] whitespace-nowrap">{lang === 'tr' ? 'Avans' : 'Adv.'}</TableHead>
+              <TableHead className="min-w-[100px]">
+                {lang === 'tr' ? 'Çalışan' : 'Employee'}
+              </TableHead>
+              <TableHead className="text-right text-[11px] whitespace-nowrap">
+                {lang === 'tr' ? 'FD' : 'FD'}
+              </TableHead>
+              <TableHead className="text-right text-[11px] whitespace-nowrap">
+                {lang === 'tr' ? 'Hacim' : 'Vol.'}
+              </TableHead>
+              <TableHead className="text-right text-[11px] whitespace-nowrap">
+                {lang === 'tr' ? 'Dep.P' : 'Dep.B'}
+              </TableHead>
+              <TableHead className="text-right text-[11px] whitespace-nowrap">
+                {lang === 'tr' ? 'Adet P' : 'Cnt.B'}
+              </TableHead>
+              <TableHead className="text-right text-[11px] whitespace-nowrap">
+                {lang === 'tr' ? 'Hacim P' : 'Vol.B'}
+              </TableHead>
+              <TableHead className="text-right text-[11px] whitespace-nowrap">
+                {lang === 'tr' ? 'H.Ödül' : 'W.Prize'}
+              </TableHead>
+              <TableHead className="text-right text-[11px] whitespace-nowrap">
+                {lang === 'tr' ? 'A.Ödül' : 'M.Prize'}
+              </TableHead>
+              <TableHead className="text-right text-[11px] whitespace-nowrap">
+                {lang === 'tr' ? 'Avans' : 'Adv.'}
+              </TableHead>
               {baremEnabled && (
                 <TableHead className="w-14 text-center text-[11px]">
                   {lang === 'tr' ? 'Barem' : 'Thr.'}
@@ -967,7 +1005,10 @@ function MarketingBonusTable({
                       {idx === 0 && !isManager && (
                         <Star size={11} weight="fill" className="shrink-0 text-yellow-500" />
                       )}
-                      <span className="truncate text-xs font-medium text-black" title={stat.employee.full_name}>
+                      <span
+                        className="truncate text-xs font-medium text-black"
+                        title={stat.employee.full_name}
+                      >
                         {stat.employee.full_name}
                       </span>
                       {isManager && (
@@ -1229,7 +1270,9 @@ function ReattentionBonusTable({
                   />
                 </TableHead>
               )}
-              <TableHead className="min-w-[100px]">{lang === 'tr' ? 'Çalışan' : 'Employee'}</TableHead>
+              <TableHead className="min-w-[100px]">
+                {lang === 'tr' ? 'Çalışan' : 'Employee'}
+              </TableHead>
               <TableHead className="text-right text-[11px] whitespace-nowrap">
                 {lang === 'tr' ? 'Dep.' : 'Dep.'}
               </TableHead>
@@ -1242,7 +1285,9 @@ function ReattentionBonusTable({
               <TableHead className="text-right text-[11px] whitespace-nowrap">
                 {lang === 'tr' ? 'Prim' : 'Bonus'}
               </TableHead>
-              <TableHead className="text-right text-[11px] whitespace-nowrap">{lang === 'tr' ? 'Avans' : 'Adv.'}</TableHead>
+              <TableHead className="text-right text-[11px] whitespace-nowrap">
+                {lang === 'tr' ? 'Avans' : 'Adv.'}
+              </TableHead>
               {baremEnabled && (
                 <TableHead className="w-14 text-center text-[11px]">
                   {lang === 'tr' ? 'Barem' : 'Thr.'}
@@ -1286,7 +1331,10 @@ function ReattentionBonusTable({
                   )}
                   <TableCell className="max-w-[140px]">
                     <div className="flex items-center gap-1 overflow-hidden">
-                      <span className="truncate text-xs font-medium text-black" title={stat.employee.full_name}>
+                      <span
+                        className="truncate text-xs font-medium text-black"
+                        title={stat.employee.full_name}
+                      >
                         {stat.employee.full_name}
                       </span>
                       {isManager && (
@@ -1508,7 +1556,11 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
 
   // Already-paid employee IDs for this period (matched by period label, not paid_at date)
   const paidMtIds = useMemo(() => {
-    const mtIds = new Set(employees.filter((e) => e.role === 'Marketing' || e.role === 'Marketing Manager').map((e) => e.id))
+    const mtIds = new Set(
+      employees
+        .filter((e) => e.role === 'Marketing' || e.role === 'Marketing Manager')
+        .map((e) => e.id),
+    )
     return new Set(
       allPayments
         .filter(
@@ -1522,7 +1574,11 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
   }, [allPayments, employees, periodLabel])
 
   const paidReIds = useMemo(() => {
-    const reIds = new Set(employees.filter((e) => e.role === 'Retention' || e.role === 'Retention Manager').map((e) => e.id))
+    const reIds = new Set(
+      employees
+        .filter((e) => e.role === 'Retention' || e.role === 'Retention Manager')
+        .map((e) => e.id),
+    )
     return new Set(
       allPayments
         .filter(
@@ -1554,7 +1610,9 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
 
   // Payments for a dept, filtered by selected period label
   const getPaymentsForDept = (role: 'Marketing' | 'Retention') => {
-    const deptIds = new Set(employees.filter((e) => e.role === role || e.role === `${role} Manager`).map((e) => e.id))
+    const deptIds = new Set(
+      employees.filter((e) => e.role === role || e.role === `${role} Manager`).map((e) => e.id),
+    )
     return allPayments.filter((p) => {
       if (!deptIds.has(p.employee_id)) return false
       return p.period === periodLabel
@@ -1574,7 +1632,12 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
   const buildBulkItems = (): BulkPayoutItem[] => {
     if (dept === 'marketing') {
       return mtStats
-        .filter((s) => s.totalBonus > 0 && !paidMtIds.has(s.employee.id) && !(mtBaremEnabled && isBaremFailed(s.employee.id, s.count, s.totalVolumeUsd)))
+        .filter(
+          (s) =>
+            s.totalBonus > 0 &&
+            !paidMtIds.has(s.employee.id) &&
+            !(mtBaremEnabled && isBaremFailed(s.employee.id, s.count, s.totalVolumeUsd)),
+        )
         .map((s) => ({
           employee_id: s.employee.id,
           employee_name: s.employee.full_name,
@@ -1585,7 +1648,12 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
     }
     if (dept === 'reattention') {
       return reStats
-        .filter((s) => s.bonus > 0 && !paidReIds.has(s.employee.id) && !(reBaremEnabled && isBaremFailed(s.employee.id, 0, s.totalDepositsUsd)))
+        .filter(
+          (s) =>
+            s.bonus > 0 &&
+            !paidReIds.has(s.employee.id) &&
+            !(reBaremEnabled && isBaremFailed(s.employee.id, 0, s.totalDepositsUsd)),
+        )
         .map((s) => ({
           employee_id: s.employee.id,
           employee_name: s.employee.full_name,
@@ -1613,11 +1681,23 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
 
   // Get unpaid stats for the current dept (used for select-all logic)
   const unpaidMtStats = useMemo(
-    () => mtStats.filter((s) => s.totalBonus > 0 && !paidMtIds.has(s.employee.id) && !(mtBaremEnabled && isBaremFailed(s.employee.id, s.count, s.totalVolumeUsd))),
+    () =>
+      mtStats.filter(
+        (s) =>
+          s.totalBonus > 0 &&
+          !paidMtIds.has(s.employee.id) &&
+          !(mtBaremEnabled && isBaremFailed(s.employee.id, s.count, s.totalVolumeUsd)),
+      ),
     [mtStats, paidMtIds, baremTargets, mtBaremEnabled],
   )
   const unpaidReStats = useMemo(
-    () => reStats.filter((s) => s.bonus > 0 && !paidReIds.has(s.employee.id) && !(reBaremEnabled && isBaremFailed(s.employee.id, 0, s.totalDepositsUsd))),
+    () =>
+      reStats.filter(
+        (s) =>
+          s.bonus > 0 &&
+          !paidReIds.has(s.employee.id) &&
+          !(reBaremEnabled && isBaremFailed(s.employee.id, 0, s.totalDepositsUsd)),
+      ),
     [reStats, paidReIds, baremTargets, reBaremEnabled],
   )
 
@@ -1634,7 +1714,6 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
 
   // Reset selection when period or search changes
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- selection reset on filter change
     setSelectedAutoIds(new Set())
   }, [year, month, search])
 
@@ -1665,7 +1744,14 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
 
   // Single-department mode (used by department tabs in BonusesTab)
   if (dept === 'marketing') {
-    const total = mtStats.reduce((s, e) => s + ((mtBaremEnabled && isBaremFailed(e.employee.id, e.count, e.totalVolumeUsd)) ? 0 : e.totalBonus), 0)
+    const total = mtStats.reduce(
+      (s, e) =>
+        s +
+        (mtBaremEnabled && isBaremFailed(e.employee.id, e.count, e.totalVolumeUsd)
+          ? 0
+          : e.totalBonus),
+      0,
+    )
     const pmts = getPaymentsForDept('Marketing')
     return (
       <div className="space-y-lg">
@@ -1768,7 +1854,11 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
   }
 
   if (dept === 'reattention') {
-    const total = reStats.reduce((s, e) => s + ((reBaremEnabled && isBaremFailed(e.employee.id, 0, e.totalDepositsUsd)) ? 0 : e.bonus), 0)
+    const total = reStats.reduce(
+      (s, e) =>
+        s + (reBaremEnabled && isBaremFailed(e.employee.id, 0, e.totalDepositsUsd) ? 0 : e.bonus),
+      0,
+    )
     const pmts = getPaymentsForDept('Retention')
     return (
       <div className="space-y-lg">
@@ -1870,8 +1960,19 @@ export function AutoBonusTab({ lang, dept, canManage = false }: AutoBonusTabProp
   }
 
   // Full mode (both departments + sub-tabs) — kept for backward compat
-  const mtTotalBonus = mtStats.reduce((s, e) => s + ((mtBaremEnabled && isBaremFailed(e.employee.id, e.count, e.totalVolumeUsd)) ? 0 : e.totalBonus), 0)
-  const reTotalBonus = reStats.reduce((s, e) => s + ((reBaremEnabled && isBaremFailed(e.employee.id, 0, e.totalDepositsUsd)) ? 0 : e.bonus), 0)
+  const mtTotalBonus = mtStats.reduce(
+    (s, e) =>
+      s +
+      (mtBaremEnabled && isBaremFailed(e.employee.id, e.count, e.totalVolumeUsd)
+        ? 0
+        : e.totalBonus),
+    0,
+  )
+  const reTotalBonus = reStats.reduce(
+    (s, e) =>
+      s + (reBaremEnabled && isBaremFailed(e.employee.id, 0, e.totalDepositsUsd) ? 0 : e.bonus),
+    0,
+  )
 
   return (
     <div className="space-y-lg">

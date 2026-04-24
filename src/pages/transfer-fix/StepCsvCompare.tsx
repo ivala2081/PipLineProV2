@@ -21,10 +21,10 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@ds'
-import { parseTurkishDate, parseTurkishDecimal } from '@/lib/csvImport/parseCsv'
+import { parseTurkishDate } from '@/lib/csvImport/parseCsv'
 import type { AllCsvCompareResults, CsvCompareResult } from './comparisons'
 import type { CsvDiscrepancy, ParsedCsvData } from './types'
-import { getSalesRowMeta, getSalesRowDate, getSalesRowName, getSalesRowAmountUsd, getSalesRowAmountTl } from './parsers'
+import { getSalesRowMeta, getSalesRowDate, getSalesRowName } from './parsers'
 
 interface StepCsvCompareProps {
   results: AllCsvCompareResults
@@ -35,7 +35,14 @@ interface StepCsvCompareProps {
   onBack: () => void
 }
 
-export function StepCsvCompare({ results, data, resolved, onToggleResolved, onNext, onBack }: StepCsvCompareProps) {
+export function StepCsvCompare({
+  results,
+  data,
+  resolved,
+  onToggleResolved,
+  onNext,
+  onBack,
+}: StepCsvCompareProps) {
   const [hideResolved, setHideResolved] = useState(false)
 
   const totalIssues =
@@ -56,10 +63,18 @@ export function StepCsvCompare({ results, data, resolved, onToggleResolved, onNe
       <div className="rounded-xl border bg-bg1 p-md">
         <p className="text-sm font-semibold text-primary mb-2">KASA Dağılımı</p>
         <div className="flex gap-4 text-xs text-muted">
-          <span>Toplam: <b className="text-primary">{data.kasa.length}</b></span>
-          <span>Müşteri Yatırım: <b className="text-green-600">{results.kasaClientDeposits}</b></span>
-          <span>Müşteri Çekim: <b className="text-red-600">{results.kasaClientWithdrawals}</b></span>
-          <span>Ödeme/Bloke: <b className="text-muted">{results.kasaNonClient}</b> (karşılaştırma dışı)</span>
+          <span>
+            Toplam: <b className="text-primary">{data.kasa.length}</b>
+          </span>
+          <span>
+            Müşteri Yatırım: <b className="text-green-600">{results.kasaClientDeposits}</b>
+          </span>
+          <span>
+            Müşteri Çekim: <b className="text-red-600">{results.kasaClientWithdrawals}</b>
+          </span>
+          <span>
+            Ödeme/Bloke: <b className="text-muted">{results.kasaNonClient}</b> (karşılaştırma dışı)
+          </span>
         </div>
       </div>
 
@@ -80,18 +95,21 @@ export function StepCsvCompare({ results, data, resolved, onToggleResolved, onNe
               </Tag>
             )}
             {resolvedCount > 0 && resolvedCount === totalIssues && (
-              <span className="text-xs text-green-600 font-medium">Tüm hatalar düzeltildi olarak işaretlendi</span>
+              <span className="text-xs text-green-600 font-medium">
+                Tüm hatalar düzeltildi olarak işaretlendi
+              </span>
             )}
           </div>
           {resolvedCount > 0 && (
-            <Button
-              variant="ghost"
-              onClick={() => setHideResolved((h) => !h)}
-            >
+            <Button variant="ghost" onClick={() => setHideResolved((h) => !h)}>
               {hideResolved ? (
-                <><Eye className="h-4 w-4" /> Düzeltilenleri Göster</>
+                <>
+                  <Eye className="h-4 w-4" /> Düzeltilenleri Göster
+                </>
               ) : (
-                <><EyeSlash className="h-4 w-4" /> Düzeltilenleri Gizle</>
+                <>
+                  <EyeSlash className="h-4 w-4" /> Düzeltilenleri Gizle
+                </>
               )}
             </Button>
           )}
@@ -104,7 +122,8 @@ export function StepCsvCompare({ results, data, resolved, onToggleResolved, onNe
           <div className="flex items-center gap-2 mb-2">
             <Warning className="h-5 w-5 text-red-500" weight="duotone" />
             <span className="text-sm font-semibold text-red-700 dark:text-red-400">
-              KASA'da olup hiçbir satış CSV'sinde eşleşmeyen yatırımlar: {results.unmatchedKasaDeposits.length}
+              KASA'da olup hiçbir satış CSV'sinde eşleşmeyen yatırımlar:{' '}
+              {results.unmatchedKasaDeposits.length}
             </span>
           </div>
         </div>
@@ -117,18 +136,28 @@ export function StepCsvCompare({ results, data, resolved, onToggleResolved, onNe
           description="KASA ile satış CSV'leri arasında tutarsızlık bulunamadı."
         />
       ) : (
-        <Tabs defaultValue={
-          results.unmatchedKasaDeposits.length > 0 ? 'unmatched' :
-          getIssueCount(results.orderSatis) > 0 ? 'order-satis' :
-          getIssueCount(results.ordRetDeposit) > 0 ? 'ord-ret-deposit' : 'ord-withdrawal'
-        }>
+        <Tabs
+          defaultValue={
+            results.unmatchedKasaDeposits.length > 0
+              ? 'unmatched'
+              : getIssueCount(results.orderSatis) > 0
+                ? 'order-satis'
+                : getIssueCount(results.ordRetDeposit) > 0
+                  ? 'ord-ret-deposit'
+                  : 'ord-withdrawal'
+          }
+        >
           <TabsList>
             {results.unmatchedKasaDeposits.length > 0 && (
               <TabsTrigger value="unmatched">
                 Eşleşmeyen Yatırımlar
                 <BadgeCount
                   count={results.unmatchedKasaDeposits.length}
-                  resolvedCount={countResolvedInList(resolved, 'unmatched', results.unmatchedKasaDeposits.length)}
+                  resolvedCount={countResolvedInList(
+                    resolved,
+                    'unmatched',
+                    results.unmatchedKasaDeposits.length,
+                  )}
                 />
               </TabsTrigger>
             )}
@@ -136,21 +165,33 @@ export function StepCsvCompare({ results, data, resolved, onToggleResolved, onNe
               ORDER SATIS
               <BadgeCount
                 count={getIssueCount(results.orderSatis)}
-                resolvedCount={countResolvedInList(resolved, 'order-satis', getIssueCount(results.orderSatis))}
+                resolvedCount={countResolvedInList(
+                  resolved,
+                  'order-satis',
+                  getIssueCount(results.orderSatis),
+                )}
               />
             </TabsTrigger>
             <TabsTrigger value="ord-ret-deposit">
               ORD RET DEPOSIT
               <BadgeCount
                 count={getIssueCount(results.ordRetDeposit)}
-                resolvedCount={countResolvedInList(resolved, 'ord-ret-deposit', getIssueCount(results.ordRetDeposit))}
+                resolvedCount={countResolvedInList(
+                  resolved,
+                  'ord-ret-deposit',
+                  getIssueCount(results.ordRetDeposit),
+                )}
               />
             </TabsTrigger>
             <TabsTrigger value="ord-withdrawal">
               ORD WITHDRAWAL
               <BadgeCount
                 count={getIssueCount(results.ordWithdrawal)}
-                resolvedCount={countResolvedInList(resolved, 'ord-withdrawal', getIssueCount(results.ordWithdrawal))}
+                resolvedCount={countResolvedInList(
+                  resolved,
+                  'ord-withdrawal',
+                  getIssueCount(results.ordWithdrawal),
+                )}
               />
             </TabsTrigger>
           </TabsList>
@@ -221,7 +262,13 @@ function countResolvedInList(resolved: Set<string>, tabKey: string, total: numbe
   return count
 }
 
-function BackConfirmButton({ resolvedCount, onConfirm }: { resolvedCount: number; onConfirm: () => void }) {
+function BackConfirmButton({
+  resolvedCount,
+  onConfirm,
+}: {
+  resolvedCount: number
+  onConfirm: () => void
+}) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -234,15 +281,21 @@ function BackConfirmButton({ resolvedCount, onConfirm }: { resolvedCount: number
           <DialogHeader>
             <DialogTitle>Geri dönmek istediğinize emin misiniz?</DialogTitle>
             <DialogDescription>
-              <b>{resolvedCount}</b> adet düzeltildi olarak işaretlediğiniz kayıt var.
-              Geri dönerseniz yeni CSV yüklediğinizde bu işaretler sıfırlanacaktır.
+              <b>{resolvedCount}</b> adet düzeltildi olarak işaretlediğiniz kayıt var. Geri
+              dönerseniz yeni CSV yüklediğinizde bu işaretler sıfırlanacaktır.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="gray" onClick={() => setOpen(false)}>
               İptal
             </Button>
-            <Button variant="filled" onClick={() => { setOpen(false); onConfirm() }}>
+            <Button
+              variant="filled"
+              onClick={() => {
+                setOpen(false)
+                onConfirm()
+              }}
+            >
               Geri Dön
             </Button>
           </DialogFooter>
@@ -277,15 +330,26 @@ function SummaryCard({ title, result }: { title: string; result: CsvCompareResul
         <span className="text-sm font-semibold text-primary">{title}</span>
       </div>
       <div className="text-xs text-muted space-y-0.5">
-        <p>Eşleşen: <span className="font-medium text-green-600">{result.matched}</span></p>
+        <p>
+          Eşleşen: <span className="font-medium text-green-600">{result.matched}</span>
+        </p>
         {result.missingInKasa.length > 0 && (
-          <p>CSV'de olup KASA'da yok: <span className="font-medium text-red-600">{result.missingInKasa.length}</span></p>
+          <p>
+            CSV'de olup KASA'da yok:{' '}
+            <span className="font-medium text-red-600">{result.missingInKasa.length}</span>
+          </p>
         )}
         {result.missingInCsv.length > 0 && (
-          <p>KASA'da olup CSV'de yok: <span className="font-medium text-orange-600">{result.missingInCsv.length}</span></p>
+          <p>
+            KASA'da olup CSV'de yok:{' '}
+            <span className="font-medium text-orange-600">{result.missingInCsv.length}</span>
+          </p>
         )}
         {result.amountMismatch.length > 0 && (
-          <p>Tutar farkı: <span className="font-medium text-yellow-600">{result.amountMismatch.length}</span></p>
+          <p>
+            Tutar farkı:{' '}
+            <span className="font-medium text-yellow-600">{result.amountMismatch.length}</span>
+          </p>
         )}
       </div>
     </div>
@@ -296,11 +360,13 @@ function BadgeCount({ count, resolvedCount = 0 }: { count: number; resolvedCount
   if (count === 0) return null
   const allResolved = resolvedCount > 0 && resolvedCount >= count
   return (
-    <span className={`ml-1 inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
-      allResolved
-        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-        : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-    }`}>
+    <span
+      className={`ml-1 inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+        allResolved
+          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+          : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+      }`}
+    >
       {resolvedCount > 0 ? `${count - resolvedCount}/${count}` : count}
     </span>
   )
@@ -413,10 +479,18 @@ function DiscrepancyRow({
         </button>
       </TableCell>
       <TableCell>
-        {d.type === 'missing-in-csv' && <Tag variant={isResolved ? 'green' : 'orange'}>Eksik CSV'de</Tag>}
-        {d.type === 'missing-in-kasa' && <Tag variant={isResolved ? 'green' : 'red'}>Eksik KASA'da</Tag>}
-        {d.type === 'amount-mismatch' && <Tag variant={isResolved ? 'green' : 'yellow'}>Tutar Farkı</Tag>}
-        {d.type === 'date-mismatch' && <Tag variant={isResolved ? 'green' : 'blue'}>Tarih Farkı</Tag>}
+        {d.type === 'missing-in-csv' && (
+          <Tag variant={isResolved ? 'green' : 'orange'}>Eksik CSV'de</Tag>
+        )}
+        {d.type === 'missing-in-kasa' && (
+          <Tag variant={isResolved ? 'green' : 'red'}>Eksik KASA'da</Tag>
+        )}
+        {d.type === 'amount-mismatch' && (
+          <Tag variant={isResolved ? 'green' : 'yellow'}>Tutar Farkı</Tag>
+        )}
+        {d.type === 'date-mismatch' && (
+          <Tag variant={isResolved ? 'green' : 'blue'}>Tarih Farkı</Tag>
+        )}
       </TableCell>
       <TableCell className="font-mono text-xs">{metaId}</TableCell>
       <TableCell className="text-sm">{name}</TableCell>

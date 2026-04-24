@@ -12,7 +12,13 @@ interface StepFixProps {
   onNext: () => void
 }
 
-export function StepFix({ discrepancies, kasaExchangeRates, onBack, onReset, onNext }: StepFixProps) {
+export function StepFix({
+  discrepancies,
+  kasaExchangeRates,
+  onBack,
+  onReset,
+  onNext,
+}: StepFixProps) {
   const { applyFixes } = useTransferFix()
   const [progress, setProgress] = useState<FixProgress>({
     phase: 'idle',

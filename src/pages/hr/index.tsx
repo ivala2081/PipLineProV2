@@ -354,49 +354,48 @@ export function HrPage() {
   }
 
   /* Tab-aware header action */
-  const headerAction =
-    (
-      <div className="flex items-center gap-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm">
-              <Monitor size={16} />
-              MT TV
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => window.open('/tv/marketing', '_blank')}>
-              Koyu Tema
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => window.open('/tv/marketing?theme=light', '_blank')}>
-              Açık Tema
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm">
-              <Monitor size={16} />
-              RE TV
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => window.open('/tv/retention', '_blank')}>
-              Koyu Tema
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => window.open('/tv/retention?theme=light', '_blank')}>
-              Açık Tema
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        {canManage && activeTab === 'employees' && (
-          <Button variant="filled" onClick={handleAddNew}>
-            <Plus size={16} weight="bold" />
-            {t('hr.addEmployee', 'Çalışan Ekle')}
+  const headerAction = (
+    <div className="flex items-center gap-2">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm">
+            <Monitor size={16} />
+            MT TV
           </Button>
-        )}
-      </div>
-    )
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => window.open('/tv/marketing', '_blank')}>
+            Koyu Tema
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => window.open('/tv/marketing?theme=light', '_blank')}>
+            Açık Tema
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm">
+            <Monitor size={16} />
+            RE TV
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => window.open('/tv/retention', '_blank')}>
+            Koyu Tema
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => window.open('/tv/retention?theme=light', '_blank')}>
+            Açık Tema
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {canManage && activeTab === 'employees' && (
+        <Button variant="filled" onClick={handleAddNew}>
+          <Plus size={16} weight="bold" />
+          {t('hr.addEmployee', 'Çalışan Ekle')}
+        </Button>
+      )}
+    </div>
+  )
 
   return (
     <div className="space-y-lg">

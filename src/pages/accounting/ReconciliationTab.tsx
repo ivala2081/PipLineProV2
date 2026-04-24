@@ -270,11 +270,17 @@ function SettingsPanel({
   if (config !== prevConfig) {
     setPrevConfig(config)
     setDevirUsdt(config?.devir_usdt != null ? numberToDisplay(config.devir_usdt, amtLocale) : '')
-    setDevirTl(config?.devir_nakit_tl != null ? numberToDisplay(config.devir_nakit_tl, amtLocale) : '')
-    setDevirUsd(config?.devir_nakit_usd != null ? numberToDisplay(config.devir_nakit_usd, amtLocale) : '')
+    setDevirTl(
+      config?.devir_nakit_tl != null ? numberToDisplay(config.devir_nakit_tl, amtLocale) : '',
+    )
+    setDevirUsd(
+      config?.devir_nakit_usd != null ? numberToDisplay(config.devir_nakit_usd, amtLocale) : '',
+    )
     setKur(config?.kur != null ? String(config.kur) : '')
     setBeklTahs(
-      config?.bekl_tahs != null && Number(config.bekl_tahs) !== 0 ? numberToDisplay(config.bekl_tahs, amtLocale) : '',
+      config?.bekl_tahs != null && Number(config.bekl_tahs) !== 0
+        ? numberToDisplay(config.bekl_tahs, amtLocale)
+        : '',
     )
     const entries = config?.teyit_entries ?? []
     setTeyitEntries(entries)

@@ -43,27 +43,55 @@ function formatDate(dateStr: string): string {
 function getTxnTypeTag(txnType: string) {
   const type = txnType.toLowerCase()
   if (type.includes('deposit') || type.includes('invoice_payment')) {
-    return <Tag variant="green" className="text-[10px]">{txnType}</Tag>
+    return (
+      <Tag variant="green" className="text-[10px]">
+        {txnType}
+      </Tag>
+    )
   }
   if (type.includes('withdrawal') || type.includes('payout')) {
-    return <Tag variant="red" className="text-[10px]">{txnType}</Tag>
+    return (
+      <Tag variant="red" className="text-[10px]">
+        {txnType}
+      </Tag>
+    )
   }
   if (type.includes('exchange')) {
-    return <Tag variant="purple" className="text-[10px]">{txnType}</Tag>
+    return (
+      <Tag variant="purple" className="text-[10px]">
+        {txnType}
+      </Tag>
+    )
   }
-  return <Tag variant="blue" className="text-[10px]">{txnType}</Tag>
+  return (
+    <Tag variant="blue" className="text-[10px]">
+      {txnType}
+    </Tag>
+  )
 }
 
 function getStatusTag(status: string) {
   const s = status.toLowerCase()
   if (s === 'completed' || s === 'complete' || s === 'confirmed') {
-    return <Tag variant="green" className="text-[10px]">{status}</Tag>
+    return (
+      <Tag variant="green" className="text-[10px]">
+        {status}
+      </Tag>
+    )
   }
   if (s === 'pending') {
-    return <Tag variant="orange" className="text-[10px]">{status}</Tag>
+    return (
+      <Tag variant="orange" className="text-[10px]">
+        {status}
+      </Tag>
+    )
   }
   if (s === 'failed' || s === 'cancelled') {
-    return <Tag variant="red" className="text-[10px]">{status}</Tag>
+    return (
+      <Tag variant="red" className="text-[10px]">
+        {status}
+      </Tag>
+    )
   }
   return <Tag className="text-[10px]">{status}</Tag>
 }
@@ -97,7 +125,13 @@ export function UniPaymentTransactionsTab({ pspId }: Props) {
       {/* Account Selector */}
       {accounts && accounts.length > 1 && (
         <div className="flex items-center gap-sm">
-          <Select value={accountId} onValueChange={(v) => { setSelectedAccount(v); setPage(1) }}>
+          <Select
+            value={accountId}
+            onValueChange={(v) => {
+              setSelectedAccount(v)
+              setPage(1)
+            }}
+          >
             <SelectTrigger className="w-48">
               <SelectValue placeholder="Select account" />
             </SelectTrigger>
@@ -148,14 +182,17 @@ export function UniPaymentTransactionsTab({ pspId }: Props) {
                     </TableCell>
                     <TableCell>{getTxnTypeTag(txn.txn_type)}</TableCell>
                     <TableCell>
-                      <Tag variant="blue" className="text-[10px]">{txn.asset_type}</Tag>
+                      <Tag variant="blue" className="text-[10px]">
+                        {txn.asset_type}
+                      </Tag>
                     </TableCell>
                     <TableCell
                       className={`text-right font-medium tabular-nums ${
                         txn.amount > 0 ? 'text-green-600' : 'text-red-600'
                       }`}
                     >
-                      {txn.amount > 0 ? '+' : ''}{formatAmount(txn.amount)}
+                      {txn.amount > 0 ? '+' : ''}
+                      {formatAmount(txn.amount)}
                     </TableCell>
                     <TableCell className="text-right tabular-nums text-black/40">
                       {txn.fee ? formatAmount(txn.fee) : '-'}

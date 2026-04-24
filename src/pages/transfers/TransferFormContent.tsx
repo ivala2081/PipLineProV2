@@ -61,7 +61,13 @@ type RememberedTransferFields = Pick<
 >
 
 const TRANSFER_PREFS_KEY = 'piplinepro:transfer-form-prefs'
-const AUTO_BONUS_ROLES = ['Marketing', 'Marketing Manager', 'Retention', 'Retention Manager', 'Sales'] as const
+const AUTO_BONUS_ROLES = [
+  'Marketing',
+  'Marketing Manager',
+  'Retention',
+  'Retention Manager',
+  'Sales',
+] as const
 const FTD_ROLES: string[] = ['Marketing', 'Marketing Manager', 'Sales']
 const STD_ROLES: string[] = ['Retention', 'Retention Manager']
 
@@ -253,7 +259,7 @@ export function TransferFormContent({
   const originalEditValuesRef = useRef({
     paymentMethodId: transfer?.payment_method_id ?? '',
     pspId: transfer?.psp_id ?? '',
-    isFirstDeposit: transfer?.is_first_deposit ?? null as boolean | null,
+    isFirstDeposit: transfer?.is_first_deposit ?? (null as boolean | null),
   })
   const [amountDisplay, setAmountDisplay] = useState(
     transfer ? numberToDisplay(Math.abs(transfer.amount), lang) : '',
@@ -369,8 +375,7 @@ export function TransferFormContent({
         meta_id: transfer.meta_id ?? '',
         employee_id: transfer.employee_id ?? '',
         ib_partner_id: transfer.ib_partner_id ?? '',
-        is_first_deposit:
-          transfer.is_first_deposit ?? false,
+        is_first_deposit: transfer.is_first_deposit ?? false,
         notes: transfer.notes ?? '',
       })
       setAmountDisplay(numberToDisplay(Math.abs(transfer.amount), lang))
@@ -508,7 +513,11 @@ export function TransferFormContent({
         const key = `${row.crm_id ?? ''}|${row.meta_id ?? ''}`
         if (!seen.has(key)) {
           seen.add(key)
-          unique.push({ crm_id: row.crm_id ?? '', meta_id: row.meta_id ?? '', ib_partner_id: row.ib_partner_id ?? latestIbPartnerId })
+          unique.push({
+            crm_id: row.crm_id ?? '',
+            meta_id: row.meta_id ?? '',
+            ib_partner_id: row.ib_partner_id ?? latestIbPartnerId,
+          })
         }
       }
 
@@ -519,7 +528,8 @@ export function TransferFormContent({
         const cur = form.getValues()
         if (!cur.crm_id && unique[0].crm_id) form.setValue('crm_id', unique[0].crm_id)
         if (!cur.meta_id && unique[0].meta_id) form.setValue('meta_id', unique[0].meta_id)
-        if (!cur.ib_partner_id && unique[0].ib_partner_id) form.setValue('ib_partner_id', unique[0].ib_partner_id)
+        if (!cur.ib_partner_id && unique[0].ib_partner_id)
+          form.setValue('ib_partner_id', unique[0].ib_partner_id)
       } else {
         // Birden fazla kişi → kullanıcıya seç
         setNameSuggestions(unique)
@@ -872,7 +882,6 @@ export function TransferFormContent({
                   </button>
                 </div>
               </div>
-
             </div>
 
             {/* Divider between Client and Payment */}
@@ -925,7 +934,8 @@ export function TransferFormContent({
                       options={[
                         {
                           value: '__none__',
-                          label: lang === 'tr' ? '— Çalışan seçilmedi —' : '-- No employee selected --',
+                          label:
+                            lang === 'tr' ? '— Çalışan seçilmedi —' : '-- No employee selected --',
                         },
                         ...employeeOptions,
                       ]}

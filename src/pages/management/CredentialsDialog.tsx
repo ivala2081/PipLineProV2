@@ -12,10 +12,7 @@ import {
   Label,
 } from '@ds'
 import { useToast } from '@/hooks/useToast'
-import {
-  useGetCredentials,
-  useUpdateCredentials,
-} from '@/hooks/queries/useOrgMemberMutations'
+import { useGetCredentials, useUpdateCredentials } from '@/hooks/queries/useOrgMemberMutations'
 
 interface CredentialsDialogProps {
   open: boolean

@@ -130,7 +130,9 @@ export function BulkPayoutConfirmDialog({
                       <TableRow key={item.employee_id}>
                         <TableCell>
                           <div className="flex items-center gap-sm">
-                            <span className="text-sm font-medium text-black">{item.employee_name}</span>
+                            <span className="text-sm font-medium text-black">
+                              {item.employee_name}
+                            </span>
                           </div>
                         </TableCell>
                         <TableCell>

@@ -121,7 +121,9 @@ export function CheckinPage() {
             {(() => {
               const tag = getStatusTag(result.status, lang)
               return tag ? (
-                <span className={`ml-xs rounded-md px-2 py-0.5 text-[11px] font-medium ${tag.className}`}>
+                <span
+                  className={`ml-xs rounded-md px-2 py-0.5 text-[11px] font-medium ${tag.className}`}
+                >
                   {tag.label}
                 </span>
               ) : null
@@ -139,7 +141,9 @@ export function CheckinPage() {
   const getErrorMessage = (): string | null => {
     if (networkError) {
       const base =
-        lang === 'tr' ? 'Bağlantı hatası. Lütfen tekrar deneyin.' : 'Network error. Please try again.'
+        lang === 'tr'
+          ? 'Bağlantı hatası. Lütfen tekrar deneyin.'
+          : 'Network error. Please try again.'
       return `${base}\n(${networkError})`
     }
     if (result && !result.ok) {

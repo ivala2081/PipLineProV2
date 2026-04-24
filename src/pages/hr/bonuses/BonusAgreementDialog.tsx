@@ -280,9 +280,7 @@ export function BonusAgreementDialog({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="fixed">
-                      {lang === 'tr' ? 'Sabit' : 'Fixed'}
-                    </SelectItem>
+                    <SelectItem value="fixed">{lang === 'tr' ? 'Sabit' : 'Fixed'}</SelectItem>
                     <SelectItem value="variable">
                       {lang === 'tr' ? 'Değişken' : 'Variable'}
                     </SelectItem>
@@ -310,7 +308,11 @@ export function BonusAgreementDialog({
               </div>
 
               {/* Fixed amount (shown for fixed type) */}
-              {(bonusType === 'fixed' || (bonusType !== 'variable' && bonusType !== 'percentage' && bonusType !== 'tiered' && bonusType !== 'custom')) && (
+              {(bonusType === 'fixed' ||
+                (bonusType !== 'variable' &&
+                  bonusType !== 'percentage' &&
+                  bonusType !== 'tiered' &&
+                  bonusType !== 'custom')) && (
                 <div>
                   <Label className="mb-1 text-xs font-medium tracking-wide text-black/70">
                     {lang === 'tr' ? 'Sabit Tutar (USDT)' : 'Fixed Amount (USDT)'}
@@ -322,7 +324,9 @@ export function BonusAgreementDialog({
                     onChange={(e) => {
                       const formatted = formatAmount(e.target.value, lang)
                       setFixedAmountDisplay(formatted)
-                      form.setValue('fixed_amount', parseAmount(formatted, lang), { shouldValidate: true })
+                      form.setValue('fixed_amount', parseAmount(formatted, lang), {
+                        shouldValidate: true,
+                      })
                     }}
                     placeholder={amountPlaceholder(lang)}
                   />

@@ -15,7 +15,7 @@ export const updateOrganizationSchema = z.object({
   name: z.string().min(1, 'Name is required').trim(),
   is_active: z.boolean(),
   logo_url: z.string().nullable().optional(),
-  base_currency: z.string().min(1, 'Base currency is required'),
+  base_currency: z.string().min(1, 'Base currency is required').optional(),
 })
 
 export type UpdateOrganizationValues = z.infer<typeof updateOrganizationSchema>

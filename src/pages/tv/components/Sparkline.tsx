@@ -20,7 +20,7 @@ export function Sparkline({ data, width = 200, height = 40, theme }: Props) {
 
   const points = activeData.map((val, i) => {
     const x = i * stepX
-    const y = height - padY - ((val / max) * (height - padY * 2))
+    const y = height - padY - (val / max) * (height - padY * 2)
     return { x, y }
   })
 
@@ -37,8 +37,20 @@ export function Sparkline({ data, width = 200, height = 40, theme }: Props) {
   return (
     <svg width={width} height={height} className="overflow-visible">
       <path d={areaD} fill={`url(#${gradId})`} opacity={0.15} />
-      <path d={pathD} fill="none" stroke={strokeColor} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx={points[points.length - 1].x} cy={points[points.length - 1].y} r={2.5} fill={dotColor} />
+      <path
+        d={pathD}
+        fill="none"
+        stroke={strokeColor}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle
+        cx={points[points.length - 1].x}
+        cy={points[points.length - 1].y}
+        r={2.5}
+        fill={dotColor}
+      />
       <defs>
         <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={l ? 'black' : 'white'} />

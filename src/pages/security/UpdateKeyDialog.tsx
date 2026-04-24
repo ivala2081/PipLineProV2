@@ -1,15 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Key } from '@phosphor-icons/react'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  Button,
-  Input,
-} from '@ds'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Button, Input } from '@ds'
 import { useUpdateSecretsMutation } from '@/hooks/queries/useApiHealthQuery'
 
 /* ── Secret name → form field mapping ────────────────────── */
@@ -57,10 +49,7 @@ export function UpdateKeyDialog({ open, onOpenChange, service, serviceName }: Pr
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent
-        size="md"
-        onInteractOutside={(e) => e.preventDefault()}
-      >
+      <DialogContent size="md" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-sm">
             <Key size={20} />
@@ -69,9 +58,7 @@ export function UpdateKeyDialog({ open, onOpenChange, service, serviceName }: Pr
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-md">
-          <p className="text-sm text-black/50">
-            {t('security.api.dialog.description')}
-          </p>
+          <p className="text-sm text-black/50">{t('security.api.dialog.description')}</p>
 
           {secretNames.map((name) => (
             <div key={name} className="space-y-1">
@@ -80,9 +67,7 @@ export function UpdateKeyDialog({ open, onOpenChange, service, serviceName }: Pr
                 type="password"
                 placeholder={t('security.api.dialog.placeholder')}
                 value={values[name] ?? ''}
-                onChange={(e) =>
-                  setValues((prev) => ({ ...prev, [name]: e.target.value }))
-                }
+                onChange={(e) => setValues((prev) => ({ ...prev, [name]: e.target.value }))}
                 autoComplete="off"
               />
             </div>
@@ -98,14 +83,9 @@ export function UpdateKeyDialog({ open, onOpenChange, service, serviceName }: Pr
             </Button>
             <Button
               type="submit"
-              disabled={
-                mutation.isPending ||
-                secretNames.every((n) => !values[n]?.trim())
-              }
+              disabled={mutation.isPending || secretNames.every((n) => !values[n]?.trim())}
             >
-              {mutation.isPending
-                ? t('security.api.dialog.saving')
-                : t('security.api.dialog.save')}
+              {mutation.isPending ? t('security.api.dialog.saving') : t('security.api.dialog.save')}
             </Button>
           </DialogFooter>
         </form>

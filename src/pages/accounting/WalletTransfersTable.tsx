@@ -29,11 +29,12 @@ const KNOWN_TOKENS: Record<string, Record<string, string>> = {
     '0x6b175474e89094c44da98b954eedeac495271d0f': 'DAI',
   },
   tron: {
-    'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t': 'USDT',
-    'TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8': 'USDC',
+    TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t: 'USDT',
+    TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8: 'USDC',
   },
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- shared helper lives with component
 export function isKnownToken(chain: string, tokenAddress?: string): boolean {
   if (!tokenAddress) return true // native transfers are fine
   const map = KNOWN_TOKENS[chain]
@@ -233,7 +234,9 @@ export function WalletTransfersTable({
                     {tx.tokenAddress && !isKnownToken(chain, tx.tokenAddress) ? (
                       <div className="flex flex-col">
                         <span className="text-[10px] font-semibold text-black/30">
-                          {i18n.language === 'tr' ? 'Bilinmeyen / Sahte Token' : 'Unknown / Fake Token'}
+                          {i18n.language === 'tr'
+                            ? 'Bilinmeyen / Sahte Token'
+                            : 'Unknown / Fake Token'}
                         </span>
                         <span className="font-mono text-[10px] text-black/15">
                           {truncateAddr(tx.tokenAddress)}

@@ -20,10 +20,20 @@ export function Spotlight({ entry, theme }: Props) {
     <div className="shrink-0 px-12 py-6">
       <div className="flex items-end justify-between">
         <div className="flex items-end gap-6">
-          <span className={`text-5xl font-bold leading-none ${l ? 'text-black/[0.08]' : 'text-white/[0.12]'}`}>01</span>
+          <span
+            className={`text-5xl font-bold leading-none ${l ? 'text-black/[0.08]' : 'text-white/[0.12]'}`}
+          >
+            01
+          </span>
           <div>
-            <p className={`text-[10px] font-semibold tracking-[0.3em] ${l ? 'text-black/35' : 'text-white/25'}`}>AYLIK LİDER</p>
-            <p className={`mt-1 text-4xl font-bold leading-none tracking-tight ${l ? 'text-black' : 'text-white'}`}>
+            <p
+              className={`text-[10px] font-semibold tracking-[0.3em] ${l ? 'text-black/35' : 'text-white/25'}`}
+            >
+              AYLIK LİDER
+            </p>
+            <p
+              className={`mt-1 text-4xl font-bold leading-none tracking-tight ${l ? 'text-black' : 'text-white'}`}
+            >
               {entry.employeeName}
             </p>
           </div>
@@ -31,27 +41,51 @@ export function Spotlight({ entry, theme }: Props) {
 
         <div className="flex items-end gap-12">
           <div className="text-right">
-            <p className={`text-[10px] font-medium tracking-[0.25em] ${l ? 'text-black/35' : 'text-white/25'}`}>AYLIK TOPLAM</p>
-            <p className={`mt-1 tabular-nums text-4xl font-bold leading-none tracking-tight ${l ? 'text-black' : 'text-white'}`}>
+            <p
+              className={`text-[10px] font-medium tracking-[0.25em] ${l ? 'text-black/35' : 'text-white/25'}`}
+            >
+              AYLIK TOPLAM
+            </p>
+            <p
+              className={`mt-1 tabular-nums text-4xl font-bold leading-none tracking-tight ${l ? 'text-black' : 'text-white'}`}
+            >
               {formatUsd(entry.totalUsd)}
             </p>
           </div>
           <div className="text-right">
-            <p className={`text-[10px] font-medium tracking-[0.25em] ${l ? 'text-black/35' : 'text-white/25'}`}>İŞLEM</p>
-            <p className={`mt-1 tabular-nums text-2xl font-semibold leading-none ${l ? 'text-black/50' : 'text-white/50'}`}>
+            <p
+              className={`text-[10px] font-medium tracking-[0.25em] ${l ? 'text-black/35' : 'text-white/25'}`}
+            >
+              İŞLEM
+            </p>
+            <p
+              className={`mt-1 tabular-nums text-2xl font-semibold leading-none ${l ? 'text-black/50' : 'text-white/50'}`}
+            >
               {entry.transferCount}
             </p>
           </div>
           <div className="text-right">
-            <p className={`text-[10px] font-medium tracking-[0.25em] ${l ? 'text-black/35' : 'text-white/25'}`}>BUGÜN</p>
-            <p className={`mt-1 tabular-nums text-2xl font-semibold leading-none ${l ? 'text-black/50' : 'text-white/50'}`}>
+            <p
+              className={`text-[10px] font-medium tracking-[0.25em] ${l ? 'text-black/35' : 'text-white/25'}`}
+            >
+              BUGÜN
+            </p>
+            <p
+              className={`mt-1 tabular-nums text-2xl font-semibold leading-none ${l ? 'text-black/50' : 'text-white/50'}`}
+            >
               {formatUsd(entry.todayUsd)}
             </p>
           </div>
           {entry.ftdCount > 0 && (
             <div className="text-right">
-              <p className={`text-[10px] font-medium tracking-[0.25em] ${l ? 'text-black/35' : 'text-white/25'}`}>FTD</p>
-              <p className={`mt-1 tabular-nums text-2xl font-semibold leading-none ${l ? 'text-black/50' : 'text-white/50'}`}>
+              <p
+                className={`text-[10px] font-medium tracking-[0.25em] ${l ? 'text-black/35' : 'text-white/25'}`}
+              >
+                FTD
+              </p>
+              <p
+                className={`mt-1 tabular-nums text-2xl font-semibold leading-none ${l ? 'text-black/50' : 'text-white/50'}`}
+              >
                 {entry.ftdCount}
               </p>
             </div>

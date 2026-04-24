@@ -18,11 +18,7 @@ import {
   DatePickerField,
 } from '@ds'
 import { useToast } from '@/hooks/useToast'
-import {
-  useHrLeaveMutations,
-  type HrEmployee,
-  type HrLeave,
-} from '@/hooks/queries/useHrQuery'
+import { useHrLeaveMutations, type HrEmployee, type HrLeave } from '@/hooks/queries/useHrQuery'
 import type { HrLeaveType } from '@/lib/database.types'
 
 /* ------------------------------------------------------------------ */
@@ -137,8 +133,12 @@ export function LeaveDialog({ open, onClose, employees, lang, editLeave }: Leave
         <DialogHeader>
           <DialogTitle>
             {isEdit
-              ? lang === 'tr' ? 'İzni Düzenle' : 'Edit Leave'
-              : lang === 'tr' ? 'İzin Ekle' : 'Add Leave'}
+              ? lang === 'tr'
+                ? 'İzni Düzenle'
+                : 'Edit Leave'
+              : lang === 'tr'
+                ? 'İzin Ekle'
+                : 'Add Leave'}
           </DialogTitle>
           <DialogDescription>
             {lang === 'tr'
@@ -156,7 +156,9 @@ export function LeaveDialog({ open, onClose, employees, lang, editLeave }: Leave
               onValueChange={(v) => form.setValue('employee_id', v, { shouldValidate: true })}
             >
               <SelectTrigger>
-                <SelectValue placeholder={lang === 'tr' ? 'Çalışan seç...' : 'Select employee...'} />
+                <SelectValue
+                  placeholder={lang === 'tr' ? 'Çalışan seç...' : 'Select employee...'}
+                />
               </SelectTrigger>
               <SelectContent>
                 {activeEmployees.map((emp) => (
@@ -176,7 +178,9 @@ export function LeaveDialog({ open, onClose, employees, lang, editLeave }: Leave
             <Label>{lang === 'tr' ? 'İzin Tipi' : 'Leave Type'}</Label>
             <Select
               value={form.watch('leave_type')}
-              onValueChange={(v) => form.setValue('leave_type', v as HrLeaveType, { shouldValidate: true })}
+              onValueChange={(v) =>
+                form.setValue('leave_type', v as HrLeaveType, { shouldValidate: true })
+              }
             >
               <SelectTrigger>
                 <SelectValue />
@@ -251,8 +255,12 @@ export function LeaveDialog({ open, onClose, employees, lang, editLeave }: Leave
             </Button>
             <Button type="submit" variant="filled" disabled={saving}>
               {saving
-                ? lang === 'tr' ? 'Kaydediliyor...' : 'Saving...'
-                : lang === 'tr' ? 'Kaydet' : 'Save'}
+                ? lang === 'tr'
+                  ? 'Kaydediliyor...'
+                  : 'Saving...'
+                : lang === 'tr'
+                  ? 'Kaydet'
+                  : 'Save'}
             </Button>
           </div>
         </form>

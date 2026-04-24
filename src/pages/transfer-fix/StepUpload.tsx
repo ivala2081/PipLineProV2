@@ -39,8 +39,18 @@ const CSV_CONFIG: Record<CsvType, { label: string; description: string }> = {
 }
 
 const MONTHS = [
-  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
+  'Ocak',
+  'Şubat',
+  'Mart',
+  'Nisan',
+  'Mayıs',
+  'Haziran',
+  'Temmuz',
+  'Ağustos',
+  'Eylül',
+  'Ekim',
+  'Kasım',
+  'Aralık',
 ]
 
 const now = new Date()
@@ -70,7 +80,12 @@ export function StepUpload({ onComplete }: StepUploadProps) {
     if (!file.name.endsWith('.csv')) {
       setFiles((prev) => ({
         ...prev,
-        [csvType]: { fileName: file.name, rowCount: 0, error: 'Sadece .csv dosya yükleyin', parsed: false },
+        [csvType]: {
+          fileName: file.name,
+          rowCount: 0,
+          error: 'Sadece .csv dosya yükleyin',
+          parsed: false,
+        },
       }))
       return
     }
@@ -168,7 +183,9 @@ export function StepUpload({ onComplete }: StepUploadProps) {
           className="rounded-lg border bg-bg1 px-3 py-1.5 text-sm text-primary"
         >
           {MONTHS.map((name, i) => (
-            <option key={i} value={i + 1}>{name}</option>
+            <option key={i} value={i + 1}>
+              {name}
+            </option>
           ))}
         </select>
         <select
@@ -177,7 +194,9 @@ export function StepUpload({ onComplete }: StepUploadProps) {
           className="rounded-lg border bg-bg1 px-3 py-1.5 text-sm text-primary"
         >
           {[2024, 2025, 2026, 2027].map((y) => (
-            <option key={y} value={y}>{y}</option>
+            <option key={y} value={y}>
+              {y}
+            </option>
           ))}
         </select>
         <span className="text-xs text-muted ml-2">
@@ -208,7 +227,6 @@ export function StepUpload({ onComplete }: StepUploadProps) {
 }
 
 function DropZone({
-  csvType,
   config,
   state,
   filteredCount,
@@ -284,9 +302,7 @@ function DropZone({
             )}
           </div>
           {filteredCount != null && (
-            <span className="text-blue-600 font-medium">
-              Dönem filtresi: {filteredCount} satır
-            </span>
+            <span className="text-blue-600 font-medium">Dönem filtresi: {filteredCount} satır</span>
           )}
         </div>
       )}

@@ -1,13 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import {
-  ArrowLeft,
-  CheckFat,
-  Money,
-  Trash,
-  Warning,
-  CalendarBlank,
-} from '@phosphor-icons/react'
+import { ArrowLeft, CheckFat, Money, Trash, Warning, CalendarBlank } from '@phosphor-icons/react'
 import {
   Button,
   Input,
@@ -90,13 +83,21 @@ function Content({
     totalSupplement -
     totalBankDeposit -
     tlItems.reduce(
-      (s, i) => s + (i.advance_tl ?? 0) + (i.attendance_deduction_tl ?? 0) + (i.unpaid_leave_deduction_tl ?? 0),
+      (s, i) =>
+        s +
+        (i.advance_tl ?? 0) +
+        (i.attendance_deduction_tl ?? 0) +
+        (i.unpaid_leave_deduction_tl ?? 0),
       0,
     )
   const netTotalUsd =
     totalSalaryUsd -
     usdItems.reduce(
-      (s, i) => s + (i.advance_tl ?? 0) + (i.attendance_deduction_tl ?? 0) + (i.unpaid_leave_deduction_tl ?? 0),
+      (s, i) =>
+        s +
+        (i.advance_tl ?? 0) +
+        (i.attendance_deduction_tl ?? 0) +
+        (i.unpaid_leave_deduction_tl ?? 0),
       0,
     )
 
@@ -163,7 +164,9 @@ function Content({
         </div>
         <div className="flex items-center gap-2">
           <CalendarBlank size={14} className="text-black/40" />
-          <span className="whitespace-nowrap text-xs text-black/40">{t ? 'Ödeme Tarihi' : 'Date'}</span>
+          <span className="whitespace-nowrap text-xs text-black/40">
+            {t ? 'Ödeme Tarihi' : 'Date'}
+          </span>
           <Input
             type="date"
             className="h-8 w-40 text-sm"
@@ -222,10 +225,7 @@ function Content({
                     (item.attendance_deduction_tl ?? 0) -
                     (item.unpaid_leave_deduction_tl ?? 0)
                   return (
-                    <TableRow
-                      key={item.employee_id}
-                      className={excluded ? 'opacity-30' : ''}
-                    >
+                    <TableRow key={item.employee_id} className={excluded ? 'opacity-30' : ''}>
                       <TableCell>
                         <input
                           type="checkbox"
@@ -235,9 +235,7 @@ function Content({
                         />
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm font-medium text-black">
-                          {item.employee_name}
-                        </span>
+                        <span className="text-sm font-medium text-black">{item.employee_name}</span>
                       </TableCell>
                       <TableCell className="text-right">
                         <Input

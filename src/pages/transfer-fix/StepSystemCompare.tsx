@@ -1,5 +1,12 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import { SpinnerGap, CheckCircle, Warning, ArrowsClockwise, Trash, Plus } from '@phosphor-icons/react'
+import {
+  SpinnerGap,
+  CheckCircle,
+  Warning,
+  ArrowsClockwise,
+  Trash,
+  Plus,
+} from '@phosphor-icons/react'
 import {
   Table,
   TableHeader,
@@ -45,7 +52,11 @@ export function StepSystemCompare({ data, onNext, onBack }: StepSystemComparePro
     setError(null)
     try {
       const systemTransfers = await fetchSystemTransfers(dateRange.from, dateRange.to)
-      const csvEnrichment = buildCsvEnrichmentMap(data.orderSatis, data.ordRetDeposit, data.ordWithdrawal)
+      const csvEnrichment = buildCsvEnrichmentMap(
+        data.orderSatis,
+        data.ordRetDeposit,
+        data.ordWithdrawal,
+      )
       const results = compareKasaToSystem(data.kasa, systemTransfers, csvEnrichment)
       setDiscrepancies(results)
     } catch (err) {
@@ -60,15 +71,11 @@ export function StepSystemCompare({ data, onNext, onBack }: StepSystemComparePro
   }, [runComparison])
 
   const updateAction = (index: number, action: FixAction) => {
-    setDiscrepancies((prev) =>
-      prev.map((d, i) => (i === index ? { ...d, action } : d)),
-    )
+    setDiscrepancies((prev) => prev.map((d, i) => (i === index ? { ...d, action } : d)))
   }
 
   const setAllAction = (type: SystemDiscrepancy['type'], action: FixAction) => {
-    setDiscrepancies((prev) =>
-      prev.map((d) => (d.type === type ? { ...d, action } : d)),
-    )
+    setDiscrepancies((prev) => prev.map((d) => (d.type === type ? { ...d, action } : d)))
   }
 
   const counts = useMemo(() => {
@@ -84,7 +91,9 @@ export function StepSystemCompare({ data, onNext, onBack }: StepSystemComparePro
       <div className="flex min-h-[40vh] items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <SpinnerGap className="h-8 w-8 animate-spin text-muted" />
-          <p className="text-sm text-muted">Sistem transferleri yükleniyor ve karşılaştırılıyor...</p>
+          <p className="text-sm text-muted">
+            Sistem transferleri yükleniyor ve karşılaştırılıyor...
+          </p>
         </div>
       </div>
     )
@@ -101,7 +110,9 @@ export function StepSystemCompare({ data, onNext, onBack }: StepSystemComparePro
           </Button>
         </div>
         <div className="flex justify-start">
-          <Button variant="gray" onClick={onBack}>Geri</Button>
+          <Button variant="gray" onClick={onBack}>
+            Geri
+          </Button>
         </div>
       </div>
     )
@@ -120,28 +131,19 @@ export function StepSystemCompare({ data, onNext, onBack }: StepSystemComparePro
       {/* Bulk actions */}
       <div className="flex gap-2 flex-wrap">
         {counts.missingInSystem > 0 && (
-          <Button
-            variant="outline"
-            onClick={() => setAllAction('missing-in-system', 'insert')}
-          >
+          <Button variant="outline" onClick={() => setAllAction('missing-in-system', 'insert')}>
             <Plus className="h-4 w-4" />
             Tümünü Ekle ({counts.missingInSystem})
           </Button>
         )}
         {counts.fieldMismatch > 0 && (
-          <Button
-            variant="outline"
-            onClick={() => setAllAction('field-mismatch', 'update')}
-          >
+          <Button variant="outline" onClick={() => setAllAction('field-mismatch', 'update')}>
             <ArrowsClockwise className="h-4 w-4" />
             Tümünü Güncelle ({counts.fieldMismatch})
           </Button>
         )}
         {counts.missingInKasa > 0 && (
-          <Button
-            variant="outline"
-            onClick={() => setAllAction('missing-in-kasa', 'delete')}
-          >
+          <Button variant="outline" onClick={() => setAllAction('missing-in-kasa', 'delete')}>
             <Trash className="h-4 w-4" />
             Tümünü Sil ({counts.missingInKasa})
           </Button>
@@ -235,11 +237,7 @@ function SystemDiscrepancyRow({
   const date = d.kasaRow
     ? parseTurkishDate(d.kasaRow.dateRaw) || d.kasaRow.dateRaw
     : d.systemRow?.transfer_date?.slice(0, 10) || '-'
-  const amount = d.kasaRow
-    ? parseTurkishDecimal(d.kasaRow.amountRaw)
-    : d.systemRow?.amount
-
-  const diffText = d.diffs?.map((diff) => `${diff.field}: ${diff.kasaValue} → ${diff.systemValue}`).join(', ') || ''
+  const amount = d.kasaRow ? parseTurkishDecimal(d.kasaRow.amountRaw) : d.systemRow?.amount
 
   return (
     <TableRow className={d.action !== 'skip' ? 'bg-blue-50/50 dark:bg-blue-900/5' : ''}>

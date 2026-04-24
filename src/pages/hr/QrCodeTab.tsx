@@ -18,10 +18,7 @@ import {
   Skeleton,
 } from '@ds'
 import { useToast } from '@/hooks/useToast'
-import {
-  useHrSettingsQuery,
-  useRegenerateQrTokenMutation,
-} from '@/hooks/queries/useHrQuery'
+import { useHrSettingsQuery, useRegenerateQrTokenMutation } from '@/hooks/queries/useHrQuery'
 
 interface QrCodeTabProps {
   lang: 'tr' | 'en'
@@ -40,6 +37,7 @@ export function QrCodeTab({ lang }: QrCodeTabProps) {
 
   useEffect(() => {
     if (!checkinUrl) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting derived QR URL when token is cleared
       setDataUrl(null)
       return
     }
@@ -83,7 +81,9 @@ export function QrCodeTab({ lang }: QrCodeTabProps) {
     }
     const title = lang === 'tr' ? 'Mesai Girişi QR Kodu' : 'Office Check-in QR'
     const subtitle =
-      lang === 'tr' ? 'Telefonunuzla tarayın ve e-postanızla giriş yapın.' : 'Scan and sign in with your email.'
+      lang === 'tr'
+        ? 'Telefonunuzla tarayın ve e-postanızla giriş yapın.'
+        : 'Scan and sign in with your email.'
     win.document.write(`<!doctype html>
 <html>
   <head>
@@ -212,9 +212,7 @@ export function QrCodeTab({ lang }: QrCodeTabProps) {
           </summary>
           <div className="mt-sm space-y-sm">
             <div>
-              <p className="text-black/50">
-                {lang === 'tr' ? 'Tarama bağlantısı:' : 'Scan URL:'}
-              </p>
+              <p className="text-black/50">{lang === 'tr' ? 'Tarama bağlantısı:' : 'Scan URL:'}</p>
               <code className="mt-1 block break-all rounded bg-bg2 px-2 py-1 font-mono text-[11px] text-black/70">
                 {checkinUrl || '—'}
               </code>
@@ -244,9 +242,7 @@ export function QrCodeTab({ lang }: QrCodeTabProps) {
             <div className="mb-3 flex size-11 items-center justify-center rounded-full bg-orange/10">
               <WarningCircle size={22} weight="fill" className="text-orange" />
             </div>
-            <DialogTitle>
-              {lang === 'tr' ? 'QR Kodunu Yenile' : 'Regenerate QR Code'}
-            </DialogTitle>
+            <DialogTitle>{lang === 'tr' ? 'QR Kodunu Yenile' : 'Regenerate QR Code'}</DialogTitle>
             <DialogDescription>
               {lang === 'tr'
                 ? 'Yeni bir QR kod oluşturulacak ve eski QR çalışmayacak. Yeni QR kodu yazdırıp asmayı unutmayın.'

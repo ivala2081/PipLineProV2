@@ -21,11 +21,19 @@ function RankDelta({ delta }: { delta: number }) {
   if (delta === 0) return null
   const isUp = delta > 0
   return (
-    <span className={cn(
-      'ml-2 inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums',
-      isUp ? 'text-emerald-500/70' : 'text-red-400/60',
-    )}>
-      <svg width={8} height={8} viewBox="0 0 8 8" fill="currentColor" className={cn(!isUp && 'rotate-180')}>
+    <span
+      className={cn(
+        'ml-2 inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums',
+        isUp ? 'text-emerald-500/70' : 'text-red-400/60',
+      )}
+    >
+      <svg
+        width={8}
+        height={8}
+        viewBox="0 0 8 8"
+        fill="currentColor"
+        className={cn(!isUp && 'rotate-180')}
+      >
         <path d="M4 1L7 5H1L4 1Z" />
       </svg>
       {Math.abs(delta)}
@@ -86,20 +94,26 @@ export function LeaderboardTable({ entries, highlightedId, rankDeltas, theme }: 
           >
             {/* Rank + delta */}
             <div className="flex w-20 shrink-0 items-center">
-              <span className={`tabular-nums text-lg font-bold ${l ? 'text-black/25' : 'text-white/25'}`}>
+              <span
+                className={`tabular-nums text-lg font-bold ${l ? 'text-black/25' : 'text-white/25'}`}
+              >
                 {String(rank).padStart(2, '0')}
               </span>
               <RankDelta delta={delta} />
             </div>
 
             {/* Name */}
-            <span className={`w-64 shrink-0 truncate text-base font-semibold tracking-wide ${l ? 'text-black/65' : 'text-white/65'}`}>
+            <span
+              className={`w-64 shrink-0 truncate text-base font-semibold tracking-wide ${l ? 'text-black/65' : 'text-white/65'}`}
+            >
               {entry.employeeName}
             </span>
 
             {/* Bar */}
             <div className="relative mx-6 flex-1">
-              <div className={`h-1 overflow-hidden rounded-full ${l ? 'bg-black/[0.06]' : 'bg-white/[0.06]'}`}>
+              <div
+                className={`h-1 overflow-hidden rounded-full ${l ? 'bg-black/[0.06]' : 'bg-white/[0.06]'}`}
+              >
                 <div
                   className={`h-full rounded-full transition-all duration-1000 ease-out ${l ? 'bg-emerald-500/60' : 'bg-emerald-500/50'}`}
                   style={{ width: `${barWidth}%` }}
@@ -108,15 +122,21 @@ export function LeaderboardTable({ entries, highlightedId, rankDeltas, theme }: 
             </div>
 
             {/* Count */}
-            <span className={`w-24 shrink-0 text-right tabular-nums text-xs ${l ? 'text-black/30' : 'text-white/25'}`}>
+            <span
+              className={`w-24 shrink-0 text-right tabular-nums text-xs ${l ? 'text-black/30' : 'text-white/25'}`}
+            >
               {entry.transferCount} i{'\u015F'}lem
               {entry.ftdCount > 0 && (
-                <span className={`ml-1.5 ${l ? 'text-black/40' : 'text-white/35'}`}>{entry.ftdCount} FTD</span>
+                <span className={`ml-1.5 ${l ? 'text-black/40' : 'text-white/35'}`}>
+                  {entry.ftdCount} FTD
+                </span>
               )}
             </span>
 
             {/* Amount */}
-            <span className={`w-32 shrink-0 text-right tabular-nums text-lg font-bold ${l ? 'text-black/50' : 'text-white/50'}`}>
+            <span
+              className={`w-32 shrink-0 text-right tabular-nums text-lg font-bold ${l ? 'text-black/50' : 'text-white/50'}`}
+            >
               {formatUsd(entry.totalUsd)}
             </span>
           </div>

@@ -90,10 +90,7 @@ export function AbsenceReasonDialog({
         notes: notes.trim() || null,
       })
       toast({
-        title:
-          lang === 'tr'
-            ? 'Devamsızlık ve izin kaydedildi'
-            : 'Absence and leave recorded',
+        title: lang === 'tr' ? 'Devamsızlık ve izin kaydedildi' : 'Absence and leave recorded',
         variant: 'success',
       })
       setLeaveType('unpaid')
@@ -117,9 +114,7 @@ export function AbsenceReasonDialog({
     <Dialog open={open} onOpenChange={(v) => !v && handleCancel()}>
       <DialogContent size="sm" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
-          <DialogTitle>
-            {lang === 'tr' ? 'Devamsızlık Nedeni' : 'Absence Reason'}
-          </DialogTitle>
+          <DialogTitle>{lang === 'tr' ? 'Devamsızlık Nedeni' : 'Absence Reason'}</DialogTitle>
           <DialogDescription>
             {lang === 'tr'
               ? 'Gelmeme sebebini seçin. Kayıt otomatik olarak izinlere düşecektir.'
@@ -130,21 +125,14 @@ export function AbsenceReasonDialog({
         <div className="space-y-4 pt-2">
           {/* Employee + Date info */}
           <div className="flex items-center justify-between rounded-lg bg-bg2/50 px-3 py-2">
-            <span className="text-sm font-medium text-black">
-              {employee?.full_name}
-            </span>
-            <span className="text-xs tabular-nums text-black/50">
-              {formattedDate}
-            </span>
+            <span className="text-sm font-medium text-black">{employee?.full_name}</span>
+            <span className="text-xs tabular-nums text-black/50">{formattedDate}</span>
           </div>
 
           {/* Leave Type */}
           <div className="space-y-1.5">
             <Label>{lang === 'tr' ? 'İzin Tipi' : 'Leave Type'}</Label>
-            <Select
-              value={leaveType}
-              onValueChange={(v) => setLeaveType(v as HrLeaveType)}
-            >
+            <Select value={leaveType} onValueChange={(v) => setLeaveType(v as HrLeaveType)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -168,9 +156,7 @@ export function AbsenceReasonDialog({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
-              placeholder={
-                lang === 'tr' ? 'İsteğe bağlı not...' : 'Optional note...'
-              }
+              placeholder={lang === 'tr' ? 'İsteğe bağlı not...' : 'Optional note...'}
               className="w-full rounded-md bg-bg2/75 px-3 py-2 text-sm text-black inset-ring inset-ring-black/15 focus:outline-none focus:ring-4 focus:ring-brand/20 focus:inset-ring-brand/55"
             />
           </div>

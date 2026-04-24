@@ -75,9 +75,7 @@ export function UniPaymentWalletTab({ pspId }: Props) {
     <div className="space-y-lg">
       {/* Balance Cards */}
       <div>
-        <h3 className="mb-sm text-sm font-semibold text-black/60">
-          {t('psps.wallet.balances')}
-        </h3>
+        <h3 className="mb-sm text-sm font-semibold text-black/60">{t('psps.wallet.balances')}</h3>
         {isLoading ? (
           <div className="grid gap-md sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -101,30 +99,26 @@ export function UniPaymentWalletTab({ pspId }: Props) {
                 </div>
                 <div className="mt-sm flex gap-lg text-[11px] text-black/40">
                   <span>
-                    {t('psps.wallet.available')}: <strong className="text-black/60">{formatAmount(bal.available)}</strong>
+                    {t('psps.wallet.available')}:{' '}
+                    <strong className="text-black/60">{formatAmount(bal.available)}</strong>
                   </span>
                   <span>
-                    {t('psps.wallet.frozen')}: <strong className="text-black/60">{formatAmount(bal.frozen)}</strong>
+                    {t('psps.wallet.frozen')}:{' '}
+                    <strong className="text-black/60">{formatAmount(bal.frozen)}</strong>
                   </span>
                 </div>
               </Card>
             ))}
           </div>
         ) : (
-          <EmptyState
-            icon={Wallet}
-            title={t('psps.wallet.noAccounts')}
-            description=""
-          />
+          <EmptyState icon={Wallet} title={t('psps.wallet.noAccounts')} description="" />
         )}
       </div>
 
       {/* Accounts Table */}
       {accounts && accounts.length > 0 && (
         <div>
-          <h3 className="mb-sm text-sm font-semibold text-black/60">
-            {t('psps.wallet.accounts')}
-          </h3>
+          <h3 className="mb-sm text-sm font-semibold text-black/60">{t('psps.wallet.accounts')}</h3>
           <div className="overflow-hidden rounded-xl border border-black/[0.07] bg-bg1">
             <Table>
               <TableHeader>

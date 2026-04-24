@@ -491,7 +491,9 @@ export function LedgerTable({
                       <TableHead>{t('accounting.columns.currency')}</TableHead>
                       <TableHead>{t('accounting.columns.register')}</TableHead>
                       <TableHead>{t('accounting.columns.costPeriod')}</TableHead>
-                      <TableHead>{t('accounting.columns.paymentPeriod', 'Payment Period')}</TableHead>
+                      <TableHead>
+                        {t('accounting.columns.paymentPeriod', 'Payment Period')}
+                      </TableHead>
                       <TableHead className="w-16 px-2" />
                     </TableRow>
                   </TableHeader>

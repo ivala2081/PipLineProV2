@@ -704,7 +704,9 @@ export function SettingsTab({ employees, canManage, lang }: SettingsTabProps) {
               </div>
             ) : (
               <p className="text-sm font-medium text-black/70">
-                {current.supplement_currency === 'TL' ? '₺ Türk Lirası (TL)' : '$ Amerikan Doları (USD)'}
+                {current.supplement_currency === 'TL'
+                  ? '₺ Türk Lirası (TL)'
+                  : '$ Amerikan Doları (USD)'}
               </p>
             )}
           </div>
@@ -784,7 +786,9 @@ export function SettingsTab({ employees, canManage, lang }: SettingsTabProps) {
               </div>
             ) : (
               <p className="text-sm font-medium text-black/70">
-                {current.insured_bank_currency === 'TL' ? '₺ Türk Lirası (TL)' : '$ Amerikan Doları (USD)'}
+                {current.insured_bank_currency === 'TL'
+                  ? '₺ Türk Lirası (TL)'
+                  : '$ Amerikan Doları (USD)'}
               </p>
             )}
             <p className="text-[11px] text-black/30">
@@ -829,8 +833,8 @@ export function SettingsTab({ employees, canManage, lang }: SettingsTabProps) {
             )}
             <p className="text-[11px] text-black/30">
               {lang === 'tr'
-                ? 'Her ayın 5\'inde sigortalı çalışanların banka hesabına yatırılan asgari ücret tutarı'
-                : 'Minimum wage amount deposited to insured employees\' bank accounts on the 5th of each month'}
+                ? "Her ayın 5'inde sigortalı çalışanların banka hesabına yatırılan asgari ücret tutarı"
+                : "Minimum wage amount deposited to insured employees' bank accounts on the 5th of each month"}
             </p>
           </div>
         </div>
