@@ -115,7 +115,7 @@ function mapType(raw) {
 function mapCurrency(raw) {
   const s = String(raw || "").trim().toUpperCase();
   if (!s) return null;
-  if (s === "TL" || s === "TRY" || s === "₺") return "TL";
+  if (s === "TL" || s === "TRY" || s === "₺") return "TRY";
   if (s === "USD" || s === "$" || s === "USDT") return "USDT";
   return null;
 }
@@ -470,7 +470,7 @@ function writePhaseFiles(transfers, pspRates, exchangeRates, allPspNames) {
         const rate = rateForDate(t.date);
         const ts = t.timestamp ? `'${t.timestamp}'` : `'${t.date} 12:00:00+03'`;
         const amt = t.amount;
-        const amtTry = t.currency === "TL" ? amt : amt * rate;
+        const amtTry = t.currency === "TRY" ? amt : amt * rate;
         const amtUsd = t.currency === "USDT" ? amt : amt / rate;
         const pspId = t.pspName ? PSP_UUIDS[t.pspName] : null;
         const pspExpr = pspId ? `'${pspId}'` : 'NULL';
@@ -614,7 +614,7 @@ function buildSql(transfers, pspRates, exchangeRates, allPspNames) {
       const rate = rateForDate(t.date);
       const ts = t.timestamp ? `'${t.timestamp}'::timestamptz` : `'${t.date} 12:00:00+03'::timestamptz`;
       const amountAbs = t.amount; // keep sign; schema allows negative for ÇEKME
-      const amountTry = t.currency === "TL" ? amountAbs : amountAbs * rate;
+      const amountTry = t.currency === "TRY" ? amountAbs : amountAbs * rate;
       const amountUsd = t.currency === "USDT" ? amountAbs : amountAbs / rate;
 
       // PSP id via subquery

@@ -163,17 +163,18 @@ Per-org, per-date, per-currency (practically always `currency='USD'`, storing US
 
 **Why:** payments are internal money movements (e.g. paying a partner). They aren't customer revenue; including them in "net deposits" would inflate KPIs.
 
-### 4.4 Currency semantics: TL vs USDT
+### 4.4 Currency semantics: TRY vs USDT
 
-**After migration 140 (2026-04-24):**
+**After migration 141 (2026-04-24):**
 
 | `currency` value | Meaning | `amount` is in |
 |---|---|---|
-| `'TL'` | Turkish Lira (default, legacy-compatible) | TRY |
+| `'TRY'` | Turkish Lira (ISO 4217 canonical since migration 141) | TRY |
 | `'USDT'` | Tether stablecoin | USD |
 | `'USD'` | **Not used anywhere** | — |
+| `'TL'` | **Not used anywhere (migrated to 'TRY' in 141; CHECK now rejects)** | — |
 
-**Rule:** any code reading `transfers.currency` must treat `'USDT'` (not `'USD'`) as the USDT bucket. The KPI RPC (`get_monthly_summary`) was updated in migration 140 to match. If you ever see `currency='USD'` in the DB, it's a data bug — `UPDATE` it to `'USDT'`.
+**Rule:** any code reading `transfers.currency` must treat `'USDT'` (not `'USD'`) as the USDT bucket and `'TRY'` (not `'TL'`) as the Turkish Lira bucket. Both KPI RPCs and the CHECK constraint are aligned. If you ever see `currency='USD'` or `currency='TL'` in the DB, it's a data bug — `UPDATE` to `'USDT'` or `'TRY'` respectively. Note: `amount_try` column name is legacy — it stores the TRY-equivalent regardless.
 
 **Rate snapshot semantics** (driving `amount_try` / `amount_usd` in [useTransfers.ts:111–129](../../src/hooks/useTransfers.ts#L111-L129)):
 
@@ -547,6 +548,7 @@ Chronological list of every migration that touches Transfers behavior. When a ne
 | 135 | `135_ib_partner_cascade_set_null.sql` | `ib_partner_id` nulled on partner delete |
 | 136 | `136_transfers_2026_data_import.sql` | Bulk re-import of 2026 Jan–Apr transfers from CSVs |
 | 140 | `140_migrate_transfers_usd_to_usdt.sql` | **`currency='USD' → 'USDT'` for all rows; `get_monthly_summary` rewritten to match** (2026-04-24) |
+| 141 | `141_normalize_transfer_currency_to_try.sql` | **`currency='TL' → 'TRY'` for all rows; CHECK tightened to drop `'TL'`** (2026-04-24) — aligns with migration 082's canonical. Import script `mapCurrency` now returns `'TRY'` |
 
 ---
 

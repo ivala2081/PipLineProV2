@@ -6,12 +6,18 @@ Spec-first documentation for humans and AI assistants working on this repo. Sour
 
 ### Shipped
 
-- **[design-system/](./design-system/README.md)** — full spec for the UI component library at `@ds`. Covers tokens, theming, every component, composed patterns, and accessibility.
-- **[features/transfers.md](./features/transfers.md)** — the Transfers feature end-to-end: domain vocabulary, data model, commission rules, blocked/payment-type handling, currency & USDT semantics, daily-summary formulas, `get_monthly_summary` RPC contract, UI architecture, HR auto-bonus integration, PIN gate, import pipeline, RLS, and full migration timeline.
+- **[design-system/](./design-system/README.md)** — UI component library at `@ds`: tokens, theming, every component, composed patterns, accessibility.
+- **[features/transfers.md](./features/transfers.md)** — Transfers end-to-end: domain vocabulary, data model, commission rules, blocked/payment-type handling, currency & USDT semantics, daily-summary formulas, `get_monthly_summary` contract, UI architecture, HR auto-bonus, PIN gate, import pipeline, RLS, migration timeline.
+- **[auth/README.md](./auth/README.md)** — Authentication & RBAC: system/org roles, RLS helpers, JWT custom claims, invite flow, PIN gate, rate limiting, audit logging, post-migration checklist.
+- **[data-model/README.md](./data-model/README.md)** — Every `public.*` table by domain, global conventions, cross-cutting columns, enum semantics, key relationships, migration conventions.
+- **[api/README.md](./api/README.md)** — Every RPC (analytics, PSP, accounting, HR, IB, security, permissions, audit) + every Edge Function, with calling conventions and the `ai-chat` streaming contract.
+- **[features/accounting.md](./features/accounting.md)** — Accounting feature: ledger entries, registers (5 defaults + custom), 10 global categories, opening balances / DEVİR, auto-entries from IB and PSP settlements, wallets + Tatum snapshots, reconciliation flow, `get_accounting_summary` / `get_category_breakdown` contracts, RLS.
+- **[features/hr.md](./features/hr.md)** — HR / Payroll: employee model, 11 default roles, salary split for insured employees, deduction formulas, bonus agreements (fixed/percentage/tier/variable), auto-bonus (Marketing MT tiers / Retention 5.75%), barem targets + failures, attendance + leaves, QR check-in flow, bulk payments (salary/bonus/bank_deposit), HR settings, IB cross-refs, RLS.
+- **[features/psp.md](./features/psp.md)** — PSPs: PSP master, dated commission rate history + sync triggers, settlements + auto-accounting entries, blocked transfers + `bloke_resolutions`, PSP scope (local/global), UniPayment integration, balance computation, RPC contracts, UI (cards + detail tabs), RLS (admin-only).
 
 ### Proposed (see [Next specs](#next-specs) below)
 
-Remaining items from the priority list — data model, auth, RPC contract, and the other feature specs.
+Remaining items — feature specs for IB/AI, i18n, PWA, observability, security, migrations process, contributing, testing.
 
 ---
 
