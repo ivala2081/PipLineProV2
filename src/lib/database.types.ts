@@ -546,6 +546,9 @@ export type Database = {
           absent_hours: number | null
           check_in: string | null
           check_out: string | null
+          check_in_lat: number | null
+          check_in_lng: number | null
+          check_in_distance_meters: number | null
           created_at: string
           date: string
           deduction_exempt: boolean
@@ -561,6 +564,9 @@ export type Database = {
           absent_hours?: number | null
           check_in?: string | null
           check_out?: string | null
+          check_in_lat?: number | null
+          check_in_lng?: number | null
+          check_in_distance_meters?: number | null
           created_at?: string
           date: string
           deduction_exempt?: boolean
@@ -576,6 +582,9 @@ export type Database = {
           absent_hours?: number | null
           check_in?: string | null
           check_out?: string | null
+          check_in_lat?: number | null
+          check_in_lng?: number | null
+          check_in_distance_meters?: number | null
           created_at?: string
           date?: string
           deduction_exempt?: boolean
@@ -1317,6 +1326,10 @@ export type Database = {
           timezone: string
           updated_at: string
           weekend_off: boolean
+          office_latitude: number | null
+          office_longitude: number | null
+          office_radius_meters: number
+          geofence_enabled: boolean
         }
         Insert: {
           absence_full_day_divisor?: number
@@ -1338,6 +1351,10 @@ export type Database = {
           timezone?: string
           updated_at?: string
           weekend_off?: boolean
+          office_latitude?: number | null
+          office_longitude?: number | null
+          office_radius_meters?: number
+          geofence_enabled?: boolean
         }
         Update: {
           absence_full_day_divisor?: number
@@ -1359,6 +1376,10 @@ export type Database = {
           timezone?: string
           updated_at?: string
           weekend_off?: boolean
+          office_latitude?: number | null
+          office_longitude?: number | null
+          office_radius_meters?: number
+          geofence_enabled?: boolean
         }
         Relationships: [
           {
@@ -2710,7 +2731,12 @@ export type Database = {
       }
       get_user_id_by_email: { Args: { _email: string }; Returns: string }
       hr_checkin_by_qr: {
-        Args: { p_token: string; p_email: string }
+        Args: {
+          p_token: string
+          p_email: string
+          p_lat?: number | null
+          p_lng?: number | null
+        }
         Returns: Json
       }
       is_device_trusted: {

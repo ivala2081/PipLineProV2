@@ -1,7 +1,14 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, useCallback, type FormEvent } from 'react'
 import { useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { CheckCircle, Clock, QrCode, WarningCircle } from '@phosphor-icons/react'
+import {
+  CheckCircle,
+  Clock,
+  QrCode,
+  WarningCircle,
+  MapPin,
+  ArrowsClockwise,
+} from '@phosphor-icons/react'
 import { Button, Card, Input } from '@ds'
 import { supabase } from '@/lib/supabase'
 
@@ -19,7 +26,23 @@ type RpcResult =
       status: CheckinStatus
       already_checked_in: boolean
     }
-  | { ok: false; error: 'invalid_token' | 'invalid_input' | 'employee_not_found' }
+  | {
+      ok: false
+      error:
+        | 'invalid_token'
+        | 'invalid_input'
+        | 'employee_not_found'
+        | 'gps_required'
+        | 'out_of_range'
+      distance_meters?: number
+      radius_meters?: number
+    }
+
+type GpsState =
+  | { status: 'idle' }
+  | { status: 'requesting' }
+  | { status: 'granted'; lat: number; lng: number; accuracy: number }
+  | { status: 'denied'; reason: string }
 
 function getStatusTag(status: CheckinStatus, lang: 'tr' | 'en') {
   const map: Record<CheckinStatus, { label: string; className: string } | null> = {
@@ -53,6 +76,41 @@ export function CheckinPage() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<RpcResult | null>(null)
   const [networkError, setNetworkError] = useState<string | null>(null)
+  const [gps, setGps] = useState<GpsState>({ status: 'idle' })
+
+  /* ── Geolocation ────────────────────────────────────────────────── */
+
+  const requestGps = useCallback(() => {
+    if (typeof window === 'undefined' || !('geolocation' in navigator)) {
+      setGps({ status: 'denied', reason: 'unsupported' })
+      return
+    }
+    setGps({ status: 'requesting' })
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGps({
+          status: 'granted',
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+        })
+      },
+      (err) => {
+        // PositionError codes: 1=PERMISSION_DENIED, 2=POSITION_UNAVAILABLE, 3=TIMEOUT
+        const reason =
+          err.code === 1 ? 'permission_denied' : err.code === 3 ? 'timeout' : 'unavailable'
+        setGps({ status: 'denied', reason })
+      },
+      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 30_000 },
+    )
+  }, [])
+
+  // Auto-request GPS on mount — user-friendly prompt before they hit submit.
+  useEffect(() => {
+    requestGps()
+  }, [requestGps])
+
+  /* ── Submit ─────────────────────────────────────────────────────── */
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -67,6 +125,8 @@ export function CheckinPage() {
       const { data, error } = await supabase.rpc('hr_checkin_by_qr', {
         p_token: token,
         p_email: email.trim(),
+        p_lat: gps.status === 'granted' ? gps.lat : null,
+        p_lng: gps.status === 'granted' ? gps.lng : null,
       })
       if (error) {
         console.error('[checkin] RPC error:', error)
@@ -88,7 +148,7 @@ export function CheckinPage() {
     setNetworkError(null)
   }
 
-  /* -- Success screen -- */
+  /* ── Success screen ─────────────────────────────────────────────── */
   if (result && result.ok) {
     const timeDisplay = result.check_in ?? '—'
     return (
@@ -137,7 +197,7 @@ export function CheckinPage() {
     )
   }
 
-  /* -- Error / Form screen -- */
+  /* ── Error / Form screen ────────────────────────────────────────── */
   const getErrorMessage = (): string | null => {
     if (networkError) {
       const base =
@@ -160,11 +220,76 @@ export function CheckinPage() {
       if (result.error === 'invalid_input') {
         return lang === 'tr' ? 'Lütfen geçerli bir e-posta girin.' : 'Please enter a valid email.'
       }
+      if (result.error === 'gps_required') {
+        return lang === 'tr'
+          ? 'Konum izni gerekli. Tarayıcı ayarlarından konuma izin verin.'
+          : 'Location permission required. Please enable location access in your browser.'
+      }
+      if (result.error === 'out_of_range') {
+        const dist = result.distance_meters ?? 0
+        const radius = result.radius_meters ?? 0
+        return lang === 'tr'
+          ? `Ofis konumundan çok uzaktasınız (${dist}m, izin verilen ${radius}m).\nLütfen ofise gelip tekrar deneyin.`
+          : `You're too far from the office (${dist}m, allowed ${radius}m).\nPlease come to the office and try again.`
+      }
     }
     return null
   }
 
   const errorMessage = getErrorMessage()
+
+  /* ── GPS status pill ─────────────────────────────────────────────── */
+  const renderGpsStatus = () => {
+    if (gps.status === 'idle' || gps.status === 'requesting') {
+      return (
+        <div className="flex items-center gap-xs rounded-lg border border-black/[0.07] bg-bg2 px-sm py-1.5 text-xs text-black/60">
+          <MapPin size={14} className="animate-pulse" />
+          <span>{lang === 'tr' ? 'Konum alınıyor…' : 'Getting location…'}</span>
+        </div>
+      )
+    }
+    if (gps.status === 'granted') {
+      return (
+        <div className="flex items-center gap-xs rounded-lg border border-green/20 bg-green/5 px-sm py-1.5 text-xs text-green">
+          <MapPin size={14} weight="fill" />
+          <span>
+            {lang === 'tr' ? 'Konum doğrulandı' : 'Location confirmed'}
+            {gps.accuracy ? ` (±${Math.round(gps.accuracy)}m)` : ''}
+          </span>
+        </div>
+      )
+    }
+    // denied
+    const reasonText =
+      gps.reason === 'permission_denied'
+        ? lang === 'tr'
+          ? 'Tarayıcı ayarlarından konum iznini açın'
+          : 'Allow location access in your browser settings'
+        : gps.reason === 'unsupported'
+          ? lang === 'tr'
+            ? 'Tarayıcınız konum desteklemiyor'
+            : 'Your browser does not support location'
+          : lang === 'tr'
+            ? 'Konum alınamadı, tekrar deneyin'
+            : 'Could not get location, please retry'
+    return (
+      <div className="flex items-start gap-xs rounded-lg border border-orange/20 bg-orange/5 p-sm text-xs text-orange">
+        <MapPin size={14} weight="fill" className="mt-0.5 shrink-0" />
+        <div className="flex-1">
+          <p className="font-medium">{lang === 'tr' ? 'Konum gerekli' : 'Location required'}</p>
+          <p className="mt-0.5 text-orange/80">{reasonText}</p>
+        </div>
+        <button
+          type="button"
+          onClick={requestGps}
+          className="shrink-0 rounded-md bg-orange/20 p-1 text-orange transition-colors hover:bg-orange/30"
+          aria-label={lang === 'tr' ? 'Tekrar dene' : 'Retry'}
+        >
+          <ArrowsClockwise size={12} weight="bold" />
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg1 p-lg">
@@ -203,6 +328,8 @@ export function CheckinPage() {
               required
             />
           </div>
+
+          {renderGpsStatus()}
 
           {errorMessage && (
             <div className="flex items-start gap-xs rounded-lg border border-red/20 bg-red/5 p-sm text-xs text-red">

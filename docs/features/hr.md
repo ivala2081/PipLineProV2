@@ -510,22 +510,55 @@ If `hr_settings.weekend_off = true` (default since 079), weekends don't accrue a
    - UPSERT `hr_attendance` row for today — **COALESCE** on `check_in` so first scan wins.
 6. Returns `{ ok: true, employee_name, check_in, status, already_checked_in }` or `{ ok: false, error }`.
 
-### 11.2 RPC: `hr_checkin_by_qr(p_token uuid, p_email text) → jsonb`
+### 11.2 RPC: `hr_checkin_by_qr(p_token uuid, p_email text, p_lat numeric, p_lng numeric) → jsonb`
 
-Documented in [api/README.md §6.1](../api/README.md#61-hr_checkin_by_qrp_token-uuid-p_email-text--jsonb). Latest at [139_hr_checkin_return_actual_status.sql:8](../../supabase/migrations/139_hr_checkin_return_actual_status.sql#L8).
+Documented in [api/README.md §6.1](../api/README.md#61-hr_checkin_by_qrp_token-uuid-p_email-text--jsonb). Latest at [143_hr_checkin_geofence.sql](../../supabase/migrations/143_hr_checkin_geofence.sql) (migration 143). `p_lat` and `p_lng` are optional with `DEFAULT NULL`; older 2-arg callers still work because of the default values.
 
 **Error codes returned:**
 - `'invalid_input'` — token/email empty.
 - `'invalid_token'` — no org found for token.
 - `'employee_not_found'` — no active employee with that email in that org.
+- `'gps_required'` — geofence is enabled but the client did not send GPS. Geofence guard runs **before** the employee lookup so we don't leak which emails exist to off-site attackers.
+- `'out_of_range'` — GPS sent but distance exceeds `office_radius_meters`. Response includes `distance_meters` and `radius_meters` so the UI can tell the employee how far away they are.
 
-### 11.3 Public RPC note
+### 11.3 Geofence (migration 143)
+
+Optional GPS-based location verification. Off by default for existing orgs.
+
+**Config (per-org, in `hr_settings`):**
+- `geofence_enabled` (default `false`) — master switch
+- `office_latitude`, `office_longitude` (NUMERIC(10,7), nullable) — office centroid in WGS84 decimal degrees
+- `office_radius_meters` (default `200`, CHECK 1..100000) — allowed radius
+
+**DB-level safeguard:** `chk_hr_settings_geofence_requires_coords` — `geofence_enabled` cannot be `true` without coordinates. The UI mirrors this by disabling the toggle.
+
+**Forensic columns (on `hr_attendance`, captured even when geofence is disabled):**
+- `check_in_lat`, `check_in_lng` — raw GPS reported by client
+- `check_in_distance_meters` — computed distance from office centroid via `haversine_distance_m()` SQL helper
+
+**RPC behavior:**
+- If `geofence_enabled = false` → no enforcement; lat/lng (if present) are still recorded for forensic spot-checks.
+- If `geofence_enabled = true` and lat/lng missing → return `'gps_required'`.
+- If `geofence_enabled = true` and Haversine distance > `office_radius_meters` → return `'out_of_range'` with `distance_meters` for UX.
+- Otherwise: normal first-scan-wins UPSERT, GPS columns also follow `COALESCE` (first scan's location wins).
+
+**Closes vectors** documented in the security threat model:
+- ✅ Leaked QR token (off-site attacker can't bypass geofence)
+- ✅ Off-site / from-home check-in
+- ✅ Most buddy check-ins (when buddy is not at the office)
+
+**Does NOT close** (still open, see [§19](#19-known-gaps--open-questions)):
+- Buddy check-in where both employees are at the office
+- Check-out tracking (still admin-manual)
+- GPS spoofing apps (raises bar but not bulletproof — selfie/biometric would close)
+
+### 11.4 Public RPC note
 
 `hr_checkin_by_qr` is callable **without authentication** — it's `SECURITY DEFINER` and only needs the QR token. This is intentional: employees don't log in to check in. The token acts as a capability.
 
-**Implication:** anyone with the QR token can submit any email and attempt check-in. Non-existent emails return `'employee_not_found'`. Existing emails trigger a real INSERT — treat the QR token as a per-org secret (shown to employees, but not posted publicly on the internet).
+**Implication:** anyone with the QR token can submit any email and attempt check-in. Non-existent emails return `'employee_not_found'`. Existing emails trigger a real INSERT — treat the QR token as a per-org secret (shown to employees, but not posted publicly on the internet). Geofence (§11.3) is the recommended hardening when token leakage is a concern.
 
-### 11.4 Migrations timeline (QR)
+### 11.5 Migrations timeline (QR)
 
 | # | Fix |
 |---|---|
@@ -533,6 +566,7 @@ Documented in [api/README.md §6.1](../api/README.md#61-hr_checkin_by_qrp_token-
 | 137 | Fix time casting bug (`time` vs `text`) |
 | 138 | `absent_hours` numeric type fix |
 | 139 | Return actual status in response (was always `'on_time'`) |
+| 143 | Geofence: `office_latitude/longitude/radius_meters/geofence_enabled` on `hr_settings`; forensic GPS columns on `hr_attendance`; RPC accepts optional `p_lat/p_lng`; new error codes `gps_required` and `out_of_range`; `haversine_distance_m()` helper (2026-04-27) |
 
 ---
 

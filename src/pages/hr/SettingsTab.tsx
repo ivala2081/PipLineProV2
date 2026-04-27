@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { GearSix, Plus, Trash, FloppyDisk } from '@phosphor-icons/react'
+import { GearSix, Plus, Trash, FloppyDisk, MapPin, Crosshair } from '@phosphor-icons/react'
 import {
   Button,
   Input,
@@ -350,6 +350,224 @@ export function SettingsTab({ employees, canManage, lang }: SettingsTabProps) {
             {lang === 'tr'
               ? 'Giriş saatinden sonra gelen çalışanlar otomatik olarak "Geç Geldi" işaretlenir ve eksik saat hesaplanır.'
               : 'Employees arriving after the check-in time are automatically marked as "Late" with calculated missing hours.'}
+          </p>
+        </div>
+      </div>
+
+      {/* ── Section: Geofence (QR check-in konum doğrulama) ── */}
+      <div className="space-y-sm">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-black/40">
+          {lang === 'tr' ? 'QR Konum Doğrulama' : 'QR Location Verification'}
+        </h3>
+        <div className="rounded-xl border border-black/[0.07] bg-bg1 p-4 space-y-md">
+          <div className="min-h-[44px] flex items-start justify-between gap-md">
+            <div>
+              <p className="text-sm font-medium text-black/70">
+                {lang === 'tr' ? 'Geofence' : 'Geofence'}
+              </p>
+              <p className="text-[11px] text-black/30">
+                {lang === 'tr'
+                  ? 'Aktif olduğunda çalışan QR ile giriş yaparken telefonunun konumu ofise yakın olmalıdır. Belirtilen yarıçapın dışından girişler reddedilir.'
+                  : "When enabled, employees' phone GPS must be near the office at QR check-in. Check-ins outside the radius are rejected."}
+              </p>
+            </div>
+            {isEditing ? (
+              <button
+                type="button"
+                role="switch"
+                aria-checked={current.geofence_enabled}
+                disabled={current.office_latitude == null || current.office_longitude == null}
+                onClick={() =>
+                  setDraft({ ...current, geofence_enabled: !current.geofence_enabled })
+                }
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+                  current.geofence_enabled ? 'bg-brand' : 'bg-black/15'
+                } ${
+                  current.office_latitude == null || current.office_longitude == null
+                    ? 'cursor-not-allowed opacity-40'
+                    : ''
+                }`}
+                title={
+                  current.office_latitude == null || current.office_longitude == null
+                    ? lang === 'tr'
+                      ? 'Önce ofis konumunu ayarlayın'
+                      : 'Set office coordinates first'
+                    : undefined
+                }
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-sm ring-0 transition-transform ${
+                    current.geofence_enabled ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            ) : (
+              <Tag variant={current.geofence_enabled ? 'green' : 'red'}>
+                {current.geofence_enabled
+                  ? lang === 'tr'
+                    ? 'Aktif'
+                    : 'Active'
+                  : lang === 'tr'
+                    ? 'Kapalı'
+                    : 'Disabled'}
+              </Tag>
+            )}
+          </div>
+
+          {/* Coords + radius (always visible so admin can configure before enabling) */}
+          <div className="grid grid-cols-1 gap-sm sm:grid-cols-3">
+            {/* Latitude */}
+            <div className="space-y-xs">
+              <Label className="text-xs text-black/50">
+                {lang === 'tr' ? 'Enlem (Lat)' : 'Latitude'}
+              </Label>
+              {isEditing ? (
+                <Input
+                  type="number"
+                  step="0.0000001"
+                  min={-90}
+                  max={90}
+                  className="text-sm tabular-nums"
+                  placeholder="41.0082"
+                  value={current.office_latitude ?? ''}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setDraft({
+                      ...current,
+                      office_latitude: v === '' ? null : parseFloat(v),
+                    })
+                  }}
+                />
+              ) : (
+                <p className="text-sm font-medium tabular-nums text-black/70">
+                  {current.office_latitude ?? '—'}
+                </p>
+              )}
+            </div>
+
+            {/* Longitude */}
+            <div className="space-y-xs">
+              <Label className="text-xs text-black/50">
+                {lang === 'tr' ? 'Boylam (Lng)' : 'Longitude'}
+              </Label>
+              {isEditing ? (
+                <Input
+                  type="number"
+                  step="0.0000001"
+                  min={-180}
+                  max={180}
+                  className="text-sm tabular-nums"
+                  placeholder="28.9784"
+                  value={current.office_longitude ?? ''}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setDraft({
+                      ...current,
+                      office_longitude: v === '' ? null : parseFloat(v),
+                    })
+                  }}
+                />
+              ) : (
+                <p className="text-sm font-medium tabular-nums text-black/70">
+                  {current.office_longitude ?? '—'}
+                </p>
+              )}
+            </div>
+
+            {/* Radius */}
+            <div className="space-y-xs">
+              <Label className="text-xs text-black/50">
+                {lang === 'tr' ? 'Yarıçap (metre)' : 'Radius (meters)'}
+              </Label>
+              {isEditing ? (
+                <Input
+                  type="number"
+                  min={10}
+                  max={100_000}
+                  className="text-sm tabular-nums"
+                  value={current.office_radius_meters}
+                  onChange={(e) =>
+                    setDraft({
+                      ...current,
+                      office_radius_meters: parseInt(e.target.value) || 200,
+                    })
+                  }
+                />
+              ) : (
+                <p className="text-sm font-medium tabular-nums text-black/70">
+                  {current.office_radius_meters} m
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* "Use current location" helper */}
+          {isEditing && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (typeof window === 'undefined' || !('geolocation' in navigator)) {
+                    toast({
+                      title:
+                        lang === 'tr'
+                          ? 'Tarayıcı konum desteklemiyor'
+                          : 'Browser does not support geolocation',
+                      variant: 'error',
+                    })
+                    return
+                  }
+                  navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                      setDraft({
+                        ...current,
+                        office_latitude: Number(pos.coords.latitude.toFixed(7)),
+                        office_longitude: Number(pos.coords.longitude.toFixed(7)),
+                      })
+                      toast({
+                        title:
+                          lang === 'tr'
+                            ? `Konum yakalandı (±${Math.round(pos.coords.accuracy)}m)`
+                            : `Location captured (±${Math.round(pos.coords.accuracy)}m)`,
+                        variant: 'success',
+                      })
+                    },
+                    (err) => {
+                      toast({
+                        title:
+                          lang === 'tr'
+                            ? 'Konum alınamadı: ' + err.message
+                            : 'Could not get location: ' + err.message,
+                        variant: 'error',
+                      })
+                    },
+                    { enableHighAccuracy: true, timeout: 10_000 },
+                  )
+                }}
+              >
+                <Crosshair size={14} />
+                {lang === 'tr' ? 'Şu anki konumumu kullan' : 'Use my current location'}
+              </Button>
+              {current.office_latitude != null && current.office_longitude != null && (
+                <a
+                  href={`https://www.google.com/maps/?q=${current.office_latitude},${current.office_longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-black/[0.07] px-2.5 py-1 text-xs text-black/60 transition-colors hover:bg-black/[0.03]"
+                >
+                  <MapPin size={12} />
+                  {lang === 'tr' ? 'Haritada aç' : 'Open in Maps'}
+                </a>
+              )}
+            </div>
+          )}
+
+          <p className="text-[11px] text-black/30">
+            {lang === 'tr'
+              ? 'GPS hassasiyeti tipik olarak 10-50 metredir; yarıçapı 50 metrenin altına ayarlamayın. Geofence aktif değilken çalışanın konumu kayıt için yine de toplanır (forensic).'
+              : "GPS accuracy is typically 10-50 meters; don't set the radius below 50m. When geofence is disabled, location is still recorded for forensic audit."}
           </p>
         </div>
       </div>

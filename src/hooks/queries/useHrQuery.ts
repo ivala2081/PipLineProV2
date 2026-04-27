@@ -205,6 +205,13 @@ export type HrSettings = {
   weekend_off: boolean
   barem_roles: string[]
   qr_token: string
+  // Geofence (migration 143). office_latitude/office_longitude are NULL until
+  // an admin configures them. geofence_enabled cannot be true without coords
+  // (DB CHECK constraint enforces).
+  office_latitude: number | null
+  office_longitude: number | null
+  office_radius_meters: number
+  geofence_enabled: boolean
 }
 
 export const DEFAULT_HR_SETTINGS: HrSettings = {
@@ -236,6 +243,10 @@ export const DEFAULT_HR_SETTINGS: HrSettings = {
   weekend_off: true,
   barem_roles: ['Marketing'],
   qr_token: '',
+  office_latitude: null,
+  office_longitude: null,
+  office_radius_meters: 200,
+  geofence_enabled: false,
 }
 
 export const DEFAULT_MT_CONFIG: MtConfig = {
@@ -1925,6 +1936,11 @@ export function useHrSettingsQuery() {
         weekend_off: data.weekend_off ?? DEFAULT_HR_SETTINGS.weekend_off,
         barem_roles: (data.barem_roles ?? DEFAULT_HR_SETTINGS.barem_roles) as string[],
         qr_token: data.qr_token ?? DEFAULT_HR_SETTINGS.qr_token,
+        office_latitude: data.office_latitude != null ? Number(data.office_latitude) : null,
+        office_longitude: data.office_longitude != null ? Number(data.office_longitude) : null,
+        office_radius_meters:
+          Number(data.office_radius_meters) || DEFAULT_HR_SETTINGS.office_radius_meters,
+        geofence_enabled: data.geofence_enabled ?? DEFAULT_HR_SETTINGS.geofence_enabled,
       } as HrSettings
     },
     enabled: !!orgId,
@@ -1958,6 +1974,10 @@ export function useUpdateHrSettingsMutation() {
           timezone: settings.timezone,
           weekend_off: settings.weekend_off,
           barem_roles: settings.barem_roles,
+          office_latitude: settings.office_latitude,
+          office_longitude: settings.office_longitude,
+          office_radius_meters: settings.office_radius_meters,
+          geofence_enabled: settings.geofence_enabled,
           updated_at: new Date().toISOString(),
         },
         { onConflict: 'organization_id' },
