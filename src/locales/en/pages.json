@@ -2067,6 +2067,24 @@
       },
       "pendingCount_one": "{{count}} pending review",
       "pendingCount_other": "{{count}} pending review",
+      "pendingFilterActive_one": "Filter: {{count}} pending × Clear",
+      "pendingFilterActive_other": "Filter: {{count}} pending × Clear",
+      "houseBanner": {
+        "title": "This is the system-managed 'Doğrudan' house sentinel",
+        "body": "Auto-managed record used for organic (no-IB) transfers. It cannot be edited or deleted.",
+        "viewDetail": "View detail"
+      },
+      "pendingBanner": {
+        "title": "This IB was added by a rep and is awaiting review",
+        "body": "Open the detail to review and activate.",
+        "formBody": "Fill in commission configuration and any missing fields, then approve. Or reject (delete) it. Pending IBs are excluded from commission calculations.",
+        "review": "Review",
+        "approve": "Approve & Activate",
+        "reject": "Reject (Delete)",
+        "rejectConfirmTitle": "Reject and delete this IB?",
+        "rejectConfirmBody": "{{name}} will be permanently deleted. This cannot be undone.",
+        "confirmReject": "Yes, delete"
+      },
       "agreements": {
         "salary": "Fixed Salary",
         "cpa": "CPA",

@@ -2066,6 +2066,24 @@
       },
       "pendingCount_one": "{{count}} onay bekliyor",
       "pendingCount_other": "{{count}} onay bekliyor",
+      "pendingFilterActive_one": "Filtre: {{count}} onay bekleyen × Temizle",
+      "pendingFilterActive_other": "Filtre: {{count}} onay bekleyen × Temizle",
+      "houseBanner": {
+        "title": "Bu kayıt sistem yönetimindeki 'Doğrudan' IB sentinel'ıdır",
+        "body": "Organik (IB'siz) transferler için kullanılan otomatik kayıt. Düzenlenemez veya silinemez.",
+        "viewDetail": "Detayı Gör"
+      },
+      "pendingBanner": {
+        "title": "Bu IB temsilci tarafından eklendi, onay bekliyor",
+        "body": "Aktive etmek için detayı incele.",
+        "formBody": "Komisyon yapılandırmasını ve eksik bilgileri doldurup onayla, ya da reddedip sil. Onay verilene kadar bu IB komisyon hesaplarına dahil edilmez.",
+        "review": "İncele",
+        "approve": "Onayla ve Aktive Et",
+        "reject": "Reddet (Sil)",
+        "rejectConfirmTitle": "IB'yi reddet ve sil?",
+        "rejectConfirmBody": "{{name}} kalıcı olarak silinecek. Bu işlem geri alınamaz.",
+        "confirmReject": "Evet, sil"
+      },
       "agreements": {
         "salary": "Sabit Maaş",
         "cpa": "CPA",

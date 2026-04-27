@@ -151,7 +151,7 @@ export function PartnerDetailPanel({ partnerId, isAdmin, onBack }: PartnerDetail
         subtitle={partner.contact_email || ''}
         actions={
           <div className="flex items-center gap-2">
-            {isAdmin && (
+            {isAdmin && !partner.is_house && (
               <Button variant="outline" size="sm" onClick={() => navigate(`/ib/${partnerId}/edit`)}>
                 <PencilSimple size={14} weight="bold" />
                 {t('ib.partners.edit')}
@@ -163,7 +163,9 @@ export function PartnerDetailPanel({ partnerId, isAdmin, onBack }: PartnerDetail
                   ? 'success'
                   : partner.status === 'paused'
                     ? 'warning'
-                    : 'default'
+                    : partner.status === 'pending'
+                      ? 'orange'
+                      : 'default'
               }
             >
               {t(`ib.partners.statuses.${partner.status}`)}
@@ -172,6 +174,35 @@ export function PartnerDetailPanel({ partnerId, isAdmin, onBack }: PartnerDetail
           </div>
         }
       />
+
+      {partner.is_house && (
+        <div className="rounded-xl border border-black/[0.07] bg-black/[0.02] px-md py-sm">
+          <p className="text-sm font-semibold text-black/70">
+            {t('ib.partners.houseBanner.title')}
+          </p>
+          <p className="mt-1 text-xs text-black/50">{t('ib.partners.houseBanner.body')}</p>
+        </div>
+      )}
+
+      {!partner.is_house && partner.status === 'pending' && isAdmin && (
+        <div className="flex flex-col gap-3 rounded-xl bg-orange/[0.08] px-md py-sm sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-orange">
+              {t('ib.partners.pendingBanner.title')}
+            </p>
+            <p className="mt-1 text-xs text-orange/80">{t('ib.partners.pendingBanner.body')}</p>
+          </div>
+          <Button
+            variant="filled"
+            size="sm"
+            onClick={() => navigate(`/ib/${partnerId}/edit`)}
+            className="shrink-0"
+          >
+            <PencilSimple size={14} weight="bold" />
+            {t('ib.partners.pendingBanner.review')}
+          </Button>
+        </div>
+      )}
 
       {/* Profile info */}
       <div className="rounded-xl border border-black/10 p-md">

@@ -91,6 +91,7 @@ export function PartnersTab({ isAdmin }: PartnersTabProps) {
   }, [hrEmployees])
 
   const [search, setSearch] = useState('')
+  const [pendingFilter, setPendingFilter] = useState(false)
   const [deletingPartner, setDeletingPartner] = useState<IBPartner | null>(null)
 
   /* ---- Derived data ---- */
@@ -99,10 +100,14 @@ export function PartnersTab({ isAdmin }: PartnersTabProps) {
   const visiblePartners = useMemo(() => partners.filter((p) => !p.is_house), [partners])
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return visiblePartners
-    const q = search.toLowerCase().trim()
-    return visiblePartners.filter((p) => p.name.toLowerCase().includes(q))
-  }, [visiblePartners, search])
+    let list = visiblePartners
+    if (pendingFilter) list = list.filter((p) => p.status === 'pending')
+    if (search.trim()) {
+      const q = search.toLowerCase().trim()
+      list = list.filter((p) => p.name.toLowerCase().includes(q))
+    }
+    return list
+  }, [visiblePartners, search, pendingFilter])
 
   const pendingCount = useMemo(
     () => visiblePartners.filter((p) => p.status === 'pending').length,
@@ -170,7 +175,18 @@ export function PartnersTab({ isAdmin }: PartnersTabProps) {
           />
         </div>
         {isAdmin && pendingCount > 0 && (
-          <Tag variant="orange">{t('ib.partners.pendingCount', { count: pendingCount })}</Tag>
+          <button
+            type="button"
+            onClick={() => setPendingFilter((v) => !v)}
+            className={`rounded-md px-2 py-0.5 text-xs font-medium transition-colors ${
+              pendingFilter ? 'bg-orange text-white' : 'bg-orange/20 text-orange hover:bg-orange/30'
+            }`}
+            aria-pressed={pendingFilter}
+          >
+            {pendingFilter
+              ? t('ib.partners.pendingFilterActive', { count: pendingCount })
+              : t('ib.partners.pendingCount', { count: pendingCount })}
+          </button>
         )}
       </div>
 

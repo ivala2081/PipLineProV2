@@ -318,7 +318,8 @@ export function PartnerFormPage() {
   const isEdit = !!id
 
   const { partners, isLoading: partnersLoading } = useIBPartnersQuery()
-  const { createPartner, updatePartner } = useIBPartnerMutations()
+  const { createPartner, updatePartner, deletePartner } = useIBPartnerMutations()
+  const [rejectConfirmOpen, setRejectConfirmOpen] = useState(false)
   const { data: hrEmployees = [] } = useHrEmployeesQuery()
   const { currentOrg } = useOrganization()
 
@@ -475,7 +476,7 @@ export function PartnerFormPage() {
       contact_phone: partner.contact_phone ?? '',
       agreement_types: types as AgreementType[],
       agreement_details: (details ?? {}) as Record<string, unknown>,
-      status: partner.status as 'active' | 'paused' | 'terminated',
+      status: partner.status as 'active' | 'paused' | 'terminated' | 'pending',
       notes: partner.notes ?? '',
       website: partner.website ?? '',
       telegram: partner.telegram ?? '',
@@ -601,6 +602,58 @@ export function PartnerFormPage() {
     )
   }
 
+  /* ---- House sentinel guard: edit blocked, redirect to detail view ---- */
+
+  if (isEdit && partner?.is_house) {
+    return (
+      <div className="space-y-lg">
+        <button
+          onClick={() => navigate('/ib')}
+          className="mb-3 flex items-center gap-1.5 text-xs text-black/40 transition-colors hover:text-black/70"
+        >
+          <ArrowLeft size={13} weight="bold" />
+          <span>{t('ib.partners.detail.back')}</span>
+        </button>
+        <div className="rounded-xl border border-black/[0.08] bg-black/[0.02] p-md">
+          <p className="text-sm font-semibold text-black/70">
+            {t('ib.partners.houseBanner.title')}
+          </p>
+          <p className="mt-1 text-xs text-black/50">{t('ib.partners.houseBanner.body')}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3"
+            onClick={() => navigate(`/ib/${partner.id}`)}
+          >
+            {t('ib.partners.houseBanner.viewDetail')}
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  const isPendingReview = isEdit && partner?.status === 'pending'
+
+  const handleApprove = async () => {
+    if (!partner) return
+    form.setValue('status', 'active')
+    // Trigger normal submit which validates agreement details, etc.
+    await handleSubmit()
+  }
+
+  const handleReject = async () => {
+    if (!partner) return
+    try {
+      await deletePartner.mutateAsync(partner.id)
+      toast({ title: t('ib.partners.deleteSuccess'), variant: 'success' })
+      navigate('/ib')
+    } catch {
+      toast({ title: t('ib.partners.deleteError'), variant: 'error' })
+    } finally {
+      setRejectConfirmOpen(false)
+    }
+  }
+
   /* ---- Render ---- */
 
   return (
@@ -623,6 +676,70 @@ export function PartnerFormPage() {
           }
         />
       </div>
+
+      {isPendingReview && (
+        <div className="rounded-xl bg-orange/[0.08] p-md">
+          <p className="text-sm font-semibold text-orange">
+            {t('ib.partners.pendingBanner.title')}
+          </p>
+          <p className="mt-1 text-xs text-orange/80">{t('ib.partners.pendingBanner.formBody')}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="filled"
+              size="sm"
+              onClick={() => void handleApprove()}
+              disabled={isPending}
+            >
+              <FloppyDisk size={14} weight="bold" />
+              {t('ib.partners.pendingBanner.approve')}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setRejectConfirmOpen(true)}
+              disabled={isPending || deletePartner.isPending}
+              className="border-red/30 text-red hover:bg-red/[0.05]"
+            >
+              {t('ib.partners.pendingBanner.reject')}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {rejectConfirmOpen && (
+        <div className="rounded-xl border border-red/20 bg-red/[0.04] p-md">
+          <p className="text-sm font-semibold text-red">
+            {t('ib.partners.pendingBanner.rejectConfirmTitle')}
+          </p>
+          <p className="mt-1 text-xs text-black/60">
+            {t('ib.partners.pendingBanner.rejectConfirmBody', { name: partner?.name })}
+          </p>
+          <div className="mt-3 flex gap-2">
+            <Button
+              type="button"
+              variant="filled"
+              size="sm"
+              onClick={() => void handleReject()}
+              disabled={deletePartner.isPending}
+              className="bg-red hover:bg-red/90"
+            >
+              {deletePartner.isPending
+                ? t('ib.partners.deleting')
+                : t('ib.partners.pendingBanner.confirmReject')}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setRejectConfirmOpen(false)}
+            >
+              {t('ib.partners.cancel')}
+            </Button>
+          </div>
+        </div>
+      )}
 
       <form
         onSubmit={(e) => {
