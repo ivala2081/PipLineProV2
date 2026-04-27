@@ -11,6 +11,7 @@ function validInput() {
     currency: 'TL',
     type_id: 'type-1',
     exchange_rate: 1,
+    ib_partner_id: '00000000-0000-0000-0000-000000000001',
   }
 }
 
@@ -48,6 +49,11 @@ describe('transferFormSchema', () => {
 
   it('rejects empty category_id', () => {
     const result = transferFormSchema.safeParse({ ...validInput(), category_id: '' })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects empty ib_partner_id (mandatory since migration 142)', () => {
+    const result = transferFormSchema.safeParse({ ...validInput(), ib_partner_id: '' })
     expect(result.success).toBe(false)
   })
 
