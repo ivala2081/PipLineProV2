@@ -533,8 +533,13 @@ export function TransferFormContent({
         const cur = form.getValues()
         if (!cur.crm_id && unique[0].crm_id) form.setValue('crm_id', unique[0].crm_id)
         if (!cur.meta_id && unique[0].meta_id) form.setValue('meta_id', unique[0].meta_id)
-        if (!cur.ib_partner_id && unique[0].ib_partner_id)
+        // IB için "boş veya Doğrudan default" durumlarını overwrite et — rep
+        // başka bir IB seçtiyse dokunma. Geçmiş transfer kayıt yoksa veya hep
+        // Doğrudan ile yazıldıysa house sentinel olarak kalır.
+        const isHouseOrEmpty = !cur.ib_partner_id || cur.ib_partner_id === houseId
+        if (isHouseOrEmpty && unique[0].ib_partner_id) {
           form.setValue('ib_partner_id', unique[0].ib_partner_id)
+        }
       } else {
         // Birden fazla kişi → kullanıcıya seç
         setNameSuggestions(unique)
@@ -542,7 +547,7 @@ export function TransferFormContent({
     }, 600)
 
     return () => clearTimeout(timer)
-  }, [fullName, currentOrg, isEdit, form])
+  }, [fullName, currentOrg, isEdit, form, houseId])
 
   const handlePickSuggestion = useCallback(
     (s: NameSuggestion) => {
