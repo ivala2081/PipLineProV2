@@ -1,10 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 
-export type Theme = 'light' | 'dark' | 'system'
+export type Theme = 'light' | 'dark'
 
 type ThemeContextValue = {
   theme: Theme
-  resolvedTheme: 'light' | 'dark'
+  resolvedTheme: Theme
   setTheme: (theme: Theme) => void
   toggleTheme: () => void
 }
@@ -13,28 +13,20 @@ const STORAGE_KEY = 'piplinepro-theme'
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
-function getSystemTheme(): 'light' | 'dark' {
-  if (typeof window === 'undefined') return 'light'
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-}
-
-function resolveTheme(theme: Theme): 'light' | 'dark' {
-  return theme === 'system' ? getSystemTheme() : theme
+function readStoredTheme(fallback: Theme): Theme {
+  if (typeof window === 'undefined') return fallback
+  const stored = localStorage.getItem(STORAGE_KEY)
+  return stored === 'light' || stored === 'dark' ? stored : fallback
 }
 
 export function ThemeProvider({
   children,
-  defaultTheme = 'system',
+  defaultTheme = 'light',
 }: {
   children: ReactNode
   defaultTheme?: Theme
 }) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === 'undefined') return defaultTheme
-    return (localStorage.getItem(STORAGE_KEY) as Theme) || defaultTheme
-  })
-
-  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() => resolveTheme(theme))
+  const [theme, setThemeState] = useState<Theme>(() => readStoredTheme(defaultTheme))
 
   const setTheme = useCallback((newTheme: Theme) => {
     setThemeState(newTheme)
@@ -42,35 +34,17 @@ export function ThemeProvider({
   }, [])
 
   const toggleTheme = useCallback(() => {
-    if (theme === 'system') setTheme('light')
-    else if (theme === 'light') setTheme('dark')
-    else setTheme('system')
+    setTheme(theme === 'light' ? 'dark' : 'light')
   }, [theme, setTheme])
 
-  // Apply data-theme attribute and sync resolved theme
   useEffect(() => {
-    const resolved = resolveTheme(theme)
-    document.documentElement.setAttribute('data-theme', resolved)
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing derived state with DOM
-    setResolvedTheme(resolved)
-  }, [theme])
-
-  // Listen for system theme changes when in "system" mode
-  useEffect(() => {
-    if (theme !== 'system') return
-
-    const mq = window.matchMedia('(prefers-color-scheme: dark)')
-    const handler = () => {
-      const resolved = getSystemTheme()
-      setResolvedTheme(resolved)
-      document.documentElement.setAttribute('data-theme', resolved)
-    }
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
+    document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
 
   return (
-    <ThemeContext value={{ theme, resolvedTheme, setTheme, toggleTheme }}>{children}</ThemeContext>
+    <ThemeContext value={{ theme, resolvedTheme: theme, setTheme, toggleTheme }}>
+      {children}
+    </ThemeContext>
   )
 }
 

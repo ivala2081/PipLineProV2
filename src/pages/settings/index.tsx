@@ -88,14 +88,15 @@ function ProfileTab() {
 function PreferencesTab() {
   const { t, i18n } = useTranslation('pages')
 
-  const currentTheme = localStorage.getItem('piplinepro-theme') ?? 'system'
-  const [theme, setTheme] = useState(currentTheme)
+  const stored = localStorage.getItem('piplinepro-theme')
+  const currentTheme: 'light' | 'dark' = stored === 'dark' ? 'dark' : 'light'
+  const [theme, setTheme] = useState<'light' | 'dark'>(currentTheme)
   const [locale, setLocale] = useState(i18n.language)
 
-  const handleThemeChange = (newTheme: string) => {
+  const handleThemeChange = (newTheme: 'light' | 'dark') => {
     setTheme(newTheme)
     localStorage.setItem('piplinepro-theme', newTheme)
-    document.documentElement.setAttribute('data-theme', newTheme === 'system' ? '' : newTheme)
+    document.documentElement.setAttribute('data-theme', newTheme)
     window.dispatchEvent(new Event('storage'))
   }
 
@@ -114,7 +115,7 @@ function PreferencesTab() {
           {t('settings.preferences.theme', 'Theme')}
         </Label>
         <div className="flex gap-2">
-          {(['system', 'light', 'dark'] as const).map((opt) => (
+          {(['light', 'dark'] as const).map((opt) => (
             <button
               key={opt}
               type="button"

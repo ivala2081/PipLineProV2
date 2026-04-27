@@ -8,7 +8,6 @@ import {
   SignOut,
   Moon,
   Sun,
-  Monitor,
   Globe,
   MagnifyingGlass,
   Gear,
@@ -479,7 +478,7 @@ function HeaderOrgSwitcher() {
 function HeaderBar() {
   const { t } = useTranslation('pages')
   const location = useLocation()
-  const { theme, toggleTheme, resolvedTheme } = useTheme()
+  const { theme, toggleTheme } = useTheme()
   const { locale, changeLocale, localeNames } = useLocale()
   const tNav = t as (key: string) => string
 
@@ -562,13 +561,7 @@ function HeaderBar() {
           className="flex size-8 items-center justify-center rounded-md text-black/70 hover:bg-black/8 hover:text-black"
           aria-label={t('layout.toggleTheme')}
         >
-          {theme === 'system' ? (
-            <Monitor size={16} />
-          ) : resolvedTheme === 'dark' ? (
-            <Sun size={16} />
-          ) : (
-            <Moon size={16} />
-          )}
+          {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
         </button>
       </div>
     </header>

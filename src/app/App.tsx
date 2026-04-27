@@ -161,7 +161,7 @@ function PageSuspense({ children }: { children: ReactNode }) {
 export function App({ sessionPromise }: { sessionPromise?: SessionPromise }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="system">
+      <ThemeProvider defaultTheme="light">
         <AppToastProvider>
           <AuthProvider sessionPromise={sessionPromise}>
             <Routes>

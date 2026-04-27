@@ -1961,7 +1961,6 @@
     "preferences": {
       "title": "Preferences",
       "theme": "Theme",
-      "theme_system": "System",
       "theme_light": "Light",
       "theme_dark": "Dark",
       "language": "Language"
