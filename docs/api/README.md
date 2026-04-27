@@ -103,7 +103,7 @@ Only RPCs **called from the frontend** or **exposed as tools to the AI**. Trigge
 | `get_category_breakdown(p_org_id, p_period)` | JSONB | `useAccountingQuery` | [122](../../supabase/migrations/122_fix_accounting_summary_rpc.sql) |
 | `seed_default_registers(p_org_id)` | VOID | `useAccountingRegisters` | [120](../../supabase/migrations/120_accounting_overhaul.sql) |
 | `calculate_ib_commission(_ib_partner_id, _period_start, _period_end)` | JSONB | `useIBCommissionsQuery` | [129](../../supabase/migrations/129_ib_remove_cpa_revenue_share_sources.sql) |
-| `hr_checkin_by_qr(p_token, p_email, p_lat?, p_lng?)` | JSONB | `pages/checkin` | [143](../../supabase/migrations/143_hr_checkin_geofence.sql) |
+| `hr_checkin_by_qr(p_token, p_email, p_lat?, p_lng?, p_device_id?)` | JSONB | `pages/checkin` | [144](../../supabase/migrations/144_hr_checkin_device_lock.sql) |
 | `verify_org_pin(p_org_id, p_pin, p_device_id)` | BOOLEAN | `useVerifyOrgPin` | [112](../../supabase/migrations/112_bugfixes.sql) |
 | `has_org_pin(p_org_id)` | BOOLEAN | `useHasOrgPin` | [076](../../supabase/migrations/076_organization_pins.sql) |
 | `set_org_pin(p_org_id, p_pin)` | VOID | `useSetOrgPin` | [076](../../supabase/migrations/076_organization_pins.sql) |
@@ -248,17 +248,19 @@ Idempotent seed of the 4 default registers (USDT, NAKIT_TL, NAKIT_USD, TRX) for 
 
 ## 6. HR RPCs
 
-### 6.1 `hr_checkin_by_qr(p_token uuid, p_email text, p_lat numeric DEFAULT NULL, p_lng numeric DEFAULT NULL) → jsonb`
+### 6.1 `hr_checkin_by_qr(p_token uuid, p_email text, p_lat numeric DEFAULT NULL, p_lng numeric DEFAULT NULL, p_device_id text DEFAULT NULL) → jsonb`
 
-Source (latest): [143_hr_checkin_geofence.sql](../../supabase/migrations/143_hr_checkin_geofence.sql) (migration 143 added optional GPS params).
+Source (latest): [144_hr_checkin_device_lock.sql](../../supabase/migrations/144_hr_checkin_device_lock.sql) (migration 144 added optional `p_device_id`).
 
-QR-code-driven HR check-in. The `p_token` is a stable per-org QR token; `p_email` is the employee's email; `p_lat`/`p_lng` are the client's GPS coordinates (optional unless geofence is enabled).
+QR-code-driven HR check-in. The `p_token` is a stable per-org QR token; `p_email` is the employee's email; `p_lat`/`p_lng` are the client's GPS coordinates (optional unless geofence is enabled); `p_device_id` is a stable client-side device ID (`crypto.randomUUID()` persisted in `localStorage` — see hr.md §11.3.1).
 
-**Returns** a JSONB with the check-in result including the computed status (`'present'` / `'late'`) relative to the org's standard check-in time. On failure, returns `{ ok: false, error: <code>, ... }`. See [hr.md §11.2](../features/hr.md#112-rpc-hr_checkin_by_qrp_token-uuid-p_email-text-p_lat-numeric-p_lng-numeric--jsonb) for the full error code list and geofence semantics.
+**Returns** a JSONB with the check-in result including the computed status (`'present'` / `'late'`) relative to the org's standard check-in time. On failure, returns `{ ok: false, error: <code>, ... }`. See [hr.md §11.2](../features/hr.md#112-rpc-hr_checkin_by_qrp_token-uuid-p_email-text-p_lat-numeric-p_lng-numeric-p_device_id-text--jsonb) for the full error code list and geofence/device-lock semantics.
 
 **Timezone-aware:** uses the org's timezone setting (not hardcoded Europe/Istanbul — this is the one HR RPC that varies). Migrations 137, 138, 139 iterated on time casting and return shape.
 
 **Geofence (migration 143):** when `hr_settings.geofence_enabled = true`, the RPC requires `p_lat`/`p_lng` and rejects check-ins outside `office_radius_meters` of the configured office centroid. Even when geofence is off, GPS coordinates (if sent) are recorded on `hr_attendance` for forensic audit. Helper: `haversine_distance_m(lat1, lng1, lat2, lng2) → numeric` computes great-circle distance in meters.
+
+**Device lock (migration 144):** when `p_device_id` is provided, the same device can only check in for one email per day. Subsequent submits with a different email return `'device_locked'`. The lock is stored atomically with the `hr_attendance` row in `hr_checkin_device_locks (org, device_id, date)` UNIQUE.
 
 ---
 

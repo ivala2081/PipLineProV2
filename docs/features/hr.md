@@ -510,16 +510,17 @@ If `hr_settings.weekend_off = true` (default since 079), weekends don't accrue a
    - UPSERT `hr_attendance` row for today — **COALESCE** on `check_in` so first scan wins.
 6. Returns `{ ok: true, employee_name, check_in, status, already_checked_in }` or `{ ok: false, error }`.
 
-### 11.2 RPC: `hr_checkin_by_qr(p_token uuid, p_email text, p_lat numeric, p_lng numeric) → jsonb`
+### 11.2 RPC: `hr_checkin_by_qr(p_token uuid, p_email text, p_lat numeric, p_lng numeric, p_device_id text) → jsonb`
 
-Documented in [api/README.md §6.1](../api/README.md#61-hr_checkin_by_qrp_token-uuid-p_email-text--jsonb). Latest at [143_hr_checkin_geofence.sql](../../supabase/migrations/143_hr_checkin_geofence.sql) (migration 143). `p_lat` and `p_lng` are optional with `DEFAULT NULL`; older 2-arg callers still work because of the default values.
+Documented in [api/README.md §6.1](../api/README.md#61-hr_checkin_by_qrp_token-uuid-p_email-text--jsonb). Latest at [144_hr_checkin_device_lock.sql](../../supabase/migrations/144_hr_checkin_device_lock.sql) (migration 144). All four extra params are optional with `DEFAULT NULL`. The 2-arg and 4-arg overloads from earlier migrations were dropped to prevent silent bypass — only the 5-arg version exists now.
 
 **Error codes returned:**
 - `'invalid_input'` — token/email empty.
 - `'invalid_token'` — no org found for token.
 - `'employee_not_found'` — no active employee with that email in that org.
-- `'gps_required'` — geofence is enabled but the client did not send GPS. Geofence guard runs **before** the employee lookup so we don't leak which emails exist to off-site attackers.
-- `'out_of_range'` — GPS sent but distance exceeds `office_radius_meters`. Response includes `distance_meters` and `radius_meters` so the UI can tell the employee how far away they are.
+- `'gps_required'` — geofence is enabled but the client did not send GPS. Guard runs **before** the device-lock and employee lookups so off-site attackers can't enumerate emails.
+- `'out_of_range'` — GPS sent but distance exceeds `office_radius_meters`. Response includes `distance_meters` and `radius_meters`.
+- `'device_locked'` — a different email already used this device today. Response includes `locked_at` (timestamp) but **not** the locked email — that would leak coworker identities to anyone with the QR.
 
 ### 11.3 Geofence (migration 143)
 
@@ -547,10 +548,36 @@ Optional GPS-based location verification. Off by default for existing orgs.
 - ✅ Off-site / from-home check-in
 - ✅ Most buddy check-ins (when buddy is not at the office)
 
-**Does NOT close** (still open, see [§19](#19-known-gaps--open-questions)):
-- Buddy check-in where both employees are at the office
+**Does NOT close** by itself — but combined with §11.3.1 (device lock), most are covered:
+- Buddy check-in where both employees are at the office (closed by device lock)
 - Check-out tracking (still admin-manual)
 - GPS spoofing apps (raises bar but not bulletproof — selfie/biometric would close)
+
+### 11.3.1 Device lock — one email per device per day (migration 144)
+
+Closes the buddy-in-office vector. Once a device submits a successful check-in for `email = X` on day `D`, the same device cannot submit a check-in for any other email on day `D`.
+
+**Schema:** `hr_checkin_device_locks (organization_id, device_id, date) UNIQUE → email, employee_id, user_agent`. Inserted atomically with the `hr_attendance` UPSERT inside `hr_checkin_by_qr` so a lock without an attendance row is impossible.
+
+**Device ID:** generated client-side as a `crypto.randomUUID()` and persisted to `localStorage` under `piplinepro:checkin-device-id`. Mirrored backend-side as the source of truth — clearing localStorage doesn't help an attacker because the backend lock persists.
+
+**UX:**
+- First submit of the day: `/checkin` shows a confirmation modal — *"This device will be locked to `<email>` for today. You cannot check in with a different email until tomorrow."* Click **Confirm** to proceed.
+- Subsequent submits with the same email: no modal, idempotent.
+- Submit with a different email when locked: rejected client-side from the localStorage mirror (fast UX), backend rejects independently with `'device_locked'`.
+- The locked email is **not** echoed in the error response — leaking it would reveal coworker emails to anyone who scans the QR.
+
+**Lock expires** at midnight org-local. Lock for tomorrow is fresh.
+
+**Admin override:** delete the row from `hr_checkin_device_locks` (RLS allows admin/manager DELETE). The employee can then check in from any device.
+
+**Closes:**
+- ✅ Buddy check-in where both employees share one phone (one phone = one identity per day)
+- ✅ Mass quick-fire attempts from a single device
+
+**Still open:**
+- Multi-phone buddy: two people at the office, each with their own phone, each scanning for themselves but secretly trading. Geofence + device lock can't catch this — selfie/biometric needed (Faz 3).
+- localStorage clear + new device_id generation: backend lock still catches because device_id changed but only one of the original IDs has the lock; with a fresh ID the user *would* succeed once. To close fully, fingerprint-based device ID (canvas/WebGL hash) — out of scope for V1.
 
 ### 11.4 Public RPC note
 
@@ -567,6 +594,7 @@ Optional GPS-based location verification. Off by default for existing orgs.
 | 138 | `absent_hours` numeric type fix |
 | 139 | Return actual status in response (was always `'on_time'`) |
 | 143 | Geofence: `office_latitude/longitude/radius_meters/geofence_enabled` on `hr_settings`; forensic GPS columns on `hr_attendance`; RPC accepts optional `p_lat/p_lng`; new error codes `gps_required` and `out_of_range`; `haversine_distance_m()` helper (2026-04-27) |
+| 144 | Device lock: new `hr_checkin_device_locks` table; RPC accepts optional `p_device_id`; new error code `device_locked`; one email per device per day; UI confirmation prompt + localStorage mirror (2026-04-27) |
 
 ---
 

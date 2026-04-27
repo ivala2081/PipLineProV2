@@ -914,6 +914,54 @@ export type Database = {
           },
         ]
       }
+      hr_checkin_device_locks: {
+        Row: {
+          id: string
+          organization_id: string
+          device_id: string
+          date: string
+          email: string
+          employee_id: string | null
+          user_agent: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          device_id: string
+          date: string
+          email: string
+          employee_id?: string | null
+          user_agent?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          device_id?: string
+          date?: string
+          email?: string
+          employee_id?: string | null
+          user_agent?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'hr_checkin_device_locks_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'hr_checkin_device_locks_employee_id_fkey'
+            columns: ['employee_id']
+            isOneToOne: false
+            referencedRelation: 'hr_employees'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       hr_employee_documents: {
         Row: {
           created_at: string
@@ -2736,6 +2784,7 @@ export type Database = {
           p_email: string
           p_lat?: number | null
           p_lng?: number | null
+          p_device_id?: string | null
         }
         Returns: Json
       }

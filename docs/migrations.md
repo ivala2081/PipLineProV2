@@ -12,7 +12,7 @@
 
 Format: `NNN_snake_case_description.sql` where `NNN` is a 3-digit zero-padded integer.
 
-- Current range: `001` → `143` as of 2026-04-27.
+- Current range: `001` → `144` as of 2026-04-27.
 - Each migration gets the next available prefix.
 - Description is a short snake_case summary (e.g. `create_profiles`, `migrate_tether_to_usdt`, `normalize_transfer_currency_to_try`).
 
