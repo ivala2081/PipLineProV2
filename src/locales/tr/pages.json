@@ -2061,8 +2061,11 @@
       "statuses": {
         "active": "Aktif",
         "paused": "Duraklatıldı",
-        "terminated": "Sonlandırıldı"
+        "terminated": "Sonlandırıldı",
+        "pending": "Onay Bekliyor"
       },
+      "pendingCount_one": "{{count}} onay bekliyor",
+      "pendingCount_other": "{{count}} onay bekliyor",
       "agreements": {
         "salary": "Sabit Maaş",
         "cpa": "CPA",

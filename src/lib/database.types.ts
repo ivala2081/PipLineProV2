@@ -1396,6 +1396,7 @@ export type Database = {
           logo_url: string | null
           managed_by_employee_id: string | null
           secondary_employee_id: string | null
+          is_house: boolean
           created_by: string | null
           created_at: string
           updated_at: string
@@ -1425,6 +1426,7 @@ export type Database = {
           logo_url?: string | null
           managed_by_employee_id?: string | null
           secondary_employee_id?: string | null
+          is_house?: boolean
           created_by?: string | null
           created_at?: string
           updated_at?: string
@@ -1454,6 +1456,7 @@ export type Database = {
           logo_url?: string | null
           managed_by_employee_id?: string | null
           secondary_employee_id?: string | null
+          is_house?: boolean
           created_by?: string | null
           created_at?: string
           updated_at?: string

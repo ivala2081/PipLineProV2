@@ -1,6 +1,6 @@
 # IB Partners
 
-**Status:** Living spec · reflects codebase as of `main` on 2026-04-24
+**Status:** Living spec · reflects codebase as of `main` on 2026-04-27
 **Owner (feature):** Brokztech team
 **Related:** [features/transfers.md](./transfers.md), [features/accounting.md](./accounting.md), [features/hr.md](./hr.md), [api/README.md §7](../api/README.md#7-ib-partner-rpcs)
 
@@ -69,11 +69,25 @@
 | `referral_code` | TEXT — UNIQUE per org (see unique index) |
 | `agreement_type` | CHECK IN `('salary', 'cpa', 'lot_rebate', 'revenue_share', 'hybrid')` (migration 125 widened — see [§4](#4-agreement-types)) |
 | `agreement_details` | JSONB for per-type parameters |
-| `status` | CHECK IN `('active', 'paused', 'terminated')` DEFAULT `'active'` |
+| `status` | CHECK IN `('active', 'paused', 'terminated', 'pending')` DEFAULT `'active'` (migration 142 added `'pending'`) |
+| `is_house` (migration 142) | BOOLEAN DEFAULT false. True for the per-org house sentinel ('Doğrudan'). Immutable, hidden from selectors, excluded from commission. |
 | `notes`, `created_by`, `created_at`, `updated_at` | |
 | `managed_by` (migration 126) | UUID FK → `hr_employees` ON DELETE SET NULL via trigger 133 |
 | `secondary_employee_id` (migration 128) | UUID FK → `hr_employees` — backup attribution, not auto-nulled |
 | `referral_code` + `company_name` status | Migration 127 dropped `referral_code` company_name fields as unused |
+
+### 3.5 House sentinel (`Doğrudan`, migration 142)
+
+Every org has exactly one row with `is_house=true`, name `'Doğrudan'`, `status='active'`, `agreement_types=['salary']`, `agreement_details={"salary":{"amount":0,"currency":"USD","period":"monthly"}}`. It represents **organic / non-IB transfers** so [`transfers.ib_partner_id`](./transfers.md#46-ib-attribution-is-mandatory-form-level) can be mandatory at the form level without blocking the rep when no real IB applies.
+
+**Lifecycle:**
+- Seeded in migration 142 for every existing org.
+- Auto-created on `INSERT INTO organizations` via the `trg_create_house_ib` trigger ([142:96](../../supabase/migrations/142_ib_house_sentinel_and_pending.sql#L96)).
+- **Immutable.** The `trg_guard_house_ib` BEFORE UPDATE/DELETE trigger blocks any attempt to rename it, change its status, flip `is_house`, or delete the row ([142:113](../../supabase/migrations/142_ib_house_sentinel_and_pending.sql#L113)).
+- Hidden from all user-facing IB selectors and lists by `useIBPartnersQuery().selectablePartners` ([src/hooks/queries/useIBPartnersQuery.ts](../../src/hooks/queries/useIBPartnersQuery.ts)). The Transfers form still surfaces it as the labeled choice **"Doğrudan (IB yok) / Direct (no IB)"**.
+- Excluded from `calculate_ib_commission` — RPC short-circuits with `{skipped:true, reason:'house_sentinel', total_amount:0}` ([142:181](../../supabase/migrations/142_ib_house_sentinel_and_pending.sql#L181)).
+
+**Reporting:** the house sentinel shows up in any "transfers by IB" aggregate as a distinct row labeled `Doğrudan`. Treat it as the **organic** bucket, not as a real partner.
 
 ### 3.2 `ib_referrals` · [117:36–50](../../supabase/migrations/117_ib_management.sql#L36-L50)
 
@@ -171,6 +185,22 @@ When an `hr_employees.is_active` flips to `false`, the trigger `unassign_ib_part
 ### 5.6 Transfer attribution doesn't drive commission
 
 Setting `transfers.ib_partner_id` attributes the transfer to an IB for reporting purposes. It does **not** automatically create an `ib_commissions` record. Commission calculation is done by the RPC on demand (see [§6](#6-commission-calculation)).
+
+### 5.8 Unique name per org (migration 142)
+
+`UNIQUE INDEX (organization_id, lower(trim(name)))` covers both the house sentinel and regular IBs. Two IBs cannot share a case- or whitespace-different version of the same name within an org. Server-side safety net behind the form's autocomplete.
+
+If pre-existing duplicates are detected, migration 142 aborts with a `RAISE EXCEPTION` listing them ([142:30](../../supabase/migrations/142_ib_house_sentinel_and_pending.sql#L30)). Merge before re-running.
+
+### 5.9 Pending IBs (migration 142)
+
+Reps can quick-add an IB from the Transfer form without admin intervention. The new row has `status='pending'`. Until an admin promotes it to `'active'`:
+
+- It appears in selectors with a `(taslak) / (pending)` suffix and an orange status pill.
+- `calculate_ib_commission` short-circuits with `{skipped:true, reason:'pending_review', total_amount:0}` ([142:185](../../supabase/migrations/142_ib_house_sentinel_and_pending.sql#L185)).
+- Admin sees a "{N} onay bekliyor" badge on `/ib` Partners tab.
+
+API: `useIBPartnerMutations().quickCreatePending(name)` ([src/hooks/queries/useIBPartnersQuery.ts](../../src/hooks/queries/useIBPartnersQuery.ts)). Inserts the row with `agreement_types:['salary']` + zero salary; admin reconfigures during review.
 
 ### 5.7 IB with `status = 'terminated'` still has history
 
@@ -313,15 +343,24 @@ See [api/README.md §7](../api/README.md#7-ib-partner-rpcs).
 
 ### 11.1 Who can do what
 
-Per [`private.default_permission`](../../supabase/migrations/120_accounting_overhaul.sql#L528-L532) and [migration 134](../../supabase/migrations/134_ib_open_write_to_all_org_members.sql):
+Migration 142 partially walked back migration 134's open-write policy. Current `ib_partners` RLS:
 
-| Op | God | Admin | Manager | Operation | IK |
+| Op on `ib_partners` | God | Admin | Manager | Operation | IK |
 |---|---|---|---|---|---|
-| SELECT IB tables | ✓ | ✓ | ✓ | ✓ | ✓ |
-| INSERT / UPDATE / DELETE IB tables | ✓ | ✓ | ✓ | ✓ | ✓ (since 134) |
+| SELECT | ✓ | ✓ | ✓ | ✓ | ✓ |
+| INSERT (any status) | ✓ | ✓ | ✓ | ✗ | ✗ |
+| INSERT with `status='pending' AND is_house=false` | ✓ | ✓ | ✓ | ✓ | ✓ |
+| UPDATE (non-house) | ✓ | ✓ | ✓ | ✗ | ✗ |
+| UPDATE (house sentinel) | ✗ (trigger blocks) | ✗ | ✗ | ✗ | ✗ |
+| DELETE (non-house) | ✓ | ✓ | ✓ | ✗ | ✗ |
+| DELETE (house sentinel) | ✗ (trigger blocks) | ✗ | ✗ | ✗ | ✗ |
 | View `page:ib` | ✓ | ✓ | ✓ | ✓ | ✓ |
 
-**Migration 134** opened write access to all org members — previously admin-only. The stated reason was "IB data entry is an operational task." The UI should gate edits to admin/manager for destructive actions; the RLS doesn't.
+**Why the asymmetry:** ops/ik need to quick-add unknown IBs from the Transfer form (rep flow), but full IB lifecycle management (rate config, status transitions, deletion) stays admin/manager. Operations can submit a `pending` row and that's it; the row becomes editable to them only after admin promotion would have been needed anyway.
+
+`ib_referrals`, `ib_commissions`, `ib_payments` still inherit the open-write policy from migration 134 — those tables don't have the same duplicate / data-quality risk that `ib_partners` does.
+
+**House sentinel is doubly protected:** RLS allows admin/manager UPDATE/DELETE in principle, but the `trg_guard_house_ib` trigger ([142:113](../../supabase/migrations/142_ib_house_sentinel_and_pending.sql#L113)) raises an exception if anyone — including god — tries to mutate or delete an `is_house=true` row.
 
 ---
 
@@ -342,13 +381,14 @@ Per [`private.default_permission`](../../supabase/migrations/120_accounting_over
 | 133 | `133_ib_auto_reassign_on_employee_deactivation.sql` | Auto-null `managed_by` trigger |
 | 134 | `134_ib_open_write_to_all_org_members.sql` | Opened IB write RLS to all org members |
 | 135 | `135_ib_partner_cascade_set_null.sql` | `transfers.ib_partner_id` ON DELETE SET NULL |
+| 142 | `142_ib_house_sentinel_and_pending.sql` | Per-org `'Doğrudan'` house sentinel (`is_house=true`); `status='pending'` for rep-quick-added IBs; unique `(org, lower(trim(name)))` index; immutable house guard trigger; auto-seed on `INSERT INTO organizations`; tightened `ib_partners` write RLS to admin/manager except for pending non-house INSERT; `calculate_ib_commission` short-circuits for house and pending IBs (2026-04-27) |
 
 ---
 
 ## 13. Known gaps / open questions
 
 - **Revenue share uses name-matching on transfers.** `ib_referrals.client_name` (string) matched against `transfers.full_name` (string) — not a FK. A client named "Ahmet Yılmaz" referred by IB A will match *any* "Ahmet Yılmaz" transfer in the org, including unrelated ones. Add a `transfers.ib_referral_id` FK for precise attribution.
-- **Open write RLS (migration 134) is a footgun.** Operation role can create/edit/delete IB rows at the RLS level. The UI must gate admin actions or risk accidental writes via direct API / AI assistant. Consider reverting to `private.has_role_permission` gating.
+- ~~**Open write RLS (migration 134) is a footgun.**~~ **Resolved by migration 142** for `ib_partners` — non-admin/manager INSERTs are now constrained to `status='pending' AND is_house=false`, and UPDATE/DELETE are admin/manager only. `ib_referrals`, `ib_commissions`, `ib_payments` still inherit 134's open writes; revisit if quality issues surface.
 - **No soft delete on IB tables.** IB partners / referrals / commissions / payments are hard-deleted. Restoring requires SQL. If an IB is deleted mid-month, their commission history is lost except via the accounting entries that reference them.
 - **Orphan accounting entries on payment delete.** Same pattern as PSP — `ON DELETE SET NULL`. Cascade-delete or refuse delete if linked.
 - **No commission calculation for hybrid auto-sub-sources.** Migration 125 added hybrid, 129 simplified. Current RPC may not correctly handle all 3 sub-source combos — verify with business when next commission period rolls over.

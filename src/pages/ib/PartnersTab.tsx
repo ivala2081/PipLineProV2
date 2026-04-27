@@ -54,7 +54,7 @@ interface PartnersTabProps {
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-function getStatusVariant(status: string): 'green' | 'yellow' | 'red' | 'default' {
+function getStatusVariant(status: string): 'green' | 'yellow' | 'red' | 'orange' | 'default' {
   switch (status) {
     case 'active':
       return 'green'
@@ -62,6 +62,8 @@ function getStatusVariant(status: string): 'green' | 'yellow' | 'red' | 'default
       return 'yellow'
     case 'terminated':
       return 'red'
+    case 'pending':
+      return 'orange'
     default:
       return 'default'
   }
@@ -93,11 +95,19 @@ export function PartnersTab({ isAdmin }: PartnersTabProps) {
 
   /* ---- Derived data ---- */
 
+  // House sentinel ('Doğrudan') is auto-managed and not shown in the IB list.
+  const visiblePartners = useMemo(() => partners.filter((p) => !p.is_house), [partners])
+
   const filtered = useMemo(() => {
-    if (!search.trim()) return partners
+    if (!search.trim()) return visiblePartners
     const q = search.toLowerCase().trim()
-    return partners.filter((p) => p.name.toLowerCase().includes(q))
-  }, [partners, search])
+    return visiblePartners.filter((p) => p.name.toLowerCase().includes(q))
+  }, [visiblePartners, search])
+
+  const pendingCount = useMemo(
+    () => visiblePartners.filter((p) => p.status === 'pending').length,
+    [visiblePartners],
+  )
 
   const referralCountMap = useMemo(() => {
     const map: Record<string, { total: number; ftd: number }> = {}
@@ -159,6 +169,9 @@ export function PartnersTab({ isAdmin }: PartnersTabProps) {
             className="pl-9"
           />
         </div>
+        {isAdmin && pendingCount > 0 && (
+          <Tag variant="orange">{t('ib.partners.pendingCount', { count: pendingCount })}</Tag>
+        )}
       </div>
 
       {/* Loading */}

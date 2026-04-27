@@ -21,8 +21,18 @@ export function useIBPartnersQuery() {
     gcTime: 10 * 60_000,
   })
 
+  const partners = data ?? []
+  const housePartner = partners.find((p) => p.is_house) ?? null
+  // Partners shown to users in selectors and lists. House sentinel is excluded
+  // because it's a system row, not a real IB. Pending partners ARE included so
+  // admin tooling (commission calc, payments) can act on them.
+  const selectablePartners = partners.filter((p) => !p.is_house)
+
   return {
-    partners: data ?? [],
+    partners,
+    selectablePartners,
+    housePartner,
+    houseId: housePartner?.id ?? '',
     isLoading,
     error: error?.message ?? null,
   }
@@ -114,9 +124,37 @@ export function useIBPartnerMutations() {
     onSuccess: invalidate,
   })
 
+  // Lightweight quick-add for the Transfer form: any org member can submit a
+  // new IB with status='pending' and minimal fields. Admin reviews and promotes
+  // to 'active' before commission accrues. Returns the created row.
+  const quickCreatePending = useMutation({
+    mutationFn: async (name: string): Promise<IBPartner> => {
+      if (!currentOrg) throw new Error('No organization selected')
+      const trimmed = name.trim()
+      if (trimmed.length < 2) throw new Error('Name too short')
+
+      const { data, error } = await supabase
+        .from('ib_partners')
+        .insert({
+          organization_id: currentOrg.id,
+          name: trimmed,
+          agreement_types: ['salary'],
+          agreement_details: { salary: { amount: 0, currency: 'USD', period: 'monthly' } },
+          status: 'pending',
+          created_by: user?.id ?? null,
+        })
+        .select('*')
+        .single()
+      if (error) throw error
+      return data as IBPartner
+    },
+    onSuccess: invalidate,
+  })
+
   return {
     createPartner,
     updatePartner,
     deletePartner,
+    quickCreatePending,
   }
 }

@@ -44,7 +44,7 @@ export function PaymentsTab() {
   const { t } = useTranslation('pages')
 
   const { payments, isLoading } = useIBPaymentsQuery()
-  const { partners } = useIBPartnersQuery()
+  const { selectablePartners: partners } = useIBPartnersQuery()
 
   const [filterPartnerId, setFilterPartnerId] = useState('__all__')
 

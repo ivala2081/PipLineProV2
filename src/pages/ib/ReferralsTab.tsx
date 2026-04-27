@@ -73,7 +73,7 @@ export function ReferralsTab({ isAdmin, showDialog, onShowDialog }: ReferralsTab
   const { toast } = useToast()
   const { referrals, isLoading } = useIBReferralsQuery()
   const { deleteReferral } = useIBReferralMutations()
-  const { partners } = useIBPartnersQuery()
+  const { selectablePartners: partners } = useIBPartnersQuery()
 
   const [filterPartnerId, setFilterPartnerId] = useState('__all__')
   const [editingReferral, setEditingReferral] = useState<IBReferralWithPartner | null>(null)

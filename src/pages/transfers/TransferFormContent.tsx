@@ -21,7 +21,7 @@ import type { useLookupQueries } from '@/hooks/queries/useLookupQueries'
 import type { TransferMutations } from '@/hooks/queries/useTransfersQuery'
 import { useExchangeRateQuery } from '@/hooks/queries/useExchangeRateQuery'
 import { useHrEmployeesQuery } from '@/hooks/queries/useHrQuery'
-import { useIBPartnersQuery } from '@/hooks/queries/useIBPartnersQuery'
+import { useIBPartnersQuery, useIBPartnerMutations } from '@/hooks/queries/useIBPartnersQuery'
 import { useToast } from '@/hooks/useToast'
 import { transferFormSchema, type TransferFormValues } from '@/schemas/transferSchema'
 import { basicInputClasses, disabledInputClasses, focusInputClasses } from '@ds/components/Input'
@@ -274,7 +274,12 @@ export function TransferFormContent({
   const [autoFilledHint, setAutoFilledHint] = useState<NameSuggestion | null>(null)
 
   const { data: employees = [] } = useHrEmployeesQuery()
-  const { partners: ibPartners } = useIBPartnersQuery()
+  const { partners: ibPartners, houseId } = useIBPartnersQuery()
+  const { quickCreatePending } = useIBPartnerMutations()
+
+  const [quickAddOpen, setQuickAddOpen] = useState(false)
+  const [quickAddName, setQuickAddName] = useState('')
+  const [quickAddError, setQuickAddError] = useState<string | null>(null)
 
   const form = useForm<TransferFormValues>({
     resolver: zodResolver(transferFormSchema),
@@ -569,16 +574,45 @@ export function TransferFormContent({
   }, [employees, isFirstDeposit, isEdit, employeeId])
 
   const ibPartnerOptions = useMemo<SelectOption[]>(() => {
+    const houseLabel = lang === 'tr' ? 'Doğrudan (IB yok)' : 'Direct (no IB)'
+    const pendingSuffix = lang === 'tr' ? '(taslak)' : '(pending)'
+
+    const house = ibPartners
+      .filter((p) => p.is_house)
+      .map((p) => ({ value: p.id, label: houseLabel, searchText: 'doğrudan direct house' }))
     const active = ibPartners
-      .filter((p) => p.status === 'active')
+      .filter((p) => !p.is_house && p.status === 'active')
       .map((p) => ({ value: p.id, label: p.name }))
+    const pending = ibPartners
+      .filter((p) => !p.is_house && p.status === 'pending')
+      .map((p) => ({ value: p.id, label: `${p.name} ${pendingSuffix}`, searchText: p.name }))
+
+    const opts = [...house, ...active, ...pending]
     // Edit mode: include currently-selected partner even if no longer active
-    if (isEdit && ibPartnerId && !active.some((o) => o.value === ibPartnerId)) {
+    if (isEdit && ibPartnerId && !opts.some((o) => o.value === ibPartnerId)) {
       const partner = ibPartners.find((p) => p.id === ibPartnerId)
-      if (partner) active.unshift({ value: partner.id, label: partner.name })
+      if (partner) opts.unshift({ value: partner.id, label: partner.name })
     }
-    return active
-  }, [ibPartners, isEdit, ibPartnerId])
+    return opts
+  }, [ibPartners, isEdit, ibPartnerId, lang])
+
+  // Default to house sentinel when ib_partner_id is empty OR points to a stale
+  // partner (deleted, or remembered from a different org). Covers:
+  //   • new transfer with no remembered value
+  //   • edit mode for a historical transfer that predates mandatory attribution
+  //   • localStorage remembered an IB that no longer exists in this org
+  useEffect(() => {
+    if (!mountedRef.current) return
+    if (!houseId) return
+    if (ibPartners.length === 0) return
+    if (!ibPartnerId) {
+      form.setValue('ib_partner_id', houseId)
+      return
+    }
+    if (!isEdit && !ibPartners.some((p) => p.id === ibPartnerId)) {
+      form.setValue('ib_partner_id', houseId)
+    }
+  }, [houseId, ibPartnerId, ibPartners, isEdit, form])
 
   /* ── Reset employee when FTD/STD changes and selected employee no longer matches ── */
   useEffect(() => {
@@ -819,23 +853,35 @@ export function TransferFormContent({
 
               {/* IB Partner (mandatory) */}
               <Field
-                label={lang === 'tr' ? 'IB Ortağı' : 'IB Partner'}
+                label={
+                  <span>
+                    {lang === 'tr' ? 'IB Ortağı' : 'IB Partner'}
+                    <span className="ml-0.5 text-red">*</span>
+                  </span>
+                }
                 error={form.formState.errors.ib_partner_id?.message}
               >
-                {ibPartnerOptions.length === 0 ? (
-                  <p className="flex h-10 items-center rounded-xl border border-black/[0.07] bg-black/[0.02] px-3 text-xs text-black/35">
-                    {lang === 'tr' ? 'Aktif IB ortağı yok' : 'No active IB partners'}
-                  </p>
-                ) : (
-                  <SearchableSelectField
-                    value={ibPartnerId}
-                    onValueChange={(v) => form.setValue('ib_partner_id', v)}
-                    placeholder={lang === 'tr' ? 'IB ortağı seçin' : 'Select IB partner'}
-                    options={ibPartnerOptions}
-                    searchPlaceholder={t('transfers.form.searchInList')}
-                    noResultsText={t('transfers.form.noResults')}
-                  />
-                )}
+                <SearchableSelectField
+                  value={ibPartnerId}
+                  onValueChange={(v) => form.setValue('ib_partner_id', v)}
+                  placeholder={lang === 'tr' ? 'IB ortağı seçin' : 'Select IB partner'}
+                  options={ibPartnerOptions}
+                  searchPlaceholder={t('transfers.form.searchInList')}
+                  noResultsText={t('transfers.form.noResults')}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuickAddName('')
+                    setQuickAddError(null)
+                    setQuickAddOpen(true)
+                  }}
+                  className="mt-1.5 text-xs text-brand/70 underline-offset-2 hover:text-brand hover:underline"
+                >
+                  {lang === 'tr'
+                    ? '+ Listede yok mu? Yeni IB ekle (taslak)'
+                    : '+ Not in list? Add new IB (pending)'}
+                </button>
               </Field>
 
               {/* FTD / STD toggle */}
@@ -1395,6 +1441,109 @@ export function TransferFormContent({
           </div>
         </div>
       </form>
+
+      {/* ── Quick-add IB (pending) dialog ─────────────────────── */}
+      <Dialog
+        open={quickAddOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setQuickAddOpen(false)
+            setQuickAddError(null)
+          }
+        }}
+      >
+        <DialogContent size="sm" aria-describedby={undefined}>
+          <div className="space-y-4 p-1">
+            <div>
+              <p className="text-sm font-semibold text-black/80">
+                {lang === 'tr' ? 'Yeni IB Ekle (taslak)' : 'Add new IB (pending)'}
+              </p>
+              <p className="mt-0.5 text-xs text-black/45">
+                {lang === 'tr'
+                  ? 'Bu IB taslak olarak kaydedilir. Yönetici onaylayana kadar komisyon hesabına dahil olmaz.'
+                  : 'Saved as pending. Will not earn commission until an admin reviews and activates it.'}
+              </p>
+            </div>
+
+            <Input
+              autoFocus
+              value={quickAddName}
+              onChange={(e) => {
+                setQuickAddName(e.target.value)
+                setQuickAddError(null)
+              }}
+              placeholder={lang === 'tr' ? 'IB adı' : 'IB name'}
+            />
+
+            {quickAddError && <p className="text-xs text-red">{quickAddError}</p>}
+
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => setQuickAddOpen(false)}
+              >
+                {lang === 'tr' ? 'İptal' : 'Cancel'}
+              </Button>
+              <Button
+                type="button"
+                variant="filled"
+                className="flex-1"
+                disabled={quickCreatePending.isPending || quickAddName.trim().length < 2}
+                onClick={async () => {
+                  setQuickAddError(null)
+                  const trimmed = quickAddName.trim()
+                  // Client-side duplicate check (case+whitespace insensitive)
+                  const norm = trimmed.toLowerCase()
+                  const dup = ibPartners.find((p) => p.name.trim().toLowerCase() === norm)
+                  if (dup) {
+                    form.setValue('ib_partner_id', dup.id)
+                    setQuickAddOpen(false)
+                    toast({
+                      title:
+                        lang === 'tr'
+                          ? 'Bu IB zaten kayıtlı, listeden seçildi'
+                          : 'IB already exists, selected from list',
+                      variant: 'success',
+                    })
+                    return
+                  }
+                  try {
+                    const created = await quickCreatePending.mutateAsync(trimmed)
+                    form.setValue('ib_partner_id', created.id)
+                    setQuickAddOpen(false)
+                    toast({
+                      title: lang === 'tr' ? 'IB taslak olarak eklendi' : 'IB added as pending',
+                      variant: 'success',
+                    })
+                  } catch (err: unknown) {
+                    const msg = err instanceof Error ? err.message : String(err)
+                    // Postgres unique-violation hits idx_ib_partners_unique_name_per_org
+                    if (/duplicate|unique/i.test(msg)) {
+                      setQuickAddError(
+                        lang === 'tr'
+                          ? 'Bu isimde bir IB zaten var. Listeden seçin.'
+                          : 'An IB with this name already exists. Pick it from the list.',
+                      )
+                    } else {
+                      setQuickAddError(msg)
+                    }
+                  }
+                }}
+              >
+                {quickCreatePending.isPending
+                  ? lang === 'tr'
+                    ? 'Kaydediliyor...'
+                    : 'Saving...'
+                  : lang === 'tr'
+                    ? 'Ekle'
+                    : 'Add'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Option B: Rate + summary confirmation dialog ─────── */}
       <Dialog

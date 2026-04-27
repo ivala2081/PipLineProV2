@@ -93,7 +93,7 @@ export function CommissionsTab({
 
   const { commissions, isLoading } = useIBCommissionsQuery()
   const { overrideCommission, confirmCommission, markPaid } = useIBCommissionMutations()
-  const { partners } = useIBPartnersQuery()
+  const { selectablePartners: partners } = useIBPartnersQuery()
 
   /* ---- State ---- */
 

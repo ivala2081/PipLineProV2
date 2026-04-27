@@ -17,7 +17,7 @@ export const transferFormSchema = z.object({
   crm_id: z.string().optional(),
   meta_id: z.string().optional(),
   employee_id: z.string().optional(),
-  ib_partner_id: z.string().optional(),
+  ib_partner_id: z.string().min(1, 'IB partner is required'),
   is_first_deposit: z.boolean().nullable().default(null),
   notes: z.string().optional(),
 })

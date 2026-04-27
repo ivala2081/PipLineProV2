@@ -44,7 +44,7 @@ export function PaymentFormPage() {
   const [searchParams] = useSearchParams()
   const preselectedPartnerId = searchParams.get('partner') ?? ''
 
-  const { partners } = useIBPartnersQuery()
+  const { selectablePartners: partners } = useIBPartnersQuery()
   const { commissions } = useIBCommissionsQuery()
   const { createPayment } = useIBPaymentMutations()
 

@@ -63,7 +63,7 @@ export function CommissionCalculateDialog({ open, onClose }: CommissionCalculate
   const { t } = useTranslation('pages')
   const { toast } = useToast()
 
-  const { partners } = useIBPartnersQuery()
+  const { selectablePartners: partners } = useIBPartnersQuery()
   const { calculateCommission } = useIBCommissionMutations()
 
   const [result, setResult] = useState<CalculationResult | null>(null)

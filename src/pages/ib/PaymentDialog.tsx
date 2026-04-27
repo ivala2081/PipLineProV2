@@ -54,7 +54,7 @@ export function PaymentDialog({ open, onClose }: PaymentDialogProps) {
   const { t } = useTranslation('pages')
   const { toast } = useToast()
 
-  const { partners } = useIBPartnersQuery()
+  const { selectablePartners: partners } = useIBPartnersQuery()
   const { commissions } = useIBCommissionsQuery()
   const { createPayment } = useIBPaymentMutations()
 

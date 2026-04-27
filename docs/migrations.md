@@ -1,6 +1,6 @@
 # Migrations
 
-**Status:** Living spec · reflects codebase as of `main` on 2026-04-24
+**Status:** Living spec · reflects codebase as of `main` on 2026-04-27
 **Scope:** How we write, name, review, and deploy Supabase migrations
 **Related:** [supabase/migrations/README.md](../supabase/migrations/README.md), [data-model/README.md §7](./data-model/README.md#7-migration-conventions)
 
@@ -12,7 +12,7 @@
 
 Format: `NNN_snake_case_description.sql` where `NNN` is a 3-digit zero-padded integer.
 
-- Current range: `001` → `141` as of 2026-04-24.
+- Current range: `001` → `142` as of 2026-04-27.
 - Each migration gets the next available prefix.
 - Description is a short snake_case summary (e.g. `create_profiles`, `migrate_tether_to_usdt`, `normalize_transfer_currency_to_try`).
 

@@ -1,6 +1,6 @@
 # Transfers
 
-**Status:** Living spec · reflects codebase as of `main` on 2026-04-24
+**Status:** Living spec · reflects codebase as of `main` on 2026-04-27
 **Owner (feature):** Brokztech team
 **Related:** [design-system/components.md](../design-system/components.md), [design-system/patterns.md](../design-system/patterns.md)
 
@@ -96,7 +96,7 @@ Defined in [supabase/migrations/008_transfers_and_operations.sql:353–386](../.
 | `amount_usd` | NUMERIC(15,2) | Precomputed USD equivalent |
 | `commission_rate_snapshot` | NUMERIC(5,4) | PSP's rate at write time — source of truth for historical commission recomputation |
 | `employee_id` | UUID FK → `hr_employees.id` | Optional, drives HR bonuses |
-| `ib_partner_id` | UUID FK → `ib_partners.id`, `ON DELETE SET NULL` (migration 135) | Optional attribution |
+| `ib_partner_id` | UUID FK → `ib_partners.id`, `ON DELETE SET NULL` (migration 135) | **Required at the form level** since migration 142. New transfers default to the per-org "Doğrudan" house sentinel ([ib-partners.md §3.5](./ib-partners.md#35-house-sentinel-doğrudan-migration-142)). DB column itself remains nullable for historical rows. |
 | `is_first_deposit` | BOOLEAN | Marketing flag |
 | `notes` | TEXT | Free-form notes |
 | `created_by` / `updated_by` | UUID FK → `auth.users` | Audit |
@@ -186,7 +186,24 @@ Per-org, per-date, per-currency (practically always `currency='USD'`, storing US
 
 Every row stores `exchange_rate` at write time. **Never recompute `amount_try` or `amount_usd` retroactively** from today's rate — the stored snapshot is intentional. The Daily Summary dialog allows overriding the *display* rate for a given date (stored in `customRates` state, not persisted to the DB) via the PIN-gated rate editor ([DailySummaryDialog.tsx:81–89](../../src/pages/transfers/DailySummaryDialog.tsx#L81-L89)).
 
-### 4.6 Soft delete everywhere
+### 4.6 IB attribution is mandatory (form-level)
+
+**Rule:** every new transfer **must** carry an `ib_partner_id`. Enforced by:
+
+- `transferSchema.ib_partner_id` → `z.string().min(1)` ([src/schemas/transferSchema.ts:20](../../src/schemas/transferSchema.ts#L20)).
+- `TransferFormContent` defaults the field to the per-org house sentinel (`is_house=true`, name `'Doğrudan'`) when empty, including edit-mode rows that predate this rule ([src/pages/transfers/TransferFormContent.tsx](../../src/pages/transfers/TransferFormContent.tsx)).
+
+**Three branches** the form supports:
+
+| Reality | UI behavior |
+|---|---|
+| IB exists in this org's list | Rep picks it from the searchable dropdown (active IBs first, then pending) |
+| Customer is organic / not from any IB (≥30% of transfers) | Rep picks **"Doğrudan (IB yok)"** — the house sentinel; no commission accrues |
+| IB is real but not yet registered | Rep clicks **"+ Listede yok mu? Yeni IB ekle (taslak)"** → mini-modal asks for the name → row inserts with `status='pending'` and is auto-selected. Admin promotes it to `'active'` later before commission accrues |
+
+**Why the schema column stays nullable:** historical rows from before migration 142 may have `ib_partner_id IS NULL`. The form back-fills to the house sentinel on edit, but a `NOT NULL` constraint would have required a destructive backfill that loses fidelity (we don't actually know whether legacy NULLs were "Doğrudan" or "rep forgot"). See [ib-partners.md §3.5](./ib-partners.md#35-house-sentinel-doğrudan-migration-142) for the data model.
+
+### 4.7 Soft delete everywhere
 
 Every read adds `.is('deleted_at', null)`. Bulk-delete writes `deleted_at = now(), deleted_by = user.id` in batches of 50 ([useTransfersQuery.ts:316–346](../../src/hooks/queries/useTransfersQuery.ts#L316-L346)). The Trash tab is the only place that queries `WHERE deleted_at IS NOT NULL`.
 
@@ -549,6 +566,7 @@ Chronological list of every migration that touches Transfers behavior. When a ne
 | 136 | `136_transfers_2026_data_import.sql` | Bulk re-import of 2026 Jan–Apr transfers from CSVs |
 | 140 | `140_migrate_transfers_usd_to_usdt.sql` | **`currency='USD' → 'USDT'` for all rows; `get_monthly_summary` rewritten to match** (2026-04-24) |
 | 141 | `141_normalize_transfer_currency_to_try.sql` | **`currency='TL' → 'TRY'` for all rows; CHECK tightened to drop `'TL'`** (2026-04-24) — aligns with migration 082's canonical. Import script `mapCurrency` now returns `'TRY'` |
+| 142 | `142_ib_house_sentinel_and_pending.sql` | **IB attribution becomes mandatory at the form level.** Adds per-org `is_house=true` "Doğrudan" sentinel for organic transfers, `status='pending'` for rep-quick-added IBs, unique name per org, immutable house guard, and tightens IB write RLS back to admin/manager (reverting 134 for non-pending writes). `transferSchema.ib_partner_id` flips to `min(1)`; the form defaults to the house sentinel and surfaces a "+ Yeni IB ekle (taslak)" quick-add. (2026-04-27) |
 
 ---
 

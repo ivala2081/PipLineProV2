@@ -3,7 +3,7 @@ import { z } from 'zod'
 export const AGREEMENT_TYPES = ['salary', 'lot_rebate', 'revenue_share'] as const
 export type AgreementType = (typeof AGREEMENT_TYPES)[number]
 
-export const IB_STATUSES = ['active', 'paused', 'terminated'] as const
+export const IB_STATUSES = ['pending', 'active', 'paused', 'terminated'] as const
 export const REFERRAL_STATUSES = ['registered', 'ftd', 'active', 'churned'] as const
 export const COMMISSION_STATUSES = ['draft', 'confirmed', 'paid'] as const
 
