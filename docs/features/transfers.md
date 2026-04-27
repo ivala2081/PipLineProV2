@@ -203,6 +203,14 @@ Every row stores `exchange_rate` at write time. **Never recompute `amount_try` o
 
 **Why the schema column stays nullable:** historical rows from before migration 142 may have `ib_partner_id IS NULL`. The form back-fills to the house sentinel on edit, but a `NOT NULL` constraint would have required a destructive backfill that loses fidelity (we don't actually know whether legacy NULLs were "Doğrudan" or "rep forgot"). See [ib-partners.md §3.5](./ib-partners.md#35-house-sentinel-doğrudan-migration-142) for the data model.
 
+**Name-based autofill** ([TransferFormContent.tsx:483–545](../../src/pages/transfers/TransferFormContent.tsx#L483-L545)): typing 3+ chars into `full_name` triggers a debounced lookup against past transfers in the same org. Behavior:
+
+- **No match** → `ib_partner_id` stays at the Doğrudan default; rep can change manually.
+- **Single match** (one unique CRM/META pair) → CRM, META, and `ib_partner_id` auto-fill. The IB overwrite condition is *"current value is empty OR equals `houseId`"*, so the Doğrudan default gets replaced with the customer's historical IB. Real manual picks (a rep who picked a different IB before typing the name) are preserved.
+- **Multiple matches** → suggestion picker UI; clicking a suggestion unconditionally sets all three fields.
+
+The lookup pulls the most recent non-null `ib_partner_id` from the matching transfer set (`latestIbPartnerId`), so if the customer's most recent transfer carried a real IB, that IB wins; if they only ever had Doğrudan attribution, it stays Doğrudan.
+
 ### 4.7 Soft delete everywhere
 
 Every read adds `.is('deleted_at', null)`. Bulk-delete writes `deleted_at = now(), deleted_by = user.id` in batches of 50 ([useTransfersQuery.ts:316–346](../../src/hooks/queries/useTransfersQuery.ts#L316-L346)). The Trash tab is the only place that queries `WHERE deleted_at IS NOT NULL`.

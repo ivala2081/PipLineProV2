@@ -500,15 +500,19 @@ If `hr_settings.weekend_off = true` (default since 079), weekends don't accrue a
 
 1. Admin generates a QR image from `/hr` → **QR Code** tab ([QrCodeTab.tsx](../../src/pages/hr/QrCodeTab.tsx)). The encoded URL is `<app>/checkin?token=<qr_token>`.
 2. Employee scans the QR → taken to `/checkin` page.
-3. Employee enters their email.
-4. Frontend calls `hr_checkin_by_qr(p_token, p_email)` RPC.
-5. Server:
-   - Resolves `organization_id` + `timezone` + `standard_check_in` from `hr_settings` by `qr_token`.
-   - Resolves `employee_id` by email, filtering out inactive or exited.
-   - Computes current time in org TZ.
-   - Determines status (`late` if past `standard_check_in`, else `on_time`).
-   - UPSERT `hr_attendance` row for today — **COALESCE** on `check_in` so first scan wins.
-6. Returns `{ ok: true, employee_name, check_in, status, already_checked_in }` or `{ ok: false, error }`.
+3. Page auto-requests geolocation (`navigator.geolocation`); a status pill shows requesting / granted / denied with retry. See [§11.3](#113-geofence-migration-143).
+4. Page reads/creates a stable `device_id` from `localStorage` (`piplinepro:checkin-device-id`). See [§11.3.1](#1131-device-lock--one-email-per-device-per-day-migration-144).
+5. Employee enters their email and taps "Check in". On the **first** submit of the day for this device, a confirmation modal asks "Bu cihaz `<email>`'e kilitlenecek… Emin misiniz?".
+6. Frontend calls `hr_checkin_by_qr(p_token, p_email, p_lat?, p_lng?, p_device_id?)` RPC.
+7. Server runs guards in order:
+   - `invalid_input` / `invalid_token` (token + non-empty email).
+   - **Geofence** (if enabled): require GPS, reject if outside `office_radius_meters`. Runs before any email-comparing logic so off-site attackers cannot enumerate employees.
+   - **Device lock** (if `p_device_id` given): if today's lock for this device is for a different email → reject `device_locked`. The locked email is **not** echoed in the response.
+   - **Employee lookup** by email, filtering inactive / exited.
+   - Compute current time in org TZ; status = `'late'` if past `standard_check_in`, else `'present'`.
+   - **Atomic upsert**: `hr_attendance` row for today (COALESCE on `check_in` so first scan wins) + `hr_checkin_device_locks` row binding device to email for today.
+8. Returns `{ ok: true, employee_name, check_in, status, already_checked_in }` or `{ ok: false, error, ... }`.
+9. **Late path**: when `status='late'`, the `/checkin` success screen surfaces an optional textarea so the employee can briefly explain — saved via the separate `hr_set_late_reason` RPC (auth via the device lock). See [§11.3.2](#1132-late-reason-migration-145).
 
 ### 11.2 RPC: `hr_checkin_by_qr(p_token uuid, p_email text, p_lat numeric, p_lng numeric, p_device_id text) → jsonb`
 

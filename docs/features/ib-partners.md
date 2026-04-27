@@ -337,6 +337,18 @@ See [api/README.md §7](../api/README.md#7-ib-partner-rpcs).
 
 [IBPartnersTab.tsx](../../src/pages/accounting/IBPartnersTab.tsx) — a summary view from the Accounting side showing who's owed what. Cross-link, not primary UI.
 
+### 10.5 Approval workflow for pending IBs (migration 142)
+
+When a rep quick-adds an IB from the Transfer form ([transfers.md §4.6](./transfers.md#46-ib-attribution-is-mandatory-form-level)), it lands with `status='pending'`. Admin review surfaces in three places:
+
+- **`PartnersTab` filter chip** ([src/pages/ib/PartnersTab.tsx](../../src/pages/ib/PartnersTab.tsx)) — orange "{N} onay bekliyor" chip in the toolbar; clicking toggles the list to pending-only. Only shown to admins.
+- **`PartnerDetailPanel`** ([src/pages/ib/PartnerDetailPanel.tsx](../../src/pages/ib/PartnerDetailPanel.tsx)) — orange banner with "İncele" button when `status='pending'`. Edit button hidden for `is_house=true` rows; instead a gray "Auto-managed sentinel" banner explains why.
+- **`PartnerFormPage`** ([src/pages/ib/PartnerFormPage.tsx](../../src/pages/ib/PartnerFormPage.tsx)) — when editing a pending IB:
+  - Orange banner with two action buttons: **"Onayla ve Aktive Et"** (sets `status='active'` and submits the form so agreement validation still runs) and **"Reddet (Sil)"** (inline confirm dialog → hard delete).
+  - For `is_house=true` IBs, the form short-circuits to a read-only "Auto-managed sentinel" view so admins cannot trigger the immutable-house DB error.
+
+Approving without filling agreement details is allowed (form passes validation if `agreement_types` is set). Operators can promote pending IBs partially configured; commission RPC will return zero until full configuration. This is intentional — admins decide when to activate; commission accuracy is a downstream concern.
+
 ---
 
 ## 11. RLS & permissions
