@@ -9,6 +9,8 @@ import {
   MapPin,
   ArrowsClockwise,
   LockKey,
+  ChatText,
+  PencilSimple,
 } from '@phosphor-icons/react'
 import { Button, Card, Input } from '@ds'
 import { supabase } from '@/lib/supabase'
@@ -143,6 +145,13 @@ export function CheckinPage() {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [deviceId] = useState<string>(() => getOrCreateDeviceId())
 
+  // Late-reason state — only meaningful after a successful late check-in.
+  const [lateReason, setLateReason] = useState('')
+  const [lateReasonSaved, setLateReasonSaved] = useState<string | null>(null)
+  const [lateReasonEditing, setLateReasonEditing] = useState(false)
+  const [lateReasonSaving, setLateReasonSaving] = useState(false)
+  const [lateReasonError, setLateReasonError] = useState<string | null>(null)
+
   // Mirror of backend lock for this device + token + today.
   const [localLock, setLocalLock] = useState<LocalLock | null>(() =>
     token ? readLocalLock(token) : null,
@@ -242,6 +251,43 @@ export function CheckinPage() {
     setResult(null)
     setEmail('')
     setNetworkError(null)
+    setLateReason('')
+    setLateReasonSaved(null)
+    setLateReasonEditing(false)
+    setLateReasonError(null)
+  }
+
+  const saveLateReason = async (text: string) => {
+    if (!token) return
+    const trimmed = text.trim()
+    if (trimmed.length === 0) return
+    setLateReasonSaving(true)
+    setLateReasonError(null)
+    try {
+      const { data, error } = await supabase.rpc('hr_set_late_reason', {
+        p_token: token,
+        p_email: email.trim(),
+        p_device_id: deviceId,
+        p_reason: trimmed,
+      })
+      if (error) {
+        console.error('[checkin] late_reason RPC error:', error)
+        setLateReasonError(error.message || 'unknown')
+        return
+      }
+      const r = data as { ok: boolean; error?: string; late_reason?: string }
+      if (!r.ok) {
+        setLateReasonError(r.error ?? 'unknown')
+        return
+      }
+      setLateReasonSaved(r.late_reason ?? trimmed)
+      setLateReasonEditing(false)
+    } catch (err) {
+      console.error('[checkin] late_reason fetch error:', err)
+      setLateReasonError(err instanceof Error ? err.message : 'network')
+    } finally {
+      setLateReasonSaving(false)
+    }
   }
 
   /* ── Success screen ─────────────────────────────────────────────── */
@@ -285,6 +331,90 @@ export function CheckinPage() {
               ) : null
             })()}
           </div>
+          {result.status === 'late' && (
+            <div className="mb-md rounded-xl border border-orange/15 bg-orange/[0.04] p-md text-left">
+              <div className="mb-xs flex items-center gap-xs text-xs font-semibold text-orange">
+                <ChatText size={14} weight="fill" />
+                <span>
+                  {lang === 'tr' ? 'Geç kalma sebebi' : 'Reason for being late'}
+                  <span className="ml-1 font-normal text-orange/60">
+                    {lang === 'tr' ? '(isteğe bağlı)' : '(optional)'}
+                  </span>
+                </span>
+              </div>
+
+              {lateReasonSaved && !lateReasonEditing ? (
+                <div className="space-y-xs">
+                  <p className="whitespace-pre-line text-sm text-black/70">{lateReasonSaved}</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLateReason(lateReasonSaved)
+                      setLateReasonEditing(true)
+                    }}
+                    className="inline-flex items-center gap-1 text-xs text-orange/70 underline-offset-2 hover:text-orange hover:underline"
+                  >
+                    <PencilSimple size={11} weight="bold" />
+                    {lang === 'tr' ? 'Düzenle' : 'Edit'}
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <textarea
+                    rows={2}
+                    maxLength={500}
+                    value={lateReason}
+                    onChange={(e) => setLateReason(e.target.value)}
+                    placeholder={
+                      lang === 'tr'
+                        ? 'Örn: trafik, doktor randevusu...'
+                        : 'e.g. traffic, doctor appointment...'
+                    }
+                    className="w-full resize-none rounded-md border border-black/[0.12] bg-white px-3 py-2 text-sm text-black placeholder:text-black/30 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+                  />
+                  {lateReasonError && (
+                    <p className="mt-xs text-xs text-red">
+                      {lang === 'tr'
+                        ? 'Sebep kaydedilemedi: ' + lateReasonError
+                        : 'Could not save reason: ' + lateReasonError}
+                    </p>
+                  )}
+                  <div className="mt-xs flex gap-xs">
+                    <Button
+                      type="button"
+                      variant="filled"
+                      size="sm"
+                      disabled={lateReasonSaving || !lateReason.trim()}
+                      onClick={() => void saveLateReason(lateReason)}
+                    >
+                      {lateReasonSaving
+                        ? lang === 'tr'
+                          ? 'Kaydediliyor...'
+                          : 'Saving...'
+                        : lang === 'tr'
+                          ? 'Sebebi Kaydet'
+                          : 'Save Reason'}
+                    </Button>
+                    {lateReasonSaved && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setLateReasonEditing(false)
+                          setLateReason('')
+                          setLateReasonError(null)
+                        }}
+                      >
+                        {lang === 'tr' ? 'İptal' : 'Cancel'}
+                      </Button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
           <Button variant="outline" className="w-full" onClick={handleReset}>
             {lang === 'tr' ? 'Başka bir giriş' : 'Another check-in'}
           </Button>

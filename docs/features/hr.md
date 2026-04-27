@@ -553,6 +553,21 @@ Optional GPS-based location verification. Off by default for existing orgs.
 - Check-out tracking (still admin-manual)
 - GPS spoofing apps (raises bar but not bulletproof — selfie/biometric would close)
 
+### 11.3.2 Late reason (migration 145)
+
+After a successful check-in with `status='late'`, the `/checkin` success screen surfaces an **optional** textarea so the employee can briefly explain — *"metro broke down"*, *"doctor's appointment"*, *"traffic"*. Saved via `hr_set_late_reason` RPC, which:
+
+- **Auth via the migration 144 device lock** — only the device that locked this email today can write the reason. Buddies cannot post reasons for others.
+- **Same-day editable** — employee can come back later the same day and update the text. After midnight, the lock for the day expires and the reason becomes read-only (`no_lock` error). HR can still edit any time via direct table UPDATE.
+- **Capped at 500 chars** — explanations, not essays.
+- **Free text in V1** — once we see what employees actually write, we can add categorized dropdowns. Pre-categorizing now would force false-positive "Other" entries.
+
+**Why optional, not mandatory:** mandatory reasons produce noise (`"-"`, `"x"`, `"trafik"` boilerplate). Optional means filled-in reasons reflect actual context worth reading.
+
+**RPC errors:** `invalid_input`, `invalid_token`, `no_lock` (no matching device lock for today, or lock is for a different email — not disambiguated to avoid email-existence leaks), `no_attendance` (defensive — should never happen if lock exists), `not_late` (refusing to set reason on non-late rows).
+
+**Admin view:** `AttendanceRow` shows a small `ChatText` icon next to the status badge when `late_reason` is non-null; hovering it reveals the text via the native `title` attribute. Filter for "late without reason" is on the V1.1 wishlist — for V1, sorting Attendance by status='late' gives admin enough triage.
+
 ### 11.3.1 Device lock — one email per device per day (migration 144)
 
 Closes the buddy-in-office vector. Once a device submits a successful check-in for `email = X` on day `D`, the same device cannot submit a check-in for any other email on day `D`.
@@ -595,6 +610,7 @@ Closes the buddy-in-office vector. Once a device submits a successful check-in f
 | 139 | Return actual status in response (was always `'on_time'`) |
 | 143 | Geofence: `office_latitude/longitude/radius_meters/geofence_enabled` on `hr_settings`; forensic GPS columns on `hr_attendance`; RPC accepts optional `p_lat/p_lng`; new error codes `gps_required` and `out_of_range`; `haversine_distance_m()` helper (2026-04-27) |
 | 144 | Device lock: new `hr_checkin_device_locks` table; RPC accepts optional `p_device_id`; new error code `device_locked`; one email per device per day; UI confirmation prompt + localStorage mirror (2026-04-27) |
+| 145 | Late reason: `hr_attendance.late_reason TEXT`; new public RPC `hr_set_late_reason(token, email, device_id, reason)` validating against today's device lock; same-day editable, locked at midnight; /checkin success screen captures reason when status='late'; AttendanceRow shows ChatText icon + tooltip when reason set (2026-04-27) |
 
 ---
 

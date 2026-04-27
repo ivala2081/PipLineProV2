@@ -554,6 +554,7 @@ export type Database = {
           deduction_exempt: boolean
           employee_id: string
           id: string
+          late_reason: string | null
           leave_id: string | null
           notes: string | null
           organization_id: string
@@ -572,6 +573,7 @@ export type Database = {
           deduction_exempt?: boolean
           employee_id: string
           id?: string
+          late_reason?: string | null
           leave_id?: string | null
           notes?: string | null
           organization_id: string
@@ -590,6 +592,7 @@ export type Database = {
           deduction_exempt?: boolean
           employee_id?: string
           id?: string
+          late_reason?: string | null
           leave_id?: string | null
           notes?: string | null
           organization_id?: string
@@ -2785,6 +2788,15 @@ export type Database = {
           p_lat?: number | null
           p_lng?: number | null
           p_device_id?: string | null
+        }
+        Returns: Json
+      }
+      hr_set_late_reason: {
+        Args: {
+          p_token: string
+          p_email: string
+          p_device_id: string
+          p_reason: string
         }
         Returns: Json
       }

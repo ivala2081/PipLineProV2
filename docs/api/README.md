@@ -104,6 +104,7 @@ Only RPCs **called from the frontend** or **exposed as tools to the AI**. Trigge
 | `seed_default_registers(p_org_id)` | VOID | `useAccountingRegisters` | [120](../../supabase/migrations/120_accounting_overhaul.sql) |
 | `calculate_ib_commission(_ib_partner_id, _period_start, _period_end)` | JSONB | `useIBCommissionsQuery` | [129](../../supabase/migrations/129_ib_remove_cpa_revenue_share_sources.sql) |
 | `hr_checkin_by_qr(p_token, p_email, p_lat?, p_lng?, p_device_id?)` | JSONB | `pages/checkin` | [144](../../supabase/migrations/144_hr_checkin_device_lock.sql) |
+| `hr_set_late_reason(p_token, p_email, p_device_id, p_reason)` | JSONB | `pages/checkin` | [145](../../supabase/migrations/145_hr_late_reason.sql) |
 | `verify_org_pin(p_org_id, p_pin, p_device_id)` | BOOLEAN | `useVerifyOrgPin` | [112](../../supabase/migrations/112_bugfixes.sql) |
 | `has_org_pin(p_org_id)` | BOOLEAN | `useHasOrgPin` | [076](../../supabase/migrations/076_organization_pins.sql) |
 | `set_org_pin(p_org_id, p_pin)` | VOID | `useSetOrgPin` | [076](../../supabase/migrations/076_organization_pins.sql) |
@@ -261,6 +262,14 @@ QR-code-driven HR check-in. The `p_token` is a stable per-org QR token; `p_email
 **Geofence (migration 143):** when `hr_settings.geofence_enabled = true`, the RPC requires `p_lat`/`p_lng` and rejects check-ins outside `office_radius_meters` of the configured office centroid. Even when geofence is off, GPS coordinates (if sent) are recorded on `hr_attendance` for forensic audit. Helper: `haversine_distance_m(lat1, lng1, lat2, lng2) → numeric` computes great-circle distance in meters.
 
 **Device lock (migration 144):** when `p_device_id` is provided, the same device can only check in for one email per day. Subsequent submits with a different email return `'device_locked'`. The lock is stored atomically with the `hr_attendance` row in `hr_checkin_device_locks (org, device_id, date)` UNIQUE.
+
+### 6.2 `hr_set_late_reason(p_token uuid, p_email text, p_device_id text, p_reason text) → jsonb`
+
+Source: [145_hr_late_reason.sql](../../supabase/migrations/145_hr_late_reason.sql).
+
+Public companion to `hr_checkin_by_qr` — sets `hr_attendance.late_reason` for today's row when the employee was marked late. Auth via the migration 144 device lock: the (token's org, p_device_id, today, p_email) tuple must match an existing `hr_checkin_device_locks` row. Same-day editable, locked at midnight. Capped at 500 chars.
+
+**Errors:** `invalid_input`, `invalid_token`, `no_lock`, `no_attendance`, `not_late`. See [hr.md §11.3.2](../features/hr.md#1132-late-reason-migration-145) for semantics.
 
 ---
 

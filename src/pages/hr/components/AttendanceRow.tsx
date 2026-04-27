@@ -4,7 +4,7 @@
  * Extracted from AttendanceTab.tsx (Phase 2 refactoring).
  */
 import { useState } from 'react'
-import { ShieldCheck } from '@phosphor-icons/react'
+import { ShieldCheck, ChatText } from '@phosphor-icons/react'
 import {
   Tag,
   TableRow,
@@ -251,6 +251,14 @@ export function AttendanceRow({
               <ShieldCheck size={12} weight="fill" className="mr-0.5" />
               {lang === 'tr' ? 'İstisna' : 'Exempt'}
             </Tag>
+          )}
+          {record?.late_reason && (
+            <span
+              className="inline-flex size-5 cursor-help items-center justify-center rounded-md bg-orange/15 text-orange"
+              title={(lang === 'tr' ? 'Geç kalma sebebi: ' : 'Late reason: ') + record.late_reason}
+            >
+              <ChatText size={12} weight="fill" />
+            </span>
           )}
         </div>
       </TableCell>

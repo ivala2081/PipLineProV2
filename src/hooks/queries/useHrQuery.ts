@@ -77,6 +77,7 @@ export type HrAttendance = {
   deduction_exempt: boolean
   leave_id: string | null
   notes: string | null
+  late_reason: string | null
   recorded_by: string | null
   created_at: string
 }
