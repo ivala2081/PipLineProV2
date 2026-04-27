@@ -4,7 +4,7 @@
  * Extracted from AttendanceTab.tsx (Phase 2 refactoring).
  */
 import { useState } from 'react'
-import { ShieldCheck, ChatText } from '@phosphor-icons/react'
+import { ShieldCheck } from '@phosphor-icons/react'
 import {
   Tag,
   TableRow,
@@ -239,26 +239,31 @@ export function AttendanceRow({
 
       {/* Badge + Exempt */}
       <TableCell data-label="Badge">
-        <div className="flex items-center gap-1.5">
-          {statusCfg && <Tag variant={statusCfg.variant}>{statusCfg.displayLabel}</Tag>}
-          {(record?.absent_hours ?? absentHours) > 0 && (
-            <Tag variant="purple">
-              {record?.absent_hours ?? absentHours} {lang === 'tr' ? 'sa eksik' : 'h missing'}
-            </Tag>
-          )}
-          {exempt && (
-            <Tag variant="green">
-              <ShieldCheck size={12} weight="fill" className="mr-0.5" />
-              {lang === 'tr' ? 'İstisna' : 'Exempt'}
-            </Tag>
-          )}
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-1.5">
+            {statusCfg && <Tag variant={statusCfg.variant}>{statusCfg.displayLabel}</Tag>}
+            {(record?.absent_hours ?? absentHours) > 0 && (
+              <Tag variant="purple">
+                {record?.absent_hours ?? absentHours} {lang === 'tr' ? 'sa eksik' : 'h missing'}
+              </Tag>
+            )}
+            {exempt && (
+              <Tag variant="green">
+                <ShieldCheck size={12} weight="fill" className="mr-0.5" />
+                {lang === 'tr' ? 'İstisna' : 'Exempt'}
+              </Tag>
+            )}
+          </div>
           {record?.late_reason && (
-            <span
-              className="inline-flex size-5 cursor-help items-center justify-center rounded-md bg-orange/15 text-orange"
-              title={(lang === 'tr' ? 'Geç kalma sebebi: ' : 'Late reason: ') + record.late_reason}
+            <p
+              className="max-w-[18rem] truncate text-[11px] italic text-orange/80"
+              title={record.late_reason}
             >
-              <ChatText size={12} weight="fill" />
-            </span>
+              <span className="not-italic text-orange/45">
+                {lang === 'tr' ? 'Sebep: ' : 'Reason: '}
+              </span>
+              {record.late_reason}
+            </p>
           )}
         </div>
       </TableCell>
